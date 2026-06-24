@@ -1,0 +1,17 @@
+[
+  {
+    "session_id": "sess_wcsvbpert2_1782323904550",
+    "ip_address": "::ffff:127.0.0.1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0",
+    "browser": "Firefox",
+    "os": "Windows",
+    "device": "desktop",
+    "country": "Unknown",
+    "city": "Unknown",
+    "referrer": "http://localhost:3000/",
+    "landing_page": "/",
+    "id": "16n8fm5fn6lh5b0o0svaes",
+    "created_at": "2026-06-24T17:58:30.316Z",
+    "updated_at": "2026-06-24T18:03:02.218Z"
+  }
+]

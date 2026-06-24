@@ -1,0 +1,88 @@
+import type { Metadata } from "next";
+import type { ReactNode } from "react";
+import "./globals.scss";
+import { I18nProvider } from "@/lib/i18n";
+import Header from "@/components/Header";
+import PageTransition from "@/components/PageTransition";
+import Script from "next/script";
+import CustomCursor from "@/components/CustomCursor";
+import AnalyticsTracker from "@/components/AnalyticsTracker";
+import { getSiteSetting } from "@/lib/db";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const personalization = await getSiteSetting('personalization_settings', {});
+  return {
+    title: personalization.site_title_hy || "HDesign",
+    description: personalization.site_desc_hy || "Դիզայնի և Բրենդավորման Ստուդիա"
+  };
+}
+
+export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  const personalization = await getSiteSetting('personalization_settings', {});
+  const themeHue = personalization.theme_hue || "172";
+
+  const apiSettings = await getSiteSetting('api_settings', {
+    tildo_enabled: false,
+    tildo_widget_id: '',
+    google_analytics_enabled: false,
+    google_analytics_id: '',
+    custom_head_script: '',
+    custom_footer_script: ''
+  });
+
+  return (
+    <html lang="en" data-theme="light" data-color="#083f39" style={{ "--hue": themeHue } as any}>
+      <head>
+        <link rel="stylesheet" href="https://api.hakobian.am/libs/v1/style.css" />
+        <link rel="stylesheet" href="https://api.hakobian.am/libs/v1/icons/style.css" />
+        
+        {/* Google Analytics Script */}
+        {apiSettings.google_analytics_enabled && apiSettings.google_analytics_id && (
+          <>
+            <Script 
+              src={`https://www.googletagmanager.com/gtag/js?id=${apiSettings.google_analytics_id}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${apiSettings.google_analytics_id}');
+              `}
+            </Script>
+          </>
+        )}
+
+        {/* Custom Head Scripts */}
+        {apiSettings.custom_head_script && (
+          <script dangerouslySetInnerHTML={{ __html: apiSettings.custom_head_script }} />
+        )}
+      </head>
+      <body>
+        <CustomCursor />
+        <AnalyticsTracker />
+        <I18nProvider>
+          <Header />
+          <PageTransition>
+            {children}
+          </PageTransition>
+        </I18nProvider>
+        <Script src="https://api.hakobian.am/libs/v1/script.js" strategy="afterInteractive" />
+
+        {/* Tidio Chat (Tildo) script */}
+        {apiSettings.tildo_enabled && apiSettings.tildo_widget_id && (
+          <Script 
+            src={`//code.tidio.co/${apiSettings.tildo_widget_id}.js`} 
+            strategy="lazyOnload" 
+          />
+        )}
+
+        {/* Custom Footer Scripts */}
+        {apiSettings.custom_footer_script && (
+          <script dangerouslySetInnerHTML={{ __html: apiSettings.custom_footer_script }} />
+        )}
+      </body>
+    </html>
+  );
+}

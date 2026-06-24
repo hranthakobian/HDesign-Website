@@ -1,0 +1,16 @@
+{
+  "terminal.integrated.defaultProfile.windows": "PowerShell (portable node)",
+  "terminal.integrated.profiles.windows": {
+    "PowerShell (portable node)": {
+      "source": "PowerShell",
+      "args": [
+        "-NoExit",
+        "-Command",
+        "function npm { & 'C:\\Users\\hrant\\AppData\\Local\\Programs\\nodejs-portable\\npm.cmd' @args }; function npx { & 'C:\\Users\\hrant\\AppData\\Local\\Programs\\nodejs-portable\\npx.cmd' @args }"
+      ]
+    }
+  },
+  "terminal.integrated.env.windows": {
+    "PATH": "${env:PATH};C:\\Users\\hrant\\AppData\\Local\\Programs\\nodejs-portable"
+  }
+}
