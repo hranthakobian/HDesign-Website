@@ -607,19 +607,30 @@ hd-slider,
   display: block !important;
 }
 
-/* Page Transition Styles (Horizontal Slide) */
+/* Page Transition Styles — Directional Slide */
 .page-transition-wrapper {
-  transition: opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1), transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   width: 100%;
+  will-change: transform;
 }
+
 .page-transition-wrapper.page-enter {
-  opacity: 1;
-  transform: translateX(0);
+  animation: pageSlideEnter 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
+
 .page-transition-wrapper.page-leave {
-  opacity: 0;
-  transform: translateX(-16px);
+  animation: pageSlideLeave 0.28s cubic-bezier(0.55, 0, 1, 0.45) forwards;
 }
+
+@keyframes pageSlideEnter {
+  from { transform: translateX(64px); }
+  to   { transform: translateX(0);   }
+}
+
+@keyframes pageSlideLeave {
+  from { transform: translateX(0);    }
+  to   { transform: translateX(-64px); }
+}
+
 
 /* Premium Smooth Expand/Collapse Transition */
 .smooth-expand {

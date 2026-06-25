@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { supabaseAdmin } from './supabaseAdmin';
 import path from 'path';
 
 // Helper to determine if we are on the server side
@@ -174,16 +175,17 @@ export async function saveCase(c: Case): Promise<Case | null> {
     created_at: c.created_at || new Date().toISOString()
   };
 
-  if (supabase) {
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await adminClient
         .from('cases')
         .insert([newCase])
         .select()
         .single();
       
       if (!error && data) return data;
-      console.warn('Supabase saveCase table check error:', error?.message);
+      console.warn('Supabase saveCase error:', error?.message);
     } catch (err) {
       console.warn('Supabase saveCase failed, using local storage:', err);
     }
@@ -216,9 +218,10 @@ export async function saveCase(c: Case): Promise<Case | null> {
 export async function deleteCase(id: string): Promise<boolean> {
   await ensureLocalDbFiles();
   
-  if (supabase) {
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
     try {
-      const { error } = await supabase
+      const { error } = await adminClient
         .from('cases')
         .delete()
         .eq('id', id);
@@ -296,9 +299,10 @@ export async function saveMessage(m: Message): Promise<Message | null> {
     created_at: m.created_at || new Date().toISOString()
   };
 
-  if (supabase) {
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await adminClient
         .from('messages')
         .insert([newMessage])
         .select()
@@ -330,9 +334,10 @@ export async function saveMessage(m: Message): Promise<Message | null> {
 export async function deleteMessage(id: string): Promise<boolean> {
   await ensureLocalDbFiles();
 
-  if (supabase) {
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
     try {
-      const { error } = await supabase
+      const { error } = await adminClient
         .from('messages')
         .delete()
         .eq('id', id);
@@ -389,9 +394,10 @@ export async function saveVisit(v: VisitSession): Promise<VisitSession | null> {
     updated_at: v.updated_at || new Date().toISOString()
   };
 
-  if (supabase) {
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await adminClient
         .from('site_visits')
         .insert([newVisit])
         .select()
@@ -432,9 +438,10 @@ export async function updateVisitHeartbeat(sessionId: string): Promise<boolean> 
   await ensureLocalDbFiles();
   const now = new Date().toISOString();
 
-  if (supabase) {
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
     try {
-      const { error } = await supabase
+      const { error } = await adminClient
         .from('site_visits')
         .update({ updated_at: now })
         .eq('session_id', sessionId);
@@ -537,15 +544,16 @@ export async function getSiteSetting(key: string, defaultValue: any = null): Pro
 export async function saveSiteSetting(key: string, value: any): Promise<boolean> {
   await ensureLocalDbFiles();
 
-  if (supabase) {
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
     try {
-      const { error } = await supabase
+      const { error } = await adminClient
         .from('site_settings')
         .upsert({
           key,
           value,
           updated_at: new Date().toISOString()
-        });
+        }, { onConflict: 'key' });
       
       if (!error) return true;
       console.warn(`Supabase saveSiteSetting for ${key} upsert error:`, error.message);
