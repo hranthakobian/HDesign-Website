@@ -17,9 +17,9 @@ async function updateEnvFile(supabaseUrl: string, supabaseKey: string) {
     const lines = content.split(/\r?\n/);
     const updatedLines = [];
     const keysToUpdate = {
-      NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: supabaseKey,
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: supabaseKey
+      SUPABASE_URL: supabaseUrl,
+      SUPABASE_ANON_KEY: supabaseKey,
+      SUPABASE_PUBLISHABLE_KEY: supabaseKey
     };
 
     const processed = new Set<string>();
@@ -59,12 +59,12 @@ export async function GET() {
       google_analytics_id: '',
       custom_head_script: '',
       custom_footer_script: '',
-      supabase_url: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      supabase_key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ''
+      supabase_url: process.env.SUPABASE_URL || '',
+      supabase_key: process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || ''
     };
     const settings = await getSiteSetting('api_settings', defaultSettings);
-    if (!settings.supabase_url) settings.supabase_url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-    if (!settings.supabase_key) settings.supabase_key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
+    if (!settings.supabase_url) settings.supabase_url = process.env.SUPABASE_URL || '';
+    if (!settings.supabase_key) settings.supabase_key = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || '';
     return NextResponse.json(settings);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

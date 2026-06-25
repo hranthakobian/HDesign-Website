@@ -1,6 +1,6 @@
 [
   {
-    "id": "ij5knxlc1ri",
+    "id": "q2k75jg9i7h",
     "session_id": "session_96tb9c4b9jltexcvwhpt7p",
     "ip_address": "::ffff:127.0.0.1",
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0",
@@ -9,10 +9,10 @@
     "device": "desktop",
     "country": "Unknown",
     "city": "Unknown",
-    "referrer": "http://localhost:3000/contact",
-    "landing_page": "/hdesign",
-    "created_at": "2026-06-25T11:26:48.117Z",
-    "updated_at": "2026-06-25T11:26:48.117Z"
+    "referrer": "http://localhost:3000/about",
+    "landing_page": "/about",
+    "created_at": "2026-06-25T12:04:21.631Z",
+    "updated_at": "2026-06-25T12:04:21.631Z"
   },
   {
     "id": "om10dvomvs",
