@@ -619,7 +619,7 @@ export default function Home() {
             </svg>
           </div>
 
-          <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "80px 0 40px", display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: "48px", alignItems: "center", position: "relative", zIndex: 5 }}>
+          <div className="landing-about-grid" style={{ maxWidth: "1400px", margin: "0 auto", padding: "80px 0 40px", display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: "48px", alignItems: "center", position: "relative", zIndex: 5 }}>
             {/* Profile Image container */}
             <div style={{ position: "relative", borderRadius: "20px", overflow: "hidden", aspectRatio: "1" }}>
               <img 
@@ -837,7 +837,7 @@ export default function Home() {
           {/* Dynamic SVG Background */}
           <SectionBackground color="#6A3E73" className="footer-svg-bg" type="footer" />
 
-          <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "80px 0 40px", position: "relative", zIndex: 5, display: "flex", flexDirection: "column", gap: "40px" }}>
+          <div className="footer-content-container" style={{ maxWidth: "1400px", margin: "0 auto", padding: "80px 0 40px", position: "relative", zIndex: 5, display: "flex", flexDirection: "column", gap: "40px" }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "60px" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
                 <div>

@@ -2,14 +2,14 @@ import { NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs/promises';
 import { supabase } from '@/lib/supabase';
+import { verifyAuth } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
     // Auth check
-    const authHeader = request.headers.get('authorization');
-    const correctPasscode = process.env.ADMIN_PASSCODE || 'admin123';
+    const isAuthorized = await verifyAuth(request);
     
-    if (authHeader !== correctPasscode) {
+    if (!isAuthorized) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     }
 

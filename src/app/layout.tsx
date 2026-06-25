@@ -7,6 +7,7 @@ import PageTransition from "@/components/PageTransition";
 import Script from "next/script";
 import CustomCursor from "@/components/CustomCursor";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
+import UpcomingCheck from "@/components/UpcomingCheck";
 import { getSiteSetting } from "@/lib/db";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -29,6 +30,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     custom_head_script: '',
     custom_footer_script: ''
   });
+
+  const generalSettings = await getSiteSetting('general_settings', { upcoming_mode: false });
+  const upcomingMode = !!generalSettings?.upcoming_mode;
 
   return (
     <html lang="en" data-theme="light" data-color="#083f39" style={{ "--hue": themeHue } as any}>
@@ -63,10 +67,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <CustomCursor />
         <AnalyticsTracker />
         <I18nProvider>
-          <Header />
-          <PageTransition>
-            {children}
-          </PageTransition>
+          <UpcomingCheck initialUpcomingMode={upcomingMode}>
+            <Header />
+            <PageTransition>
+              {children}
+            </PageTransition>
+          </UpcomingCheck>
         </I18nProvider>
         <Script src="https://api.hakobian.am/libs/v1/script.js" strategy="afterInteractive" />
 

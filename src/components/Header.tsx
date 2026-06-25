@@ -23,6 +23,12 @@ export default function Header() {
   // Portfolio Page Header States
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Close mobile menu on pathname change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   // Track theme changes
   useEffect(() => {
@@ -141,12 +147,16 @@ export default function Header() {
   };
   const activeNav = getActiveNav();
 
+  if (pathname && pathname.startsWith("/admin")) {
+    return null;
+  }
+
   if (isPortfolioPage) {
     return (
-      <div className={`portfolio-header-wrapper ${isScrolled ? "scrolled" : ""}`}>
+      <div className={`portfolio-header-wrapper ${isScrolled ? "scrolled" : ""} ${isMobileMenuOpen ? "menu-open" : ""}`}>
         <header className="portfolio-header">
           {/* Logo Section */}
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none", color: "var(--text)" }}>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none", color: "var(--text)" }} onClick={() => setIsMobileMenuOpen(false)}>
             <img 
               src="/logo.png" 
               alt="HDesign Logo" 
@@ -185,7 +195,83 @@ export default function Header() {
               </div>
             </div>
           </nav>
+
+          {/* 4-Line Hamburger Button */}
+          <button 
+            className={`hamburger-btn ${isMobileMenuOpen ? "open" : ""}`} 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle navigation menu"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
         </header>
+
+        {/* Mobile Menu Drawer Overlay */}
+        <div className={`mobile-menu-drawer ${isMobileMenuOpen ? "open" : ""}`}>
+          <nav className="mobile-nav-links">
+            <Link href="/" className={`mobile-nav-item ${activeNav === "home" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
+              Տուն
+            </Link>
+            <Link href="/about" className={`mobile-nav-item ${activeNav === "about" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
+              Մասին
+            </Link>
+            <Link href="/works" className={`mobile-nav-item ${activeNav === "works" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
+              Աշխատանքներ
+            </Link>
+            <Link href="/contact" className={`mobile-nav-item ${activeNav === "contact" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
+              Կապ
+            </Link>
+            
+            <div className="mobile-nav-divider" />
+            
+            <span className="mobile-nav-section-title">HDesign</span>
+            <Link href="/hdesign" className={`mobile-nav-subitem ${pathname === "/hdesign" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
+              Ընդհանուր
+            </Link>
+            <Link href="/hdesign/docs" className={`mobile-nav-subitem ${pathname === "/hdesign/docs" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
+              Փաստաթղթեր
+            </Link>
+            <Link href="/hdesign/samples" className={`mobile-nav-subitem ${pathname === "/hdesign/samples" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
+              Փորձանմուշներ
+            </Link>
+
+            <div className="mobile-nav-divider" />
+
+            {/* Mobile Settings Row (Language & Theme switchers) */}
+            <div className="mobile-settings-container">
+              <span className="mobile-nav-section-title">Կարգավորումներ</span>
+              
+              <div className="mobile-settings-row">
+                {/* Language Toggle */}
+                <div 
+                  onClick={() => setLocale(locale === 'hy' ? 'en' : 'hy')}
+                  className={`lang-switcher lang-${locale}`}
+                  style={{ cursor: "pointer" }}
+                >
+                  <div className="lang-capsule" />
+                  <span className={`lang-text ${locale === 'hy' ? 'active' : ''}`}>Հայ</span>
+                  <span className={`lang-text ${locale === 'en' ? 'active' : ''}`}>Eng</span>
+                </div>
+
+                {/* Theme Switcher Toggle */}
+                <div className="mobile-theme-switcher">
+                  <button type="button" onClick={() => changeTheme('light')} className={theme === 'light' ? 'active' : ''}>
+                    Բաց
+                  </button>
+                  <button type="button" onClick={() => changeTheme('dark')} className={theme === 'dark' ? 'active' : ''}>
+                    Մութ
+                  </button>
+                  <button type="button" onClick={() => changeTheme('green')} className={theme === 'green' ? 'active' : ''}>
+                    Կանաչ
+                  </button>
+                </div>
+              </div>
+            </div>
+          </nav>
+        </div>
       </div>
     );
   }
@@ -197,7 +283,7 @@ export default function Header() {
   return (
     <>
       {/* Top Left Logo & Language Toggle Panel */}
-      <div style={{ 
+      <div className="legacy-header-panel" style={{ 
         position: 'fixed', 
         top: '20px', 
         left: '40px', 

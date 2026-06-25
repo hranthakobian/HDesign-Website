@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { saveCase, deleteCase } from '@/lib/db';
+import { verifyAuth } from '@/lib/auth';
 
 export async function PATCH(
   request: Request,
@@ -9,10 +10,9 @@ export async function PATCH(
     const { id } = await params;
     
     // Auth check
-    const authHeader = request.headers.get('authorization');
-    const correctPasscode = process.env.ADMIN_PASSCODE || 'admin123';
+    const isAuthorized = await verifyAuth(request);
     
-    if (authHeader !== correctPasscode) {
+    if (!isAuthorized) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     }
 
@@ -46,10 +46,9 @@ export async function DELETE(
     const { id } = await params;
 
     // Auth check
-    const authHeader = request.headers.get('authorization');
-    const correctPasscode = process.env.ADMIN_PASSCODE || 'admin123';
+    const isAuthorized = await verifyAuth(request);
     
-    if (authHeader !== correctPasscode) {
+    if (!isAuthorized) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     }
 

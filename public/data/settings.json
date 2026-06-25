@@ -34,5 +34,9 @@
         "hotspot_y": 2
       }
     }
+  },
+  "general_settings": {
+    "admin_passcode": "admin123",
+    "upcoming_mode": true
   }
 }

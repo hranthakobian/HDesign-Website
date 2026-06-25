@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSiteSetting, saveSiteSetting } from '@/lib/db';
+import { verifyAuth } from '@/lib/auth';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -73,10 +74,9 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     // Auth check
-    const authHeader = request.headers.get('authorization');
-    const correctPasscode = process.env.ADMIN_PASSCODE || 'admin123';
+    const isAuthorized = await verifyAuth(request);
     
-    if (authHeader !== correctPasscode) {
+    if (!isAuthorized) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     }
 

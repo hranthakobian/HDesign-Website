@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSiteSetting, saveSiteSetting } from '@/lib/db';
+import { verifyAuth } from '@/lib/auth';
 
 const DEFAULT_PERSONALIZATION = {
   site_title_hy: "HDesign",
@@ -93,10 +94,9 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     // Auth check
-    const authHeader = request.headers.get('authorization');
-    const correctPasscode = process.env.ADMIN_PASSCODE || 'admin123';
+    const isAuthorized = await verifyAuth(request);
     
-    if (authHeader !== correctPasscode) {
+    if (!isAuthorized) {
       return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
     }
 

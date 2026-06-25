@@ -141,7 +141,7 @@ export default function AdminDashboard() {
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   // Dashboard state
-  const [activeTab, setActiveTab] = useState<'analytics' | 'cases' | 'messages' | 'translations' | 'apis' | 'personalization'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'cases' | 'messages' | 'translations' | 'apis' | 'personalization' | 'settings'>('analytics');
   const [personalization, setPersonalization] = useState<PersonalizationSettings>({
     site_title_hy: 'HDesign',
     site_title_en: 'HDesign',
@@ -177,8 +177,20 @@ export default function AdminDashboard() {
     en: Record<string, Record<string, string>>;
   }>({ hy: {}, en: {} });
 
+  // General Settings State
+  const [upcomingMode, setUpcomingMode] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  // Password Change Form State
+  const [currentPasscode, setCurrentPasscode] = useState('');
+  const [newPasscode, setNewPasscode] = useState('');
+  const [confirmPasscode, setConfirmPasscode] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [changingPassword, setChangingPassword] = useState(false);
+
   // Transition States
-  const [prevTab, setPrevTab] = useState<'analytics' | 'cases' | 'messages' | 'translations' | 'apis' | 'personalization'>('analytics');
+  const [prevTab, setPrevTab] = useState<'analytics' | 'cases' | 'messages' | 'translations' | 'apis' | 'personalization' | 'settings'>('analytics');
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
 
   const tabIndices = useMemo(() => ({
@@ -187,7 +199,8 @@ export default function AdminDashboard() {
     messages: 2,
     translations: 3,
     apis: 4,
-    personalization: 5
+    personalization: 5,
+    settings: 6
   }), []);
 
   useEffect(() => {
@@ -334,6 +347,11 @@ export default function AdminDashboard() {
         if (!personalizationRes.ok) throw new Error('Failed to fetch personalization settings');
         const personalizationData = await personalizationRes.json();
 
+        // 7. Fetch General Settings
+        const generalSettingsRes = await fetch('/api/general-settings', { headers });
+        if (!generalSettingsRes.ok) throw new Error('Failed to fetch general settings');
+        const generalSettingsData = await generalSettingsRes.json();
+
         // Seed list with loaded values, filter out seed items from dynamic listing if desired
         setCases(casesData || []);
         setMessages(msgData || []);
@@ -358,6 +376,7 @@ export default function AdminDashboard() {
           cursor_colors: DEFAULT_COLORS,
           cursors: DEFAULT_CURSORS
         });
+        setUpcomingMode(generalSettingsData.upcoming_mode || false);
       } catch (err: any) {
         setDataError(err.message || 'Տվյալների բեռնումը ձախողվեց:');
       } finally {
@@ -777,6 +796,93 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleSaveGeneralSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+
+    setSavingSettings(true);
+    try {
+      const res = await fetch('/api/general-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token
+        },
+        body: JSON.stringify({ upcoming_mode: upcomingMode })
+      });
+
+      if (res.ok) {
+        alert('Կայքի կարգավորումները հաջողությամբ պահպանվեցին։');
+      } else {
+        const data = await res.json();
+        alert('Սխալ՝ ' + data.error);
+      }
+    } catch (err) {
+      alert('Չհաջողվեց պահպանել կարգավորումները։');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+
+    setPasswordError(null);
+    setPasswordSuccess(null);
+
+    if (!currentPasscode || !newPasscode || !confirmPasscode) {
+      setPasswordError('Խնդրում ենք լրացնել բոլոր դաշտերը։');
+      return;
+    }
+
+    if (newPasscode !== confirmPasscode) {
+      setPasswordError('Նոր գաղտնաբառերը չեն համընկնում։');
+      return;
+    }
+
+    if (newPasscode.length < 4) {
+      setPasswordError('Նոր գաղտնաբառը պետք է լինի առնվազն 4 նիշ։');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const res = await fetch('/api/general-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token
+        },
+        body: JSON.stringify({
+          current_passcode: currentPasscode,
+          new_passcode: newPasscode
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPasswordSuccess('Գաղտնաբառը հաջողությամբ փոխվեց։');
+        
+        // Sync local auth token so session doesn't expire
+        if (data.newToken) {
+          localStorage.setItem('hdesign_admin_token', data.newToken);
+          setToken(data.newToken);
+        }
+        
+        setCurrentPasscode('');
+        setNewPasscode('');
+        setConfirmPasscode('');
+      } else {
+        setPasswordError(data.error || 'Գաղտնաբառի փոփոխումը ձախողվեց։');
+      }
+    } catch (err) {
+      setPasswordError('Կապի սխալ։ Չհաջողվեց փոխել գաղտնաբառը։');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   // ══════════════════════════════════════════════════════════════════════════════
   // ANALYTICS CALCULATIONS
   // ══════════════════════════════════════════════════════════════════════════════
@@ -1021,9 +1127,67 @@ export default function AdminDashboard() {
           0% { transform: translateX(-30px); opacity: 0; }
           100% { transform: translateX(0); opacity: 1; }
         }
+        @media (max-width: 768px) {
+          .admin-header {
+            padding: 12px 16px !important;
+          }
+          .admin-header h1 {
+            font-size: 1rem !important;
+          }
+          .admin-header span {
+            display: none !important;
+          }
+          .admin-main-container {
+            padding: 0 16px !important;
+            margin: 20px auto 0 !important;
+          }
+          .case-form-grid {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+          }
+          .personalization-form-grid {
+            grid-template-columns: 1fr !important;
+            gap: 20px !important;
+          }
+          .hotspot-edit-layout {
+            grid-template-columns: 1fr !important;
+            gap: 16px !important;
+            justify-items: center;
+          }
+          .admin-modal-container {
+            padding: 20px !important;
+            border-radius: 16px !important;
+            max-height: 95vh !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .admin-floating-nav {
+            width: calc(100% - 24px) !important;
+            height: 60px !important;
+            bottom: 12px !important;
+            gap: 6px !important;
+            padding: 0 6px !important;
+          }
+          .admin-floating-nav .nav-btn {
+            width: 42px !important;
+            height: 42px !important;
+            border-radius: 12px !important;
+          }
+          .admin-floating-nav .nav-btn span {
+            font-size: 1.1rem !important;
+          }
+          .admin-modal-actions {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 8px !important;
+          }
+          .admin-modal-actions > * {
+            width: 100% !important;
+          }
+        }
       `}</style>
       {/* Top Navbar Header */}
-      <header style={{ 
+      <header className="admin-header" style={{ 
         position: 'sticky', 
         top: 0, 
         zIndex: 100, 
@@ -1068,7 +1232,7 @@ export default function AdminDashboard() {
       </header>
 
       {/* Main Content Area */}
-      <div style={{ maxWidth: '1400px', margin: '40px auto 0', padding: '0 40px' }}>
+      <div className="admin-main-container" style={{ maxWidth: '1400px', margin: '40px auto 0', padding: '0 40px' }}>
         {loadingData ? (
           <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--muted)' }}>
             <h3>Բեռնվում է...</h3>
@@ -1338,6 +1502,7 @@ export default function AdminDashboard() {
                   >
                     <div 
                       onClick={(e) => e.stopPropagation()}
+                      className="admin-modal-container"
                       style={{
                         background: 'var(--panel)', border: '1px solid var(--panel-border)', borderRadius: '24px',
                         width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto', padding: '36px',
@@ -1349,7 +1514,7 @@ export default function AdminDashboard() {
                       </h3>
 
                       <form onSubmit={handleSaveCase} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div className="case-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                           <div>
                             <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>ID (Unique)*</label>
                             <hd-input 
@@ -1373,7 +1538,7 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div className="case-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                           <div>
                             <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Վերնագիր*</label>
                             <hd-input 
@@ -1396,7 +1561,7 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div className="case-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                           <div>
                             <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Հաճախորդ</label>
                             <hd-input 
@@ -1499,7 +1664,7 @@ export default function AdminDashboard() {
                           />
                         </div>
 
-                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
+                        <div className="admin-modal-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
                           <hd-button 
                             type="button"
                             onClick={() => setShowCaseForm(false)}
@@ -1630,6 +1795,7 @@ export default function AdminDashboard() {
                   >
                     <div 
                       onClick={(e) => e.stopPropagation()}
+                      className="admin-modal-container"
                       style={{
                         background: 'var(--panel)', border: '1px solid var(--panel-border)', borderRadius: '24px',
                         width: '100%', maxWidth: '600px', padding: '36px',
@@ -1653,7 +1819,7 @@ export default function AdminDashboard() {
                         {selectedMessage.message}
                       </div>
 
-                      <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
+                      <div className="admin-modal-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
                         <hd-button 
                           onClick={() => setSelectedMessage(null)}
                           data-color="rgba(255,255,255,0.1)"
@@ -1941,6 +2107,7 @@ export default function AdminDashboard() {
                   >
                     <div 
                       onClick={(e) => e.stopPropagation()}
+                      className="admin-modal-container"
                       style={{
                         background: 'var(--panel)', border: '1px solid var(--panel-border)', borderRadius: '24px',
                         width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto', padding: '36px',
@@ -2042,7 +2209,7 @@ export default function AdminDashboard() {
                           />
                         </div>
 
-                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
+                        <div className="admin-modal-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
                           <hd-button 
                             type="button"
                             onClick={() => setShowAddTrans(false)}
@@ -2374,7 +2541,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                <form onSubmit={handleSavePersonalization} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', alignItems: 'start' }}>
+                <form onSubmit={handleSavePersonalization} className="personalization-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', alignItems: 'start' }}>
                   {/* Left Column: Website Identity & Colors */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     {/* Site Text Fields */}
@@ -2695,7 +2862,7 @@ export default function AdminDashboard() {
                       </div>
 
                       {/* Hotspot edit layout */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '128px 1fr', gap: '20px', alignItems: 'start' }}>
+                      <div className="hotspot-edit-layout" style={{ display: 'grid', gridTemplateColumns: '128px 1fr', gap: '20px', alignItems: 'start' }}>
                         {/* Interactive grid for hotspot selection */}
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                           <div 
@@ -2934,12 +3101,184 @@ export default function AdminDashboard() {
                 </form>
               </div>
             )}
+
+            {activeTab === 'settings' && (
+              <div className={getTabClass('settings')} style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                  <div>
+                    <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0 }}>Հիմնական Կարգավորումներ</h2>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: '4px' }}>Կառավարեք ադմինի գաղտնաբառը և կայքի աշխատանքային ռեժիմը</p>
+                  </div>
+                </div>
+
+                <div className="personalization-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', alignItems: 'start' }}>
+                  {/* Left Column: Upcoming mode settings */}
+                  <div style={{
+                    background: 'var(--panel)',
+                    border: '1px solid var(--panel-border)',
+                    borderRadius: '16px',
+                    padding: '24px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '20px'
+                  }}>
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span className="icon-Earth" style={{ color: '#ec407a' }} />
+                      Կայքի Աշխատանքային Ռեժիմ (Maintenance Mode)
+                    </h3>
+
+                    <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: 0, lineHeight: 1.5 }}>
+                      Միացնելով «Upcoming» ռեժիմը՝ կայքի հիմնական այցելուներին կցուցադրվի ժամանակավոր սպասման էջ (Coming Soon), իսկ ադմինիստրատիվ համակարգը (/admin) կշարունակի գործել սովորական ռեժիմով։
+                    </p>
+
+                    <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '16px',
+                        background: 'rgba(255,255,255,0.02)',
+                        borderRadius: '12px',
+                        border: '1px solid var(--panel-border)'
+                      }}>
+                        <div>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 600, display: 'block' }}>Upcoming Mode Ռեժիմ</span>
+                          <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
+                            {upcomingMode ? 'Ակտիվացված է (սպասման էջը միացված է)' : 'Անջատված է (կայքը բաց է բոլորի համար)'}
+                          </span>
+                        </div>
+                        
+                        {/* Toggle switch */}
+                        <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '50px', height: '26px' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={upcomingMode} 
+                            onChange={(e) => setUpcomingMode(e.target.checked)}
+                            style={{ opacity: 0, width: 0, height: 0 }}
+                          />
+                          <span className="slider" style={{
+                            position: 'absolute', cursor: 'pointer', inset: 0,
+                            backgroundColor: upcomingMode ? '#00c49f' : '#ccc',
+                            borderRadius: '34px', transition: '.4s'
+                          }}>
+                            <span style={{
+                              position: 'absolute', content: '""', height: '18px', width: '18px',
+                              left: upcomingMode ? '28px' : '4px', bottom: '4px',
+                              backgroundColor: 'white', borderRadius: '50%', transition: '.4s'
+                            }} />
+                          </span>
+                        </label>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <hd-button 
+                          type="submit" 
+                          data-thickness="2px"
+                          data-width="160px"
+                          data-height="40px"
+                          data-font-size="0.85rem"
+                          disabled={savingSettings}
+                        >
+                          {savingSettings ? 'Պահպանվում է...' : 'Պահպանել Ռեժիմը'}
+                        </hd-button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Right Column: Passcode change settings */}
+                  <div style={{
+                    background: 'var(--panel)',
+                    border: '1px solid var(--panel-border)',
+                    borderRadius: '16px',
+                    padding: '24px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '20px'
+                  }}>
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span className="icon-Profile" style={{ color: '#0088FE' }} />
+                      Փոխել Ադմինիստրատորի Գաղտնաբառը
+                    </h3>
+
+                    <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Ընթացիկ գաղտնաբառ</label>
+                        <hd-input 
+                          type="password"
+                          placeholder="Մուտքագրեք ընթացիկ գաղտնաբառը..."
+                          value={currentPasscode}
+                          onInput={(e: any) => setCurrentPasscode(e.target.value)}
+                          data-width="100%"
+                          data-height="40px"
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Նոր գաղտնաբառ</label>
+                        <hd-input 
+                          type="password"
+                          placeholder="Մուտքագրեք նոր գաղտնաբառը..."
+                          value={newPasscode}
+                          onInput={(e: any) => setNewPasscode(e.target.value)}
+                          data-width="100%"
+                          data-height="40px"
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Հաստատել նոր գաղտնաբառը</label>
+                        <hd-input 
+                          type="password"
+                          placeholder="Կրկնեք նոր գաղտնաբառը..."
+                          value={confirmPasscode}
+                          onInput={(e: any) => setConfirmPasscode(e.target.value)}
+                          data-width="100%"
+                          data-height="40px"
+                        />
+                      </div>
+
+                      {passwordError && (
+                        <div style={{
+                          fontSize: '0.82rem', color: '#ff6b6b', background: 'rgba(255, 107, 107, 0.08)',
+                          padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(255, 107, 107, 0.2)'
+                        }}>
+                          {passwordError}
+                        </div>
+                      )}
+
+                      {passwordSuccess && (
+                        <div style={{
+                          fontSize: '0.82rem', color: '#00c49f', background: 'rgba(0, 196, 159, 0.08)',
+                          padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(0, 196, 159, 0.2)'
+                        }}>
+                          {passwordSuccess}
+                        </div>
+                      )}
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                        <hd-button 
+                          type="submit" 
+                          data-thickness="2px"
+                          data-width="180px"
+                          data-height="40px"
+                          data-font-size="0.85rem"
+                          disabled={changingPassword}
+                        >
+                          {changingPassword ? 'Փոխվում է...' : 'Թարմացնել Գաղտնաբառը'}
+                        </hd-button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
 
       {/* Floating Bottom Navigation Tab Bar */}
       <nav 
+        className="admin-floating-nav"
         style={{ 
           position: 'fixed', 
           bottom: '24px', 
@@ -3085,6 +3424,27 @@ export default function AdminDashboard() {
           <span className="icon-Cursor" style={{ fontSize: '1.4rem' }} />
           <div className="nav-tooltip">Անհատականացում</div>
         </button>
+
+        <button 
+          onClick={() => setActiveTab('settings')}
+          className="nav-btn"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: activeTab === 'settings' ? 'var(--switcher-capsule-bg)' : 'transparent',
+            color: activeTab === 'settings' ? '#fff' : 'var(--muted)',
+            border: 'none',
+            borderRadius: '16px',
+            width: '50px',
+            height: '50px',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          <span className="icon-Profile" style={{ fontSize: '1.4rem' }} />
+          <div className="nav-tooltip">Կարգավորումներ</div>
+        </button>
       </nav>
 
       {/* API Unlocks Passcode Prompt Modal */}
@@ -3098,6 +3458,7 @@ export default function AdminDashboard() {
         >
           <div 
             onClick={(e) => e.stopPropagation()}
+            className="admin-modal-container"
             style={{
               background: 'var(--panel)', border: '1px solid var(--panel-border)', borderRadius: '24px',
               width: '100%', maxWidth: '400px', padding: '36px',

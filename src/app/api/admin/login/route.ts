@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
+import { getCorrectPasscode } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
     const { passcode } = await request.json();
 
-    const correctPasscode = process.env.ADMIN_PASSCODE || 'admin123';
+    const correctPasscode = await getCorrectPasscode();
 
     if (passcode === correctPasscode) {
       return NextResponse.json({ 
