@@ -2,16 +2,23 @@ import { NextResponse } from 'next/server';
 import { getSiteSetting, saveSiteSetting } from '@/lib/db';
 import { getCorrectPasscode, verifyAuth } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const generalSettings = await getSiteSetting('general_settings', {
       upcoming_mode: false
     });
     
-    // Return only public fields
-    return NextResponse.json({
-      upcoming_mode: !!generalSettings?.upcoming_mode
-    });
+    // Return only public fields without caching
+    return NextResponse.json(
+      { upcoming_mode: !!generalSettings?.upcoming_mode },
+      {
+        headers: {
+          'Cache-Control': 'no-store, max-age=0, must-revalidate',
+        }
+      }
+    );
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || 'Failed to retrieve settings' },

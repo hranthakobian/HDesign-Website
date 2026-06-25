@@ -23,7 +23,13 @@ export default function UpcomingCheck({ initialUpcomingMode, children }: Upcomin
     // Fetch latest general settings to verify if upcoming mode has been toggled
     async function checkUpcoming() {
       try {
-        const res = await fetch('/api/general-settings');
+        const res = await fetch(`/api/general-settings?t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache'
+          }
+        });
         if (res.ok) {
           const data = await res.json();
           setUpcomingMode(data.upcoming_mode);

@@ -13,6 +13,9 @@ import UpcomingCheck from "@/components/UpcomingCheck";
 import { getSiteSetting } from "@/lib/db";
 import SmoothScroll from "@/components/SmoothScroll";
 
+export const revalidate = 0;
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
   const personalization = await getSiteSetting('personalization_settings', {});
   return {
