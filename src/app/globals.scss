@@ -154,7 +154,23 @@ html[data-theme="green"] {
 @font-face {
   font-family: 'HDesign';
   src: url('/HDesign.ttf') format('truetype');
+  font-weight: 100 1000;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'HDesign';
+  src: url('/HDesign.ttf') format('truetype');
   font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'HDesign';
+  src: url('/HDesign.ttf') format('truetype');
+  font-weight: bold;
   font-style: normal;
   font-display: swap;
 }
@@ -172,9 +188,9 @@ body {
   font-size: 17px;
 }
 
-body, input, button, select, textarea,
+body, h1, h2, h3, h4, h5, h6, input, button, select, textarea,
 hd-input, hd-textarea, hd-button, hd-select {
-  font-family: 'HDesign', Arial, Helvetica, sans-serif;
+  font-family: 'HDesign', Arial, Helvetica, sans-serif !important;
 }
 
 body {
