@@ -87,10 +87,10 @@ export async function POST(request: Request) {
       await updateEnvFile(body.supabase_url, body.supabase_key);
     }
 
-    const success = await saveSiteSetting('api_settings', body);
+    const result = await saveSiteSetting('api_settings', body);
 
-    if (!success) {
-      return NextResponse.json({ error: 'Failed to save API settings.' }, { status: 500 });
+    if (!result.success) {
+      return NextResponse.json({ error: result.error || 'Failed to save API settings.' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });

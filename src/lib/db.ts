@@ -291,13 +291,15 @@ export async function getMessages(): Promise<Message[]> {
   return [];
 }
 
-export async function saveMessage(m: Message): Promise<Message | null> {
+export async function saveMessage(m: Message): Promise<{ success: boolean; data?: Message; error?: string }> {
   await ensureLocalDbFiles();
   const newMessage = {
     id: m.id || Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
     ...m,
     created_at: m.created_at || new Date().toISOString()
   };
+
+  let supabaseErrorMsg = '';
 
   const adminClient = supabaseAdmin || supabase;
   if (adminClient) {
@@ -308,8 +310,13 @@ export async function saveMessage(m: Message): Promise<Message | null> {
         .select()
         .single();
       
-      if (!error && data) return data;
-    } catch (err) {
+      if (!error && data) return { success: true, data };
+      if (error) {
+        supabaseErrorMsg = error.message;
+        console.warn('Supabase saveMessage query error:', error.message);
+      }
+    } catch (err: any) {
+      supabaseErrorMsg = err.message || String(err);
       console.warn('Supabase saveMessage failed, using local storage:', err);
     }
   }
@@ -322,13 +329,14 @@ export async function saveMessage(m: Message): Promise<Message | null> {
       const messages = JSON.parse(content) as Message[];
       messages.unshift(newMessage);
       await fs.writeFile(MESSAGES_FILE, JSON.stringify(messages, null, 2), 'utf-8');
-      return newMessage;
-    } catch (err) {
+      return { success: true, data: newMessage };
+    } catch (err: any) {
       console.error('Error saving message locally:', err);
+      return { success: false, error: `Supabase error: ${supabaseErrorMsg}. Local storage fallback error: ${err.message}` };
     }
   }
 
-  return null;
+  return { success: false, error: supabaseErrorMsg || 'No server/database connection' };
 }
 
 export async function deleteMessage(id: string): Promise<boolean> {
@@ -541,8 +549,10 @@ export async function getSiteSetting(key: string, defaultValue: any = null): Pro
   return defaultValue;
 }
 
-export async function saveSiteSetting(key: string, value: any): Promise<boolean> {
+export async function saveSiteSetting(key: string, value: any): Promise<{ success: boolean; error?: string }> {
   await ensureLocalDbFiles();
+
+  let supabaseErrorMsg = '';
 
   const adminClient = supabaseAdmin || supabase;
   if (adminClient) {
@@ -555,9 +565,11 @@ export async function saveSiteSetting(key: string, value: any): Promise<boolean>
           updated_at: new Date().toISOString()
         }, { onConflict: 'key' });
       
-      if (!error) return true;
+      if (!error) return { success: true };
+      supabaseErrorMsg = error.message;
       console.warn(`Supabase saveSiteSetting for ${key} upsert error:`, error.message);
-    } catch (err) {
+    } catch (err: any) {
+      supabaseErrorMsg = err.message || String(err);
       console.warn(`Supabase saveSiteSetting for ${key} failed, using local storage:`, err);
     }
   }
@@ -570,11 +582,12 @@ export async function saveSiteSetting(key: string, value: any): Promise<boolean>
       const settings = JSON.parse(content);
       settings[key] = value;
       await fs.writeFile(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
-      return true;
-    } catch (err) {
+      return { success: true };
+    } catch (err: any) {
       console.error(`Error writing setting key ${key} locally:`, err);
+      return { success: false, error: `Supabase error: ${supabaseErrorMsg}. Local storage fallback error: ${err.message}` };
     }
   }
 
-  return false;
+  return { success: false, error: supabaseErrorMsg || 'No server/database connection' };
 }

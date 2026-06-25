@@ -101,10 +101,10 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const success = await saveSiteSetting('personalization_settings', body);
+    const result = await saveSiteSetting('personalization_settings', body);
 
-    if (!success) {
-      return NextResponse.json({ error: 'Failed to save personalization settings.' }, { status: 500 });
+    if (!result.success) {
+      return NextResponse.json({ error: result.error || 'Failed to save personalization settings.' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });

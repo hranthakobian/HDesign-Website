@@ -74,10 +74,10 @@ export async function POST(request: Request) {
     }
 
     // 4. Save to database/fallback
-    const success = await saveSiteSetting('general_settings', updatedSettings);
-    if (!success) {
+    const result = await saveSiteSetting('general_settings', updatedSettings);
+    if (!result.success) {
       return NextResponse.json(
-        { error: 'Failed to save general settings.' },
+        { error: result.error || 'Failed to save general settings.' },
         { status: 500 }
       );
     }

@@ -38,15 +38,15 @@ export async function POST(request: Request) {
       );
     }
 
-    const saved = await saveMessage({ name, email, message });
-    if (!saved) {
+    const result = await saveMessage({ name, email, message });
+    if (!result.success) {
       return NextResponse.json(
-        { error: 'Could not save message due to database error.' },
+        { error: result.error || 'Could not save message due to database error.' },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({ success: true, message: saved });
+    return NextResponse.json({ success: true, message: result.data });
   } catch (error: any) {
     return NextResponse.json(
       { error: error.message || 'Unknown server error.' },
