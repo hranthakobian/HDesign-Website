@@ -264,9 +264,10 @@ export type Message = {
 export async function getMessages(): Promise<Message[]> {
   await ensureLocalDbFiles();
 
-  if (supabase) {
+  const readClient = supabaseAdmin || supabase;
+  if (readClient) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await readClient
         .from('messages')
         .select('*')
         .order('created_at', { ascending: false });
@@ -484,9 +485,10 @@ export async function updateVisitHeartbeat(sessionId: string): Promise<boolean> 
 export async function getVisits(): Promise<VisitSession[]> {
   await ensureLocalDbFiles();
 
-  if (supabase) {
+  const readClient = supabaseAdmin || supabase;
+  if (readClient) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await readClient
         .from('site_visits')
         .select('*')
         .order('created_at', { ascending: false });
@@ -518,9 +520,10 @@ export async function getVisits(): Promise<VisitSession[]> {
 export async function getSiteSetting(key: string, defaultValue: any = null): Promise<any> {
   await ensureLocalDbFiles();
 
-  if (supabase) {
+  const readClient = supabaseAdmin || supabase;
+  if (readClient) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await readClient
         .from('site_settings')
         .select('value')
         .eq('key', key)
@@ -528,6 +531,9 @@ export async function getSiteSetting(key: string, defaultValue: any = null): Pro
       
       if (!error && data) {
         return data.value;
+      }
+      if (error) {
+        console.warn(`Supabase getSiteSetting for ${key} failed: ${error.message}. Using local fallback.`);
       }
     } catch (err) {
       console.warn(`Supabase getSiteSetting for ${key} failed, using local fallback:`, err);
