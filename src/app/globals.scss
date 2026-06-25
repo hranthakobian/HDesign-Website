@@ -151,6 +151,14 @@ html[data-theme="green"] {
   box-sizing: border-box;
 }
 
+@font-face {
+  font-family: 'HDesign';
+  src: url('/HDesign.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Scale HDesign web components globally to match increased base font size */
 :root {
   --wrapper-height: 66px;
@@ -164,12 +172,16 @@ body {
   font-size: 17px;
 }
 
+body, input, button, select, textarea,
+hd-input, hd-textarea, hd-button, hd-select {
+  font-family: 'HDesign', Arial, Helvetica, sans-serif;
+}
+
 body {
   display: block !important;
   height: auto !important;
   min-height: 100vh !important;
   color: var(--text);
-  font-family: Arial, Helvetica, sans-serif;
   background: var(--bg) !important;
 }
 
@@ -277,7 +289,7 @@ body {
 .poster-text {
   margin: 0;
   text-align: center;
-  font-family: "Arial Narrow", Arial, Helvetica, sans-serif;
+  font-family: 'HDesign', "Arial Narrow", Arial, Helvetica, sans-serif;
   font-weight: 300;
   letter-spacing: 0.01em;
 }

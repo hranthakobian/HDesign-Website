@@ -89,13 +89,13 @@ export default function HDesignGeneralPage() {
             <div style={{ background: "var(--panel)", border: "1px solid var(--panel-border)", borderRadius: "20px", padding: "32px", boxShadow: "var(--shadow)" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                 <div>
-                  <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>ՀԻՄՆԱԿԱՆ ՎԵՐՆԱԳՐԵՐ</span>
-                  <div style={{ fontSize: "2rem", fontWeight: "900", fontFamily: "Outfit, Inter, sans-serif" }}>Outfit (900, Extra Bold)</div>
+                  <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>ՀԻՄՆԱԿԱՆ ՏԱՌԱՏԵՍԱԿ (BRAND FONT)</span>
+                  <div style={{ fontSize: "2rem", fontWeight: "900", fontFamily: "HDesign, sans-serif" }}>HDesign (Custom TTF Font)</div>
                 </div>
                 <hr style={{ border: "none", borderTop: "1px solid var(--panel-border)", margin: "8px 0" }} />
                 <div>
-                  <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>ՏԵՔՍՏԵՐ ԵՒ ՊԻՏԱԿՆԵՐ</span>
-                  <div style={{ fontSize: "1.2rem", fontWeight: "400", fontFamily: "Inter, sans-serif" }}>Inter (400 - Regular, 600 - Semi Bold)</div>
+                  <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>ՏԵՔՍՏԵՐ ԵՒ ՊԻՏԱԿՆԵՐ (FALLBACK)</span>
+                  <div style={{ fontSize: "1.2rem", fontWeight: "400", fontFamily: "HDesign, sans-serif" }}>HDesign, Arial, sans-serif</div>
                 </div>
               </div>
             </div>

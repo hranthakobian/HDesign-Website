@@ -44,7 +44,7 @@ export default function UpcomingCheck({ initialUpcomingMode, children }: Upcomin
         zIndex: 99999,
         background: '#ffffff',
         color: '#1a1a1a',
-        fontFamily: '"Outfit", "Inter", sans-serif',
+        fontFamily: '"HDesign", "Outfit", "Inter", sans-serif',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

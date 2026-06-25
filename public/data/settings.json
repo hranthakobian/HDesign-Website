@@ -37,6 +37,6 @@
   },
   "general_settings": {
     "admin_passcode": "admin123",
-    "upcoming_mode": true
+    "upcoming_mode": false
   }
 }
