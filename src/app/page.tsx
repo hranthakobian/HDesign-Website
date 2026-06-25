@@ -238,23 +238,6 @@ export default function Home() {
   // Dynamic cases and details modal states
   const [casesList, setCasesList] = useState<any[]>([]);
   const [selectedCase, setSelectedCase] = useState<any | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Lock body scroll when any modal is open
-  useEffect(() => {
-    if (selectedCase || selectedIconDetail) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [selectedCase, selectedIconDetail]);
 
 
   // Icon explorer states
@@ -322,6 +305,18 @@ export default function Home() {
     loadCases();
   }, []);
 
+  // Lock body scroll when icon detail modal is open
+  useEffect(() => {
+    const htmlEl = document.documentElement;
+    if (selectedIconDetail) {
+      htmlEl.classList.add("modal-open");
+    } else {
+      htmlEl.classList.remove("modal-open");
+    }
+    return () => {
+      htmlEl.classList.remove("modal-open");
+    };
+  }, [selectedIconDetail]);
 
   // Filter cases that have a preview image for marquee display
   const marqueeItems = casesList.filter(c => c.image_url);
@@ -686,7 +681,7 @@ export default function Home() {
       </main>
 
       {/* Case Details Glassmorphic Modal */}
-        {mounted && selectedCase && createPortal(
+        {selectedCase && (
           <div 
             className="case-modal-overlay" 
             onClick={() => setSelectedCase(null)}
@@ -815,12 +810,11 @@ export default function Home() {
                 </div>
               </div>
             </div>
-          </div>,
-          document.body
+          </div>
         )}
 
         {/* Icon Details Modal (White Panel with api.hakobian.am CDN guide) */}
-        {mounted && selectedIconDetail && createPortal(
+        {selectedIconDetail && typeof document !== "undefined" && createPortal(
           <div 
             className="icon-modal-overlay" 
             onClick={() => setSelectedIconDetail(null)}
@@ -1099,9 +1093,8 @@ export default function Home() {
               </div>
 
             </div>
-          </div>,
-          document.body
-        )}
+          </div>
+        , document.body)}
 
       </>
     );
