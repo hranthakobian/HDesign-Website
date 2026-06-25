@@ -71,7 +71,7 @@ export default function UpcomingCheck({ initialUpcomingMode, initialSettings, ch
         zIndex: 99999,
         background: '#ffffff',
         color: '#1a1a1a',
-        fontFamily: '"HDesign", "Outfit", "Inter", sans-serif',
+        fontFamily: '"Calibri", "HDesign", "Outfit", "Inter", sans-serif',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -192,15 +192,18 @@ export default function UpcomingCheck({ initialUpcomingMode, initialSettings, ch
         }}>
           {/* HDesign Logo */}
           <div style={{
-            color: '#083f39',
             marginBottom: '8px'
           }}>
-            <svg width="52" height="52" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ filter: 'drop-shadow(0 6px 16px rgba(8, 63, 57, 0.12))' }}>
-              <rect x="20" y="35" width="12" height="35" rx="6" fill="currentColor" />
-              <rect x="44" y="20" width="12" height="38" rx="6" fill="currentColor" />
-              <rect x="68" y="44" width="12" height="35" rx="6" fill="currentColor" />
-              <rect x="92" y="26" width="12" height="35" rx="6" fill="currentColor" />
-            </svg>
+            <img 
+              src="/logo.png" 
+              alt="HDesign Logo" 
+              style={{ 
+                width: '52px', 
+                height: '52px', 
+                objectFit: 'contain', 
+                filter: 'drop-shadow(0 6px 16px rgba(8, 63, 57, 0.12))' 
+              }} 
+            />
           </div>
 
           <div>
@@ -250,26 +253,80 @@ export default function UpcomingCheck({ initialUpcomingMode, initialSettings, ch
             </div>
           </div>
 
-          {/* Language toggle buttons */}
-          <div style={{
-            display: 'flex',
-            gap: '8px',
-            marginTop: '16px'
-          }}>
+          {/* Language toggle switcher */}
+          <div 
+            onClick={() => setLocale(locale === 'hy' ? 'en' : 'hy')}
+            style={{
+              position: 'relative',
+              width: '100px',
+              height: '36px',
+              background: 'rgba(8, 63, 57, 0.05)',
+              border: '1px solid rgba(8, 63, 57, 0.12)',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              userSelect: 'none',
+              padding: 0,
+              overflow: 'hidden',
+              marginTop: '16px',
+              transition: 'border-color 0.25s ease, background-color 0.25s ease, transform 0.15s ease'
+            }}
+            title={locale === 'hy' ? 'Switch to English' : 'Փոխել հայերենի'}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(8, 63, 57, 0.25)';
+              e.currentTarget.style.background = 'rgba(8, 63, 57, 0.08)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(8, 63, 57, 0.12)';
+              e.currentTarget.style.background = 'rgba(8, 63, 57, 0.05)';
+            }}
+          >
             <div 
-              onClick={() => setLocale('hy')} 
-              className={`upcoming-lang-btn ${locale === 'hy' ? 'active' : ''}`}
-              style={{ cursor: 'pointer' }}
+              style={{
+                position: 'absolute',
+                top: '3px',
+                left: '3px',
+                width: '46px',
+                height: '28px',
+                background: '#083f39',
+                borderRadius: '16px',
+                transition: 'transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                zIndex: 1,
+                transform: locale === 'en' ? 'translateX(46px)' : 'translateX(0px)',
+                boxShadow: '0 2px 8px rgba(8, 63, 57, 0.2)'
+              }}
+            />
+            <span 
+              style={{
+                fontSize: '0.76rem',
+                fontWeight: 750,
+                zIndex: 2,
+                transition: 'color 0.25s ease, transform 0.25s ease',
+                width: '50%',
+                textAlign: 'center',
+                letterSpacing: '0.5px',
+                color: locale === 'hy' ? '#ffffff' : 'rgba(8, 63, 57, 0.5)',
+                transform: locale === 'hy' ? 'scale(1.05)' : 'scale(1)'
+              }}
             >
-              Հայերեն
-            </div>
-            <div 
-              onClick={() => setLocale('en')} 
-              className={`upcoming-lang-btn ${locale === 'en' ? 'active' : ''}`}
-              style={{ cursor: 'pointer' }}
+              Հայ
+            </span>
+            <span 
+              style={{
+                fontSize: '0.76rem',
+                fontWeight: 750,
+                zIndex: 2,
+                transition: 'color 0.25s ease, transform 0.25s ease',
+                width: '50%',
+                textAlign: 'center',
+                letterSpacing: '0.5px',
+                color: locale === 'en' ? '#ffffff' : 'rgba(8, 63, 57, 0.5)',
+                transform: locale === 'en' ? 'scale(1.05)' : 'scale(1)'
+              }}
             >
-              English
-            </div>
+              Eng
+            </span>
           </div>
         </div>
       </div>
