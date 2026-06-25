@@ -1,16 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import SectionBackground from "@/components/SectionBackground";
 
 export default function AboutPage() {
   return (
     <main className="shell" style={{ marginTop: "140px", minHeight: "80vh", position: "relative" }}>
       {/* About Box Section */}
       <div 
-        className="about-section-fullwidth" 
+        className="about-section-shell-width" 
         style={{ 
-          background: "transparent", 
+          background: "var(--panel)", 
           borderRadius: "24px", 
           overflow: "hidden", 
           position: "relative",
@@ -19,7 +18,6 @@ export default function AboutPage() {
           boxShadow: "var(--shadow)"
         }}
       >
-        <SectionBackground color="var(--panel)" className="about-svg-bg" type="about" />
 
         {/* Floating background graphic lines */}
         <div className="about-vertical-lines top-left" style={{ opacity: 0.35 }}>

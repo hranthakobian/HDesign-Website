@@ -22,7 +22,6 @@ export default function Header() {
 
   // Portfolio Page Header States
   const [isScrolled, setIsScrolled] = useState(false);
-  const [activeSection, setActiveSection] = useState("home");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Close mobile menu on pathname change
@@ -68,23 +67,6 @@ export default function Header() {
     const handleScroll = () => {
       const sy = window.scrollY;
       setIsScrolled(sy > 50);
-
-      if (pathname !== "/") return;
-
-      // Active section detection (homepage only)
-      const sections = ["home", "about", "works", "playground", "contact"];
-      const scrollPos = sy + 250;
-      for (const section of sections) {
-        const el = document.getElementById(section);
-        if (el) {
-          const top = el.offsetTop;
-          const height = el.offsetHeight;
-          if (scrollPos >= top && scrollPos < top + height) {
-            setActiveSection(section);
-            break;
-          }
-        }
-      }
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -142,7 +124,7 @@ export default function Header() {
     if (pathname.startsWith("/works")) return "works";
     if (pathname === "/contact") return "contact";
     if (pathname.startsWith("/hdesign")) return "hdesign";
-    if (pathname === "/") return activeSection;
+    if (pathname === "/") return "home";
     return "";
   };
   const activeNav = getActiveNav();

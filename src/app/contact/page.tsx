@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import SectionBackground from "@/components/SectionBackground";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -31,9 +30,9 @@ export default function ContactPage() {
     <main className="shell" style={{ marginTop: "140px", minHeight: "80vh", position: "relative" }}>
       {/* Dynamic Background Pattern */}
       <div 
-        className="about-section-fullwidth" 
+        className="about-section-shell-width" 
         style={{ 
-          background: "transparent", 
+          background: "var(--panel)", 
           borderRadius: "24px", 
           overflow: "hidden", 
           position: "relative",
@@ -42,7 +41,6 @@ export default function ContactPage() {
           boxShadow: "var(--shadow)"
         }}
       >
-        <SectionBackground color="var(--panel)" className="about-svg-bg" type="about" />
 
         <div style={{ position: "relative", zIndex: 10, display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "48px" }} className="contact-grid">
           

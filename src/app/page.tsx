@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 
@@ -233,24 +234,35 @@ const SectionBackground = ({ color, className, type }: { color: string; classNam
 
 export default function Home() {
   const { t } = useI18n();
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [activeSection, setActiveSection] = useState("home");
   
   // Dynamic cases and details modal states
   const [casesList, setCasesList] = useState<any[]>([]);
   const [selectedCase, setSelectedCase] = useState<any | null>(null);
+  const [mounted, setMounted] = useState(false);
 
-  // Contact form states
-  const [contactName, setContactName] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
-  const [contactMessage, setContactMessage] = useState("");
-  const [contactStatus, setContactStatus] = useState<{ type: "success" | "error" | null; text: string }>({ type: null, text: "" });
-  const [submittingContact, setSubmittingContact] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Lock body scroll when any modal is open
+  useEffect(() => {
+    if (selectedCase || selectedIconDetail) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [selectedCase, selectedIconDetail]);
+
 
   // Icon explorer states
   const [iconSearch, setIconSearch] = useState("");
   const [showAllIcons, setShowAllIcons] = useState(false);
   const [copiedIcon, setCopiedIcon] = useState<string | null>(null);
+  const [selectedIconDetail, setSelectedIconDetail] = useState<string | null>(null);
+  const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
 
   // Gallery states
   const [showAllGallery, setShowAllGallery] = useState(false);
@@ -260,11 +272,6 @@ export default function Home() {
   const [playgroundThickness, setPlaygroundThickness] = useState(3);
   const [playgroundHue, setPlaygroundHue] = useState(180);
 
-  // Parallax layers refs
-  const layer1Ref = useRef<HTMLDivElement>(null);
-  const layer2Ref = useRef<HTMLDivElement>(null);
-  const layer3Ref = useRef<HTMLDivElement>(null);
-  const layer4Ref = useRef<HTMLDivElement>(null);
 
   // Helper to retrieve custom SVG for hardcoded seed cases
   const getSvgForCase = (caseId: string) => {
@@ -315,86 +322,21 @@ export default function Home() {
     loadCases();
   }, []);
 
-  const handleContactSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!contactName || !contactEmail || !contactMessage) {
-      setContactStatus({ type: "error", text: t('contact', 'error_fields', 'Խնդրում ենք լրացնել բոլոր դաշտերը:') });
-      return;
-    }
-    
-    setSubmittingContact(true);
-    setContactStatus({ type: null, text: "" });
-
-    try {
-      const res = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: contactName,
-          email: contactEmail,
-          message: contactMessage
-        })
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        setContactStatus({ type: "success", text: t('contact', 'success_msg', 'Շնորհակալություն! Ձեր հաղորդագրությունը հաջողությամբ ուղարկվեց:') });
-        setContactName("");
-        setContactEmail("");
-        setContactMessage("");
-      } else {
-        setContactStatus({ type: "error", text: data.error || "Error occurred" });
-      }
-    } catch (err) {
-      setContactStatus({ type: "error", text: t('contact', 'error_conn', 'Կապի սխալ. Խնդրում ենք փորձել կրկին:') });
-    } finally {
-      setSubmittingContact(false);
-    }
-  };
 
   // Filter cases that have a preview image for marquee display
   const marqueeItems = casesList.filter(c => c.image_url);
-
-  // Parallax scrolling calculation
-  useEffect(() => {
-    const handleScroll = () => {
-      const sy = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
-      
-      // Update header sticky state
-      setIsScrolled(sy > 50);
-
-      // Parallax effect calculations (positive values translate stripes downward to resist scroll)
-      if (layer1Ref.current) layer1Ref.current.style.transform = `translateY(${sy * 1.2}px)`;
-      if (layer2Ref.current) layer2Ref.current.style.transform = `translateY(${sy * 1}px)`;
-      if (layer3Ref.current) layer3Ref.current.style.transform = `translateY(${sy * 0.9}px)`;
-      if (layer4Ref.current) layer4Ref.current.style.transform = `translateY(${sy * 0.5}px)`;
-
-      // Active section detection
-      const sections = ["home", "about", "works", "playground", "contact"];
-      const scrollPos = sy + 250;
-      for (const section of sections) {
-        const el = document.getElementById(section);
-        if (el) {
-          const top = el.offsetTop;
-          const height = el.offsetHeight;
-          if (scrollPos >= top && scrollPos < top + height) {
-            setActiveSection(section);
-            break;
-          }
-        }
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    // Run once at load
-    handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   const handleCopyIcon = (className: string) => {
     navigator.clipboard.writeText(className).then(() => {
       setCopiedIcon(className);
       setTimeout(() => setCopiedIcon(null), 1500);
+    });
+  };
+
+  const handleCopySnippet = (text: string, type: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedSnippet(type);
+      setTimeout(() => setCopiedSnippet(null), 1500);
     });
   };
 
@@ -404,100 +346,11 @@ export default function Home() {
 
   const visibleIcons = showAllIcons ? filteredIcons : filteredIcons.slice(0, 39); // Default show all or slice if very long
 
-  // Helper function to render active navigation item styling
-  const renderNavLinkText = (id: string, text: string) => {
-    const active = activeSection === id;
-    return (
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-        {/* Left double lines */}
-        <div style={{ display: "flex", gap: "2px", opacity: active ? 1 : 0, transition: "opacity 0.25s ease", width: "8px" }}>
-          <span style={{ width: "2px", height: "18px", background: "var(--primary-color)", borderRadius: "99px" }} />
-          <span style={{ width: "2px", height: "12px", background: "var(--primary-color)", borderRadius: "99px", alignSelf: "center" }} />
-        </div>
-        <span>{text}</span>
-        {/* Right double lines */}
-        <div style={{ display: "flex", gap: "2px", opacity: active ? 1 : 0, transition: "opacity 0.25s ease", width: "8px" }}>
-          <span style={{ width: "2px", height: "12px", background: "var(--primary-color)", borderRadius: "99px", alignSelf: "center" }} />
-          <span style={{ width: "2px", height: "18px", background: "var(--primary-color)", borderRadius: "99px" }} />
-        </div>
-      </div>
-    );
-  };
-
   return (
-    <main style={{ zIndex: '-1000' }}>
+    <>
+      <main style={{ position: "relative", zIndex: 0, overflow: "hidden" }}>
       
-      {/* 4-Layer Dynamic Parallax Background with Abundant Vertical Stripes */}
-      <div className="parallax-bg">
-        {/* Layer 1: Slowest Scroll / Greatest Lag (translateY multiplier +0.38) */}
-        <div ref={layer1Ref} className="parallax-layer">
-          {/* Thick Stripes */}
-          <div className="parallax-stripe pastel-green" style={{ width: "60px", height: "800px", top: "500px", left: "3%" }} />
-          <div className="parallax-stripe pastel-purple" style={{ width: "45px", height: "600px", top: "950px", left: "12%" }} />
-          <div className="parallax-stripe pastel-teal" style={{ width: "80px", height: "900px", top: "1750px", left: "8%" }} />
-          <div className="parallax-stripe pastel-beige" style={{ width: "50px", height: "750px", top: "2850px", left: "15%" }} />
-          <div className="parallax-stripe pastel-pink" style={{ width: "70px", height: "700px", top: "400px", right: "4%" }} />
-          <div className="parallax-stripe pastel-blue" style={{ width: "50px", height: "650px", top: "1200px", right: "14%" }} />
-          <div className="parallax-stripe pastel-purple" style={{ width: "85px", height: "900px", top: "2100px", right: "7%" }} />
-          <div className="parallax-stripe pastel-green" style={{ width: "55px", height: "800px", top: "3100px", right: "12%" }} />
-          <div className="parallax-stripe pastel-teal" style={{ width: "75px", height: "850px", top: "3900px", left: "6%" }} />
-          <div className="parallax-stripe pastel-beige" style={{ width: "60px", height: "700px", top: "4400px", right: "8%" }} />
-          {/* Extra Top-Section Stripes (Layer 1) */}
-          <div className="parallax-stripe pastel-pink" style={{ width: "35px", height: "600px", top: "-60px", left: "19%" }} />
-          <div className="parallax-stripe pastel-blue" style={{ width: "50px", height: "700px", top: "-30px", left: "36%" }} />
-        </div>
 
-        {/* Layer 2: Medium-Slow Scroll / Medium-High Lag (translateY multiplier +0.26) */}
-        <div ref={layer2Ref} className="parallax-layer">
-          {/* Thick Stripes */}
-          <div className="parallax-stripe pastel-purple" style={{ width: "50px", height: "700px", top: "300px", left: "22%" }} />
-          <div className="parallax-stripe pastel-beige" style={{ width: "75px", height: "800px", top: "1100px", left: "28%" }} />
-          <div className="parallax-stripe pastel-pink" style={{ width: "60px", height: "650px", top: "2000px", left: "20%" }} />
-          <div className="parallax-stripe pastel-green" style={{ width: "70px", height: "750px", top: "2900px", left: "26%" }} />
-          <div className="parallax-stripe pastel-blue" style={{ width: "65px", height: "600px", top: "200px", right: "24%" }} />
-          <div className="parallax-stripe pastel-teal" style={{ width: "55px", height: "700px", top: "900px", right: "18%" }} />
-          <div className="parallax-stripe pastel-purple" style={{ width: "80px", height: "850px", top: "1800px", right: "22%" }} />
-          <div className="parallax-stripe pastel-beige" style={{ width: "45px", height: "650px", top: "2750px", right: "26%" }} />
-          <div className="parallax-stripe pastel-pink" style={{ width: "70px", height: "750px", top: "3700px", right: "20%" }} />
-          <div className="parallax-stripe pastel-blue" style={{ width: "55px", height: "650px", top: "4300px", left: "25%" }} />
-          {/* Extra Top-Section Stripes (Layer 2) */}
-          <div className="parallax-stripe pastel-teal" style={{ width: "42px", height: "580px", top: "-70px", left: "6%" }} />
-          <div className="parallax-stripe pastel-beige" style={{ width: "34px", height: "490px", top: "-55px", left: "80%" }} />
-        </div>
-
-        {/* Layer 3: Medium-Fast Scroll / Medium-Low Lag (translateY multiplier +0.14) */}
-        <div ref={layer3Ref} className="parallax-layer">
-          {/* Thick Stripes */}
-          <div className="parallax-stripe pastel-teal" style={{ width: "40px", height: "500px", top: "100px", left: "45%" }} />
-          <div className="parallax-stripe pastel-blue" style={{ width: "55px", height: "650px", top: "850px", left: "48%" }} />
-          <div className="parallax-stripe pastel-pink" style={{ width: "60px", height: "600px", top: "1600px", left: "42%" }} />
-          <div className="parallax-stripe pastel-purple" style={{ width: "75px", height: "800px", top: "2400px", left: "46%" }} />
-          <div className="parallax-stripe pastel-green" style={{ width: "50px", height: "700px", top: "3200px", left: "52%" }} />
-          <div className="parallax-stripe pastel-beige" style={{ width: "65px", height: "550px", top: "500px", right: "45%" }} />
-          <div className="parallax-stripe pastel-teal" style={{ width: "50px", height: "650px", top: "1300px", right: "48%" }} />
-          <div className="parallax-stripe pastel-blue" style={{ width: "70px", height: "700px", top: "2100px", right: "42%" }} />
-          <div className="parallax-stripe pastel-pink" style={{ width: "55px", height: "600px", top: "2900px", right: "46%" }} />
-          <div className="parallax-stripe pastel-purple" style={{ width: "65px", height: "800px", top: "3800px", left: "45%" }} />
-          <div className="parallax-stripe pastel-green" style={{ width: "50px", height: "700px", top: "4500px", right: "43%" }} />
-          {/* Extra Top-Section Stripes (Layer 3) */}
-          <div className="parallax-stripe pastel-green" style={{ width: "38px", height: "560px", top: "-80px", left: "1%" }} />
-          <div className="parallax-stripe pastel-teal" style={{ width: "54px", height: "670px", top: "-60px", left: "68%" }} />
-        </div>
-
-        {/* Layer 4: Fastest Scroll / Slowest Lag (translateY multiplier +0.05) */}
-        <div ref={layer4Ref} className="parallax-layer">
-          {/* Thick Stripes */}
-          <div className="parallax-stripe pastel-beige" style={{ width: "50px", height: "650px", top: "400px", left: "33%" }} />
-          <div className="parallax-stripe pastel-pink" style={{ width: "45px", height: "700px", top: "1450px", left: "35%" }} />
-          <div className="parallax-stripe pastel-teal" style={{ width: "50px", height: "600px", top: "2700px", left: "32%" }} />
-          <div className="parallax-stripe pastel-green" style={{ width: "55px", height: "700px", top: "650px", right: "32%" }} />
-          <div className="parallax-stripe pastel-purple" style={{ width: "45px", height: "650px", top: "1850px", right: "35%" }} />
-          <div className="parallax-stripe pastel-blue" style={{ width: "50px", height: "750px", top: "3300px", right: "33%" }} />
-          {/* Extra Top-Section Stripes (Layer 4) */}
-          <div className="parallax-stripe pastel-blue" style={{ width: "37px", height: "530px", top: "-30px", left: "23%" }} />
-          <div className="parallax-stripe pastel-beige" style={{ width: "47px", height: "610px", top: "-15px", right: "9%" }} />
-        </div>
-      </div>
       {/* Main Content Area */}
       <div className="shell" style={{ marginTop: "180px" }}>
         
@@ -802,14 +655,14 @@ export default function Home() {
               <div 
                 key={idx} 
                 className="icon-explorer-card"
-                onClick={() => handleCopyIcon(icon)}
-                title="Սեղմեք պատճենելու համար"
+                onClick={() => setSelectedIconDetail(icon)}
+                title="Սեղմեք՝ տեսնելու օգտագործման ձևը"
               >
                 <span className={`icon-symbol ${icon}`} />
-                <span className="icon-name">{icon.replace("icon-", "")}</span>
+                <span className="icon-name">{icon.replace("icon-", "").replace(/-/g, " ")}</span>
                 
                 <div className="icon-tooltip">
-                  {copiedIcon === icon ? "Պատճենված է!" : "Պատճենել"}
+                  Մանրամասներ
                 </div>
               </div>
             ))}
@@ -828,146 +681,12 @@ export default function Home() {
             </div>
           )}
         </section>
-
-        {/* Close shell container to let Footer go full-width */}
+        {/* Close shell container */}
         </div>
+      </main>
 
-        {/* ══ SECTION 7: FOOTER (Կապ - Full Width) ══ */}
-        <footer id="contact" className="footer-section-fullwidth" style={{ background: "transparent", borderRadius: "0", border: "none" }}>
-          {/* Dynamic SVG Background */}
-          <SectionBackground color="#6A3E73" className="footer-svg-bg" type="footer" />
-
-          <div className="footer-content-container" style={{ maxWidth: "1400px", margin: "0 auto", padding: "80px 0 40px", position: "relative", zIndex: 5, display: "flex", flexDirection: "column", gap: "40px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "60px" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
-                <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
-                    <img src="/logo.png" alt="Logo" style={{ height: "30px", objectFit: "contain" }} />
-                    <span style={{ fontSize: "1.4rem", fontWeight: "800", color: "#ffffff" }}>HDesign</span>
-                  </div>
-                  <p style={{ color: "#ffffff", opacity: 0.8, fontSize: "0.9rem", lineHeight: "1.6", margin: 0 }}>
-                    Ստեղծարար և Գործնական դիզայն լուծումներ: Յուրաքանչյուր ինտերֆեյս ստեղծված է սիրով և մաթեմատիկական ճշգրտությամբ:
-                  </p>
-                </div>
-                
-                <div>
-                  <h4 style={{ fontSize: "0.95rem", fontWeight: "bold", color: "#ffffff", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 12px" }}>Հղումներ</h4>
-                  <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-                    <a href="#home" style={{ color: "#ffffff", opacity: 0.8, textDecoration: "none", fontSize: "0.9rem" }}>Տուն</a>
-                    <a href="#about" style={{ color: "#ffffff", opacity: 0.8, textDecoration: "none", fontSize: "0.9rem" }}>Մասին</a>
-                    <a href="#works" style={{ color: "#ffffff", opacity: 0.8, textDecoration: "none", fontSize: "0.9rem" }}>Աշխատանքներ</a>
-                    <a href="#playground" style={{ color: "#ffffff", opacity: 0.8, textDecoration: "none", fontSize: "0.9rem" }}>Փաստաթղթեր</a>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 style={{ fontSize: "0.95rem", fontWeight: "bold", color: "#ffffff", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 12px" }}>Կոնտակտներ</h4>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", color: "#ffffff", opacity: 0.8, fontSize: "0.9rem" }}>
-                    <div>Էլ. հասցե՝ info@hakobian.am</div>
-                    <div>Հեռախոս՝ +374 00 000000</div>
-                    <div>Երևան, Հայաստան</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Glassmorphic Contact Form */}
-              <div style={{ 
-                background: "rgba(255, 255, 255, 0.05)", 
-                backdropFilter: "blur(20px)", 
-                border: "1px solid rgba(255, 255, 255, 0.1)", 
-                padding: "30px", 
-                borderRadius: "20px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "20px"
-              }}>
-                <h4 style={{ fontSize: "1.1rem", fontWeight: "bold", color: "#ffffff", margin: 0, textTransform: "uppercase", letterSpacing: "1px" }}>
-                  {t('contact', 'form_title', 'Հետադարձ Կապ')}
-                </h4>
-                <form onSubmit={handleContactSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                  <div>
-                    <hd-input 
-                      placeholder={t('contact', 'name_placeholder', 'Ձեր անունը...')}
-                      value={contactName}
-                      onInput={(e: any) => setContactName(e.target.value)}
-                      data-width="100%"
-                      data-height="42px"
-                      data-thickness="1px"
-                    />
-                  </div>
-                  <div>
-                    <hd-input 
-                      type="email"
-                      placeholder={t('contact', 'email_placeholder', 'Էլ. հասցե...')}
-                      value={contactEmail}
-                      onInput={(e: any) => setContactEmail(e.target.value)}
-                      data-width="100%"
-                      data-height="42px"
-                      data-thickness="1px"
-                    />
-                  </div>
-                  <div>
-                    <textarea 
-                      placeholder={t('contact', 'message_placeholder', 'Ձեր հաղորդագրությունը...')}
-                      value={contactMessage}
-                      onChange={(e) => setContactMessage(e.target.value)}
-                      style={{ 
-                        width: "100%", 
-                        minHeight: "100px", 
-                        background: "rgba(255, 255, 255, 0.04)", 
-                        border: "1px solid rgba(255, 255, 255, 0.08)", 
-                        borderRadius: "12px", 
-                        padding: "12px 16px", 
-                        color: "#fff", 
-                        fontSize: "0.9rem",
-                        fontFamily: "inherit",
-                        resize: "vertical",
-                        outline: "none",
-                        transition: "border-color 0.2s"
-                      }}
-                      onFocus={(e) => e.target.style.borderColor = "rgba(255,255,255,0.2)"}
-                      onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
-                    />
-                  </div>
-
-                  {contactStatus.text && (
-                    <div style={{ 
-                      fontSize: "0.85rem", 
-                      color: contactStatus.type === "success" ? "#81c784" : "#e57373",
-                      background: contactStatus.type === "success" ? "rgba(129, 199, 132, 0.1)" : "rgba(229, 115, 115, 0.1)",
-                      padding: "8px 12px",
-                      borderRadius: "8px",
-                      border: contactStatus.type === "success" ? "1px solid rgba(129, 199, 132, 0.2)" : "1px solid rgba(229, 115, 115, 0.2)"
-                    }}>
-                      {contactStatus.text}
-                    </div>
-                  )}
-
-                  <hd-button 
-                    type="submit"
-                    data-width="100%" 
-                    data-height="44px"
-                    data-thickness="2px"
-                    disabled={submittingContact}
-                    style={{ opacity: submittingContact ? 0.7 : 1 }}
-                  >
-                    {submittingContact ? t('contact', 'submitting_btn', 'Ուղարկվում է...') : t('contact', 'submit_btn', 'Ուղարկել')}
-                  </hd-button>
-                </form>
-              </div>
-            </div>
-
-            <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.15)", paddingTop: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", color: "#ffffff", opacity: 0.7, fontSize: "0.85rem" }}>
-              <div>© {new Date().getFullYear()} HDesign. Բոլոր իրավունքները պաշտպանված են։</div>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span>Դիզայնը՝ Հրանտ Հակոբյանի</span>
-              </div>
-            </div>
-          </div>
-        </footer>
-
-        {/* Case Details Glassmorphic Modal */}
-        {selectedCase && (
+      {/* Case Details Glassmorphic Modal */}
+        {mounted && selectedCase && createPortal(
           <div 
             className="case-modal-overlay" 
             onClick={() => setSelectedCase(null)}
@@ -1096,9 +815,294 @@ export default function Home() {
                 </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
-      </main>
+        {/* Icon Details Modal (White Panel with api.hakobian.am CDN guide) */}
+        {mounted && selectedIconDetail && createPortal(
+          <div 
+            className="icon-modal-overlay" 
+            onClick={() => setSelectedIconDetail(null)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 10001,
+              background: "rgba(0, 0, 0, 0.65)",
+              backdropFilter: "blur(20px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "20px",
+              animation: "fadeIn 0.3s ease-out"
+            }}
+          >
+            <div 
+              className="icon-modal-content" 
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                backgroundColor: "#ffffff",
+                border: "1px solid rgba(0, 0, 0, 0.1)",
+                borderRadius: "24px",
+                width: "100%",
+                maxWidth: "700px",
+                padding: "32px",
+                position: "relative",
+                display: "flex",
+                flexDirection: "column",
+                boxShadow: "0 24px 80px rgba(0, 0, 0, 0.15)",
+                color: "#1a1a1a",
+                zIndex: 10002,
+                animation: "scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards"
+              }}
+            >
+              {/* Close Button */}
+              <button 
+                onClick={() => setSelectedIconDetail(null)}
+                style={{
+                  position: "absolute",
+                  top: "20px",
+                  right: "20px",
+                  background: "rgba(0, 0, 0, 0.05)",
+                  border: "1px solid rgba(0, 0, 0, 0.08)",
+                  borderRadius: "50%",
+                  width: "36px",
+                  height: "36px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#1a1a1a",
+                  cursor: "pointer",
+                  fontSize: "1.2rem",
+                  zIndex: 100,
+                  transition: "background 0.2s, transform 0.2s"
+                }}
+                className="modal-close-btn"
+                title="Փակել"
+              >
+                &times;
+              </button>
+
+              {/* Two-Column Responsive Layout */}
+              <div style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "32px",
+                width: "100%",
+                marginBottom: "16px"
+              }}>
+                
+                {/* Left Column: Details & Snippets */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px", flex: "1 1 320px", minWidth: "0" }}>
+                  <div style={{ textAlign: "left" }}>
+                    <h3 style={{ fontSize: "1.4rem", fontWeight: "700", color: "#1a1a1a", margin: "0 0 4px 0" }}>
+                      {selectedIconDetail.replace("icon-", "").replace(/-/g, " ")}
+                    </h3>
+                    <p style={{ fontSize: "0.85rem", color: "rgba(0, 0, 0, 0.5)", margin: "0", fontFamily: "monospace" }}>
+                      Class: {selectedIconDetail}
+                    </p>
+                  </div>
+
+                  {/* Code Snippets Section */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    
+                    {/* HTML Usage */}
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                        <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "rgba(0, 0, 0, 0.6)", textTransform: "uppercase" }}>HTML</span>
+                        <button 
+                          onClick={() => handleCopySnippet(`<span class="${selectedIconDetail}"></span>`, "html")}
+                          style={{ background: "transparent", border: "none", color: copiedSnippet === "html" ? "var(--primary-color)" : "rgba(0,0,0,0.5)", fontSize: "0.75rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+                        >
+                          <span className={copiedSnippet === "html" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.85rem" }} />
+                          {copiedSnippet === "html" ? "Պատճենված է" : "Պատճենել"}
+                        </button>
+                      </div>
+                      <div style={{
+                        background: "#f5f5f7",
+                        border: "1px solid rgba(0, 0, 0, 0.06)",
+                        borderRadius: "8px",
+                        padding: "8px 12px",
+                        fontSize: "0.8rem",
+                        color: "#083f39",
+                        fontFamily: "monospace",
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-all"
+                      }}>
+                        {`<span class="${selectedIconDetail}"></span>`}
+                      </div>
+                    </div>
+
+                    {/* React / JSX Usage */}
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                        <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "rgba(0, 0, 0, 0.6)", textTransform: "uppercase" }}>React / JSX</span>
+                        <button 
+                          onClick={() => handleCopySnippet(`<span className="${selectedIconDetail}" />`, "react")}
+                          style={{ background: "transparent", border: "none", color: copiedSnippet === "react" ? "var(--primary-color)" : "rgba(0,0,0,0.5)", fontSize: "0.75rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+                        >
+                          <span className={copiedSnippet === "react" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.85rem" }} />
+                          {copiedSnippet === "react" ? "Պատճենված է" : "Պատճենել"}
+                        </button>
+                      </div>
+                      <div style={{
+                        background: "#f5f5f7",
+                        border: "1px solid rgba(0, 0, 0, 0.06)",
+                        borderRadius: "8px",
+                        padding: "8px 12px",
+                        fontSize: "0.8rem",
+                        color: "#083f39",
+                        fontFamily: "monospace",
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-all"
+                      }}>
+                        {`<span className="${selectedIconDetail}" />`}
+                      </div>
+                    </div>
+
+                    {/* CSS Class */}
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                        <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "rgba(0, 0, 0, 0.6)", textTransform: "uppercase" }}>CSS Class</span>
+                        <button 
+                          onClick={() => handleCopySnippet(selectedIconDetail, "css")}
+                          style={{ background: "transparent", border: "none", color: copiedSnippet === "css" ? "var(--primary-color)" : "rgba(0,0,0,0.5)", fontSize: "0.75rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+                        >
+                          <span className={copiedSnippet === "css" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.85rem" }} />
+                          {copiedSnippet === "css" ? "Պատճենված է" : "Պատճենել"}
+                        </button>
+                      </div>
+                      <div style={{
+                        background: "#f5f5f7",
+                        border: "1px solid rgba(0, 0, 0, 0.06)",
+                        borderRadius: "8px",
+                        padding: "8px 12px",
+                        fontSize: "0.8rem",
+                        color: "#083f39",
+                        fontFamily: "monospace",
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-all"
+                      }}>
+                        {`.${selectedIconDetail}`}
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* Right Column: Large Preview & Sizes */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", flex: "1 1 200px" }}>
+                  {/* Large Icon Preview */}
+                  <div style={{
+                    width: "180px",
+                    height: "180px",
+                    borderRadius: "24px",
+                    background: "linear-gradient(135deg, rgba(8, 63, 57, 0.05) 0%, rgba(8, 63, 57, 0.02) 100%)",
+                    border: "1px solid rgba(8, 63, 57, 0.1)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "inset 0 0 15px rgba(8, 63, 57, 0.02)"
+                  }}>
+                    <span className={selectedIconDetail} style={{ fontSize: "6.5rem", color: "var(--primary-color)" }} />
+                  </div>
+
+                  {/* 5 Sizes Showcase */}
+                  <div style={{ width: "100%", textAlign: "center" }}>
+                    <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "rgba(0, 0, 0, 0.4)", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
+                      Չափսերի Տարբերակներ (16px - 64px)
+                    </span>
+                    <div style={{
+                      display: "flex",
+                      gap: "14px",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "#f5f5f7",
+                      padding: "16px 12px",
+                      borderRadius: "16px",
+                      border: "1px solid rgba(0, 0, 0, 0.04)"
+                    }}>
+                      <span className={selectedIconDetail} style={{ fontSize: "16px", color: "var(--primary-color)" }} title="16px" />
+                      <span className={selectedIconDetail} style={{ fontSize: "24px", color: "var(--primary-color)" }} title="24px" />
+                      <span className={selectedIconDetail} style={{ fontSize: "32px", color: "var(--primary-color)" }} title="32px" />
+                      <span className={selectedIconDetail} style={{ fontSize: "48px", color: "var(--primary-color)" }} title="48px" />
+                      <span className={selectedIconDetail} style={{ fontSize: "64px", color: "var(--primary-color)" }} title="64px" />
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* api.hakobian.am CDN Integration Section */}
+              <div style={{ borderTop: "1px solid rgba(0, 0, 0, 0.08)", paddingTop: "16px", marginTop: "4px", width: "100%" }}>
+                <h4 style={{ fontSize: "0.85rem", fontWeight: "700", color: "#1a1a1a", margin: "0 0 6px 0" }}>
+                  Ինչպե՞ս միացնել Ձեր կայքին
+                </h4>
+                <p style={{ fontSize: "0.75rem", color: "rgba(0, 0, 0, 0.6)", margin: "0 0 12px 0", lineHeight: "1.4" }}>
+                  Այս պատկերակն ու դիզայնի համակարգի մյուս տարրերն օգտագործելու համար Ձեր կայքում ներառեք հետևյալ CDN հղումները.
+                </p>
+
+                {/* CSS CDN Link */}
+                <div style={{ marginBottom: "10px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                    <span style={{ fontSize: "0.7rem", fontWeight: "600", color: "rgba(0, 0, 0, 0.5)" }}>CSS Icons Font (տեղադրել &lt;head&gt;-ում)</span>
+                    <button 
+                      onClick={() => handleCopySnippet(`<link rel="stylesheet" href="https://api.hakobian.am/libs/v1/icons/style.css" />`, "libcss")}
+                      style={{ background: "transparent", border: "none", color: copiedSnippet === "libcss" ? "var(--primary-color)" : "rgba(0,0,0,0.5)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+                    >
+                      <span className={copiedSnippet === "libcss" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.8rem" }} />
+                      {copiedSnippet === "libcss" ? "Պատճենված է" : "Պատճենել"}
+                    </button>
+                  </div>
+                  <div style={{
+                    background: "#f5f5f7",
+                    border: "1px solid rgba(0, 0, 0, 0.06)",
+                    borderRadius: "6px",
+                    padding: "6px 10px",
+                    fontSize: "0.75rem",
+                    color: "#083f39",
+                    fontFamily: "monospace",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-all"
+                  }}>
+                    {`<link rel="stylesheet" href="https://api.hakobian.am/libs/v1/icons/style.css" />`}
+                  </div>
+                </div>
+
+                {/* JS CDN Link */}
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                    <span style={{ fontSize: "0.7rem", fontWeight: "600", color: "rgba(0, 0, 0, 0.5)" }}>JS Elements Script (տեղադրել &lt;body&gt;-ի վերջում)</span>
+                    <button 
+                      onClick={() => handleCopySnippet(`<script src="https://api.hakobian.am/libs/v1/script.js" defer></script>`, "libjs")}
+                      style={{ background: "transparent", border: "none", color: copiedSnippet === "libjs" ? "var(--primary-color)" : "rgba(0,0,0,0.5)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
+                    >
+                      <span className={copiedSnippet === "libjs" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.8rem" }} />
+                      {copiedSnippet === "libjs" ? "Պատճենված է" : "Պատճենել"}
+                    </button>
+                  </div>
+                  <div style={{
+                    background: "#f5f5f7",
+                    border: "1px solid rgba(0, 0, 0, 0.06)",
+                    borderRadius: "6px",
+                    padding: "6px 10px",
+                    fontSize: "0.75rem",
+                    color: "#083f39",
+                    fontFamily: "monospace",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-all"
+                  }}>
+                    {`<script src="https://api.hakobian.am/libs/v1/script.js" defer></script>`}
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          </div>,
+          document.body
+        )}
+
+      </>
     );
 }

@@ -30,7 +30,6 @@ export default function PageTransition({ children }: { children: ReactNode }) {
 
   return (
     <div className={`page-transition-wrapper ${isPending ? "page-leave" : "page-enter"}`}>
-      <div className={`loading-bar ${isPending ? "loading" : ""}`} />
       {displayChildren}
     </div>
   );

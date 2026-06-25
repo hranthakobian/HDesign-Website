@@ -199,6 +199,7 @@ body {
   min-height: 100vh !important;
   color: var(--text);
   background: var(--bg) !important;
+  position: relative;
 }
 
 .shell {
@@ -606,37 +607,18 @@ hd-slider,
   display: block !important;
 }
 
-/* Page Transition & Loading Bar Styles */
+/* Page Transition Styles (Horizontal Slide) */
 .page-transition-wrapper {
-  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1), transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   width: 100%;
 }
 .page-transition-wrapper.page-enter {
   opacity: 1;
-  // transform: translateY(0);
+  transform: translateX(0);
 }
 .page-transition-wrapper.page-leave {
   opacity: 0;
-  transform: translateY(6px);
-}
-
-.loading-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 3px;
-  background: var(--primary-color, #ffffff);
-  z-index: 9999;
-  width: 0;
-  opacity: 0;
-  transition: width 0.3s ease, opacity 0.2s ease;
-  box-shadow: 0 0 8px var(--primary-color, #ffffff);
-}
-
-.loading-bar.loading {
-  width: 90%;
-  opacity: 1;
-  transition: width 0.8s cubic-bezier(0.1, 0.8, 0.3, 1);
+  transform: translateX(-16px);
 }
 
 /* Premium Smooth Expand/Collapse Transition */
@@ -668,12 +650,9 @@ hd-slider,
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: -100;
+  z-index: -1;
   overflow: hidden;
   pointer-events: none;
-  background: var(--bg);
-  mask-image: linear-gradient(to bottom, black 55%, transparent 85%);
-  -webkit-mask-image: linear-gradient(to bottom, black 55%, transparent 85%);
 }
 
 .parallax-layer {
@@ -1052,6 +1031,16 @@ html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header {
   overflow: visible; /* Let vertical lines overflow */
 }
 
+/* About Section constrained to shell width but allowing vertical lines overflow */
+.about-section-shell-width {
+  width: 100%;
+  position: relative;
+  background: transparent; /* Background handled by SVG */
+  margin-top: 40px;
+  margin-bottom: 40px;
+  overflow: visible; /* Let vertical lines overflow */
+}
+
 /* Dynamic SVG Background container */
 .about-svg-bg {
   position: absolute;
@@ -1153,6 +1142,7 @@ html[data-theme="dark"] .gallery-card .gallery-overlay {
   padding: 32px;
   box-shadow: var(--shadow);
   border: 1px solid var(--panel-border);
+  backdrop-filter: blur(20px);
 }
 
 @media (max-width: 800px) {

@@ -1,16 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import SectionBackground from "@/components/SectionBackground";
 
 export default function HDesignGeneralPage() {
   return (
     <main className="shell" style={{ marginTop: "140px", minHeight: "80vh" }}>
       {/* Hero header */}
       <div 
-        className="about-section-fullwidth" 
+        className="about-section-shell-width" 
         style={{ 
-          background: "transparent", 
+          background: "var(--panel)", 
           borderRadius: "24px", 
           overflow: "hidden", 
           position: "relative",
@@ -20,7 +19,6 @@ export default function HDesignGeneralPage() {
           marginBottom: "48px"
         }}
       >
-        <SectionBackground color="var(--panel)" className="about-svg-bg" type="about" />
         
         <div style={{ position: "relative", zIndex: 10, display: "flex", flexDirection: "column", gap: "16px" }}>
           <h1 style={{ fontSize: "2.8rem", fontWeight: "900", color: "var(--text)", margin: 0 }}>HDesign Դիզայն Համակարգ</h1>

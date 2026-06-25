@@ -154,6 +154,18 @@ submitting_btn = Ուղարկվում է...
 success_msg = Շնորհակալություն! Ձեր հաղորդագրությունը հաջողությամբ ուղարկվեց:
 error_fields = Խնդրում ենք լրացնել բոլոր դաշտերը:
 error_conn = Կապի սխալ. Խնդրում ենք փորձել կրկին:
+desc = Ստեղծարար և Գործնական դիզայն լուծումներ: Յուրաքանչյուր ինտերֆեյս ստեղծված է սիրով և մաթեմատիկական ճշգրտությամբ:
+links_title = Հղումներ
+contacts_title = Կոնտակտներ
+email_label = Էլ. հասցե՝
+phone_label = Հեռախոս՝
+address_label = Երևան, Հայաստան
+copyright = HDesign. Բոլոր իրավունքները պաշտպանված են։
+designed_by = Դիզայնը՝ Հրանտ Հակոբյանի
+nav_home = Տուն
+nav_about = Մասին
+nav_works = Աշխատանքներ
+nav_docs = Փաստաթղթեր
 `;
 
 const enIniContent = `[common]
@@ -308,6 +320,18 @@ submitting_btn = Sending...
 success_msg = Thank you! Your message has been sent successfully.
 error_fields = Please fill in all fields.
 error_conn = Connection error. Please try again.
+desc = Creative & Practical design solutions. Every interface is created with love and mathematical precision.
+links_title = Links
+contacts_title = Contacts
+email_label = Email:
+phone_label = Phone:
+address_label = Yerevan, Armenia
+copyright = HDesign. All rights reserved.
+designed_by = Designed by Hrant Hakobyan
+nav_home = Home
+nav_about = About
+nav_works = Works
+nav_docs = Docs
 `;
 
 export function parseINI(iniText: string): Record<string, Record<string, string>> {

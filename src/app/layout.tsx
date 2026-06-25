@@ -3,12 +3,15 @@ import type { ReactNode } from "react";
 import "./globals.scss";
 import { I18nProvider } from "@/lib/i18n";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import GlobalBackground from "@/components/GlobalBackground";
 import PageTransition from "@/components/PageTransition";
 import Script from "next/script";
 import CustomCursor from "@/components/CustomCursor";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
 import UpcomingCheck from "@/components/UpcomingCheck";
 import { getSiteSetting } from "@/lib/db";
+import SmoothScroll from "@/components/SmoothScroll";
 
 export async function generateMetadata(): Promise<Metadata> {
   const personalization = await getSiteSetting('personalization_settings', {});
@@ -64,14 +67,17 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         )}
       </head>
       <body>
+        <SmoothScroll />
         <CustomCursor />
         <AnalyticsTracker />
         <I18nProvider>
           <UpcomingCheck initialUpcomingMode={upcomingMode}>
             <Header />
+            <GlobalBackground />
             <PageTransition>
               {children}
             </PageTransition>
+            <Footer />
           </UpcomingCheck>
         </I18nProvider>
         <Script src="https://api.hakobian.am/libs/v1/script.js" strategy="afterInteractive" />
