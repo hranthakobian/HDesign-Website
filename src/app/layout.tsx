@@ -12,6 +12,7 @@ import AnalyticsTracker from "@/components/AnalyticsTracker";
 import UpcomingCheck from "@/components/UpcomingCheck";
 import { getSiteSetting } from "@/lib/db";
 import SmoothScroll from "@/components/SmoothScroll";
+import Preloader from "@/components/Preloader";
 
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
@@ -70,6 +71,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         )}
       </head>
       <body>
+        <Preloader />
         <SmoothScroll />
         <CustomCursor />
         <AnalyticsTracker />

@@ -1,6 +1,6 @@
 [
   {
-    "id": "a9a6mznew3q",
+    "id": "3k85wr5kvtr",
     "session_id": "session_96tb9c4b9jltexcvwhpt7p",
     "ip_address": "::ffff:127.0.0.1",
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0",
@@ -11,8 +11,8 @@
     "city": "Unknown",
     "referrer": "http://localhost:3000/admin",
     "landing_page": "/admin",
-    "created_at": "2026-06-25T17:42:32.143Z",
-    "updated_at": "2026-06-25T17:42:32.143Z"
+    "created_at": "2026-06-25T18:10:29.595Z",
+    "updated_at": "2026-06-25T18:10:29.595Z"
   },
   {
     "id": "om10dvomvs",

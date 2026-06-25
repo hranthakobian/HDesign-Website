@@ -1708,6 +1708,99 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
   }
 }
 
+/* Site Preloader Styles */
+html.preloader-active,
+html.preloader-active body {
+  overflow: hidden !important;
+  height: 100vh !important;
+  position: relative;
+}
+
+.site-preloader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999999;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.8s cubic-bezier(0.85, 0, 0.15, 1), 
+              visibility 0.8s cubic-bezier(0.85, 0, 0.15, 1);
+  
+  &.preloader-fade-out {
+    opacity: 0;
+    visibility: hidden;
+    
+    .preloader-content {
+      transform: scale(0.92) translateY(-10px);
+      opacity: 0;
+    }
+  }
+}
+
+.preloader-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  transform: scale(1) translateY(0);
+  opacity: 1;
+  transition: transform 0.75s cubic-bezier(0.16, 1, 0.3, 1), 
+              opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.preloader-lottie {
+  width: 180px;
+  height: 180px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  
+  /* Ensure Lottie SVG stroke matches the active theme color dynamically */
+  svg path {
+    stroke: var(--text) !important;
+  }
+}
+
+.preloader-bar {
+  width: 100px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.preloader-progress {
+  width: 40%;
+  height: 100%;
+  background: var(--text);
+  border-radius: 4px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  animation: preloader-loading 1.8s cubic-bezier(0.65, 0.05, 0.36, 1) infinite;
+}
+
+@keyframes preloader-loading {
+  0% {
+    left: -40%;
+  }
+  50% {
+    left: 100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+
 
 
 

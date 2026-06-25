@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
+import selectionJson from "../../icons/selection.json";
 
 // Custom icons list for the explorer section
 const iconsList = [
@@ -230,6 +231,81 @@ const SectionBackground = ({ color, className, type }: { color: string; classNam
       )}
     </div>
   );
+};
+
+// Helper to get SVG string for an icon from selection.json
+const getSvgString = (iconName: string): string => {
+  const nameToMatch = iconName.replace("icon-", "").replace(/-/g, "").toLowerCase();
+  
+  const iconData = (selectionJson as any).icons.find((i: any) => {
+    const candidate = i.properties.name.replace(/[\s-_]+/g, "").toLowerCase();
+    return candidate === nameToMatch;
+  });
+  
+  if (!iconData) return "";
+  
+  const width = iconData.icon.width || 1024;
+  const paths = iconData.icon.paths;
+  const pathElements = paths.map((p: string) => `<path d="${p}" fill="#000000" />`).join("");
+  
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} 1024" width="${width}" height="1024">${pathElements}</svg>`;
+};
+
+// Helper to trigger SVG download
+const downloadSvg = (iconName: string) => {
+  const svgStr = getSvgString(iconName);
+  if (!svgStr) return;
+  
+  const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${iconName}.svg`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+// Helper to trigger PNG download
+const downloadPng = (iconName: string) => {
+  const svgStr = getSvgString(iconName);
+  if (!svgStr) return;
+  
+  const image = new Image();
+  const size = 512;
+  
+  const nameToMatch = iconName.replace("icon-", "").replace(/-/g, "").toLowerCase();
+  const iconData = (selectionJson as any).icons.find((i: any) => {
+    const candidate = i.properties.name.replace(/[\s-_]+/g, "").toLowerCase();
+    return candidate === nameToMatch;
+  });
+  const originalWidth = iconData?.icon.width || 1024;
+  const ratio = size / 1024;
+  const canvasWidth = originalWidth * ratio;
+  
+  const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  
+  image.onload = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = canvasWidth;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    if (ctx) {
+      ctx.drawImage(image, 0, 0, canvasWidth, size);
+      const pngUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = pngUrl;
+      link.download = `${iconName}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    URL.revokeObjectURL(url);
+  };
+  
+  image.src = url;
 };
 
 export default function Home() {
@@ -999,6 +1075,61 @@ export default function Home() {
                     boxShadow: "inset 0 0 15px rgba(8, 63, 57, 0.02)"
                   }}>
                     <span className={selectedIconDetail} style={{ fontSize: "6.5rem", color: "var(--primary-color)" }} />
+                  </div>
+
+                  {/* Download Buttons Container */}
+                  <div style={{
+                    display: "flex",
+                    gap: "10px",
+                    width: "180px",
+                    justifyContent: "center"
+                  }}>
+                    <button
+                      onClick={() => downloadSvg(selectedIconDetail)}
+                      style={{
+                        flex: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px",
+                        padding: "10px 12px",
+                        borderRadius: "12px",
+                        border: "1px solid rgba(8, 63, 57, 0.18)",
+                        background: "transparent",
+                        color: "#083f39",
+                        fontWeight: "600",
+                        fontSize: "0.85rem",
+                        cursor: "pointer",
+                      }}
+                      className="download-btn-svg"
+                      title="Ներբեռնել SVG"
+                    >
+                      <span className="icon-Download" style={{ fontSize: "0.9rem" }} />
+                      SVG
+                    </button>
+                    <button
+                      onClick={() => downloadPng(selectedIconDetail)}
+                      style={{
+                        flex: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px",
+                        padding: "10px 12px",
+                        borderRadius: "12px",
+                        border: "none",
+                        background: "#083f39",
+                        color: "#ffffff",
+                        fontWeight: "600",
+                        fontSize: "0.85rem",
+                        cursor: "pointer",
+                      }}
+                      className="download-btn-png"
+                      title="Ներբեռնել PNG"
+                    >
+                      <span className="icon-Download" style={{ fontSize: "0.9rem" }} />
+                      PNG
+                    </button>
                   </div>
 
                   {/* 5 Sizes Showcase */}
