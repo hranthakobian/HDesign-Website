@@ -1585,7 +1585,7 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
   padding: 2px;
   height: 36px;
   
-  button {
+  button, .theme-btn {
     border: none;
     background: transparent;
     color: var(--switcher-text-inactive);
@@ -1595,6 +1595,9 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     border-radius: 16px;
     cursor: pointer;
     transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     
     &.active {
       background: var(--switcher-capsule-bg);

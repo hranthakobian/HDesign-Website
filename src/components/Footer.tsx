@@ -146,26 +146,13 @@ export default function Footer() {
                 />
               </div>
               <div>
-                <textarea 
+                <hd-textarea 
                   placeholder={t('contact', 'message_placeholder', 'Ձեր հաղորդագրությունը...')}
                   value={contactMessage}
-                  onChange={(e) => setContactMessage(e.target.value)}
-                  style={{ 
-                    width: "100%", 
-                    minHeight: "100px", 
-                    background: "rgba(255, 255, 255, 0.04)", 
-                    border: "1px solid rgba(255, 255, 255, 0.08)", 
-                    borderRadius: "12px", 
-                    padding: "12px 16px", 
-                    color: "#fff", 
-                    fontSize: "0.9rem",
-                    fontFamily: "inherit",
-                    resize: "vertical",
-                    outline: "none",
-                    transition: "border-color 0.2s"
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = "rgba(255,255,255,0.2)"}
-                  onBlur={(e) => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
+                  onInput={(e: any) => setContactMessage(e.target.value)}
+                  data-width="100%"
+                  data-disable-horizontal-resize="true"
+                  style={{ minHeight: "100px" }}
                 />
               </div>
 

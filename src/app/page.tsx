@@ -793,7 +793,7 @@ export default function Home() {
               }}
             >
               {/* Close Button */}
-              <button 
+              <div 
                 onClick={() => setSelectedCase(null)}
                 style={{
                   position: "absolute",
@@ -816,7 +816,7 @@ export default function Home() {
                 onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)"}
               >
                 <span className="icon-Close" style={{ fontSize: "1.1rem" }} />
-              </button>
+              </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", height: "100%" }}>
                 {/* Left Side: Image/Art */}
@@ -927,7 +927,7 @@ export default function Home() {
               }}
             >
               {/* Close Button */}
-              <button 
+              <div 
                 onClick={() => setSelectedIconDetail(null)}
                 style={{
                   position: "absolute",
@@ -951,7 +951,7 @@ export default function Home() {
                 title="Փակել"
               >
                 &times;
-              </button>
+              </div>
 
               {/* Two-Column Responsive Layout */}
               <div style={{
@@ -980,13 +980,13 @@ export default function Home() {
                     <div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
                         <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "rgba(0, 0, 0, 0.6)", textTransform: "uppercase" }}>HTML</span>
-                        <button 
+                        <span 
                           onClick={() => handleCopySnippet(`<span class="${selectedIconDetail}"></span>`, "html")}
                           style={{ background: "transparent", border: "none", color: copiedSnippet === "html" ? "var(--primary-color)" : "rgba(0,0,0,0.5)", fontSize: "0.75rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
                         >
                           <span className={copiedSnippet === "html" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.85rem" }} />
                           {copiedSnippet === "html" ? "Պատճենված է" : "Պատճենել"}
-                        </button>
+                        </span>
                       </div>
                       <div style={{
                         background: "#f5f5f7",
@@ -1007,13 +1007,13 @@ export default function Home() {
                     <div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
                         <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "rgba(0, 0, 0, 0.6)", textTransform: "uppercase" }}>React / JSX</span>
-                        <button 
+                        <span 
                           onClick={() => handleCopySnippet(`<span className="${selectedIconDetail}" />`, "react")}
                           style={{ background: "transparent", border: "none", color: copiedSnippet === "react" ? "var(--primary-color)" : "rgba(0,0,0,0.5)", fontSize: "0.75rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
                         >
                           <span className={copiedSnippet === "react" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.85rem" }} />
                           {copiedSnippet === "react" ? "Պատճենված է" : "Պատճենել"}
-                        </button>
+                        </span>
                       </div>
                       <div style={{
                         background: "#f5f5f7",
@@ -1034,13 +1034,13 @@ export default function Home() {
                     <div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
                         <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "rgba(0, 0, 0, 0.6)", textTransform: "uppercase" }}>CSS Class</span>
-                        <button 
+                        <span 
                           onClick={() => handleCopySnippet(selectedIconDetail, "css")}
                           style={{ background: "transparent", border: "none", color: copiedSnippet === "css" ? "var(--primary-color)" : "rgba(0,0,0,0.5)", fontSize: "0.75rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
                         >
                           <span className={copiedSnippet === "css" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.85rem" }} />
                           {copiedSnippet === "css" ? "Պատճենված է" : "Պատճենել"}
-                        </button>
+                        </span>
                       </div>
                       <div style={{
                         background: "#f5f5f7",
@@ -1084,52 +1084,30 @@ export default function Home() {
                     width: "180px",
                     justifyContent: "center"
                   }}>
-                    <button
+                    <hd-button
                       onClick={() => downloadSvg(selectedIconDetail)}
-                      style={{
-                        flex: 1,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "6px",
-                        padding: "10px 12px",
-                        borderRadius: "12px",
-                        border: "1px solid rgba(8, 63, 57, 0.18)",
-                        background: "transparent",
-                        color: "#083f39",
-                        fontWeight: "600",
-                        fontSize: "0.85rem",
-                        cursor: "pointer",
-                      }}
-                      className="download-btn-svg"
+                      data-width="85px"
+                      data-height="40px"
+                      data-thickness="1px"
+                      data-color="transparent"
+                      data-text-color="#083f39"
                       title="Ներբեռնել SVG"
                     >
-                      <span className="icon-Download" style={{ fontSize: "0.9rem" }} />
+                      <span className="icon-Download" style={{ fontSize: "0.9rem", marginRight: "6px" }} />
                       SVG
-                    </button>
-                    <button
+                    </hd-button>
+                    <hd-button
                       onClick={() => downloadPng(selectedIconDetail)}
-                      style={{
-                        flex: 1,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "6px",
-                        padding: "10px 12px",
-                        borderRadius: "12px",
-                        border: "none",
-                        background: "#083f39",
-                        color: "#ffffff",
-                        fontWeight: "600",
-                        fontSize: "0.85rem",
-                        cursor: "pointer",
-                      }}
-                      className="download-btn-png"
+                      data-width="85px"
+                      data-height="40px"
+                      data-thickness="1px"
+                      data-color="#083f39"
+                      data-text-color="#ffffff"
                       title="Ներբեռնել PNG"
                     >
-                      <span className="icon-Download" style={{ fontSize: "0.9rem" }} />
+                      <span className="icon-Download" style={{ fontSize: "0.9rem", marginRight: "6px" }} />
                       PNG
-                    </button>
+                    </hd-button>
                   </div>
 
                   {/* 5 Sizes Showcase */}
@@ -1171,13 +1149,13 @@ export default function Home() {
                 <div style={{ marginBottom: "10px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
                     <span style={{ fontSize: "0.7rem", fontWeight: "600", color: "rgba(0, 0, 0, 0.5)" }}>CSS Icons Font (տեղադրել &lt;head&gt;-ում)</span>
-                    <button 
+                    <span 
                       onClick={() => handleCopySnippet(`<link rel="stylesheet" href="https://api.hakobian.am/libs/v1/icons/style.css" />`, "libcss")}
                       style={{ background: "transparent", border: "none", color: copiedSnippet === "libcss" ? "var(--primary-color)" : "rgba(0,0,0,0.5)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
                     >
                       <span className={copiedSnippet === "libcss" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.8rem" }} />
                       {copiedSnippet === "libcss" ? "Պատճենված է" : "Պատճենել"}
-                    </button>
+                    </span>
                   </div>
                   <div style={{
                     background: "#f5f5f7",
@@ -1198,13 +1176,13 @@ export default function Home() {
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
                     <span style={{ fontSize: "0.7rem", fontWeight: "600", color: "rgba(0, 0, 0, 0.5)" }}>JS Elements Script (տեղադրել &lt;body&gt;-ի վերջում)</span>
-                    <button 
+                    <span 
                       onClick={() => handleCopySnippet(`<script src="https://api.hakobian.am/libs/v1/script.js" defer></script>`, "libjs")}
                       style={{ background: "transparent", border: "none", color: copiedSnippet === "libjs" ? "var(--primary-color)" : "rgba(0,0,0,0.5)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
                     >
                       <span className={copiedSnippet === "libjs" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.8rem" }} />
                       {copiedSnippet === "libjs" ? "Պատճենված է" : "Պատճենել"}
-                    </button>
+                    </span>
                   </div>
                   <div style={{
                     background: "#f5f5f7",

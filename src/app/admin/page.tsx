@@ -179,6 +179,12 @@ export default function AdminDashboard() {
 
   // General Settings State
   const [upcomingMode, setUpcomingMode] = useState(false);
+  const [upcomingTitleHy, setUpcomingTitleHy] = useState('Շուտով');
+  const [upcomingTitleEn, setUpcomingTitleEn] = useState('Coming Soon');
+  const [upcomingDescHy, setUpcomingDescHy] = useState('Մեր կորպորատիվ կայքը ժամանակավորապես անցանց է ստեղծարար փոփոխությունների և նորացման պատճառով։ Շուտով կվերադառնանք նորացված տեսքով։');
+  const [upcomingDescEn, setUpcomingDescEn] = useState('Our website is temporarily offline for maintenance and creative updates. We will be back soon with a fresh experience.');
+  const [upcomingEmail, setUpcomingEmail] = useState('info@hdesign.am');
+  const [upcomingTel, setUpcomingTel] = useState('+374 99 00 00 00');
   const [savingSettings, setSavingSettings] = useState(false);
 
   // Password Change Form State
@@ -377,6 +383,12 @@ export default function AdminDashboard() {
           cursors: DEFAULT_CURSORS
         });
         setUpcomingMode(generalSettingsData.upcoming_mode || false);
+        setUpcomingTitleHy(generalSettingsData.upcoming_title_hy || 'Շուտով');
+        setUpcomingTitleEn(generalSettingsData.upcoming_title_en || 'Coming Soon');
+        setUpcomingDescHy(generalSettingsData.upcoming_desc_hy || 'Մեր կորպորատիվ կայքը ժամանակավորապես անցանց է ստեղծարար փոփոխությունների և նորացման պատճառով։ Շուտով կվերադառնանք նորացված տեսքով։');
+        setUpcomingDescEn(generalSettingsData.upcoming_desc_en || 'Our website is temporarily offline for maintenance and creative updates. We will be back soon with a fresh experience.');
+        setUpcomingEmail(generalSettingsData.upcoming_email || 'info@hdesign.am');
+        setUpcomingTel(generalSettingsData.upcoming_tel || '+374 99 00 00 00');
       } catch (err: any) {
         setDataError(err.message || 'Տվյալների բեռնումը ձախողվեց:');
       } finally {
@@ -808,7 +820,15 @@ export default function AdminDashboard() {
           'Content-Type': 'application/json',
           'Authorization': token
         },
-        body: JSON.stringify({ upcoming_mode: upcomingMode })
+        body: JSON.stringify({ 
+          upcoming_mode: upcomingMode,
+          upcoming_title_hy: upcomingTitleHy,
+          upcoming_title_en: upcomingTitleEn,
+          upcoming_desc_hy: upcomingDescHy,
+          upcoming_desc_en: upcomingDescEn,
+          upcoming_email: upcomingEmail,
+          upcoming_tel: upcomingTel
+        })
       });
 
       if (res.ok) {
@@ -1597,9 +1617,8 @@ export default function AdminDashboard() {
                           {/* Presets picker */}
                           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
                             {GRADIENT_PRESETS.map(preset => (
-                              <button 
+                              <div 
                                 key={preset.name}
-                                type="button"
                                 onClick={() => setCaseForm(prev => ({ ...prev, bg: preset.value }))}
                                 style={{
                                   background: preset.value,
@@ -1652,15 +1671,13 @@ export default function AdminDashboard() {
                         {/* Detailed Description */}
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Մանրամասն Նկարագրություն</label>
-                          <textarea 
+                          <hd-textarea 
                             placeholder="Մանրամասներ նախագծի մասին..."
                             value={caseForm.details}
-                            onChange={(e) => setCaseForm(prev => ({ ...prev, details: e.target.value }))}
-                            style={{ 
-                              width: '100%', minHeight: '120px', background: 'rgba(255,255,255,0.03)',
-                              border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '12px 16px',
-                              color: '#fff', fontSize: '0.9rem', outline: 'none', resize: 'vertical', fontFamily: 'inherit'
-                            }}
+                            onInput={(e: any) => setCaseForm(prev => ({ ...prev, details: e.target.value }))}
+                            data-width="100%"
+                            data-disable-horizontal-resize="true"
+                            style={{ minHeight: '120px' }}
                           />
                         </div>
 
@@ -1760,7 +1777,7 @@ export default function AdminDashboard() {
                         >
                           <span className="icon-Mail" />
                         </a>
-                        <button
+                        <div
                           onClick={() => handleDeleteMessage(msg.id)}
                           style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1772,7 +1789,7 @@ export default function AdminDashboard() {
                           onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,107,107,0.1)'}
                         >
                           <span className="icon-Trash" />
-                        </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1891,27 +1908,17 @@ export default function AdminDashboard() {
 
                   <div style={{ width: '200px' }}>
                     <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Բաժին</label>
-                    <select
+                    <hd-select
                       value={transSectionFilter}
-                      onChange={(e) => { setTransSectionFilter(e.target.value); setVisibleTransCount(50); }}
-                      style={{
-                        width: '100%',
-                        height: '40px',
-                        background: 'rgba(255,255,255,0.03)',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        borderRadius: '12px',
-                        padding: '0 16px',
-                        color: '#fff',
-                        fontSize: '0.9rem',
-                        outline: 'none',
-                        cursor: 'pointer'
-                      }}
+                      onChange={(e: any) => { setTransSectionFilter(e.target.value); setVisibleTransCount(50); }}
+                      data-width="100%"
+                      data-height="40px"
                     >
-                      <option value="all" style={{ background: '#111', color: '#fff' }}>Բոլոր Բաժինները</option>
+                      <span value="all" {...(transSectionFilter === 'all' ? {selected: true} : {})}>Բոլոր Բաժինները</span>
                       {transSections.map(sec => (
-                        <option key={sec} value={sec} style={{ background: '#111', color: '#fff' }}>{sec}</option>
+                        <span key={sec} value={sec} {...(transSectionFilter === sec ? {selected: true} : {})}>{sec}</span>
                       ))}
-                    </select>
+                    </hd-select>
                   </div>
                 </div>
 
@@ -1986,48 +1993,22 @@ export default function AdminDashboard() {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
                           <div>
                             <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Հայերեն (Armenian)</label>
-                            <textarea
+                            <hd-textarea
                               value={editingTrans[rowKey]?.hy ?? item.hy}
-                              onChange={(e) => handleEditRow(item.section, item.key, 'hy', e.target.value)}
-                              style={{
-                                width: '100%',
-                                minHeight: '60px',
-                                background: 'rgba(255,255,255,0.02)',
-                                border: '1px solid rgba(255,255,255,0.08)',
-                                borderRadius: '12px',
-                                padding: '12px',
-                                color: '#fff',
-                                fontSize: '0.88rem',
-                                outline: 'none',
-                                resize: 'vertical',
-                                fontFamily: 'inherit',
-                                transition: 'border-color 0.2s'
-                              }}
-                              onFocus={(e) => e.currentTarget.style.borderColor = 'rgba(0,196,159,0.3)'}
-                              onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'}
+                              onInput={(e: any) => handleEditRow(item.section, item.key, 'hy', e.target.value)}
+                              data-width="100%"
+                              data-disable-horizontal-resize="true"
+                              style={{ minHeight: '60px' }}
                             />
                           </div>
                           <div>
                             <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Անգլերեն (English)</label>
-                            <textarea
+                            <hd-textarea
                               value={editingTrans[rowKey]?.en ?? item.en}
-                              onChange={(e) => handleEditRow(item.section, item.key, 'en', e.target.value)}
-                              style={{
-                                width: '100%',
-                                minHeight: '60px',
-                                background: 'rgba(255,255,255,0.02)',
-                                border: '1px solid rgba(255,255,255,0.08)',
-                                borderRadius: '12px',
-                                padding: '12px',
-                                color: '#fff',
-                                fontSize: '0.88rem',
-                                outline: 'none',
-                                resize: 'vertical',
-                                fontFamily: 'inherit',
-                                transition: 'border-color 0.2s'
-                              }}
-                              onFocus={(e) => e.currentTarget.style.borderColor = 'rgba(0,196,159,0.3)'}
-                              onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'}
+                              onInput={(e: any) => handleEditRow(item.section, item.key, 'en', e.target.value)}
+                              data-width="100%"
+                              data-disable-horizontal-resize="true"
+                              style={{ minHeight: '60px' }}
                             />
                           </div>
                         </div>
@@ -2120,27 +2101,17 @@ export default function AdminDashboard() {
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Բաժին</label>
                           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                            <select
+                            <hd-select
                               value={newTransSection}
-                              onChange={(e) => setNewTransSection(e.target.value)}
-                              style={{
-                                width: newTransSection === 'new' ? '40%' : '100%',
-                                height: '40px',
-                                background: 'rgba(255,255,255,0.03)',
-                                border: '1px solid rgba(255,255,255,0.08)',
-                                borderRadius: '12px',
-                                padding: '0 12px',
-                                color: '#fff',
-                                fontSize: '0.88rem',
-                                outline: 'none',
-                                cursor: 'pointer'
-                              }}
+                              onChange={(e: any) => setNewTransSection(e.target.value)}
+                              data-width={newTransSection === 'new' ? '40%' : '100%'}
+                              data-height="40px"
                             >
                               {transSections.map(sec => (
-                                <option key={sec} value={sec} style={{ background: '#111', color: '#fff' }}>{sec}</option>
+                                <span key={sec} value={sec} {...(newTransSection === sec ? {selected: true} : {})}>{sec}</span>
                               ))}
-                              <option value="new" style={{ background: '#111', color: '#FFBB28' }}>+ Ստեղծել նոր բաժին</option>
-                            </select>
+                              <span value="new" {...(newTransSection === 'new' ? {selected: true} : {})} style={{ color: '#FFBB28' }}>+ Ստեղծել նոր բաժին</span>
+                            </hd-select>
 
                             {newTransSection === 'new' && (
                               <hd-input 
@@ -2167,45 +2138,25 @@ export default function AdminDashboard() {
 
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Հայերեն Արժեք (Armenian)*</label>
-                          <textarea
+                          <hd-textarea
                             placeholder="Տեքստը հայերենով..."
                             value={newTransHy}
-                            onChange={(e) => setNewTransHy(e.target.value)}
-                            style={{
-                              width: '100%',
-                              minHeight: '60px',
-                              background: 'rgba(255,255,255,0.03)',
-                              border: '1px solid rgba(255,255,255,0.08)',
-                              borderRadius: '12px',
-                              padding: '12px',
-                              color: '#fff',
-                              fontSize: '0.88rem',
-                              outline: 'none',
-                              resize: 'vertical',
-                              fontFamily: 'inherit'
-                            }}
+                            onInput={(e: any) => setNewTransHy(e.target.value)}
+                            data-width="100%"
+                            data-disable-horizontal-resize="true"
+                            style={{ minHeight: '60px' }}
                           />
                         </div>
 
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Անգլերեն Արժեք (English)*</label>
-                          <textarea
+                          <hd-textarea
                             placeholder="Text in English..."
                             value={newTransEn}
-                            onChange={(e) => setNewTransEn(e.target.value)}
-                            style={{
-                              width: '100%',
-                              minHeight: '60px',
-                              background: 'rgba(255,255,255,0.03)',
-                              border: '1px solid rgba(255,255,255,0.08)',
-                              borderRadius: '12px',
-                              padding: '12px',
-                              color: '#fff',
-                              fontSize: '0.88rem',
-                              outline: 'none',
-                              resize: 'vertical',
-                              fontFamily: 'inherit'
-                            }}
+                            onInput={(e: any) => setNewTransEn(e.target.value)}
+                            data-width="100%"
+                            data-disable-horizontal-resize="true"
+                            style={{ minHeight: '60px' }}
                           />
                         </div>
 
@@ -2244,8 +2195,7 @@ export default function AdminDashboard() {
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0 }}>API-ների և Ինտեգրումների Կառավարում</h2>
-                      <button
-                        type="button"
+                      <div
                         onClick={handleEyeClick}
                         style={{
                           background: 'rgba(255,255,255,0.06)',
@@ -2263,7 +2213,7 @@ export default function AdminDashboard() {
                         title={isApiUnlocked ? "Թաքցնել API բանալիները" : "Ցուցադրել API բանալիները"}
                       >
                         <span className={isApiUnlocked ? "icon-Eye" : "icon-Close-Eye"} style={{ fontSize: '1.1rem' }} />
-                      </button>
+                      </div>
                     </div>
                     <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: '4px' }}>Միացրեք արտաքին ծառայություններ կամ ավելացրեք սեփական սկրիպտեր կայքի աշխատանքի համար</p>
                   </div>
@@ -2333,36 +2283,10 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
-                      {/* Custom Toggle Switch */}
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', userSelect: 'none' }}>
-                        <div style={{
-                          position: 'relative',
-                          width: '46px',
-                          height: '24px',
-                          background: apiSettings.tildo_enabled ? '#00C49F' : 'rgba(255,255,255,0.08)',
-                          border: '1px solid rgba(255,255,255,0.1)',
-                          borderRadius: '12px',
-                          transition: 'all 0.3s ease'
-                        }}>
-                          <div style={{
-                            position: 'absolute',
-                            top: '2px',
-                            left: apiSettings.tildo_enabled ? '24px' : '2px',
-                            width: '18px',
-                            height: '18px',
-                            background: '#fff',
-                            borderRadius: '50%',
-                            transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
-                          }} />
-                        </div>
-                        <input 
-                          type="checkbox" 
-                          checked={apiSettings.tildo_enabled} 
-                          onChange={(e) => setApiSettings(prev => ({ ...prev, tildo_enabled: e.target.checked }))} 
-                          style={{ display: 'none' }} 
-                        />
-                      </label>
+                      <hd-switch 
+                        checked={apiSettings.tildo_enabled} 
+                        onChange={(e: any) => setApiSettings(prev => ({ ...prev, tildo_enabled: e.target.checked }))} 
+                      />
                     </div>
 
                     {apiSettings.tildo_enabled && (
@@ -2402,36 +2326,10 @@ export default function AdminDashboard() {
                         </div>
                       </div>
 
-                      {/* Custom Toggle Switch */}
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', userSelect: 'none' }}>
-                        <div style={{
-                          position: 'relative',
-                          width: '46px',
-                          height: '24px',
-                          background: apiSettings.google_analytics_enabled ? '#FFBB28' : 'rgba(255,255,255,0.08)',
-                          border: '1px solid rgba(255,255,255,0.1)',
-                          borderRadius: '12px',
-                          transition: 'all 0.3s ease'
-                        }}>
-                          <div style={{
-                            position: 'absolute',
-                            top: '2px',
-                            left: apiSettings.google_analytics_enabled ? '24px' : '2px',
-                            width: '18px',
-                            height: '18px',
-                            background: '#fff',
-                            borderRadius: '50%',
-                            transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
-                          }} />
-                        </div>
-                        <input 
-                          type="checkbox" 
-                          checked={apiSettings.google_analytics_enabled} 
-                          onChange={(e) => setApiSettings(prev => ({ ...prev, google_analytics_enabled: e.target.checked }))} 
-                          style={{ display: 'none' }} 
-                        />
-                      </label>
+                      <hd-switch 
+                        checked={apiSettings.google_analytics_enabled} 
+                        onChange={(e: any) => setApiSettings(prev => ({ ...prev, google_analytics_enabled: e.target.checked }))} 
+                      />
                     </div>
 
                     {apiSettings.google_analytics_enabled && (
@@ -2647,21 +2545,15 @@ export default function AdminDashboard() {
                         </div>
                         
                         {/* Interactive Range Slider */}
-                        <input 
-                          type="range" 
+                        <hd-slider 
                           min="0" 
                           max="360" 
                           value={personalization.theme_hue} 
-                          onChange={(e) => setPersonalization(prev => ({ ...prev, theme_hue: e.target.value }))}
+                          onInput={(e: any) => setPersonalization(prev => ({ ...prev, theme_hue: e.target.value }))}
+                          data-width="100%"
                           style={{
-                            width: '100%',
-                            height: '6px',
                             background: 'linear-gradient(to right, red, yellow, lime, cyan, blue, magenta, red)',
                             borderRadius: '3px',
-                            outline: 'none',
-                            appearance: 'none',
-                            WebkitAppearance: 'none',
-                            cursor: 'pointer'
                           }}
                         />
 
@@ -2741,8 +2633,7 @@ export default function AdminDashboard() {
                               alignItems: 'center',
                               justifyContent: 'center'
                             }}>
-                              <button
-                                type="button"
+                              <div
                                 onClick={() => {
                                   setPersonalization(prev => ({
                                     ...prev,
@@ -2770,29 +2661,18 @@ export default function AdminDashboard() {
                                 title="Ջնջել գույնը"
                               >
                                 ✕
-                              </button>
+                              </div>
                             </div>
                           ))}
                         </div>
 
                         {/* Add color color-picker bar */}
                         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                          <input 
-                            type="color"
+                          <hd-color-picker 
                             value={newCursorColor}
-                            onChange={(e) => setNewCursorColor(e.target.value)}
-                            style={{
-                              border: 'none',
-                              outline: 'none',
-                              width: '40px',
-                              height: '40px',
-                              borderRadius: '8px',
-                              background: 'transparent',
-                              cursor: 'pointer'
-                            }}
+                            onChange={(e: any) => setNewCursorColor(e.target.value)}
                           />
-                          <button
-                            type="button"
+                          <hd-button
                             onClick={() => {
                               if (!personalization.cursor_colors.includes(newCursorColor)) {
                                 setPersonalization(prev => ({
@@ -2801,21 +2681,12 @@ export default function AdminDashboard() {
                                 }));
                               }
                             }}
-                            style={{
-                              background: 'rgba(255,255,255,0.06)',
-                              border: '1px solid rgba(255,255,255,0.1)',
-                              color: '#fff',
-                              height: '40px',
-                              padding: '0 16px',
-                              borderRadius: '8px',
-                              cursor: 'pointer',
-                              fontSize: '0.8rem',
-                              fontWeight: 600,
-                              transition: 'background 0.2s'
-                            }}
+                            data-height="40px"
+                            data-thickness="1px"
+                            data-font-size="0.8rem"
                           >
                             + Ավելացնել Գույն
-                          </button>
+                          </hd-button>
                         </div>
                       </div>
                     </div>
@@ -2838,14 +2709,12 @@ export default function AdminDashboard() {
                       {/* Sub-tabs for Cursor selection */}
                       <div style={{ display: 'flex', gap: '4px', background: 'rgba(0,0,0,0.15)', padding: '4px', borderRadius: '10px' }}>
                         {(['default', 'pointer', 'text'] as const).map(type => (
-                          <button
+                          <div
                             key={type}
-                            type="button"
                             onClick={() => setActiveCursorType(type)}
                             style={{
                               flex: 1,
                               padding: '8px 12px',
-                              border: 'none',
                               borderRadius: '8px',
                               background: activeCursorType === type ? 'var(--switcher-capsule-bg)' : 'transparent',
                               color: activeCursorType === type ? '#fff' : 'var(--muted)',
@@ -2853,11 +2722,12 @@ export default function AdminDashboard() {
                               fontWeight: 600,
                               cursor: 'pointer',
                               textTransform: 'capitalize',
+                              textAlign: 'center',
                               transition: 'all 0.2s'
                             }}
                           >
                             {type === 'default' ? 'Լռելյայն' : type === 'pointer' ? 'Pointer' : 'Տեքստ (Text)'}
-                          </button>
+                          </div>
                         ))}
                       </div>
 
@@ -2935,12 +2805,10 @@ export default function AdminDashboard() {
                           <div style={{ display: 'flex', gap: '10px' }}>
                             <div style={{ flex: 1 }}>
                               <label style={{ fontSize: '0.75rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Hotspot X (0-32)</label>
-                              <input 
+                              <hd-input 
                                 type="number" 
-                                min="0"
-                                max="32"
                                 value={(personalization.cursors[activeCursorType]?.hotspot_x ?? 0).toString()}
-                                onChange={(e: any) => {
+                                onInput={(e: any) => {
                                   const val = Math.min(32, Math.max(0, parseInt(e.target.value) || 0));
                                   setPersonalization(prev => ({
                                     ...prev,
@@ -2953,27 +2821,16 @@ export default function AdminDashboard() {
                                     }
                                   }));
                                 }}
-                                style={{
-                                  width: '100%',
-                                  height: '36px',
-                                  background: 'rgba(255,255,255,0.02)',
-                                  border: '1px solid rgba(255,255,255,0.08)',
-                                  borderRadius: '8px',
-                                  padding: '0 10px',
-                                  color: '#fff',
-                                  fontSize: '0.85rem',
-                                  outline: 'none'
-                                }}
+                                data-width="100%"
+                                data-height="36px"
                               />
                             </div>
                             <div style={{ flex: 1 }}>
                               <label style={{ fontSize: '0.75rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Hotspot Y (0-32)</label>
-                              <input 
+                              <hd-input 
                                 type="number" 
-                                min="0"
-                                max="32"
                                 value={(personalization.cursors[activeCursorType]?.hotspot_y ?? 0).toString()}
-                                onChange={(e: any) => {
+                                onInput={(e: any) => {
                                   const val = Math.min(32, Math.max(0, parseInt(e.target.value) || 0));
                                   setPersonalization(prev => ({
                                     ...prev,
@@ -2986,26 +2843,17 @@ export default function AdminDashboard() {
                                     }
                                   }));
                                 }}
-                                style={{
-                                  width: '100%',
-                                  height: '36px',
-                                  background: 'rgba(255,255,255,0.02)',
-                                  border: '1px solid rgba(255,255,255,0.08)',
-                                  borderRadius: '8px',
-                                  padding: '0 10px',
-                                  color: '#fff',
-                                  fontSize: '0.85rem',
-                                  outline: 'none'
-                                }}
+                                data-width="100%"
+                                data-height="36px"
                               />
                             </div>
                           </div>
 
                           <div>
                             <label style={{ fontSize: '0.75rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>SVG Կոդ</label>
-                            <textarea
+                            <hd-textarea
                               value={personalization.cursors[activeCursorType]?.svg || ''}
-                              onChange={(e) => {
+                              onInput={(e: any) => {
                                 const val = e.target.value;
                                 setPersonalization(prev => ({
                                   ...prev,
@@ -3018,18 +2866,13 @@ export default function AdminDashboard() {
                                   }
                                 }));
                               }}
+                              data-width="100%"
+                              data-disable-horizontal-resize="true"
                               style={{
-                                width: '100%',
                                 minHeight: '80px',
-                                background: 'rgba(0,0,0,0.2)',
-                                border: '1px solid rgba(255,255,255,0.08)',
-                                borderRadius: '8px',
-                                padding: '8px',
                                 color: '#00C49F',
-                                fontSize: '0.75rem',
                                 fontFamily: 'monospace',
-                                outline: 'none',
-                                resize: 'vertical'
+                                fontSize: '0.75rem',
                               }}
                             />
                           </div>
@@ -3054,32 +2897,24 @@ export default function AdminDashboard() {
                       }}>
                         <h4 style={{ margin: 0, fontSize: '0.85rem', color: 'var(--muted)', fontWeight: 700 }}>Կուրսորների Փորձարկման Գոտի (Hover to Test)</h4>
                         <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
-                          <button type="button" style={{
-                            flex: 1,
-                            height: '42px',
-                            borderRadius: '8px',
-                            background: 'var(--panel)',
-                            border: '1px solid var(--panel-border)',
-                            color: '#fff',
-                            cursor: 'var(--sandbox-pointer)',
-                            fontSize: '0.8rem',
-                            fontWeight: 600
-                          }}>
-                            Հղում / Կոճակ (Pointer)
-                          </button>
-                          <input 
-                            type="text" 
-                            placeholder="Գրիր այստեղ (Text)" 
+                          <hd-button 
+                            data-width="50%"
+                            data-height="42px"
+                            data-thickness="1px"
                             style={{
-                              flex: 1,
-                              height: '42px',
-                              borderRadius: '8px',
-                              background: 'rgba(255,255,255,0.05)',
-                              border: '1px solid var(--panel-border)',
-                              color: '#fff',
-                              padding: '0 12px',
+                              cursor: 'var(--sandbox-pointer)',
+                              fontSize: '0.8rem',
+                            }}
+                          >
+                            Հղում / Կոճակ (Pointer)
+                          </hd-button>
+                          <hd-input 
+                            placeholder="Գրիր այստեղ (Text)" 
+                            data-width="50%"
+                            data-height="42px"
+                            style={{
                               cursor: 'var(--sandbox-text)',
-                              fontSize: '0.8rem'
+                              fontSize: '0.8rem',
                             }}
                           />
                         </div>
@@ -3112,77 +2947,171 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="personalization-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', alignItems: 'start' }}>
-                  {/* Left Column: Upcoming mode settings */}
-                  <div style={{
-                    background: 'var(--panel)',
-                    border: '1px solid var(--panel-border)',
-                    borderRadius: '16px',
-                    padding: '24px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '20px'
-                  }}>
-                    <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span className="icon-Earth" style={{ color: '#ec407a' }} />
-                      Կայքի Աշխատանքային Ռեժիմ (Maintenance Mode)
-                    </h3>
+                  {/* Left Column wrapper */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                    {/* Card 1: Maintenance Mode */}
+                    <div style={{
+                      background: 'var(--panel)',
+                      border: '1px solid var(--panel-border)',
+                      borderRadius: '16px',
+                      padding: '24px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '20px'
+                    }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className="icon-Earth" style={{ color: '#ec407a' }} />
+                        Կայքի Աշխատանքային Ռեժիմ (Maintenance Mode)
+                      </h3>
 
-                    <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: 0, lineHeight: 1.5 }}>
-                      Միացնելով «Upcoming» ռեժիմը՝ կայքի հիմնական այցելուներին կցուցադրվի ժամանակավոր սպասման էջ (Coming Soon), իսկ ադմինիստրատիվ համակարգը (/admin) կշարունակի գործել սովորական ռեժիմով։
-                    </p>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: 0, lineHeight: 1.5 }}>
+                        Միացնելով «Upcoming» ռեժիմը՝ կայքի հիմնական այցելուներին կցուցադրվի ժամանակավոր սպասման էջ (Coming Soon), իսկ ադմինիստրատիվ համակարգը (/admin) կշարունակի գործել սովորական ռեժիմով։
+                      </p>
 
-                    <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '16px',
-                        background: 'rgba(255,255,255,0.02)',
-                        borderRadius: '12px',
-                        border: '1px solid var(--panel-border)'
-                      }}>
-                        <div>
-                          <span style={{ fontSize: '0.9rem', fontWeight: 600, display: 'block' }}>Upcoming Mode Ռեժիմ</span>
-                          <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
-                            {upcomingMode ? 'Ակտիվացված է (սպասման էջը միացված է)' : 'Անջատված է (կայքը բաց է բոլորի համար)'}
-                          </span>
-                        </div>
-                        
-                        {/* Toggle switch */}
-                        <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '50px', height: '26px' }}>
-                          <input 
-                            type="checkbox" 
+                      <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '16px',
+                          background: 'rgba(255,255,255,0.02)',
+                          borderRadius: '12px',
+                          border: '1px solid var(--panel-border)'
+                        }}>
+                          <div>
+                            <span style={{ fontSize: '0.9rem', fontWeight: 600, display: 'block' }}>Upcoming Mode Ռեժիմ</span>
+                            <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
+                              {upcomingMode ? 'Ակտիվացված է (սպասման էջը միացված է)' : 'Անջատված է (կայքը բաց է բոլորի համար)'}
+                            </span>
+                          </div>
+                          
+                          <hd-switch 
                             checked={upcomingMode} 
-                            onChange={(e) => setUpcomingMode(e.target.checked)}
-                            style={{ opacity: 0, width: 0, height: 0 }}
+                            onChange={(e: any) => setUpcomingMode(e.target.checked)} 
                           />
-                          <span className="slider" style={{
-                            position: 'absolute', cursor: 'pointer', inset: 0,
-                            backgroundColor: upcomingMode ? '#00c49f' : '#ccc',
-                            borderRadius: '34px', transition: '.4s'
-                          }}>
-                            <span style={{
-                              position: 'absolute', content: '""', height: '18px', width: '18px',
-                              left: upcomingMode ? '28px' : '4px', bottom: '4px',
-                              backgroundColor: 'white', borderRadius: '50%', transition: '.4s'
-                            }} />
-                          </span>
-                        </label>
-                      </div>
+                        </div>
 
-                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                        <hd-button 
-                          type="submit" 
-                          data-thickness="2px"
-                          data-width="160px"
-                          data-height="40px"
-                          data-font-size="0.85rem"
-                          disabled={savingSettings}
-                        >
-                          {savingSettings ? 'Պահպանվում է...' : 'Պահպանել Ռեժիմը'}
-                        </hd-button>
-                      </div>
-                    </form>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                          <hd-button 
+                            type="submit" 
+                            data-thickness="2px"
+                            data-width="160px"
+                            data-height="40px"
+                            data-font-size="0.85rem"
+                            disabled={savingSettings}
+                          >
+                            {savingSettings ? 'Պահպանվում է...' : 'Պահպանել Ռեժիմը'}
+                          </hd-button>
+                        </div>
+                      </form>
+                    </div>
+
+                    {/* Card 2: Coming Soon Texts Section */}
+                    <div style={{
+                      background: 'var(--panel)',
+                      border: '1px solid var(--panel-border)',
+                      borderRadius: '16px',
+                      padding: '24px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '20px'
+                    }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className="icon-Chat-Bubble" style={{ color: '#ffbb28' }} />
+                        Coming Soon Էջի Տեքստեր
+                      </h3>
+
+                      <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: 0, lineHeight: 1.5 }}>
+                        Կարգավորեք սպասման էջի բոլոր տեքստային տվյալները հայերեն և անգլերեն տարբերակներով, ինչպես նաև կոնտակտային տվյալները։
+                      </p>
+
+                      <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            <div>
+                              <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Վերնագիր (Armenian)</label>
+                              <hd-input 
+                                placeholder="Շուտով..."
+                                value={upcomingTitleHy}
+                                onInput={(e: any) => setUpcomingTitleHy(e.target.value)}
+                                data-width="100%"
+                                data-height="36px"
+                              />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Վերնագիր (English)</label>
+                              <hd-input 
+                                placeholder="Coming Soon..."
+                                value={upcomingTitleEn}
+                                onInput={(e: any) => setUpcomingTitleEn(e.target.value)}
+                                data-width="100%"
+                                data-height="36px"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Նկարագրություն (Armenian)</label>
+                            <hd-textarea 
+                              placeholder="Մանրամասներ..."
+                              value={upcomingDescHy}
+                              onInput={(e: any) => setUpcomingDescHy(e.target.value)}
+                              data-width="100%"
+                              data-disable-horizontal-resize="true"
+                              style={{ minHeight: '60px' }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Նկարագրություն (English)</label>
+                            <hd-textarea 
+                              placeholder="Description..."
+                              value={upcomingDescEn}
+                              onInput={(e: any) => setUpcomingDescEn(e.target.value)}
+                              data-width="100%"
+                              data-disable-horizontal-resize="true"
+                              style={{ minHeight: '60px' }}
+                            />
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            <div>
+                              <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Էլ. հասցե (Email)</label>
+                              <hd-input 
+                                placeholder="info@hdesign.am"
+                                value={upcomingEmail}
+                                onInput={(e: any) => setUpcomingEmail(e.target.value)}
+                                data-width="100%"
+                                data-height="36px"
+                              />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Հեռախոս (Phone)</label>
+                              <hd-input 
+                                placeholder="+374 99 00 00 00"
+                                value={upcomingTel}
+                                onInput={(e: any) => setUpcomingTel(e.target.value)}
+                                data-width="100%"
+                                data-height="36px"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                          <hd-button 
+                            type="submit" 
+                            data-thickness="2px"
+                            data-width="180px"
+                            data-height="40px"
+                            data-font-size="0.85rem"
+                            disabled={savingSettings}
+                          >
+                            {savingSettings ? 'Պահպանվում է...' : 'Պահպանել Տեքստերը'}
+                          </hd-button>
+                        </div>
+                      </form>
+                    </div>
                   </div>
 
                   {/* Right Column: Passcode change settings */}
@@ -3299,7 +3228,7 @@ export default function AdminDashboard() {
           transition: 'all 0.3s ease'
         }}
       >
-        <button 
+        <div 
           onClick={() => setActiveTab('analytics')}
           className="nav-btn"
           style={{
@@ -3308,7 +3237,6 @@ export default function AdminDashboard() {
             justifyContent: 'center',
             background: activeTab === 'analytics' ? 'var(--switcher-capsule-bg)' : 'transparent',
             color: activeTab === 'analytics' ? '#fff' : 'var(--muted)',
-            border: 'none',
             borderRadius: '16px',
             width: '50px',
             height: '50px',
@@ -3318,9 +3246,9 @@ export default function AdminDashboard() {
         >
           <span className="icon-Dashboard" style={{ fontSize: '1.4rem' }} />
           <div className="nav-tooltip">Վիճակագրություն</div>
-        </button>
+        </div>
 
-        <button 
+        <div 
           onClick={() => setActiveTab('cases')}
           className="nav-btn"
           style={{
@@ -3329,7 +3257,6 @@ export default function AdminDashboard() {
             justifyContent: 'center',
             background: activeTab === 'cases' ? 'var(--switcher-capsule-bg)' : 'transparent',
             color: activeTab === 'cases' ? '#fff' : 'var(--muted)',
-            border: 'none',
             borderRadius: '16px',
             width: '50px',
             height: '50px',
@@ -3339,9 +3266,9 @@ export default function AdminDashboard() {
         >
           <span className="icon-Image" style={{ fontSize: '1.4rem' }} />
           <div className="nav-tooltip">Քեյսեր</div>
-        </button>
+        </div>
 
-        <button 
+        <div 
           onClick={() => setActiveTab('messages')}
           className="nav-btn"
           style={{
@@ -3350,7 +3277,6 @@ export default function AdminDashboard() {
             justifyContent: 'center',
             background: activeTab === 'messages' ? 'var(--switcher-capsule-bg)' : 'transparent',
             color: activeTab === 'messages' ? '#fff' : 'var(--muted)',
-            border: 'none',
             borderRadius: '16px',
             width: '50px',
             height: '50px',
@@ -3360,9 +3286,9 @@ export default function AdminDashboard() {
         >
           <span className="icon-Mail" style={{ fontSize: '1.4rem' }} />
           <div className="nav-tooltip">Նամակներ</div>
-        </button>
+        </div>
 
-        <button 
+        <div 
           onClick={() => setActiveTab('translations')}
           className="nav-btn"
           style={{
@@ -3371,7 +3297,6 @@ export default function AdminDashboard() {
             justifyContent: 'center',
             background: activeTab === 'translations' ? 'var(--switcher-capsule-bg)' : 'transparent',
             color: activeTab === 'translations' ? '#fff' : 'var(--muted)',
-            border: 'none',
             borderRadius: '16px',
             width: '50px',
             height: '50px',
@@ -3381,9 +3306,9 @@ export default function AdminDashboard() {
         >
           <span className="icon-Earth" style={{ fontSize: '1.4rem' }} />
           <div className="nav-tooltip">Թարգմանություններ</div>
-        </button>
+        </div>
 
-        <button 
+        <div 
           onClick={() => setActiveTab('apis')}
           className="nav-btn"
           style={{
@@ -3392,7 +3317,6 @@ export default function AdminDashboard() {
             justifyContent: 'center',
             background: activeTab === 'apis' ? 'var(--switcher-capsule-bg)' : 'transparent',
             color: activeTab === 'apis' ? '#fff' : 'var(--muted)',
-            border: 'none',
             borderRadius: '16px',
             width: '50px',
             height: '50px',
@@ -3402,9 +3326,9 @@ export default function AdminDashboard() {
         >
           <span className="icon-Settings" style={{ fontSize: '1.4rem' }} />
           <div className="nav-tooltip">API-ներ</div>
-        </button>
+        </div>
 
-        <button 
+        <div 
           onClick={() => setActiveTab('personalization')}
           className="nav-btn"
           style={{
@@ -3413,7 +3337,6 @@ export default function AdminDashboard() {
             justifyContent: 'center',
             background: activeTab === 'personalization' ? 'var(--switcher-capsule-bg)' : 'transparent',
             color: activeTab === 'personalization' ? '#fff' : 'var(--muted)',
-            border: 'none',
             borderRadius: '16px',
             width: '50px',
             height: '50px',
@@ -3423,9 +3346,9 @@ export default function AdminDashboard() {
         >
           <span className="icon-Cursor" style={{ fontSize: '1.4rem' }} />
           <div className="nav-tooltip">Անհատականացում</div>
-        </button>
+        </div>
 
-        <button 
+        <div 
           onClick={() => setActiveTab('settings')}
           className="nav-btn"
           style={{
@@ -3434,7 +3357,6 @@ export default function AdminDashboard() {
             justifyContent: 'center',
             background: activeTab === 'settings' ? 'var(--switcher-capsule-bg)' : 'transparent',
             color: activeTab === 'settings' ? '#fff' : 'var(--muted)',
-            border: 'none',
             borderRadius: '16px',
             width: '50px',
             height: '50px',
@@ -3444,7 +3366,7 @@ export default function AdminDashboard() {
         >
           <span className="icon-Profile" style={{ fontSize: '1.4rem' }} />
           <div className="nav-tooltip">Կարգավորումներ</div>
-        </button>
+        </div>
       </nav>
 
       {/* API Unlocks Passcode Prompt Modal */}

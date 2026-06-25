@@ -6,13 +6,28 @@ import { useEffect, useState } from 'react';
 
 type UpcomingCheckProps = {
   initialUpcomingMode: boolean;
+  initialSettings?: {
+    upcoming_title_hy?: string;
+    upcoming_title_en?: string;
+    upcoming_desc_hy?: string;
+    upcoming_desc_en?: string;
+    upcoming_email?: string;
+    upcoming_tel?: string;
+  };
   children: React.ReactNode;
 };
 
-export default function UpcomingCheck({ initialUpcomingMode, children }: UpcomingCheckProps) {
+export default function UpcomingCheck({ initialUpcomingMode, initialSettings, children }: UpcomingCheckProps) {
   const pathname = usePathname();
   const { locale, setLocale } = useI18n();
   const [upcomingMode, setUpcomingMode] = useState(initialUpcomingMode);
+  
+  const [upcomingTitleHy, setUpcomingTitleHy] = useState(initialSettings?.upcoming_title_hy || 'Շուտով');
+  const [upcomingTitleEn, setUpcomingTitleEn] = useState(initialSettings?.upcoming_title_en || 'Coming Soon');
+  const [upcomingDescHy, setUpcomingDescHy] = useState(initialSettings?.upcoming_desc_hy || 'Մեր կորպորատիվ կայքը ժամանակավորապես անցանց է ստեղծարար փոփոխությունների և նորացման պատճառով։ Շուտով կվերադառնանք նորացված տեսքով։');
+  const [upcomingDescEn, setUpcomingDescEn] = useState(initialSettings?.upcoming_desc_en || 'Our website is temporarily offline for maintenance and creative updates. We will be back soon with a fresh experience.');
+  const [upcomingEmail, setUpcomingEmail] = useState(initialSettings?.upcoming_email || 'info@hdesign.am');
+  const [upcomingTel, setUpcomingTel] = useState(initialSettings?.upcoming_tel || '+374 99 00 00 00');
 
   // Check if current path starts with admin or api (which bypasses upcoming block)
   const isBypassed = pathname.startsWith('/admin') || pathname.startsWith('/api');
@@ -33,6 +48,12 @@ export default function UpcomingCheck({ initialUpcomingMode, children }: Upcomin
         if (res.ok) {
           const data = await res.json();
           setUpcomingMode(data.upcoming_mode);
+          setUpcomingTitleHy(data.upcoming_title_hy || 'Շուտով');
+          setUpcomingTitleEn(data.upcoming_title_en || 'Coming Soon');
+          setUpcomingDescHy(data.upcoming_desc_hy || 'Մեր կորպորատիվ կայքը ժամանակավորապես անցանց է ստեղծարար փոփոխությունների և նորացման պատճառով։ Շուտով կվերադառնանք նորացված տեսքով։');
+          setUpcomingDescEn(data.upcoming_desc_en || 'Our website is temporarily offline for maintenance and creative updates. We will be back soon with a fresh experience.');
+          setUpcomingEmail(data.upcoming_email || 'info@hdesign.am');
+          setUpcomingTel(data.upcoming_tel || '+374 99 00 00 00');
         }
       } catch (err) {
         console.error('Failed to fetch upcoming mode status:', err);
@@ -193,7 +214,7 @@ export default function UpcomingCheck({ initialUpcomingMode, children }: Upcomin
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent'
             }}>
-              {locale === 'hy' ? 'Շուտով' : 'Coming Soon'}
+              {locale === 'hy' ? upcomingTitleHy : upcomingTitleEn}
             </h1>
             <p style={{
               fontSize: '0.96rem',
@@ -201,9 +222,7 @@ export default function UpcomingCheck({ initialUpcomingMode, children }: Upcomin
               color: '#4a4a4a',
               margin: 0
             }}>
-              {locale === 'hy' 
-                ? 'Մեր կորպորատիվ կայքը ժամանակավորապես անցանց է ստեղծարար փոփոխությունների և նորացման պատճառով։ Շուտով կվերադառնանք նորացված տեսքով։' 
-                : 'Our website is temporarily offline for maintenance and creative updates. We will be back soon with a fresh experience.'}
+              {locale === 'hy' ? upcomingDescHy : upcomingDescEn}
             </p>
           </div>
 
@@ -224,10 +243,10 @@ export default function UpcomingCheck({ initialUpcomingMode, children }: Upcomin
             color: '#666666'
           }}>
             <div>
-              Email: <a href="mailto:info@hdesign.am" style={{ color: '#083f39', fontWeight: 600, textDecoration: 'none' }}>info@hdesign.am</a>
+              Email: <a href={`mailto:${upcomingEmail}`} style={{ color: '#083f39', fontWeight: 600, textDecoration: 'none' }}>{upcomingEmail}</a>
             </div>
             <div>
-              Tel: <a href="tel:+37499000000" style={{ color: '#083f39', fontWeight: 600, textDecoration: 'none' }}>+374 99 00 00 00</a>
+              Tel: <a href={`tel:${upcomingTel.replaceAll(' ', '')}`} style={{ color: '#083f39', fontWeight: 600, textDecoration: 'none' }}>{upcomingTel}</a>
             </div>
           </div>
 
@@ -237,18 +256,20 @@ export default function UpcomingCheck({ initialUpcomingMode, children }: Upcomin
             gap: '8px',
             marginTop: '16px'
           }}>
-            <button 
+            <div 
               onClick={() => setLocale('hy')} 
               className={`upcoming-lang-btn ${locale === 'hy' ? 'active' : ''}`}
+              style={{ cursor: 'pointer' }}
             >
               Հայերեն
-            </button>
-            <button 
+            </div>
+            <div 
               onClick={() => setLocale('en')} 
               className={`upcoming-lang-btn ${locale === 'en' ? 'active' : ''}`}
+              style={{ cursor: 'pointer' }}
             >
               English
-            </button>
+            </div>
           </div>
         </div>
       </div>

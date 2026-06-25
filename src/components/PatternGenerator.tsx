@@ -462,14 +462,14 @@ export default function PatternGenerator() {
                     {renamingPresetId === preset.id ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
                         <hd-input value={renamingName} onInput={(e: any) => setRenamingName(e.target.value)} data-height="28px" data-font-size="0.78rem" style={{ flex: 1 }} autoFocus />
-                        <button onClick={() => finishRename(preset.id)} style={{ background: 'none', border: 'none', color: '#00C49F', cursor: 'pointer', padding: 0 }}><span className="icon-Check" /></button>
-                        <button onClick={() => setRenamingPresetId(null)} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', padding: 0 }}><span className="icon-Close" /></button>
+                        <span onClick={() => finishRename(preset.id)} style={{ background: 'none', border: 'none', color: '#00C49F', cursor: 'pointer', padding: 0 }}><span className="icon-Check" /></span>
+                        <span onClick={() => setRenamingPresetId(null)} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', padding: 0 }}><span className="icon-Close" /></span>
                       </div>
                     ) : (
                       <>
                         <span onClick={() => loadPreset(preset.layers)} style={{ flex: 1, cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={preset.name}>{preset.name}</span>
-                        <button onClick={() => startRename(preset.id, preset.name)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', fontSize: '0.75rem' }}><span className="icon-Pencil" /></button>
-                        <button onClick={() => deleteCustomPreset(preset.id)} style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', padding: '0 2px', fontSize: '0.75rem' }}><span className="icon-Trash" /></button>
+                        <span onClick={() => startRename(preset.id, preset.name)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 2px', fontSize: '0.75rem' }}><span className="icon-Pencil" /></span>
+                        <span onClick={() => deleteCustomPreset(preset.id)} style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', padding: '0 2px', fontSize: '0.75rem' }}><span className="icon-Trash" /></span>
                       </>
                     )}
                   </div>
@@ -539,12 +539,12 @@ export default function PatternGenerator() {
               <h3 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--primary-color)', textTransform: 'uppercase', letterSpacing: '1px' }}>
                 {t('pattern_generator', 'randomizer_title', 'Ռանդոմայզեր')}
               </h3>
-              <button
+              <span
                 onClick={() => setShowRandomizerConfig(!showRandomizerConfig)}
                 style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.8rem' }}
               >
                 {showRandomizerConfig ? '▲ Թաքցնել' : '▼ Ֆիլտրեր'}
-              </button>
+              </span>
             </div>
 
             <div className={`smooth-expand ${showRandomizerConfig ? 'expanded' : ''}`} style={{ marginBottom: showRandomizerConfig ? '12px' : '0', transition: 'margin 0.35s' }}>
@@ -707,7 +707,7 @@ export default function PatternGenerator() {
                             <h3 style={{ margin: 0, color: selectedLineProps.color, fontSize: '0.88rem' }}>
                               {t('pattern_generator', 'edit_line_title', 'Գիծ')}: {selectedLineIndex !== 0 ? `${selectedLineIndex > 0 ? '+' : ''}${selectedLineIndex}` : t('pattern_generator', 'center_line_label', 'Կենտ.')}
                             </h3>
-                            <button onClick={() => setSelectedLineIndex(null)} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '0.8rem' }}>{t('pattern_generator', 'close_btn', 'Փակել')}</button>
+                            <span onClick={() => setSelectedLineIndex(null)} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '0.8rem' }}>{t('pattern_generator', 'close_btn', 'Փակել')}</span>
                           </div>
                           <hd-checkbox data-size="15px" checked={selectedLineProps.isLinked} onChange={(e: any) => updateLine(selectedLayer.id, selectedLineIndex, { isLinked: e.target.checked })} data-font-size="0.82rem" style={{ background: 'var(--btn-bg)', padding: '8px', borderRadius: '8px' }}>
                             <span style={{ color: selectedLineProps.isLinked ? '#00C49F' : '#888' }}>{t('pattern_generator', 'link_to_layer_label', 'Կապ շերտին')}</span>
@@ -778,18 +778,18 @@ export default function PatternGenerator() {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
-                      <button onClick={(e) => { e.stopPropagation(); toggleLayerExpand(layer.id); }} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', padding: '1px 4px', fontSize: '0.7rem', flexShrink: 0 }}>
+                      <span onClick={(e) => { e.stopPropagation(); toggleLayerExpand(layer.id); }} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', padding: '1px 4px', fontSize: '0.7rem', flexShrink: 0 }}>
                         {expandedLayerIds[layer.id] ? (
                           <span className="icon-Chevrolt-Arrow-Right" style={{ display: 'inline-block', transform: 'rotate(90deg)', fontSize: '0.65rem' }} />
                         ) : (
                           <span className="icon-Chevrolt-Arrow-Right" style={{ display: 'inline-block', fontSize: '0.65rem' }} />
                         )}
-                      </button>
+                      </span>
                       {renamingLayerId === layer.id ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }} onClick={e => e.stopPropagation()}>
                           <hd-input value={renamingLayerName} onInput={(e: any) => setRenamingLayerName(e.target.value)} data-height="28px" data-font-size="0.78rem" style={{ flex: 1 }} autoFocus onKeyDown={(e: any) => { if (e.key === 'Enter') finishRenameLayer(layer.id); if (e.key === 'Escape') setRenamingLayerId(null); }} />
-                          <button type="button" onClick={() => finishRenameLayer(layer.id)} style={{ background: 'none', border: 'none', color: '#00C49F', cursor: 'pointer', padding: '0 3px' }}><span className="icon-Check" /></button>
-                          <button type="button" onClick={() => setRenamingLayerId(null)} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', padding: '0 3px' }}><span className="icon-Close" /></button>
+                          <span onClick={() => finishRenameLayer(layer.id)} style={{ background: 'none', border: 'none', color: '#00C49F', cursor: 'pointer', padding: '0 3px' }}><span className="icon-Check" /></span>
+                          <span onClick={() => setRenamingLayerId(null)} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', padding: '0 3px' }}><span className="icon-Close" /></span>
                         </div>
                       ) : (
                         <span style={{ fontWeight: selectedLayerId === layer.id ? 'bold' : 'normal', color: selectedLayerId === layer.id ? layer.color : 'var(--muted)', fontSize: '0.82rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -797,7 +797,7 @@ export default function PatternGenerator() {
                         </span>
                       )}
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); deleteLayer(layer.id); }} style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', marginLeft: 4, flexShrink: 0, fontSize: '0.82rem' }}><span className="icon-Close" /></button>
+                    <span onClick={(e) => { e.stopPropagation(); deleteLayer(layer.id); }} style={{ background: 'none', border: 'none', color: '#ff6b6b', cursor: 'pointer', marginLeft: 4, flexShrink: 0, fontSize: '0.82rem' }}><span className="icon-Close" /></span>
                   </div>
 
                   <div className={`smooth-expand ${expandedLayerIds[layer.id] ? 'expanded' : ''}`} style={{ marginTop: expandedLayerIds[layer.id] ? '6px' : '0', transition: 'margin 0.35s' }}>

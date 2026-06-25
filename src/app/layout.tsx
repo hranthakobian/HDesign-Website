@@ -76,7 +76,17 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <CustomCursor />
         <AnalyticsTracker />
         <I18nProvider>
-          <UpcomingCheck initialUpcomingMode={upcomingMode}>
+          <UpcomingCheck 
+            initialUpcomingMode={upcomingMode}
+            initialSettings={{
+              upcoming_title_hy: generalSettings?.upcoming_title_hy,
+              upcoming_title_en: generalSettings?.upcoming_title_en,
+              upcoming_desc_hy: generalSettings?.upcoming_desc_hy,
+              upcoming_desc_en: generalSettings?.upcoming_desc_en,
+              upcoming_email: generalSettings?.upcoming_email,
+              upcoming_tel: generalSettings?.upcoming_tel
+            }}
+          >
             <Header />
             <GlobalBackground />
             <PageTransition>

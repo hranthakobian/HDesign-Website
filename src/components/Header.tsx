@@ -179,16 +179,17 @@ export default function Header() {
           </nav>
 
           {/* 4-Line Hamburger Button */}
-          <button 
+          <div 
             className={`hamburger-btn ${isMobileMenuOpen ? "open" : ""}`} 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Toggle navigation menu"
+            style={{ cursor: 'pointer' }}
           >
             <span></span>
             <span></span>
             <span></span>
             <span></span>
-          </button>
+          </div>
         </header>
 
         {/* Mobile Menu Drawer Overlay */}
@@ -240,15 +241,15 @@ export default function Header() {
 
                 {/* Theme Switcher Toggle */}
                 <div className="mobile-theme-switcher">
-                  <button type="button" onClick={() => changeTheme('light')} className={theme === 'light' ? 'active' : ''}>
+                  <div onClick={() => changeTheme('light')} className={`theme-btn ${theme === 'light' ? 'active' : ''}`}>
                     Բաց
-                  </button>
-                  <button type="button" onClick={() => changeTheme('dark')} className={theme === 'dark' ? 'active' : ''}>
+                  </div>
+                  <div onClick={() => changeTheme('dark')} className={`theme-btn ${theme === 'dark' ? 'active' : ''}`}>
                     Մութ
-                  </button>
-                  <button type="button" onClick={() => changeTheme('green')} className={theme === 'green' ? 'active' : ''}>
+                  </div>
+                  <div onClick={() => changeTheme('green')} className={`theme-btn ${theme === 'green' ? 'active' : ''}`}>
                     Կանաչ
-                  </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -314,27 +315,24 @@ export default function Header() {
             zIndex: 1
           }} />
           
-          <button 
-            type="button" 
+          <div 
             onClick={() => changeTheme('light')}
             style={{ flex: 1, border: 'none', background: 'transparent', color: theme === 'light' ? 'var(--switcher-text-active)' : 'var(--switcher-text-inactive)', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer', zIndex: 2, position: 'relative', textAlign: 'center', transition: 'color 0.2s', padding: 0 }}
           >
             {t('common', 'theme_light', 'Բաց')}
-          </button>
-          <button 
-            type="button" 
+          </div>
+          <div 
             onClick={() => changeTheme('dark')}
             style={{ flex: 1, border: 'none', background: 'transparent', color: theme === 'dark' ? 'var(--switcher-text-active)' : 'var(--switcher-text-inactive)', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer', zIndex: 2, position: 'relative', textAlign: 'center', transition: 'color 0.2s', padding: 0 }}
           >
             {t('common', 'theme_dark', 'Մութ')}
-          </button>
-          <button 
-            type="button" 
+          </div>
+          <div 
             onClick={() => changeTheme('green')}
             style={{ flex: 1, border: 'none', background: 'transparent', color: theme === 'green' ? 'var(--switcher-text-active)' : 'var(--switcher-text-inactive)', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer', zIndex: 2, position: 'relative', textAlign: 'center', transition: 'color 0.2s', padding: 0 }}
           >
             {t('common', 'theme_green', 'Կանաչ')}
-          </button>
+          </div>
         </div>
       </div>
 
