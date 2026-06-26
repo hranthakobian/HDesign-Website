@@ -86,6 +86,12 @@ declare module 'react' {
         onInput?: (event: any) => void;
         onChange?: (event: any) => void;
       };
+      'hd-segment': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        value?: string;
+        id?: string;
+        name?: string;
+        onChange?: (event: any) => void;
+      };
     }
   }
 }

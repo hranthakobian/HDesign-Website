@@ -71,7 +71,7 @@ export default function UpcomingCheck({ initialUpcomingMode, initialSettings, ch
         zIndex: 99999,
         background: '#ffffff',
         color: '#1a1a1a',
-        fontFamily: '"Calibri", "HDesign", "Outfit", "Inter", sans-serif',
+        fontFamily: '"HDesign", "Outfit", "Inter", sans-serif',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -254,16 +254,20 @@ export default function UpcomingCheck({ initialUpcomingMode, initialSettings, ch
           </div>
 
           {/* Language toggle switcher */}
-          <div 
-            onClick={() => setLocale(locale === 'hy' ? 'en' : 'hy')}
-            className={`lang-switcher lang-${locale}`}
-            title={locale === 'hy' ? 'Switch to English' : 'Փոխել հայերենի'}
+          <hd-segment
+            id="langSelector"
+            value={locale}
+            onChange={(e: any) => setLocale(e.target.value)}
+            data-color="#083f39"
+            data-inactive-color="rgba(8, 63, 57, 0.4)"
+            data-width="130px"
+            data-height="36px"
+            data-thickness="1px"
             style={{ marginTop: '16px' }}
           >
-            <div className="lang-capsule" />
-            <span className={`lang-text ${locale === 'hy' ? 'active' : ''}`}>Հայ</span>
-            <span className={`lang-text ${locale === 'en' ? 'active' : ''}`}>Eng</span>
-          </div>
+            <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
+            <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
+          </hd-segment>
         </div>
       </div>
     );

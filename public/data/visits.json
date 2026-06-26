@@ -1,5 +1,20 @@
 [
   {
+    "id": "dpg0wcr3v0i",
+    "session_id": "session_ct4tu20vk86lnoiqoabal",
+    "ip_address": "::ffff:127.0.0.1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0",
+    "browser": "Firefox",
+    "os": "Windows",
+    "device": "desktop",
+    "country": "Unknown",
+    "city": "Unknown",
+    "referrer": "Direct",
+    "landing_page": "/",
+    "created_at": "2026-06-26T06:50:19.681Z",
+    "updated_at": "2026-06-26T06:50:19.681Z"
+  },
+  {
     "id": "0m0628fo14x",
     "session_id": "session_96tb9c4b9jltexcvwhpt7p",
     "ip_address": "::ffff:127.0.0.1",

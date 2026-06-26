@@ -228,15 +228,19 @@ export default function Header() {
               
               <div className="mobile-settings-row">
                 {/* Language Toggle */}
-                <div 
-                  onClick={() => setLocale(locale === 'hy' ? 'en' : 'hy')}
-                  className={`lang-switcher lang-${locale}`}
-                  style={{ cursor: "pointer" }}
+                <hd-segment
+                  id="langSelectorMobile"
+                  value={locale}
+                  onChange={(e: any) => setLocale(e.target.value)}
+                  data-color="var(--primary-color)"
+                  data-inactive-color="var(--lang-inactive-color)"
+                  data-width="130px"
+                  data-height="36px"
+                  data-thickness="1px"
                 >
-                  <div className="lang-capsule" />
-                  <span className={`lang-text ${locale === 'hy' ? 'active' : ''}`}>Հայ</span>
-                  <span className={`lang-text ${locale === 'en' ? 'active' : ''}`}>Eng</span>
-                </div>
+                  <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
+                  <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
+                </hd-segment>
 
                 {/* Theme Switcher Toggle */}
                 <div className="mobile-theme-switcher">
@@ -288,15 +292,19 @@ export default function Header() {
         </Link>
 
         {/* Smooth Language Switcher Toggle */}
-        <div 
-          onClick={() => setLocale(locale === 'hy' ? 'en' : 'hy')}
-          className={`lang-switcher lang-${locale}`}
-          title={locale === 'hy' ? 'Switch to English' : 'Փոխել հայերենի'}
+        <hd-segment
+          id="langSelector"
+          value={locale}
+          onChange={(e: any) => setLocale(e.target.value)}
+          data-color="var(--primary-color)"
+          data-inactive-color="var(--lang-inactive-color)"
+          data-width="130px"
+          data-height="36px"
+          data-thickness="1px"
         >
-          <div className="lang-capsule" />
-          <span className={`lang-text ${locale === 'hy' ? 'active' : ''}`}>Հայ</span>
-          <span className={`lang-text ${locale === 'en' ? 'active' : ''}`}>Eng</span>
-        </div>
+          <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
+          <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
+        </hd-segment>
 
         {/* Premium Theme Switcher 3-Way Toggle */}
         <div style={{ display: 'flex', alignItems: 'center', background: 'var(--switcher-bg)', border: '1px solid var(--switcher-border)', borderRadius: '20px', padding: '2px', position: 'relative', height: '36px', width: '160px', userSelect: 'none', transition: 'all 0.3s ease' }}>
