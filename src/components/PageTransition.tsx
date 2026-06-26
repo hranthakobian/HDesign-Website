@@ -5,7 +5,7 @@ import { useEffect, useState, useRef, ReactNode } from "react";
 
 export default function PageTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const [isLeaving, setIsLeaving] = useState(false);
+  const [transitionState, setTransitionState] = useState<'idle' | 'leaving' | 'entering'>('idle');
   const [displayChildren, setDisplayChildren] = useState(children);
   const prevPathRef = useRef(pathname);
 
@@ -20,19 +20,28 @@ export default function PageTransition({ children }: { children: ReactNode }) {
     prevPathRef.current = pathname;
 
     // Start leave animation (old content fades out)
-    setIsLeaving(true);
+    setTransitionState('leaving');
 
-    const timer = setTimeout(() => {
+    let enterTimer: NodeJS.Timeout;
+    const leaveTimer = setTimeout(() => {
       // Switch to new content only AFTER leave animation completes
       setDisplayChildren(pendingChildrenRef.current);
-      setIsLeaving(false);
-    }, 280); // matches CSS transition duration
+      setTransitionState('entering');
 
-    return () => clearTimeout(timer);
+      enterTimer = setTimeout(() => {
+        // Complete transition and go idle
+        setTransitionState('idle');
+      }, 320); // matches CSS transition duration for pageSlideEnter
+    }, 280); // matches CSS transition duration for pageSlideLeave
+
+    return () => {
+      clearTimeout(leaveTimer);
+      if (enterTimer) clearTimeout(enterTimer);
+    };
   }, [pathname]);
 
   return (
-    <div className={`page-transition-wrapper ${isLeaving ? "page-leave" : "page-enter"}`}>
+    <div className={`page-transition-wrapper state-${transitionState}`}>
       {displayChildren}
     </div>
   );

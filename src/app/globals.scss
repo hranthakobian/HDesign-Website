@@ -2,6 +2,16 @@ html, body {
   cursor: var(--custom-cursor);
 }
 
+::selection {
+  background-color: #083f39;
+  color: #ffffff;
+}
+
+::-moz-selection {
+  background-color: #083f39;
+  color: #ffffff;
+}
+
 [style*="cursor: default"], [style*="cursor:default"], .cursor-default {
   cursor: var(--custom-cursor) !important;
 }
@@ -610,14 +620,15 @@ hd-slider,
 /* Page Transition Styles — Directional Slide */
 .page-transition-wrapper {
   width: 100%;
-  will-change: transform;
 }
 
-.page-transition-wrapper.page-enter {
+.page-transition-wrapper.state-entering {
+  will-change: transform;
   animation: pageSlideEnter 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
-.page-transition-wrapper.page-leave {
+.page-transition-wrapper.state-leaving {
+  will-change: transform;
   animation: pageSlideLeave 0.28s cubic-bezier(0.55, 0, 1, 0.45) forwards;
 }
 
