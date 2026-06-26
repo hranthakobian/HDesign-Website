@@ -198,8 +198,8 @@ export default function UpcomingCheck({ initialUpcomingMode, initialSettings, ch
               src="/logo.png" 
               alt="HDesign Logo" 
               style={{ 
-                width: '52px', 
-                height: '52px', 
+                width: '90px', 
+                height: '90px', 
                 objectFit: 'contain', 
                 filter: 'drop-shadow(0 6px 16px rgba(8, 63, 57, 0.12))' 
               }} 
