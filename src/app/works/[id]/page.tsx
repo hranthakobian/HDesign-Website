@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { brandingCases as staticCases } from "@/lib/brandingData";
+import RatingSystem from "@/components/RatingSystem";
 
 type Case = {
   id: string;
@@ -35,6 +36,15 @@ function parseBg(bgString: string) {
   return { bg, overlay, positionY, height };
 }
 
+function parseLangText(text: string, lang: 'hy' | 'en') {
+  if (!text) return "";
+  const parts = text.split(" | ");
+  if (parts.length > 1) {
+    return lang === 'en' ? parts[1] : parts[0];
+  }
+  return text;
+}
+
 export default function BrandingDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -43,6 +53,14 @@ export default function BrandingDetailPage() {
   const [work, setWork] = useState<Case | null>(null);
   const [loading, setLoading] = useState(true);
   const [blocks, setBlocks] = useState<any[]>([]);
+  const [lang, setLang] = useState<'hy' | 'en'>('hy');
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedLang = localStorage.getItem('hdesign_locale');
+      if (savedLang === 'en') setLang('en');
+    }
+  }, []);
 
   useEffect(() => {
     async function loadWork() {
@@ -154,6 +172,25 @@ export default function BrandingDetailPage() {
 
   return (
     <main style={{ marginTop: "80px", minHeight: "100vh" }}>
+      {/* Rating Reminder Banner */}
+      <div 
+        style={{ 
+          background: "rgba(0, 255, 204, 0.05)", 
+          borderBottom: "1px solid rgba(0, 255, 204, 0.1)", 
+          padding: "10px 24px", 
+          textAlign: "center",
+          fontSize: "0.85rem",
+          color: "var(--accent)",
+          fontWeight: 600
+        }}
+      >
+        <span>
+          {lang === 'en' 
+            ? "⭐ Love this project? Feel free to rate it on the cover stars!" 
+            : "⭐ Հավանեցի՞ք նախագիծը։ Կարող եք գնահատել այն կազմի աստղերով։"}
+        </span>
+      </div>
+
       {/* Huge Case Hero Header */}
       <div 
         style={{
@@ -201,38 +238,46 @@ export default function BrandingDetailPage() {
             paddingBottom: "48px", 
             width: "100%",
             display: "flex",
-            flexDirection: "column",
-            gap: "12px"
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "flex-end",
+            gap: "24px",
+            flexWrap: "wrap"
           }}
         >
-          <span style={{ 
-            fontSize: "0.9rem", 
-            fontWeight: 800, 
-            textTransform: "uppercase", 
-            letterSpacing: "3px", 
-            color: "#ffffff",
-            opacity: 0.8
-          }}>
-            Բրենդավորման Քեյս
-          </span>
-          <h1 style={{ 
-            fontSize: "clamp(2.5rem, 6vw, 4rem)", 
-            fontWeight: "900", 
-            color: "#ffffff", 
-            margin: 0,
-            lineHeight: "1.1" 
-          }}>
-            {work.title}
-          </h1>
-          <p style={{ 
-            fontSize: "clamp(1rem, 2vw, 1.25rem)", 
-            color: "#ffffff", 
-            opacity: 0.9, 
-            margin: 0,
-            maxWidth: "700px" 
-          }}>
-            {work.subtitle}
-          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", flex: "1 1 500px", minWidth: 0 }}>
+            <span style={{ 
+              fontSize: "0.9rem", 
+              fontWeight: 800, 
+              textTransform: "uppercase", 
+              letterSpacing: "3px", 
+              color: "#ffffff",
+              opacity: 0.8
+            }}>
+              {lang === 'en' ? "Branding Case" : "Բրենդավորման Քեյս"}
+            </span>
+            <h1 style={{ 
+              fontSize: "clamp(2.5rem, 6vw, 4rem)", 
+              fontWeight: "900", 
+              color: "#ffffff", 
+              margin: 0,
+              lineHeight: "1.1" 
+            }}>
+              {parseLangText(work.title, lang)}
+            </h1>
+            <p style={{ 
+              fontSize: "clamp(1rem, 2vw, 1.25rem)", 
+              color: "#ffffff", 
+              opacity: 0.9, 
+              margin: 0,
+              maxWidth: "700px" 
+            }}>
+              {parseLangText(work.subtitle, lang)}
+            </p>
+          </div>
+          <div style={{ flexShrink: 0, paddingBottom: 8 }}>
+            <RatingSystem id={work.id} locale={lang === 'en' ? 'en' : 'hy'} />
+          </div>
         </div>
       </div>
 
@@ -240,18 +285,18 @@ export default function BrandingDetailPage() {
       <div style={{ borderBottom: "1px solid var(--panel-border)", background: "var(--panel)", padding: "24px 0" }}>
         <div className="shell" style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-around", gap: "24px", textAlign: "center" }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>Կարգ</span>
-            <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{work.category || "Branding"}</span>
+            <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>{lang === 'en' ? "Category" : "Կարգ"}</span>
+            <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{parseLangText(work.category || "", lang) || (lang === 'en' ? "Branding" : "Բրենդավորում")}</span>
           </div>
           {work.client && (
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>Հաճախորդ</span>
-              <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{work.client}</span>
+              <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>{lang === 'en' ? "Client" : "Հաճախորդ"}</span>
+              <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{parseLangText(work.client, lang)}</span>
             </div>
           )}
           {work.year && (
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>Տարեթիվ</span>
+              <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>{lang === 'en' ? "Year" : "Տարեթիվ"}</span>
               <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{work.year}</span>
             </div>
           )}
@@ -265,14 +310,15 @@ export default function BrandingDetailPage() {
             return (
               <div key={idx} style={{ width: "100%", padding: "48px 24px", boxSizing: "border-box" }}>
                 <div style={{ maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "16px" }}>
-                  {(block.title_am || block.title_en) && (
+                  {(lang === 'en' ? block.title_en : block.title_am) && (
                     <h2 style={{ fontSize: "2rem", fontWeight: "900", color: "var(--text)", margin: 0 }}>
-                      {block.title_am || block.title_en}
+                      {lang === 'en' ? block.title_en : block.title_am}
                     </h2>
                   )}
-                  <p style={{ fontSize: "1.15rem", lineHeight: "1.8", color: "var(--text)", opacity: 0.85, margin: 0, whiteSpace: "pre-line" }}>
-                    {block.content_am || block.content_en}
-                  </p>
+                  <div 
+                    style={{ fontSize: "1.15rem", lineHeight: "1.8", color: "var(--text)", opacity: 0.85, margin: 0 }}
+                    dangerouslySetInnerHTML={{ __html: lang === 'en' ? (block.content_en || block.content_am) : (block.content_am || block.content_en) }}
+                  />
                 </div>
               </div>
             );
@@ -284,10 +330,10 @@ export default function BrandingDetailPage() {
                 <div style={{ width: "100%", overflow: "hidden" }}>
                   <img src={block.image_url} alt="Project spec" style={{ width: "100%", height: "auto", display: "block" }} />
                 </div>
-                {(block.caption_am || block.caption_en) && (
+                {(lang === 'en' ? block.caption_en : block.caption_am) && (
                   <div style={{ maxWidth: "900px", margin: "12px auto 0", padding: "0 24px", textAlign: "center" }}>
                     <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontStyle: "italic" }}>
-                      {block.caption_am || block.caption_en}
+                      {lang === 'en' ? block.caption_en : block.caption_am}
                     </span>
                   </div>
                 )}
@@ -351,8 +397,13 @@ export default function BrandingDetailPage() {
         })}
       </div>
 
+      {/* Footer Rating System section */}
+      <div className="shell" style={{ display: "flex", justifyContent: "center" }}>
+        <RatingSystem id={work.id} locale={lang === 'en' ? 'en' : 'hy'} />
+      </div>
+
       {/* Back to works button */}
-      <div style={{ padding: "40px 24px 80px", display: "flex", justifyContent: "center" }}>
+      <div style={{ display: "flex", justifyContent: "center" }}>
         <Link href="/works" style={{ textDecoration: "none" }}>
           <hd-button data-width="220px" data-height="50px" data-thickness="2px">
             ← Հետ դեպի ցուցակ

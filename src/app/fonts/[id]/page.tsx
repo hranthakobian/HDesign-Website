@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
+import RatingSystem from "@/components/RatingSystem";
 
 type Font = {
   id: string;
@@ -803,6 +804,8 @@ export default function FontDetailPage() {
               )}
             </div>
           </div>
+
+          <RatingSystem id={font.id} locale={locale === 'hy' ? 'hy' : 'en'} />
 
           {/* CSS Usage Code Panel */}
           <div

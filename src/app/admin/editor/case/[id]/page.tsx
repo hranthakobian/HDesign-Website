@@ -98,6 +98,142 @@ function Editable({
   );
 }
 
+function RichEditable({
+  value, onChange, style = {}
+}: {
+  value: string; onChange: (v: string) => void;
+  style?: React.CSSProperties;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [editing, setEditing] = useState(false);
+
+  useEffect(() => {
+    if (ref.current && ref.current.innerHTML !== value) {
+      ref.current.innerHTML = value || "";
+    }
+  }, [value]);
+
+  const handleInput = () => {
+    if (ref.current) {
+      onChange(ref.current.innerHTML);
+    }
+  };
+
+  const exec = (cmd: string, val: string = "") => {
+    document.execCommand(cmd, false, val);
+    handleInput();
+  };
+
+  return (
+    <div style={{ position: "relative", width: "100%" }}>
+      {editing && (
+        <div
+          style={{
+            position: "absolute",
+            top: -48,
+            left: 0,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 4,
+            background: "var(--panel)",
+            border: "1px solid var(--panel-border)",
+            borderRadius: 8,
+            padding: "4px 6px",
+            zIndex: 100,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          }}
+          onMouseDown={e => e.preventDefault()} // prevent focus loss
+        >
+          {/* Headings */}
+          <button onClick={() => exec("formatBlock", "<h2>")} style={toolbarBtnStyle} title="Heading 2">H2</button>
+          <button onClick={() => exec("formatBlock", "<h3>")} style={toolbarBtnStyle} title="Heading 3">H3</button>
+          <button onClick={() => exec("formatBlock", "<p>")} style={toolbarBtnStyle} title="Paragraph">P</button>
+          <div style={{ width: 1, background: "var(--panel-border)", margin: "0 2px" }} />
+
+          {/* Inline Styles */}
+          <button onClick={() => exec("bold")} style={toolbarBtnStyle} title="Թավ (Bold)"><b>B</b></button>
+          <button onClick={() => exec("italic")} style={toolbarBtnStyle} title="Շեղ (Italic)"><i>I</i></button>
+          <button onClick={() => exec("underline")} style={toolbarBtnStyle} title="Ընդգծված (Underline)"><u>U</u></button>
+          <button onClick={() => exec("strikeThrough")} style={toolbarBtnStyle} title="Ջնջված (Strikethrough)"><s>S</s></button>
+          <div style={{ width: 1, background: "var(--panel-border)", margin: "0 2px" }} />
+
+          {/* Alignment */}
+          <button onClick={() => exec("justifyLeft")} style={toolbarBtnStyle} title="Ձախից">←</button>
+          <button onClick={() => exec("justifyCenter")} style={toolbarBtnStyle} title="Կենտրոնից">↔</button>
+          <button onClick={() => exec("justifyRight")} style={toolbarBtnStyle} title="Աջից">→</button>
+          <button onClick={() => exec("justifyFull")} style={toolbarBtnStyle} title="Հավասարեցնել">═</button>
+          <div style={{ width: 1, background: "var(--panel-border)", margin: "0 2px" }} />
+
+          {/* Lists & Links */}
+          <button onClick={() => exec("insertUnorderedList")} style={toolbarBtnStyle} title="Բուլետներ (Bullet List)">• List</button>
+          <button onClick={() => {
+            const url = prompt("Մուտքագրեք հղումը (URL):", "https://");
+            if (url) exec("createLink", url);
+          }} style={toolbarBtnStyle} title="Ավելացնել հղում">🔗</button>
+          <div style={{ width: 1, background: "var(--panel-border)", margin: "0 2px" }} />
+
+          {/* ForeColor Preset Presets */}
+          <input 
+            type="color" 
+            onChange={e => exec("foreColor", e.target.value)} 
+            style={{ width: 24, height: 24, padding: 0, border: "none", background: "none", cursor: "pointer", alignSelf: "center" }} 
+            title="Տեքստի Գույն" 
+          />
+
+          <div style={{ width: 1, background: "var(--panel-border)", margin: "0 2px" }} />
+          <button onClick={() => exec("removeFormat")} style={toolbarBtnStyle} title="Մաքրել ֆորմատավորումը">✕</button>
+        </div>
+      )}
+
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        onFocus={() => setEditing(true)}
+        onBlur={() => setEditing(false)}
+        onInput={handleInput}
+        style={{
+          ...style,
+          outline: editing ? "2px solid rgba(0,255,204,0.6)" : "2px solid transparent",
+          borderRadius: "6px",
+          padding: "6px",
+          minHeight: "40px",
+          whiteSpace: "normal",
+        }}
+      />
+    </div>
+  );
+}
+
+const toolbarBtnStyle: React.CSSProperties = {
+  background: "transparent",
+  border: "none",
+  color: "var(--text)",
+  cursor: "pointer",
+  padding: "4px 8px",
+  fontSize: "0.8rem",
+  borderRadius: 4,
+  fontWeight: "bold",
+};
+
+function parseLangText(text: string, lang: 'am' | 'en') {
+  if (!text) return "";
+  const parts = text.split(" | ");
+  if (parts.length > 1) {
+    return lang === 'en' ? parts[1] : parts[0];
+  }
+  return text;
+}
+
+function updateLangText(text: string, newVal: string, lang: 'am' | 'en') {
+  const parts = (text || "").split(" | ");
+  let am = parts[0] || "";
+  let en = parts[1] || "";
+  if (lang === 'am') am = newVal;
+  if (lang === 'en') en = newVal;
+  return `${am} | ${en}`;
+}
+
 /* ─── Main Page ──────────────────────────────────────── */
 export default function CaseEditor() {
   const params        = useParams();
@@ -111,6 +247,7 @@ export default function CaseEditor() {
   const [saving,   setSaving]   = useState(false);
   const [uploading,setUploading]= useState(false);
   const [selected, setSelected] = useState<number | null>(null); // selected block index
+  const [editorLang, setEditorLang] = useState<'am' | 'en'>('am'); // editing language switcher
 
   const [form, setForm] = useState<Case>({
     id, title: "", subtitle: "", bg: GRADIENT_PRESETS[0].value,
@@ -122,6 +259,95 @@ export default function CaseEditor() {
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const [dragOverPosition, setDragOverPosition] = useState<'above' | 'below' | null>(null);
+
+  /* ─ Collapsible Sidebar & Floating Windows ─ */
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showLayersPanel, setShowLayersPanel] = useState(true);
+
+  const [propPos, setPropPos] = useState({ x: 200, y: 150 });
+  const [draggingProp, setDraggingProp] = useState(false);
+  const propStart = useRef({ x: 0, y: 0 });
+
+  const [layersPos, setLayersPos] = useState({ x: 200, y: 480 });
+  const [draggingLayers, setDraggingLayers] = useState(false);
+  const layersStart = useRef({ x: 0, y: 0 });
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedCollapsed = localStorage.getItem("case-editor-sidebar-collapsed");
+      if (savedCollapsed) setSidebarCollapsed(savedCollapsed === "true");
+
+      const savedShowLayers = localStorage.getItem("case-editor-show-layers");
+      if (savedShowLayers) setShowLayersPanel(savedShowLayers === "true");
+
+      const savedPropPos = localStorage.getItem("case-editor-prop-pos");
+      if (savedPropPos) {
+        try { setPropPos(JSON.parse(savedPropPos)); } catch {}
+      }
+
+      const savedLayersPos = localStorage.getItem("case-editor-layers-pos");
+      if (savedLayersPos) {
+        try { setLayersPos(JSON.parse(savedLayersPos)); } catch {}
+      }
+    }
+  }, []);
+
+  // Save to localStorage on changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("case-editor-sidebar-collapsed", String(sidebarCollapsed));
+    }
+  }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("case-editor-show-layers", String(showLayersPanel));
+    }
+  }, [showLayersPanel]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && !draggingProp) {
+      localStorage.setItem("case-editor-prop-pos", JSON.stringify(propPos));
+    }
+  }, [propPos, draggingProp]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && !draggingLayers) {
+      localStorage.setItem("case-editor-layers-pos", JSON.stringify(layersPos));
+    }
+  }, [layersPos, draggingLayers]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (draggingProp) {
+        setPropPos({
+          x: Math.max(0, e.clientX - propStart.current.x),
+          y: Math.max(0, e.clientY - propStart.current.y),
+        });
+      }
+      if (draggingLayers) {
+        setLayersPos({
+          x: Math.max(0, e.clientX - layersStart.current.x),
+          y: Math.max(0, e.clientY - layersStart.current.y),
+        });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setDraggingProp(false);
+      setDraggingLayers(false);
+    };
+
+    if (draggingProp || draggingLayers) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [draggingProp, draggingLayers]);
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedIdx(index);
@@ -314,7 +540,43 @@ export default function CaseEditor() {
             </span>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          {/* Language Switcher */}
+          <div style={{ display: "flex", background: "var(--input-bg)", border: "1px solid var(--input-border)", borderRadius: 8, padding: 2, gap: 2 }}>
+            <button
+              onClick={() => setEditorLang("am")}
+              style={{
+                padding: "6px 12px",
+                background: editorLang === "am" ? "var(--accent)" : "transparent",
+                border: "none",
+                borderRadius: 6,
+                color: editorLang === "am" ? "var(--bg)" : "var(--muted)",
+                fontWeight: 700,
+                cursor: "pointer",
+                fontSize: "0.78rem",
+                transition: "all 0.2s",
+              }}
+            >
+              AM (Հայ)
+            </button>
+            <button
+              onClick={() => setEditorLang("en")}
+              style={{
+                padding: "6px 12px",
+                background: editorLang === "en" ? "var(--accent)" : "transparent",
+                border: "none",
+                borderRadius: 6,
+                color: editorLang === "en" ? "var(--bg)" : "var(--muted)",
+                fontWeight: 700,
+                cursor: "pointer",
+                fontSize: "0.78rem",
+                transition: "all 0.2s",
+              }}
+            >
+              EN (Eng)
+            </button>
+          </div>
+
           <Link href={`/works/${id}`} target="_blank" style={{ textDecoration: "none" }}>
             <hd-button data-width="100px" data-height="34px" data-thickness="1px" style={{ background: "transparent", color: "var(--muted)" }}>
               Տեսնել →
@@ -357,11 +619,11 @@ export default function CaseEditor() {
                     textAlign: "left"
                   }}
                 >
-                  <Editable tag="span" value={form.category} onChange={v => setForm(p => ({ ...p, category: v }))}
+                  <Editable tag="span" value={parseLangText(form.category, editorLang) || (editorLang === "en" ? "Branding" : "Բրենդավորում")} onChange={v => setForm(p => ({ ...p, category: updateLangText(form.category, v, editorLang) }))}
                     style={{ fontSize: "0.9rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "3px", color: "#ffffff", opacity: 0.8 }} />
-                  <Editable tag="h1" value={form.title} onChange={v => setForm(p => ({ ...p, title: v }))}
+                  <Editable tag="h1" value={parseLangText(form.title, editorLang) || (editorLang === "en" ? "Title" : "Վերնագիր")} onChange={v => setForm(p => ({ ...p, title: updateLangText(form.title, v, editorLang) }))}
                     style={{ fontSize: "clamp(2.5rem, 6vw, 4rem)", fontWeight: 900, color: "#ffffff", margin: 0, lineHeight: "1.1", width: "100%" }} />
-                  <Editable tag="p" value={form.subtitle} onChange={v => setForm(p => ({ ...p, subtitle: v }))}
+                  <Editable tag="p" value={parseLangText(form.subtitle, editorLang) || (editorLang === "en" ? "Subtitle" : "Ենթավերնագիր")} onChange={v => setForm(p => ({ ...p, subtitle: updateLangText(form.subtitle, v, editorLang) }))}
                     style={{ fontSize: "clamp(1rem, 2vw, 1.25rem)", color: "#ffffff", opacity: 0.9, margin: 0, maxWidth: "700px", width: "100%" }} />
                 </div>
               </div>
@@ -372,13 +634,13 @@ export default function CaseEditor() {
           <div style={{ borderBottom: "1px solid var(--panel-border)", background: "var(--panel)", padding: "24px 0" }}>
             <div className="shell" style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-around", gap: "24px", textAlign: "center" }}>
               <div style={{ display: "flex", flexDirection: "column" }}>
-                <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>Կարգ</span>
-                <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{form.category || "Branding"}</span>
+                <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>{editorLang === "en" ? "Category" : "Կարգ"}</span>
+                <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{parseLangText(form.category, editorLang) || (editorLang === "en" ? "Branding" : "Բրենդավորում")}</span>
               </div>
               {form.client && (
                 <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>Հաճախորդ</span>
-                  <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{form.client}</span>
+                  <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>{editorLang === "en" ? "Client" : "Հաճախորդ"}</span>
+                  <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{parseLangText(form.client, editorLang)}</span>
                 </div>
               )}
               {form.year && (
@@ -458,10 +720,10 @@ export default function CaseEditor() {
                       {block.type === "text" && (
                         <div style={{ maxWidth: 800, width: "100%", margin: "0 auto", padding: "40px 24px", boxSizing: "border-box" }}>
                           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                            <Editable tag="h2" value={block.title_am} onChange={v => upd(idx, { ...block, title_am: v })}
+                            <Editable tag="h2" value={editorLang === "am" ? block.title_am : block.title_en} onChange={v => upd(idx, { ...block, [editorLang === "am" ? "title_am" : "title_en"]: v })}
                               style={{ fontSize: "1.8rem", fontWeight: 800, color: "var(--text)", margin: 0 }} />
-                            <Editable tag="p" value={block.content_am} onChange={v => upd(idx, { ...block, content_am: v })}
-                              style={{ fontSize: "1.1rem", lineHeight: 1.8, color: "var(--text)", opacity: 0.85, margin: 0, whiteSpace: "pre-wrap" }} />
+                            <RichEditable value={editorLang === "am" ? block.content_am : block.content_en} onChange={v => upd(idx, { ...block, [editorLang === "am" ? "content_am" : "content_en"]: v })}
+                              style={{ fontSize: "1.1rem", lineHeight: 1.8, color: "var(--text)", opacity: 0.85, margin: 0 }} />
                           </div>
                         </div>
                       )}
@@ -486,9 +748,9 @@ export default function CaseEditor() {
                               </label>
                             </div>
                           )}
-                          {block.caption_am && (
+                          {((editorLang === "am" ? block.caption_am : block.caption_en) || isSel) && (
                             <div style={{ maxWidth: 800, width: "100%", margin: "12px auto 0", padding: "0 24px", boxSizing: "border-box", textAlign: "center" }}>
-                              <Editable tag="span" value={block.caption_am} onChange={v => upd(idx, { ...block, caption_am: v })}
+                              <Editable tag="span" value={(editorLang === "am" ? block.caption_am : block.caption_en) || "Ավելացնել նկարագրություն..."} onChange={v => upd(idx, { ...block, [editorLang === "am" ? "caption_am" : "caption_en"]: v })}
                                 style={{ fontSize: "0.85rem", color: "var(--muted)", fontStyle: "italic" }} />
                             </div>
                           )}
@@ -562,86 +824,20 @@ export default function CaseEditor() {
         {/* ════════════════════════════════════════
             RIGHT: TOOLS SIDEBAR  (1/4 width)
         ═══════════════════════════════════════ */}
-        <div style={{ background: "var(--panel)", borderLeft: "1px solid var(--panel-border)", overflowY: "auto", maxHeight: "calc(100vh - 58px)", display: "flex", flexDirection: "column" }}>
+        <div style={{ background: "var(--panel)", borderLeft: "1px solid var(--panel-border)", overflowY: "auto", maxHeight: "calc(100vh - 58px)", display: sidebarCollapsed ? "none" : "flex", flexDirection: "column" }}>
 
-          {/* ── Selected block editor ── */}
-          {selected !== null && blocks[selected] && (() => {
-            const block = blocks[selected];
-            return (
-              <div style={{ padding: 18, borderBottom: "1px solid #1e1e26" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                  <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#00ffcc", textTransform: "uppercase" }}>
-                    Բլոկ #{selected + 1} — {block.type}
-                  </span>
-                  <button onClick={() => setSelected(null)} style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: "1rem" }}>✕</button>
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-
-                  {block.type === "text" && (<>
-                    <Field label="Հայ. Վերնագիր" value={block.title_am} onChange={v => upd(selected, { ...block, title_am: v })} />
-                    <Field label="Eng. Title" value={block.title_en} onChange={v => upd(selected, { ...block, title_en: v })} />
-                    <FieldArea label="Հայ. Տեքստ" value={block.content_am} onChange={v => upd(selected, { ...block, content_am: v })} />
-                    <FieldArea label="Eng. Content" value={block.content_en} onChange={v => upd(selected, { ...block, content_en: v })} />
-                  </>)}
-
-                  {block.type === "image" && (<>
-                    <Field label="Նկարի URL" value={block.image_url} onChange={v => upd(selected, { ...block, image_url: v })} />
-                    <label style={uploadLabelStyle}>
-                      {uploading ? "Վերբեռնվում..." : "📁 Վերբեռնել Նկար"}
-                      <input type="file" accept="image/*" style={{ display: "none" }}
-                        onChange={async e => { const url = await upload(e.target.files![0]); if (url) upd(selected, { ...block, image_url: url }); }} />
-                    </label>
-                    <Field label="Հայ. Caption" value={block.caption_am || ""} onChange={v => upd(selected, { ...block, caption_am: v })} />
-                    <Field label="Eng. Caption" value={block.caption_en || ""} onChange={v => upd(selected, { ...block, caption_en: v })} />
-                    <Toggle label="Ամբողջ լայնությամբ" checked={block.fullWidth} onChange={v => upd(selected, { ...block, fullWidth: v })} />
-                  </>)}
-
-                  {block.type === "embed" && (
-                    <Field label="YouTube / Vimeo URL" value={block.embed_url} onChange={v => upd(selected, { ...block, embed_url: v })} />
-                  )}
-
-                  {block.type === "color_palette" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      {block.colors.map((c, ci) => (
-                        <div key={ci} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <input type="color" value={c} onChange={e => {
-                            const nc = [...block.colors]; nc[ci] = e.target.value;
-                            upd(selected, { ...block, colors: nc });
-                          }} style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer" }} />
-                          <Field label="" value={c} onChange={v => { const nc = [...block.colors]; nc[ci] = v; upd(selected, { ...block, colors: nc }); }} />
-                          <button onClick={() => { const nc = block.colors.filter((_: any, i: number) => i !== ci); upd(selected, { ...block, colors: nc }); }}
-                            style={{ background: "none", border: "none", color: "#ff6b6b", cursor: "pointer", flexShrink: 0 }}>✕</button>
-                        </div>
-                      ))}
-                      <hd-button onClick={() => upd(selected, { ...block, colors: [...block.colors, "#ffffff"] })}
-                        data-width="100%" data-height="34px" data-thickness="1px" style={{ background: "transparent" }}>
-                        + Ավելացնել Գույն
-                      </hd-button>
-                    </div>
-                  )}
-
-                  {block.type === "typography_showcase" && (<>
-                    <Field label="Տառատեսակ (Outfit, Inter)" value={block.fonts.join(", ")} onChange={v => upd(selected, { ...block, fonts: v.split(",").map(s => s.trim()) })} />
-                    <Field label="Ցուցադրման Տեքստ" value={block.previewText} onChange={v => upd(selected, { ...block, previewText: v })} />
-                  </>)}
-
-                </div>
-              </div>
-            );
-          })()}
 
           {/* ── Metadata ── */}
           <div style={{ padding: 18, borderBottom: "1px solid var(--panel-border)" }}>
-            <SectionLabel>Metadata</SectionLabel>
+            <SectionLabel>{editorLang === "en" ? "Metadata (EN)" : "Մետատվյալներ (AM)"}</SectionLabel>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <Field label="Վերնագիր*" value={form.title} onChange={v => setForm(p => ({ ...p, title: v }))} />
-              <Field label="Ենթավերնագիր*" value={form.subtitle} onChange={v => setForm(p => ({ ...p, subtitle: v }))} />
+              <Field label={editorLang === "en" ? "Title*" : "Վերնագիր*"} value={parseLangText(form.title, editorLang)} onChange={v => setForm(p => ({ ...p, title: updateLangText(form.title, v, editorLang) }))} />
+              <Field label={editorLang === "en" ? "Subtitle*" : "Ենթավերնագիր*"} value={parseLangText(form.subtitle, editorLang)} onChange={v => setForm(p => ({ ...p, subtitle: updateLangText(form.subtitle, v, editorLang) }))} />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                <Field label="Կատեգ." value={form.category} onChange={v => setForm(p => ({ ...p, category: v }))} />
-                <Field label="Տարի" value={form.year} onChange={v => setForm(p => ({ ...p, year: v }))} />
+                <Field label={editorLang === "en" ? "Category" : "Կատեգորիա"} value={parseLangText(form.category, editorLang)} onChange={v => setForm(p => ({ ...p, category: updateLangText(form.category, v, editorLang) }))} />
+                <Field label={editorLang === "en" ? "Year" : "Տարեթիվ"} value={form.year} onChange={v => setForm(p => ({ ...p, year: v }))} />
               </div>
-              <Field label="Հաճախ." value={form.client} onChange={v => setForm(p => ({ ...p, client: v }))} />
+              <Field label={editorLang === "en" ? "Client" : "Հաճախորդ"} value={parseLangText(form.client, editorLang)} onChange={v => setForm(p => ({ ...p, client: updateLangText(form.client, v, editorLang) }))} />
             </div>
           </div>
 
@@ -715,8 +911,296 @@ export default function CaseEditor() {
             </div>
           </div>
 
+          {/* ── Windows Toggles ── */}
+          <div style={{ padding: 18, borderTop: "1px solid var(--panel-border)" }}>
+            <SectionLabel>Գործիքներ</SectionLabel>
+            <hd-button onClick={() => setShowLayersPanel(true)} data-width="100%" data-height="34px" data-thickness="1px" style={{ background: "transparent" }}>
+              🥞 Բացել Շերտերի պատուհանը
+            </hd-button>
+          </div>
+
         </div>
+        {/* Sidebar Toggle Button */}
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          style={{
+            position: "absolute",
+            top: 24,
+            right: sidebarCollapsed ? 12 : "calc(25vw - 16px)", // sidebar occupies 1/4 (25vw) of width
+            zIndex: 1000,
+            width: 32,
+            height: 32,
+            borderRadius: "50%",
+            background: "var(--panel)",
+            border: "1px solid var(--panel-border)",
+            color: "var(--text)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            transition: "right 0.2s, background 0.2s",
+          }}
+          title={sidebarCollapsed ? "Բացել կողագոտին" : "Փակել կողագոտին"}
+        >
+          {sidebarCollapsed ? "❮" : "❯"}
+        </button>
+
       </div>
+
+      {/* ── Floating Block Properties Window ── */}
+      {selected !== null && blocks[selected] && (() => {
+        const block = blocks[selected];
+        return (
+          <div
+            style={{
+              position: "fixed",
+              top: propPos.y,
+              left: propPos.x,
+              zIndex: 1010,
+              width: 340,
+              maxHeight: "70vh",
+              overflowY: "auto",
+              background: "var(--panel)",
+              border: "1px solid var(--panel-border)",
+              borderRadius: 16,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {/* Draggable Header */}
+            <div
+              onMouseDown={e => {
+                setDraggingProp(true);
+                propStart.current = {
+                  x: e.clientX - propPos.x,
+                  y: e.clientY - propPos.y,
+                };
+              }}
+              style={{
+                padding: "14px 16px",
+                borderBottom: "1px solid var(--panel-border)",
+                background: "rgba(255,255,255,0.02)",
+                cursor: "move",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                userSelect: "none",
+              }}
+            >
+              <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "var(--accent)", textTransform: "uppercase", letterSpacing: "1px" }}>
+                ⚙️ Բլոկ #{selected + 1} ({block.type})
+              </span>
+              <button
+                onClick={() => setSelected(null)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--muted)",
+                  cursor: "pointer",
+                  fontSize: "1rem",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+              {block.type === "text" && (<>
+                {editorLang === "am" ? (
+                  <>
+                    <Field label="Վերնագիր" value={block.title_am} onChange={v => upd(selected, { ...block, title_am: v })} />
+                    <FieldArea label="Տեքստ" value={block.content_am} onChange={v => upd(selected, { ...block, content_am: v })} />
+                  </>
+                ) : (
+                  <>
+                    <Field label="Title" value={block.title_en} onChange={v => upd(selected, { ...block, title_en: v })} />
+                    <FieldArea label="Content" value={block.content_en} onChange={v => upd(selected, { ...block, content_en: v })} />
+                  </>
+                )}
+              </>)}
+
+              {block.type === "image" && (<>
+                <Field label={editorLang === "am" ? "Նկարի URL" : "Image URL"} value={block.image_url} onChange={v => upd(selected, { ...block, image_url: v })} />
+                <label style={uploadLabelStyle}>
+                  {uploading ? (editorLang === "am" ? "Վերբեռնվում..." : "Uploading...") : (editorLang === "am" ? "📁 Վերբեռնել Նկար" : "📁 Upload Image")}
+                  <input type="file" accept="image/*" style={{ display: "none" }}
+                    onChange={async e => { const url = await upload(e.target.files![0]); if (url) upd(selected, { ...block, image_url: url }); }} />
+                </label>
+                <Field label={editorLang === "am" ? "Նկարագրություն (Caption)" : "Caption"} value={(editorLang === "am" ? block.caption_am : block.caption_en) || ""} onChange={v => upd(selected, { ...block, [editorLang === "am" ? "caption_am" : "caption_en"]: v })} />
+                <Toggle label={editorLang === "am" ? "Ամբողջ լայնությամբ" : "Full Width"} checked={block.fullWidth} onChange={v => upd(selected, { ...block, fullWidth: v })} />
+              </>)}
+
+              {block.type === "embed" && (
+                <Field label="YouTube / Vimeo URL" value={block.embed_url} onChange={v => upd(selected, { ...block, embed_url: v })} />
+              )}
+
+              {block.type === "color_palette" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {block.colors.map((c, ci) => (
+                    <div key={ci} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <input type="color" value={c} onChange={e => {
+                        const nc = [...block.colors]; nc[ci] = e.target.value;
+                        upd(selected, { ...block, colors: nc });
+                      }} style={{ width: 32, height: 32, border: "none", background: "none", cursor: "pointer" }} />
+                      <Field label="" value={c} onChange={v => { const nc = [...block.colors]; nc[ci] = v; upd(selected, { ...block, colors: nc }); }} />
+                      <button onClick={() => { const nc = block.colors.filter((_: any, i: number) => i !== ci); upd(selected, { ...block, colors: nc }); }}
+                        style={{ background: "none", border: "none", color: "#ff6b6b", cursor: "pointer", flexShrink: 0 }}>✕</button>
+                    </div>
+                  ))}
+                  <hd-button onClick={() => upd(selected, { ...block, colors: [...block.colors, "#ffffff"] })}
+                    data-width="100%" data-height="34px" data-thickness="1px" style={{ background: "transparent" }}>
+                    + Ավելացնել Գույն
+                  </hd-button>
+                </div>
+              )}
+
+              {block.type === "typography_showcase" && (<>
+                <Field label="Տառատեսակ (Outfit, Inter)" value={block.fonts.join(", ")} onChange={v => upd(selected, { ...block, fonts: v.split(",").map(s => s.trim()) })} />
+                <Field label="Ցուցադրման Տեքստ" value={block.previewText} onChange={v => upd(selected, { ...block, previewText: v })} />
+              </>)}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Floating Layers Manager Window ── */}
+      {showLayersPanel && (
+        <div
+          style={{
+            position: "fixed",
+            top: layersPos.y,
+            left: layersPos.x,
+            zIndex: 1000,
+            width: 280,
+            maxHeight: "50vh",
+            overflowY: "auto",
+            background: "var(--panel)",
+            border: "1px solid var(--panel-border)",
+            borderRadius: 16,
+            boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* Draggable Header */}
+          <div
+            onMouseDown={e => {
+              setDraggingLayers(true);
+              layersStart.current = {
+                x: e.clientX - layersPos.x,
+                y: e.clientY - layersPos.y,
+              };
+            }}
+            style={{
+              padding: "12px 16px",
+              borderBottom: "1px solid var(--panel-border)",
+              background: "rgba(255,255,255,0.02)",
+              cursor: "move",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              userSelect: "none",
+            }}
+          >
+            <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "var(--text)", textTransform: "uppercase", letterSpacing: "1px" }}>
+              🥞 Շերտեր (Layers)
+            </span>
+            <button
+              onClick={() => setShowLayersPanel(false)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "var(--muted)",
+                cursor: "pointer",
+                fontSize: "0.9rem",
+              }}
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* List of Layers */}
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {blocks.length === 0 && (
+              <div style={{ padding: "24px 16px", textAlign: "center", color: "var(--muted)", fontSize: "0.8rem" }}>
+                Դեռ բլոկներ չկան
+              </div>
+            )}
+            {blocks.map((block, idx) => {
+              const isSel = selected === idx;
+              const showIndicatorAbove = draggedIdx !== null && dragOverIdx === idx && dragOverPosition === "above";
+              const showIndicatorBelow = draggedIdx !== null && dragOverIdx === idx && dragOverPosition === "below";
+
+              return (
+                <div key={idx} style={{ display: "flex", flexDirection: "column" }}>
+                  {showIndicatorAbove && (
+                    <div style={{ height: "2px", background: "var(--accent)", margin: "0 8px" }} />
+                  )}
+                  <div
+                    draggable={true}
+                    onDragStart={e => handleDragStart(e, idx)}
+                    onDragOver={e => handleDragOver(e, idx)}
+                    onDragEnd={handleDragEnd}
+                    onDrop={e => handleDrop(e, idx)}
+                    onClick={() => setSelected(idx)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "10px 14px",
+                      borderBottom: "1px solid var(--panel-border)",
+                      background: isSel ? "rgba(0,255,204,0.06)" : "transparent",
+                      cursor: "grab",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                      <span style={{ fontSize: "0.78rem", color: "var(--muted)" }}>#{idx + 1}</span>
+                      <span style={{ fontSize: "0.82rem", fontWeight: 600, color: isSel ? "var(--accent)" : "var(--text)", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
+                        {block.type === "text" && `📝 ${block.title_am || "Տեքստ"}`}
+                        {block.type === "image" && `🖼 ${block.caption_am ? `Նկար (${block.caption_am})` : "Նկար"}`}
+                        {block.type === "embed" && "🎬 Տեսանյութ"}
+                        {block.type === "color_palette" && "🎨 Գունապնակ"}
+                        {block.type === "typography_showcase" && "🔤 Տառատեսակներ"}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 2 }} onClick={e => e.stopPropagation()}>
+                      <button
+                        onClick={() => mov(idx, "up")}
+                        disabled={idx === 0}
+                        style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: "0.75rem", padding: 2 }}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        onClick={() => mov(idx, "down")}
+                        disabled={idx === blocks.length - 1}
+                        style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: "0.75rem", padding: 2 }}
+                      >
+                        ↓
+                      </button>
+                      <button
+                        onClick={() => del(idx)}
+                        style={{ background: "none", border: "none", color: "#ff6b6b", cursor: "pointer", fontSize: "0.75rem", padding: 2, marginLeft: 4 }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                  {showIndicatorBelow && (
+                    <div style={{ height: "2px", background: "var(--accent)", margin: "0 8px" }} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

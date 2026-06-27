@@ -44,5 +44,14 @@
     "upcoming_desc_en": "Our website is temporarily offline for maintenance and creative updates. We will be back soon with a fresh experience.",
     "upcoming_email": "info@hdesign.am",
     "upcoming_tel": "+374 99 00 00 00"
+  },
+  "ratings": {
+    "seed-1": {
+      "sum": 4.33,
+      "count": 1,
+      "users": {
+        "r_43193tbtqxf": 4.33
+      }
+    }
   }
 }
