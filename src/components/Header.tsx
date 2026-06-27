@@ -117,10 +117,11 @@ export default function Header() {
   };
 
   // ══════ RENDER PORTFOLIO HOME HEADER ══════
-  const isPortfolioPage = pathname === "/" || pathname === "/about" || pathname.startsWith("/works") || pathname === "/contact" || pathname.startsWith("/hdesign");
+  const isPortfolioPage = pathname === "/" || pathname === "/about" || pathname.startsWith("/works") || pathname === "/contact" || pathname.startsWith("/hdesign") || pathname.startsWith("/fonts");
   const getActiveNav = () => {
     if (pathname === "/about") return "about";
     if (pathname.startsWith("/works")) return "works";
+    if (pathname.startsWith("/fonts")) return "fonts";
     if (pathname === "/contact") return "contact";
     if (pathname.startsWith("/hdesign")) return "hdesign";
     if (pathname === "/") return "home";
@@ -144,7 +145,7 @@ export default function Header() {
               style={{ width: "38px", height: "38px", objectFit: "contain", borderRadius: "8px" }} 
             />
             <div style={{ display: "flex", flexDirection: "column", lineHeight: "1.1" }}>
-              <span style={{ fontWeight: 800, fontSize: "0.95rem", letterSpacing: "0.5px" }}>Հրանթ</span>
+              <span style={{ fontWeight: 800, fontSize: "0.95rem", letterSpacing: "0.5px" }}>Հրանտ</span>
               <span style={{ fontWeight: 500, fontSize: "0.85rem", opacity: 0.8 }}>Հակոբյան</span>
             </div>
           </Link>
@@ -157,8 +158,11 @@ export default function Header() {
             <Link href="/about" className={`portfolio-nav-item ${activeNav === "about" ? "active" : ""}`}>
               {renderNavLinkText("about", "Մասին")}
             </Link>
-            <Link href="/works" className={`portfolio-nav-item ${activeNav === "works" ? "active" : ""}`}>
+             <Link href="/works" className={`portfolio-nav-item ${activeNav === "works" ? "active" : ""}`}>
               {renderNavLinkText("works", "Աշխատանքներ")}
+            </Link>
+            <Link href="/fonts" className={`portfolio-nav-item ${activeNav === "fonts" ? "active" : ""}`}>
+              {renderNavLinkText("fonts", "Տառատեսակներ")}
             </Link>
             <Link href="/contact" className={`portfolio-nav-item ${activeNav === "contact" ? "active" : ""}`}>
               {renderNavLinkText("contact", "Կապ")}
@@ -169,7 +173,7 @@ export default function Header() {
               <Link href="/hdesign" className={`portfolio-nav-item header-dropdown-trigger ${activeNav === "hdesign" ? "active" : ""}`} style={{ cursor: "pointer", userSelect: "none" }}>
                 {renderNavLinkText("hdesign", "HDesign")}
               </Link>
-              <div className="header-dropdown-menu">
+               <div className="header-dropdown-menu">
                 <Link href="/hdesign" className={`header-dropdown-item ${pathname === "/hdesign" ? "active" : ""}`}>Ընդհանուր</Link>
                 <Link href="/hdesign/docs" className={`header-dropdown-item ${pathname === "/hdesign/docs" ? "active" : ""}`}>Փաստաթղթեր</Link>
                 <Link href="/hdesign/samples" className={`header-dropdown-item ${pathname === "/hdesign/samples" ? "active" : ""}`}>Փորձանմուշներ</Link>
@@ -200,8 +204,11 @@ export default function Header() {
             <Link href="/about" className={`mobile-nav-item ${activeNav === "about" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
               Մասին
             </Link>
-            <Link href="/works" className={`mobile-nav-item ${activeNav === "works" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
+             <Link href="/works" className={`mobile-nav-item ${activeNav === "works" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
               Աշխատանքներ
+            </Link>
+            <Link href="/fonts" className={`mobile-nav-item ${activeNav === "fonts" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
+              Տառատեսակներ
             </Link>
             <Link href="/contact" className={`mobile-nav-item ${activeNav === "contact" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
               Կապ
@@ -216,7 +223,7 @@ export default function Header() {
             <Link href="/hdesign/docs" className={`mobile-nav-subitem ${pathname === "/hdesign/docs" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
               Փաստաթղթեր
             </Link>
-            <Link href="/hdesign/samples" className={`mobile-nav-subitem ${pathname === "/hdesign/samples" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
+             <Link href="/hdesign/samples" className={`mobile-nav-subitem ${pathname === "/hdesign/samples" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
               Փորձանմուշներ
             </Link>
 

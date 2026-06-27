@@ -1,15 +1,124 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { brandingCases } from "@/lib/brandingData";
+import { brandingCases as staticCases } from "@/lib/brandingData";
+
+type Case = {
+  id: string;
+  title: string;
+  subtitle: string;
+  bg: string;
+  image_url?: string;
+  details?: string;
+  category?: string;
+  client?: string;
+  year?: string;
+  created_at?: string;
+};
 
 export default function BrandingDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
 
-  const work = brandingCases.find((item) => item.id === id);
+  const [work, setWork] = useState<Case | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [blocks, setBlocks] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadWork() {
+      try {
+        const res = await fetch("/api/cases");
+        if (!res.ok) throw new Error("Failed to fetch cases");
+        const data = await res.json();
+        const found = (data || []).find((c: any) => c.id === id);
+        
+        if (found) {
+          setWork(found);
+          parseProjectBlocks(found.details || "");
+        } else {
+          // Check static data fallback
+          const staticFound = staticCases.find((item) => item.id === id);
+          if (staticFound) {
+            const mappedStatic: Case = {
+              id: staticFound.id,
+              title: staticFound.title,
+              subtitle: staticFound.tagline,
+              bg: staticFound.color,
+              image_url: staticFound.image,
+              details: staticFound.description,
+              category: staticFound.category,
+              client: staticFound.client,
+              year: staticFound.year
+            };
+            setWork(mappedStatic);
+            
+            // Generate standard block list from static concept/typography
+            setBlocks([
+              { type: "text", title_am: "Նախագծի Մասին", title_en: "About the Project", content_am: staticFound.description, content_en: staticFound.description },
+              { type: "text", title_am: "Կոնցեպտուալ Լուծում", title_en: "Conceptual Solution", content_am: staticFound.concept, content_en: staticFound.concept },
+              { type: "color_palette", colors: staticFound.colors || ["#d32f2f", "#f8fafc", "#0f172a"] },
+              { type: "typography_showcase", fonts: [staticFound.typography || "Outfit"], previewText: "Հրանտ Հակոբյան Դիզայն Ստուդիա 2026" }
+            ]);
+          } else {
+            setWork(null);
+          }
+        }
+      } catch (err) {
+        console.warn("Using static branding cases fallback details:", err);
+        const staticFound = staticCases.find((item) => item.id === id);
+        if (staticFound) {
+          const mappedStatic: Case = {
+            id: staticFound.id,
+            title: staticFound.title,
+            subtitle: staticFound.tagline,
+            bg: staticFound.color,
+            image_url: staticFound.image,
+            details: staticFound.description,
+            category: staticFound.category,
+            client: staticFound.client,
+            year: staticFound.year
+          };
+          setWork(mappedStatic);
+          setBlocks([
+            { type: "text", title_am: "Նախագծի Մասին", title_en: "About the Project", content_am: staticFound.description, content_en: staticFound.description },
+            { type: "text", title_am: "Կոնցեպտուալ Լուծում", title_en: "Conceptual Solution", content_am: staticFound.concept, content_en: staticFound.concept },
+            { type: "color_palette", colors: staticFound.colors || ["#d32f2f", "#f8fafc", "#0f172a"] },
+            { type: "typography_showcase", fonts: [staticFound.typography || "Outfit"], previewText: "Հրանտ Հակոբյան Դիզայն Ստուդիա 2026" }
+          ]);
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function parseProjectBlocks(detailsString: string) {
+      if (detailsString.startsWith("[")) {
+        try {
+          setBlocks(JSON.parse(detailsString));
+          return;
+        } catch (e) {
+          // fallback below
+        }
+      }
+      // Standard string fallback
+      setBlocks([
+        { type: "text", title_am: "Նախագծի Մասին", title_en: "About the Project", content_am: detailsString, content_en: detailsString }
+      ]);
+    }
+
+    loadWork();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <main className="shell" style={{ marginTop: "160px", minHeight: "75vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ color: "var(--muted)", fontSize: "1.2rem" }}>Բեռնվում է...</span>
+      </main>
+    );
+  }
 
   if (!work) {
     return (
@@ -32,24 +141,26 @@ export default function BrandingDetailPage() {
           width: "100%",
           height: "55vh",
           position: "relative",
-          backgroundColor: work.color,
+          backgroundColor: work.bg,
           display: "flex",
           alignItems: "flex-end",
           overflow: "hidden"
         }}
       >
-        <img 
-          src={work.image} 
-          alt={work.title} 
-          style={{ 
-            position: "absolute", 
-            inset: 0, 
-            width: "100%", 
-            height: "100%", 
-            objectFit: "cover", 
-            opacity: 0.8 
-          }} 
-        />
+        {work.image_url && (
+          <img 
+            src={work.image_url} 
+            alt={work.title} 
+            style={{ 
+              position: "absolute", 
+              inset: 0, 
+              width: "100%", 
+              height: "100%", 
+              objectFit: "cover", 
+              opacity: 0.8 
+            }} 
+          />
+        )}
         
         {/* Shadow Overlay */}
         <div style={{
@@ -98,7 +209,7 @@ export default function BrandingDetailPage() {
             margin: 0,
             maxWidth: "700px" 
           }}>
-            {work.tagline}
+            {work.subtitle}
           </p>
         </div>
       </div>
@@ -116,132 +227,169 @@ export default function BrandingDetailPage() {
           }} 
           className="case-grid"
         >
-          {/* Left Column: Description & Concepts */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "40px" }}>
-            <div>
-              <h2 style={{ fontSize: "1.8rem", fontWeight: "800", color: "var(--text)", margin: "0 0 16px 0" }}>Նախագծի Մասին</h2>
-              <p style={{ fontSize: "1.08rem", lineHeight: "1.75", opacity: 0.9, margin: 0 }}>
-                {work.description}
-              </p>
-            </div>
+          {/* Left Column: Dynamic Behance Blocks list */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "48px", minWidth: 0 }}>
+            {blocks.map((block, idx) => {
+              if (block.type === "text") {
+                return (
+                  <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    {(block.title_am || block.title_en) && (
+                      <h2 style={{ fontSize: "1.8rem", fontWeight: "800", color: "var(--text)", margin: 0 }}>
+                        {block.title_am || block.title_en}
+                      </h2>
+                    )}
+                    <p style={{ fontSize: "1.08rem", lineHeight: "1.75", opacity: 0.9, margin: 0, whiteSpace: "pre-line" }}>
+                      {block.content_am || block.content_en}
+                    </p>
+                  </div>
+                );
+              }
 
-            <div>
-              <h2 style={{ fontSize: "1.8rem", fontWeight: "800", color: "var(--text)", margin: "0 0 16px 0" }}>Կոնցեպտուալ Լուծում</h2>
-              <p style={{ fontSize: "1.08rem", lineHeight: "1.75", opacity: 0.9, margin: 0 }}>
-                {work.concept}
-              </p>
-            </div>
-            
-            {/* Visual Grid Mockup Showcase */}
-            <div style={{ marginTop: "20px" }}>
-              <h2 style={{ fontSize: "1.8rem", fontWeight: "800", color: "var(--text)", margin: "0 0 24px 0" }}>Ցուցադրում</h2>
-              <div 
-                style={{ 
-                  width: "100%", 
-                  borderRadius: "20px", 
-                  overflow: "hidden", 
-                  boxShadow: "var(--shadow)",
-                  background: "var(--panel)",
-                  border: "1px solid var(--panel-border)",
-                  padding: "40px",
-                  boxSizing: "border-box",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  minHeight: "350px"
-                }}
-              >
-                {/* Clean CSS Showcase layout simulating stationery or products */}
-                <div 
-                  style={{ 
-                    position: "relative", 
-                    width: "100%", 
-                    maxWidth: "500px", 
-                    height: "280px", 
-                    borderRadius: "16px", 
-                    backgroundColor: work.color, 
-                    boxShadow: "0 20px 50px rgba(0,0,0,0.15)",
-                    overflow: "hidden",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                    padding: "30px",
-                    boxSizing: "border-box"
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div style={{ color: "#ffffff", fontWeight: "bold", fontSize: "1.5rem", letterSpacing: "1px" }}>{work.title}</div>
-                    <div style={{ width: "24px", height: "24px", borderRadius: "50%", background: "rgba(255,255,255,0.2)" }} />
+              if (block.type === "image" && block.image_url) {
+                return (
+                  <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
+                    <div style={{
+                      borderRadius: "16px",
+                      overflow: "hidden",
+                      border: "1px solid var(--panel-border)",
+                      width: "100%",
+                      maxWidth: block.fullWidth ? "100%" : "680px"
+                    }}>
+                      <img src={block.image_url} alt="Project spec" style={{ width: "100%", display: "block" }} />
+                    </div>
+                    {(block.caption_am || block.caption_en) && (
+                      <span style={{ fontSize: "0.82rem", color: "var(--muted)", fontStyle: "italic", textAlign: "center" }}>
+                        {block.caption_am || block.caption_en}
+                      </span>
+                    )}
                   </div>
-                  
-                  {/* Decorative card stripes */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "70%" }}>
-                    <div style={{ height: "4px", background: "rgba(255,255,255,0.2)", borderRadius: "2px" }} />
-                    <div style={{ height: "4px", background: "rgba(255,255,255,0.2)", borderRadius: "2px", width: "85%" }} />
-                    <div style={{ height: "4px", background: "rgba(255,255,255,0.2)", borderRadius: "2px", width: "50%" }} />
-                  </div>
+                );
+              }
 
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", color: "#ffffff", opacity: 0.7, fontSize: "0.75rem" }}>
-                    <div>EST. {new Date().getFullYear()}</div>
-                    <div>HDesign Studio</div>
+              if (block.type === "embed" && block.embed_url) {
+                // simple parser for youtube/vimeo embed
+                let src = block.embed_url;
+                if (src.includes("youtube.com/watch?v=")) {
+                  src = `https://www.youtube.com/embed/${src.split("v=")[1].split("&")[0]}`;
+                } else if (src.includes("youtu.be/")) {
+                  src = `https://www.youtube.com/embed/${src.split("youtu.be/")[1]}`;
+                }
+                return (
+                  <div key={idx} style={{ width: "100%", aspectRatio: "16/9", borderRadius: "16px", overflow: "hidden", border: "1px solid var(--panel-border)" }}>
+                    <iframe src={src} style={{ width: "100%", height: "100%", border: "none" }} allowFullScreen />
                   </div>
-                </div>
-              </div>
-            </div>
+                );
+              }
+
+              if (block.type === "color_palette" && block.colors) {
+                return (
+                  <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    <h3 style={{ fontSize: "1.2rem", fontWeight: "700", margin: 0 }}>Բրենդի Գունապնակ (Brand Palette)</h3>
+                    <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                      {block.colors.map((color: string, cIdx: number) => (
+                        <div key={cIdx} style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "center" }}>
+                          <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: color, border: "2px solid var(--panel-border)", boxShadow: "var(--shadow)" }} />
+                          <span style={{ fontSize: "0.78rem", fontFamily: "monospace", color: "var(--muted)" }}>{color}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+
+              if (block.type === "typography_showcase" && block.fonts) {
+                return (
+                  <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    <h3 style={{ fontSize: "1.2rem", fontWeight: "700", margin: 0 }}>Տառատեսակներ (Typography Showcase)</h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                      {block.fonts.map((fName: string, fIdx: number) => (
+                        <div key={fIdx} style={{ padding: "16px", background: "var(--panel)", borderRadius: "12px", border: "1px solid var(--panel-border)" }}>
+                          <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase" }}>{fName}</span>
+                          <div style={{ fontFamily: `${fName}, sans-serif`, fontSize: "1.8rem", marginTop: "8px", color: "var(--text)" }}>
+                            {block.previewText || "Հրանտ Հակոբյան Դիզայն"}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+
+              return null;
+            })}
           </div>
 
-          {/* Right Column: Spec metadata card */}
+          {/* Right Column: Project Sidebar Details */}
           <div 
             style={{ 
-              background: "var(--panel)", 
-              border: "1px solid var(--panel-border)", 
-              borderRadius: "20px", 
-              padding: "32px", 
-              boxShadow: "var(--shadow)",
               display: "flex", 
               flexDirection: "column", 
               gap: "28px",
+              background: "var(--panel)",
+              border: "1px solid var(--panel-border)",
+              borderRadius: "24px",
+              padding: "36px",
+              boxShadow: "var(--shadow)",
               position: "sticky",
-              top: "120px" 
+              top: "140px"
             }}
-            className="case-specs-panel"
+            className="case-sidebar"
           >
-            <div>
-              <h4 style={{ fontSize: "0.85rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 8px 0", opacity: 0.6 }}>Տիպ</h4>
-              <span style={{ fontSize: "1.1rem", fontWeight: "600", color: "var(--text)" }}>Բրենդավորում և ոճ</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>
+                Կարգ
+              </span>
+              <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)" }}>
+                {work.category || "Branding"}
+              </span>
             </div>
 
-            <div>
-              <h4 style={{ fontSize: "0.85rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 8px 0", opacity: 0.6 }}>Տառատեսակներ</h4>
-              <span style={{ fontSize: "1.1rem", fontWeight: "600", color: "var(--text)" }}>{work.typography}</span>
-            </div>
-
-            <div>
-              <h4 style={{ fontSize: "0.85rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 12px 0", opacity: 0.6 }}>Գունապնակ</h4>
-              <div style={{ display: "flex", gap: "10px" }}>
-                {work.colors.map((colorVal, idx) => (
-                  <div key={idx} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
-                    <div style={{ width: "40px", height: "40px", borderRadius: "8px", backgroundColor: colorVal, border: "1px solid rgba(255,255,255,0.15)" }} title={colorVal} />
-                    <span style={{ fontSize: "0.7rem", opacity: 0.7 }}>{colorVal}</span>
-                  </div>
-                ))}
+            {work.client && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>
+                  Հաճախորդ
+                </span>
+                <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)" }}>
+                  {work.client}
+                </span>
               </div>
-            </div>
+            )}
 
-            <hr style={{ border: "none", borderTop: "1px solid var(--panel-border)", margin: "8px 0" }} />
+            {work.year && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>
+                  Տարեթիվ
+                </span>
+                <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)" }}>
+                  {work.year}
+                </span>
+              </div>
+            )}
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              <Link href="/works" style={{ textDecoration: "none" }}>
-                <hd-button data-width="100%" data-height="48px" data-thickness="2px">
-                  Հետ դեպի ցանկ
+            <div style={{ borderTop: "1px solid var(--panel-border)", paddingTop: "24px", marginTop: "12px" }}>
+              <Link href="/works" style={{ textDecoration: "none", width: "100%" }}>
+                <hd-button data-width="100%" data-height="44px" data-thickness="1px" style={{ background: "transparent", color: "var(--text)" }}>
+                  Հետ դեպի ցուցակ
                 </hd-button>
               </Link>
             </div>
           </div>
-
         </div>
 
       </div>
+
+      <style jsx global>{`
+        @media (max-width: 992px) {
+          .case-grid {
+            grid-template-columns: 1fr !important;
+            gap: 40px !important;
+          }
+          .case-sidebar {
+            position: relative !important;
+            top: 0 !important;
+          }
+        }
+      `}</style>
     </main>
   );
 }

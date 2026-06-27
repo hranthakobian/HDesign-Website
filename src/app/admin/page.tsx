@@ -21,6 +21,24 @@ type Case = {
   created_at?: string;
 };
 
+type Font = {
+  id: string;
+  name_am: string;
+  name_en: string;
+  category: string;
+  creator?: string;
+  year?: string;
+  description_am?: string;
+  description_en?: string;
+  downloadable: boolean;
+  paid: boolean;
+  price?: string;
+  font_file_url: string;
+  download_url?: string;
+  purchase_url?: string;
+  created_at?: string;
+};
+
 type Message = {
   id: string;
   name: string;
@@ -141,7 +159,7 @@ export default function AdminDashboard() {
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   // Dashboard state
-  const [activeTab, setActiveTab] = useState<'analytics' | 'cases' | 'messages' | 'translations' | 'apis' | 'personalization' | 'settings'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'cases' | 'fonts' | 'messages' | 'translations' | 'apis' | 'personalization' | 'settings'>('analytics');
   const [personalization, setPersonalization] = useState<PersonalizationSettings>({
     site_title_hy: 'HDesign',
     site_title_en: 'HDesign',
@@ -154,6 +172,25 @@ export default function AdminDashboard() {
   const [activeCursorType, setActiveCursorType] = useState<'default' | 'pointer' | 'text'>('default');
   const [newCursorColor, setNewCursorColor] = useState('#ffffff');
   const [cases, setCases] = useState<Case[]>([]);
+  const [fonts, setFonts] = useState<Font[]>([]);
+  const [showFontForm, setShowFontForm] = useState(false);
+  const [editingFont, setEditingFont] = useState<Font | null>(null);
+  const [fontForm, setFontForm] = useState<Partial<Font>>({
+    id: '',
+    name_am: '',
+    name_en: '',
+    category: 'Sans-Serif',
+    creator: '',
+    year: '',
+    description_am: '',
+    description_en: '',
+    downloadable: true,
+    paid: false,
+    price: '',
+    font_file_url: '',
+    download_url: '',
+    purchase_url: ''
+  });
   const [messages, setMessages] = useState<Message[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [loadingData, setLoadingData] = useState(false);
@@ -196,17 +233,18 @@ export default function AdminDashboard() {
   const [changingPassword, setChangingPassword] = useState(false);
 
   // Transition States
-  const [prevTab, setPrevTab] = useState<'analytics' | 'cases' | 'messages' | 'translations' | 'apis' | 'personalization' | 'settings'>('analytics');
+  const [prevTab, setPrevTab] = useState<'analytics' | 'cases' | 'fonts' | 'messages' | 'translations' | 'apis' | 'personalization' | 'settings'>('analytics');
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
 
   const tabIndices = useMemo(() => ({
     analytics: 0,
     cases: 1,
-    messages: 2,
-    translations: 3,
-    apis: 4,
-    personalization: 5,
-    settings: 6
+    fonts: 2,
+    messages: 3,
+    translations: 4,
+    apis: 5,
+    personalization: 6,
+    settings: 7
   }), []);
 
   useEffect(() => {
@@ -358,8 +396,14 @@ export default function AdminDashboard() {
         if (!generalSettingsRes.ok) throw new Error('Failed to fetch general settings');
         const generalSettingsData = await generalSettingsRes.json();
 
+        // 8. Fetch Fonts
+        const fontsRes = await fetch('/api/fonts', { headers });
+        if (!fontsRes.ok) throw new Error('Failed to fetch fonts');
+        const fontsData = await fontsRes.json();
+
         // Seed list with loaded values, filter out seed items from dynamic listing if desired
         setCases(casesData || []);
+        setFonts(fontsData || []);
         setMessages(msgData || []);
         setVisits(visitsData || []);
         setApiSettings(apiSettingsData || {
@@ -544,7 +588,134 @@ export default function AdminDashboard() {
   };
 
   // ══════════════════════════════════════════════════════════════════════════════
+  // FONTS OPERATIONS
+  // ══════════════════════════════════════════════════════════════════════════════
+
+  const [fontUploading, setFontUploading] = useState(false);
+  const [fontUploadError, setFontUploadError] = useState<string | null>(null);
+
+  const handleFontFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !token) return;
+
+    setFontUploading(true);
+    setFontUploadError(null);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Authorization': token || '' },
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setFontForm(prev => ({
+          ...prev,
+          font_file_url: data.url,
+          download_url: prev.download_url || data.url
+        }));
+      } else {
+        setFontUploadError(data.error || 'Տառատեսակի վերբեռնումը ձախողվեց:');
+      }
+    } catch (err: any) {
+      setFontUploadError('Կապի սխալ վերբեռնման ընթացքում:');
+    } finally {
+      setFontUploading(false);
+    }
+  };
+
+  const openAddFont = () => {
+    setEditingFont(null);
+    setFontForm({
+      id: 'font-' + Math.random().toString(36).substring(2, 8),
+      name_am: '',
+      name_en: '',
+      category: 'Sans-Serif',
+      creator: 'Հրանտ Հակոբյան',
+      year: new Date().getFullYear().toString(),
+      description_am: '',
+      description_en: '',
+      downloadable: true,
+      paid: false,
+      price: '',
+      font_file_url: '',
+      download_url: '',
+      purchase_url: ''
+    });
+    setShowFontForm(true);
+  };
+
+  const openEditFont = (f: Font) => {
+    setEditingFont(f);
+    setFontForm({ ...f });
+    setShowFontForm(true);
+  };
+
+  const handleSaveFont = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token || !fontForm.id || !fontForm.name_am || !fontForm.name_en || !fontForm.font_file_url) {
+      alert('Խնդրում ենք լրացնել բոլոր պարտադիր դաշտերը (ID, Հայերեն անուն, Անգլերեն անուն, Տառատեսակի ֆայլ):');
+      return;
+    }
+
+    try {
+      const url = editingFont ? `/api/fonts/${editingFont.id}` : '/api/fonts';
+      const method = editingFont ? 'PATCH' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token || ''
+        },
+        body: JSON.stringify(fontForm)
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        if (editingFont) {
+          setFonts(prev => prev.map(x => x.id === editingFont.id ? data.font : x));
+          alert('Տառատեսակը հաջողությամբ խմբագրվել է:');
+        } else {
+          setFonts(prev => [data.font, ...prev]);
+          alert('Նոր տառատեսակը հաջողությամբ ավելացվել է:');
+        }
+        setShowFontForm(false);
+      } else {
+        alert('Սխալ՝ ' + data.error);
+      }
+    } catch (err: any) {
+      alert('Չհաջողվեց պահպանել տառատեսակը:');
+    }
+  };
+
+  const handleDeleteFont = async (id: string) => {
+    if (!confirm('Վստա՞հ եք, որ ցանկանում եք ջնջել այս տառատեսակը:')) return;
+    if (!token) return;
+
+    try {
+      const res = await fetch(`/api/fonts/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': token || '' }
+      });
+      if (res.ok) {
+        setFonts(prev => prev.filter(x => x.id !== id));
+        alert('Տառատեսակը հաջողությամբ ջնջվեց:');
+      } else {
+        const data = await res.json();
+        alert('Սխալ՝ ' + data.error);
+      }
+    } catch (err: any) {
+      alert('Չհաջողվեց ջնջել տառատեսակը:');
+    }
+  };
+
+  // ══════════════════════════════════════════════════════════════════════════════
   // MESSAGES OPERATIONS
+
   // ══════════════════════════════════════════════════════════════════════════════
 
   const handleDeleteMessage = async (id: string) => {
@@ -1473,32 +1644,24 @@ export default function AdminDashboard() {
                           </div>
 
                           <div style={{ borderTop: '1px solid var(--panel-border)', paddingTop: '12px', display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: 'auto' }}>
-                            {isSeed ? (
-                              <span style={{ fontSize: '0.72rem', color: 'var(--muted)', fontStyle: 'italic', padding: '6px' }}>
-                                Համակարգային (Read-Only)
-                              </span>
-                            ) : (
-                              <>
-                                <hd-button 
-                                  onClick={() => openEditCase(c)}
-                                  data-color="#FFBB28" 
-                                  data-width="80px" 
-                                  data-height="30px"
-                                  data-font-size="0.75rem"
-                                >
-                                  Խմբագրել
-                                </hd-button>
-                                <hd-button 
-                                  onClick={() => handleDeleteCase(c.id)}
-                                  data-color="#ff6b6b" 
-                                  data-width="80px" 
-                                  data-height="30px"
-                                  data-font-size="0.75rem"
-                                >
-                                  Ջնջել
-                                </hd-button>
-                              </>
-                            )}
+                            <hd-button 
+                              onClick={() => openEditCase(c)}
+                              data-color="#FFBB28" 
+                              data-width="80px" 
+                              data-height="30px"
+                              data-font-size="0.75rem"
+                            >
+                              Խմբագրել
+                            </hd-button>
+                            <hd-button 
+                              onClick={() => handleDeleteCase(c.id)}
+                              data-color="#ff6b6b" 
+                              data-width="80px" 
+                              data-height="30px"
+                              data-font-size="0.75rem"
+                            >
+                              Ջնջել
+                            </hd-button>
                           </div>
                         </div>
                       </div>
@@ -1708,8 +1871,412 @@ export default function AdminDashboard() {
             )}
 
             {/* ══════════════════════════════════════════════════════════════════════════
+                TAB 2.5: FONTS MANAGEMENT
+                ══════════════════════════════════════════════════════════════════════════ */}
+            {activeTab === 'fonts' && (
+              <div className={getTabClass('fonts')} style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0 }}>Տառատեսակներ / Fonts</h2>
+                  <hd-button 
+                    onClick={openAddFont}
+                    data-width="200px" 
+                    data-height="42px"
+                    data-thickness="2px"
+                  >
+                    Ավելացնել Տառատեսակ
+                  </hd-button>
+                </div>
+
+                {/* Fonts Grid List */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+                  {fonts.map(f => {
+                    const isSeed = f.id === 'hdesign-font';
+                    return (
+                      <div 
+                        key={f.id} 
+                        style={{ 
+                          background: 'var(--panel)', 
+                          border: '1px solid var(--panel-border)', 
+                          borderRadius: '16px', 
+                          overflow: 'hidden',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.1)'
+                        }}
+                      >
+                        {/* Font Card Preview */}
+                        <div style={{ background: 'rgba(0,0,0,0.15)', padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', borderBottom: '1px solid var(--panel-border)' }}>
+                          <style dangerouslySetInnerHTML={{ __html: `
+                            @font-face {
+                              font-family: 'admin-preview-${f.id}';
+                              src: url('${f.font_file_url}') format('${f.font_file_url.endsWith('.otf') ? 'opentype' : f.font_file_url.endsWith('.woff') ? 'woff' : f.font_file_url.endsWith('.woff2') ? 'woff2' : 'truetype'}');
+                              font-weight: normal;
+                              font-style: normal;
+                            }
+                          `}} />
+                          
+                          <div style={{ 
+                            fontFamily: `admin-preview-${f.id}, sans-serif`, 
+                            fontSize: '1.8rem', 
+                            color: 'var(--text)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            textAlign: 'center',
+                            margin: '12px 0'
+                          }}>
+                            {f.name_en}
+                          </div>
+                          
+                          <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(0,0,0,0.6)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.72rem', color: '#fff' }}>
+                            {f.category}
+                          </div>
+                          <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '6px' }}>
+                            {f.paid ? (
+                              <span style={{ background: '#e53935', padding: '4px 8px', borderRadius: '4px', fontSize: '0.72rem', color: '#fff', fontWeight: 'bold' }}>
+                                Վճարովի ({f.price || 'Paid'})
+                              </span>
+                            ) : (
+                              <span style={{ background: '#43a047', padding: '4px 8px', borderRadius: '4px', fontSize: '0.72rem', color: '#fff', fontWeight: 'bold' }}>
+                                Անվճար
+                              </span>
+                            )}
+                            {f.downloadable ? (
+                              <span style={{ background: '#1e88e5', padding: '4px 8px', borderRadius: '4px', fontSize: '0.72rem', color: '#fff' }}>
+                                Ներբեռնելի
+                              </span>
+                            ) : (
+                              <span style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.72rem', color: 'var(--muted)' }}>
+                                View-Only
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Font Content */}
+                        <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <div>
+                            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0 0 4px' }}>{f.name_am} <span style={{ opacity: 0.5, fontSize: '0.85rem', fontWeight: 'normal' }}>({f.name_en})</span></h3>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--muted)', display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{f.description_am || f.description_en}</span>
+                          </div>
+
+                          <div style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'flex', gap: '12px' }}>
+                            {f.creator && <span><strong>Հեղինակ՝</strong> {f.creator}</span>}
+                            {f.year && <span><strong>Տարեթիվ՝</strong> {f.year}</span>}
+                          </div>
+
+                          <div style={{ borderTop: '1px solid var(--panel-border)', paddingTop: '12px', display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: 'auto' }}>
+                            <button 
+                              onClick={() => openEditFont(f)}
+                              style={{ background: 'transparent', border: 'none', color: '#FFBB28', fontSize: '0.82rem', padding: '6px 12px', cursor: 'pointer', fontWeight: 600 }}
+                            >
+                              Խմբագրել
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteFont(f.id)}
+                              style={{ background: 'transparent', border: 'none', color: '#ff6b6b', fontSize: '0.82rem', padding: '6px 12px', cursor: 'pointer', fontWeight: 600 }}
+                            >
+                              Ջնջել
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Font Form Drawer / Modal Overlay */}
+                {showFontForm && (
+                  <div 
+                    style={{ 
+                      position: 'fixed', 
+                      top: 0, 
+                      left: 0, 
+                      right: 0, 
+                      bottom: 0, 
+                      background: 'rgba(0,0,0,0.7)', 
+                      backdropFilter: 'blur(10px)',
+                      WebkitBackdropFilter: 'blur(10px)',
+                      display: 'flex', 
+                      justifyContent: 'center', 
+                      alignItems: 'center', 
+                      zIndex: 2000,
+                      animation: 'fadeIn 0.25s ease'
+                    }}
+                    onClick={() => setShowFontForm(false)}
+                  >
+                    <div 
+                      style={{ 
+                        background: 'var(--panel)', 
+                        border: '1px solid var(--panel-border)',
+                        borderRadius: '24px', 
+                        width: '90%', 
+                        maxWidth: '700px', 
+                        maxHeight: '90vh',
+                        overflowY: 'auto',
+                        padding: '30px', 
+                        boxShadow: 'var(--shadow)',
+                        position: 'relative'
+                      }}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <h2 style={{ fontSize: '1.3rem', fontWeight: 700, margin: '0 0 24px 0', borderBottom: '1px solid var(--panel-border)', paddingBottom: '16px' }}>
+                        {editingFont ? 'Խմբագրել Տառատեսակը' : 'Ավելացնել Նոր Տառատեսակ'}
+                      </h2>
+
+                      <form onSubmit={handleSaveFont} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                          <div>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>ID (Unique)*</label>
+                            <hd-input 
+                              placeholder="font-slug..."
+                              value={fontForm.id}
+                              onInput={(e: any) => setFontForm(prev => ({ ...prev, id: e.target.value }))}
+                              disabled={!!editingFont}
+                              data-width="100%"
+                              data-height="40px"
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Կատեգորիա</label>
+                            <hd-select 
+                              value={fontForm.category}
+                              onChange={(e: any) => setFontForm(prev => ({ ...prev, category: e.target.value }))}
+                              data-width="100%"
+                              data-height="40px"
+                            >
+                              <span value="Sans-Serif" {...(fontForm.category === 'Sans-Serif' ? { selected: true } : {})}>Sans-Serif</span>
+                              <span value="Serif" {...(fontForm.category === 'Serif' ? { selected: true } : {})}>Serif</span>
+                              <span value="Display" {...(fontForm.category === 'Display' ? { selected: true } : {})}>Display</span>
+                              <span value="Monospace" {...(fontForm.category === 'Monospace' ? { selected: true } : {})}>Monospace</span>
+                              <span value="Handwriting" {...(fontForm.category === 'Handwriting' ? { selected: true } : {})}>Handwriting</span>
+                            </hd-select>
+                          </div>
+                        </div>
+
+                        <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                          <div>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Անուն (Հայերեն)*</label>
+                            <hd-input 
+                              placeholder="Մեսրոպյան..."
+                              value={fontForm.name_am}
+                              onInput={(e: any) => setFontForm(prev => ({ ...prev, name_am: e.target.value }))}
+                              data-width="100%"
+                              data-height="40px"
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Name (English)*</label>
+                            <hd-input 
+                              placeholder="Mesropian..."
+                              value={fontForm.name_en}
+                              onInput={(e: any) => setFontForm(prev => ({ ...prev, name_en: e.target.value }))}
+                              data-width="100%"
+                              data-height="40px"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="form-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                          <div>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Հեղինակ / Դիզայներ</label>
+                            <hd-input 
+                              placeholder="Հրանտ Հակոբյան..."
+                              value={fontForm.creator}
+                              onInput={(e: any) => setFontForm(prev => ({ ...prev, creator: e.target.value }))}
+                              data-width="100%"
+                              data-height="40px"
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Տարեթիվ</label>
+                            <hd-input 
+                              placeholder="2026..."
+                              value={fontForm.year}
+                              onInput={(e: any) => setFontForm(prev => ({ ...prev, year: e.target.value }))}
+                              data-width="100%"
+                              data-height="40px"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Նկարագրություն (Հայերեն)</label>
+                          <hd-textarea 
+                            placeholder="Տառատեսակի մասին հայերեն նկարագրություն..."
+                            value={fontForm.description_am}
+                            onInput={(e: any) => setFontForm(prev => ({ ...prev, description_am: e.target.value }))}
+                            data-width="100%"
+                            style={{ minHeight: '80px', display: 'block' }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Description (English)</label>
+                          <hd-textarea 
+                            placeholder="English description about the font..."
+                            value={fontForm.description_en}
+                            onInput={(e: any) => setFontForm(prev => ({ ...prev, description_en: e.target.value }))}
+                            data-width="100%"
+                            style={{ minHeight: '80px', display: 'block' }}
+                          />
+                        </div>
+
+                        {/* Checkboxes/Switches for Downloadable & Paid */}
+                        <div style={{ 
+                          display: 'grid', 
+                          gridTemplateColumns: '1fr 1fr', 
+                          gap: '20px', 
+                          background: 'rgba(255,255,255,0.02)', 
+                          padding: '16px', 
+                          borderRadius: '12px',
+                          border: '1px solid var(--panel-border)'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div>
+                              <span style={{ fontSize: '0.9rem', fontWeight: 600, display: 'block' }}>Ներբեռնելի է</span>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>Թույլատրել ներբեռնումը</span>
+                            </div>
+                            <hd-switch 
+                              checked={fontForm.downloadable} 
+                              onChange={(e: any) => setFontForm(prev => ({ ...prev, downloadable: e.target.checked }))} 
+                            />
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div>
+                              <span style={{ fontSize: '0.9rem', fontWeight: 600, display: 'block' }}>Վճարովի է</span>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>Տառատեսակը վաճառվում է</span>
+                            </div>
+                            <hd-switch 
+                              checked={fontForm.paid} 
+                              onChange={(e: any) => setFontForm(prev => ({ ...prev, paid: e.target.checked }))} 
+                            />
+                          </div>
+                        </div>
+
+                        {/* Conditional pricing/purchase and download inputs */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                          {fontForm.paid && (
+                            <>
+                              <div>
+                                <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Գին / Լիցենզիա</label>
+                                <hd-input 
+                                  placeholder="օրինակ՝ $15 կամ 5,000 ֏..."
+                                  value={fontForm.price}
+                                  onInput={(e: any) => setFontForm(prev => ({ ...prev, price: e.target.value }))}
+                                  data-width="100%"
+                                  data-height="40px"
+                                />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Գնման հղում (Purchase Link)</label>
+                                <hd-input 
+                                  placeholder="https://..."
+                                  value={fontForm.purchase_url}
+                                  onInput={(e: any) => setFontForm(prev => ({ ...prev, purchase_url: e.target.value }))}
+                                  data-width="100%"
+                                  data-height="40px"
+                                />
+                              </div>
+                            </>
+                          )}
+                          {fontForm.downloadable && !fontForm.paid && (
+                            <div style={{ gridColumn: 'span 2' }}>
+                              <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Ներբեռնման այլընտրանքային հղում (կամ թողեք դատարկ՝ ֆայլը օգտագործելու համար)</label>
+                              <hd-input 
+                                placeholder="https://..."
+                                value={fontForm.download_url}
+                                onInput={(e: any) => setFontForm(prev => ({ ...prev, download_url: e.target.value }))}
+                                data-width="100%"
+                                data-height="40px"
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Font File Upload block */}
+                        <div style={{ 
+                          background: 'rgba(255,255,255,0.02)', 
+                          padding: '20px', 
+                          borderRadius: '16px',
+                          border: '1px dashed var(--panel-border)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '12px'
+                        }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Տառատեսակի ֆայլ (.ttf, .otf, .woff, .woff2)*</span>
+                          
+                          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                            <hd-input 
+                              placeholder="Տառատեսակի ֆայլի հղումը..."
+                              value={fontForm.font_file_url}
+                              onInput={(e: any) => setFontForm(prev => ({ ...prev, font_file_url: e.target.value }))}
+                              data-width="100%"
+                              data-height="40px"
+                            />
+                            
+                            <div style={{ position: 'relative' }}>
+                              <hd-button 
+                                data-width="140px" 
+                                data-height="40px"
+                                data-thickness="2px"
+                                disabled={fontUploading}
+                                style={{ position: 'relative' }}
+                              >
+                                {fontUploading ? 'Բեռնվում է...' : 'Վերբեռնել'}
+                              </hd-button>
+                              <input 
+                                type="file" 
+                                accept=".ttf,.otf,.woff,.woff2"
+                                onChange={handleFontFileUpload} 
+                                disabled={fontUploading}
+                                style={{ 
+                                  position: 'absolute', 
+                                  top: 0, 
+                                  left: 0, 
+                                  width: '100%', 
+                                  height: '100%', 
+                                  opacity: 0, 
+                                  cursor: 'pointer' 
+                                }} 
+                              />
+                            </div>
+                          </div>
+                          {fontUploadError && <div style={{ fontSize: '0.75rem', color: '#ff6b6b' }}>{fontUploadError}</div>}
+                        </div>
+
+                        {/* Action buttons */}
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', borderTop: '1px solid var(--panel-border)', paddingTop: '20px', marginTop: '12px' }}>
+                          <hd-button 
+                            onClick={() => setShowFontForm(false)}
+                            data-width="120px" 
+                            data-height="40px"
+                            data-thickness="1px"
+                            style={{ background: 'transparent', color: 'var(--text)' }}
+                          >
+                            Չեղարկել
+                          </hd-button>
+                          <hd-button 
+                            type="submit"
+                            data-width="140px" 
+                            data-height="40px"
+                            data-thickness="2px"
+                          >
+                            Պահպանել
+                          </hd-button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ══════════════════════════════════════════════════════════════════════════
                 TAB 3: MESSAGES INBOX
                 ══════════════════════════════════════════════════════════════════════════ */}
+
             {activeTab === 'messages' && (
               <div className={getTabClass('messages')} style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
                 <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0 }}>Հետադարձ Կապի Նամակներ</h2>
@@ -3267,6 +3834,27 @@ export default function AdminDashboard() {
           <span className="icon-Image" style={{ fontSize: '1.4rem' }} />
           <div className="nav-tooltip">Քեյսեր</div>
         </div>
+
+        <div 
+          onClick={() => setActiveTab('fonts')}
+          className="nav-btn"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: activeTab === 'fonts' ? 'var(--switcher-capsule-bg)' : 'transparent',
+            color: activeTab === 'fonts' ? '#fff' : 'var(--muted)',
+            borderRadius: '16px',
+            width: '50px',
+            height: '50px',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          <span className="icon-Pencil" style={{ fontSize: '1.4rem' }} />
+          <div className="nav-tooltip">Տառատեսակներ</div>
+        </div>
+
 
         <div 
           onClick={() => setActiveTab('messages')}

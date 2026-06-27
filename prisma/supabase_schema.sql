@@ -60,3 +60,25 @@ CREATE TABLE IF NOT EXISTS site_settings (
 
 ALTER TABLE site_settings DISABLE ROW LEVEL SECURITY;
 
+-- 5. Fonts (Custom fonts list)
+CREATE TABLE IF NOT EXISTS fonts (
+  id TEXT PRIMARY KEY,
+  name_am TEXT NOT NULL,
+  name_en TEXT NOT NULL,
+  category TEXT NOT NULL,
+  creator TEXT,
+  year TEXT,
+  description_am TEXT,
+  description_en TEXT,
+  downloadable BOOLEAN DEFAULT true,
+  paid BOOLEAN DEFAULT false,
+  price TEXT,
+  font_file_url TEXT NOT NULL,
+  download_url TEXT,
+  purchase_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE fonts DISABLE ROW LEVEL SECURITY;
+
+

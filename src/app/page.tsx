@@ -310,6 +310,8 @@ const downloadPng = (iconName: string) => {
 
 export default function Home() {
   const { t } = useI18n();
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const stickyPanelRef = useRef<HTMLDivElement>(null);
   
   // Dynamic cases and details modal states
   const [casesList, setCasesList] = useState<any[]>([]);
@@ -318,10 +320,10 @@ export default function Home() {
 
   // Icon explorer states
   const [iconSearch, setIconSearch] = useState("");
-  const [showAllIcons, setShowAllIcons] = useState(false);
   const [copiedIcon, setCopiedIcon] = useState<string | null>(null);
-  const [selectedIconDetail, setSelectedIconDetail] = useState<string | null>(null);
+  const [selectedIconDetail, setSelectedIconDetail] = useState<string | null>("icon-QR-Code");
   const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
+  const [iconWeight, setIconWeight] = useState<number>(400);
 
   // Gallery states
   const [showAllGallery, setShowAllGallery] = useState(false);
@@ -381,18 +383,55 @@ export default function Home() {
     loadCases();
   }, []);
 
-  // Lock body scroll when icon detail modal is open
+
+
+  // JS-based sticky scroll listener for the details panel
   useEffect(() => {
-    const htmlEl = document.documentElement;
-    if (selectedIconDetail) {
-      htmlEl.classList.add("modal-open");
-    } else {
-      htmlEl.classList.remove("modal-open");
-    }
-    return () => {
-      htmlEl.classList.remove("modal-open");
+    const handleScroll = () => {
+      if (!sectionRef.current || !stickyPanelRef.current) return;
+
+      const sectionRect = sectionRef.current.getBoundingClientRect();
+      const panelRect = stickyPanelRef.current.getBoundingClientRect();
+
+      // Disable JS sticky on mobile/tablet screens
+      if (window.innerWidth <= 768) {
+        stickyPanelRef.current.style.transform = "translateY(0px)";
+        return;
+      }
+
+      // Desired distance from the top of the viewport
+      const targetTop = 100;
+
+      // How much the section has scrolled past the targetTop threshold
+      const sectionTopOffset = -sectionRect.top + targetTop;
+
+      // Cap the translation to stay within the bounds of the section container
+      // 40px subtraction for bottom padding spacing
+      const maxTranslateY = sectionRect.height - panelRect.height - 40;
+
+      let translateY = 0;
+      if (sectionTopOffset > 0) {
+        translateY = Math.min(sectionTopOffset, maxTranslateY);
+      }
+
+      stickyPanelRef.current.style.transform = `translateY(${translateY}px)`;
     };
-  }, [selectedIconDetail]);
+
+    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("resize", handleScroll);
+    
+    // Run once on mount / render phase
+    handleScroll();
+
+    // Set a small delay timeout in case other elements shift heights during load
+    const timeoutId = setTimeout(handleScroll, 200);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+      clearTimeout(timeoutId);
+    };
+  }, [selectedIconDetail, iconSearch]);
 
   // Filter cases that have a preview image for marquee display
   const marqueeItems = casesList.filter(c => c.image_url);
@@ -415,7 +454,7 @@ export default function Home() {
     icon.toLowerCase().includes(iconSearch.toLowerCase())
   );
 
-  const visibleIcons = showAllIcons ? filteredIcons : filteredIcons.slice(0, 39); // Default show all or slice if very long
+  const visibleIcons = filteredIcons;
 
   return (
     <>
@@ -703,55 +742,350 @@ export default function Home() {
         </section>
 
         {/* ══ SECTION 6: ICONS (Պատկերակներ) ══ */}
-        <section>
+        <section ref={sectionRef}>
           <h2 style={{ fontSize: "1.4rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "20px", textAlign: "center", color: "var(--text)" }}>
             Պատկերներ
           </h2>
-          
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: "24px" }}>
-            <div style={{ width: "100%", maxWidth: "400px" }}>
-              <hd-input 
-                placeholder="Որոնել պատկերակ..." 
-                value={iconSearch}
-                onInput={(e: any) => setIconSearch(e.target.value)}
-                data-width="100%"
-                data-height="46px"
-                data-thickness="2px"
-              />
-            </div>
-          </div>
 
-          <div className="icon-explorer-grid">
-            {visibleIcons.map((icon, idx) => (
-              <div 
-                key={idx} 
-                className="icon-explorer-card"
-                onClick={() => setSelectedIconDetail(icon)}
-                title="Սեղմեք՝ տեսնելու օգտագործման ձևը"
-              >
-                <span className={`icon-symbol ${icon}`} />
-                <span className="icon-name">{icon.replace("icon-", "").replace(/-/g, " ")}</span>
-                
-                <div className="icon-tooltip">
-                  Մանրամասներ
-                </div>
+          {/* Two-column layout: Left (Grid) & Right (Details) */}
+          <div style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "32px",
+            width: "100%",
+            alignItems: "flex-start",
+            marginTop: "24px"
+          }}>
+            {/* Left Column: Icons Grid */}
+            <div style={{ flex: "1 1 500px", minWidth: "0" }}>
+              <div className="icon-explorer-grid" style={{ marginTop: 0 }}>
+                {visibleIcons.map((icon, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`icon-explorer-card ${selectedIconDetail === icon ? "active" : ""}`}
+                    onClick={() => setSelectedIconDetail(icon)}
+                    title="Սեղմեք՝ տեսնելու օգտագործման ձևը"
+                  >
+                    <span 
+                      className={`icon-symbol ${icon}`} 
+                      style={{ 
+                        fontWeight: iconWeight,
+                        fontVariationSettings: `'wght' ${iconWeight}`,
+                        transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease"
+                      }} 
+                    />
+                    <span className="icon-name">{icon.replace("icon-", "").replace(/-/g, " ")}</span>
+                    
+                    <div className="icon-tooltip">
+                      Մանրամասներ
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-
-          {filteredIcons.length > 16 && (
-            <div style={{ display: "flex", justifyContent: "center", marginTop: "32px" }}>
-              <hd-button 
-                onClick={() => setShowAllIcons(!showAllIcons)}
-                data-width="150px"
-                data-height="46px"
-                data-thickness="2px"
-              >
-                {showAllIcons ? "Փակել" : "Ավելի"}
-              </hd-button>
             </div>
-          )}
-        </section>
+
+            {/* Right Column: Sticky Sidebar Container */}
+            <div 
+              ref={stickyPanelRef}
+              style={{
+                flex: "1 1 350px",
+                maxWidth: "420px",
+                position: "relative",
+                display: "flex",
+                flexDirection: "column",
+                gap: "24px",
+                willChange: "transform",
+                transition: "transform 0.1s cubic-bezier(0.25, 1, 0.5, 1)"
+              }}
+            >
+              {/* Sticky Search Input Card inside Sidebar */}
+              <div style={{
+                backgroundColor: "var(--panel)",
+                border: "1px solid var(--panel-border)",
+                borderRadius: "24px",
+                padding: "24px",
+                boxShadow: "var(--shadow)"
+              }}>
+                <hd-input 
+                  placeholder="Որոնել պատկերակ..." 
+                  value={iconSearch}
+                  onInput={(e: any) => setIconSearch(e.target.value)}
+                  data-width="100%"
+                  data-height="46px"
+                  data-thickness="2px"
+                />
+              </div>
+
+              {/* Sticky Thickness Slider Card inside Sidebar */}
+              <div style={{
+                backgroundColor: "var(--panel)",
+                border: "1px solid var(--panel-border)",
+                borderRadius: "24px",
+                padding: "24px",
+                boxShadow: "var(--shadow)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px"
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "var(--text)" }}>
+                    Հաստություն (Thickness)
+                  </span>
+                  <span style={{ fontSize: "0.85rem", fontWeight: "700", color: "var(--primary-color)" }}>
+                    {iconWeight}
+                  </span>
+                </div>
+                <hd-slider 
+                  min="100" 
+                  max="900" 
+                  step="100" 
+                  value={iconWeight}
+                  onInput={(e: any) => setIconWeight(Number(e.target.value))}
+                  data-width="100%"
+                />
+              </div>
+
+              {/* Icon Details Card */}
+              {selectedIconDetail && (
+                <div style={{
+                  backgroundColor: "var(--panel)",
+                  border: "1px solid var(--panel-border)",
+                  borderRadius: "24px",
+                  padding: "28px",
+                  boxShadow: "var(--shadow)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "20px",
+                  color: "var(--text)"
+                }}>
+                {/* Header Info */}
+                <div style={{ textAlign: "left" }}>
+                  <h3 style={{ fontSize: "1.4rem", fontWeight: "700", color: "var(--text)", margin: "0 0 4px 0" }}>
+                    {selectedIconDetail.replace("icon-", "").replace(/-/g, " ")}
+                  </h3>
+                  <p style={{ fontSize: "0.8rem", color: "var(--muted)", margin: "0", fontFamily: "monospace" }}>
+                    Class: {selectedIconDetail}
+                  </p>
+                </div>
+
+                {/* Large Icon Preview */}
+                <div style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  width: "100%",
+                  padding: "10px 0"
+                }}>
+                  <div style={{
+                    width: "100%",
+                    maxWidth: "200px",
+                    height: "180px",
+                    borderRadius: "20px",
+                    background: "linear-gradient(135deg, rgba(8, 63, 57, 0.05) 0%, rgba(8, 63, 57, 0.02) 100%)",
+                    border: "1px solid var(--panel-border)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                  }}>
+                    <span 
+                      key={selectedIconDetail}
+                      className={selectedIconDetail} 
+                      style={{ 
+                        fontSize: "6.5rem", 
+                        color: "var(--primary-color)",
+                        fontWeight: iconWeight,
+                        fontVariationSettings: `'wght' ${iconWeight}`,
+                        transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease",
+                        animation: "iconSwap 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards"
+                      }} 
+                    />
+                  </div>
+                </div>
+
+                {/* 5 Sizes Showcase */}
+                <div style={{ width: "100%", textAlign: "center" }}>
+                  <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "var(--muted)", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
+                    Չափսերի Տարբերակներ (16px - 64px)
+                  </span>
+                  <div style={{
+                    display: "flex",
+                    gap: "14px",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "var(--input-bg)",
+                    padding: "12px 10px",
+                    borderRadius: "14px",
+                    border: "1px solid var(--panel-border)"
+                  }}>
+                    <span key={`${selectedIconDetail}-16`} className={selectedIconDetail} style={{ fontSize: "16px", color: "var(--primary-color)", fontWeight: iconWeight, fontVariationSettings: `'wght' ${iconWeight}`, transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease", animation: "iconSwap 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" }} title="16px" />
+                    <span key={`${selectedIconDetail}-24`} className={selectedIconDetail} style={{ fontSize: "24px", color: "var(--primary-color)", fontWeight: iconWeight, fontVariationSettings: `'wght' ${iconWeight}`, transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease", animation: "iconSwap 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" }} title="24px" />
+                    <span key={`${selectedIconDetail}-32`} className={selectedIconDetail} style={{ fontSize: "32px", color: "var(--primary-color)", fontWeight: iconWeight, fontVariationSettings: `'wght' ${iconWeight}`, transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease", animation: "iconSwap 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" }} title="32px" />
+                    <span key={`${selectedIconDetail}-48`} className={selectedIconDetail} style={{ fontSize: "48px", color: "var(--primary-color)", fontWeight: iconWeight, fontVariationSettings: `'wght' ${iconWeight}`, transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease", animation: "iconSwap 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" }} title="48px" />
+                    <span key={`${selectedIconDetail}-64`} className={selectedIconDetail} style={{ fontSize: "64px", color: "var(--primary-color)", fontWeight: iconWeight, fontVariationSettings: `'wght' ${iconWeight}`, transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease", animation: "iconSwap 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" }} title="64px" />
+                  </div>
+                </div>
+
+                {/* Download Buttons Container */}
+                <div style={{
+                  display: "flex",
+                  gap: "10px",
+                  width: "100%",
+                  justifyContent: "center"
+                }}>
+                  <hd-button
+                    onClick={() => downloadSvg(selectedIconDetail)}
+                    data-width="50%"
+                    data-height="40px"
+                    data-thickness="1px"
+                    data-color="transparent"
+                    data-text-color="var(--text)"
+                    title="Ներբեռնել SVG"
+                    style={{ flex: 1 }}
+                  >
+                    <span className="icon-Download" style={{ fontSize: "0.85rem", marginRight: "6px" }} />
+                    SVG
+                  </hd-button>
+                  <hd-button
+                    onClick={() => downloadPng(selectedIconDetail)}
+                    data-width="50%"
+                    data-height="40px"
+                    data-thickness="1px"
+                    data-color="var(--primary-color)"
+                    data-text-color="#ffffff"
+                    title="Ներբեռնել PNG"
+                    style={{ flex: 1 }}
+                  >
+                    <span className="icon-Download" style={{ fontSize: "0.85rem", marginRight: "6px" }} />
+                    PNG
+                  </hd-button>
+                </div>
+
+                {/* Code Snippets Section */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  
+                  {/* HTML Usage */}
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                      <span style={{ fontSize: "0.7rem", fontWeight: "600", color: "var(--muted)", textTransform: "uppercase" }}>HTML</span>
+                      <span 
+                        onClick={() => handleCopySnippet(`<span class="${selectedIconDetail}"></span>`, "html")}
+                        style={{ background: "transparent", border: "none", color: copiedSnippet === "html" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
+                      >
+                        <span className={copiedSnippet === "html" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.8rem" }} />
+                        {copiedSnippet === "html" ? "Պատճենված է" : "Պատճենել"}
+                      </span>
+                    </div>
+                    <div style={{
+                      background: "var(--input-bg)",
+                      border: "1px solid var(--panel-border)",
+                      borderRadius: "6px",
+                      padding: "6px 10px",
+                      fontSize: "0.75rem",
+                      color: "var(--text)",
+                      fontFamily: "monospace",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-all"
+                    }}>
+                      {`<span class="${selectedIconDetail}"></span>`}
+                    </div>
+                  </div>
+
+                  {/* React / JSX Usage */}
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                      <span style={{ fontSize: "0.7rem", fontWeight: "600", color: "var(--muted)", textTransform: "uppercase" }}>React / JSX</span>
+                      <span 
+                        onClick={() => handleCopySnippet(`<span className="${selectedIconDetail}" />`, "react")}
+                        style={{ background: "transparent", border: "none", color: copiedSnippet === "react" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
+                      >
+                        <span className={copiedSnippet === "react" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.8rem" }} />
+                        {copiedSnippet === "react" ? "Պատճենված է" : "Պատճենել"}
+                      </span>
+                    </div>
+                    <div style={{
+                      background: "var(--input-bg)",
+                      border: "1px solid var(--panel-border)",
+                      borderRadius: "6px",
+                      padding: "6px 10px",
+                      fontSize: "0.75rem",
+                      color: "var(--text)",
+                      fontFamily: "monospace",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-all"
+                    }}>
+                      {`<span className="${selectedIconDetail}" />`}
+                    </div>
+                  </div>
+
+                  {/* CSS Class */}
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                      <span style={{ fontSize: "0.7rem", fontWeight: "600", color: "var(--muted)", textTransform: "uppercase" }}>CSS Class</span>
+                      <span 
+                        onClick={() => handleCopySnippet(selectedIconDetail, "css")}
+                        style={{ background: "transparent", border: "none", color: copiedSnippet === "css" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
+                      >
+                        <span className={copiedSnippet === "css" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.8rem" }} />
+                        {copiedSnippet === "css" ? "Պատճենված է" : "Պատճենել"}
+                      </span>
+                    </div>
+                    <div style={{
+                      background: "var(--input-bg)",
+                      border: "1px solid var(--panel-border)",
+                      borderRadius: "6px",
+                      padding: "6px 10px",
+                      fontSize: "0.75rem",
+                      color: "var(--text)",
+                      fontFamily: "monospace",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-all"
+                    }}>
+                      {`.${selectedIconDetail}`}
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* api.hakobian.am CDN Integration Section */}
+                <div style={{ borderTop: "1px solid var(--panel-border)", paddingTop: "14px", width: "100%" }}>
+                  <h4 style={{ fontSize: "0.8rem", fontWeight: "700", color: "var(--text)", margin: "0 0 4px 0" }}>
+                    Ինչպե՞ս միացնել Ձեր կայքին
+                  </h4>
+                  
+                  {/* CSS CDN Link */}
+                  <div style={{ marginBottom: "8px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
+                      <span style={{ fontSize: "0.65rem", color: "var(--muted)" }}>CSS Font</span>
+                      <span 
+                        onClick={() => handleCopySnippet(`<link rel="stylesheet" href="https://api.hakobian.am/libs/v1/icons/style.css" />`, "libcss")}
+                        style={{ background: "transparent", border: "none", color: copiedSnippet === "libcss" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.65rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
+                      >
+                        <span className={copiedSnippet === "libcss" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.75rem" }} />
+                        {copiedSnippet === "libcss" ? "Պատճենված է" : "Պատճենել"}
+                      </span>
+                    </div>
+                    <div style={{
+                      background: "var(--input-bg)",
+                      border: "1px solid var(--panel-border)",
+                      borderRadius: "6px",
+                      padding: "4px 8px",
+                      fontSize: "0.7rem",
+                      color: "var(--text)",
+                      fontFamily: "monospace",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-all"
+                    }}>
+                      {`<link rel="stylesheet" href="https://api.hakobian.am/libs/v1/icons/style.css" />`}
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
         {/* Close shell container */}
         </div>
       </main>
@@ -889,321 +1223,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Icon Details Modal (White Panel with api.hakobian.am CDN guide) */}
-        {selectedIconDetail && typeof document !== "undefined" && createPortal(
-          <div 
-            className="icon-modal-overlay" 
-            onClick={() => setSelectedIconDetail(null)}
-            style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 10001,
-              background: "rgba(0, 0, 0, 0.65)",
-              backdropFilter: "blur(20px)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "20px",
-              animation: "fadeIn 0.3s ease-out"
-            }}
-          >
-            <div 
-              className="icon-modal-content" 
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                backgroundColor: "#ffffff",
-                border: "1px solid rgba(0, 0, 0, 0.1)",
-                borderRadius: "24px",
-                width: "100%",
-                maxWidth: "700px",
-                padding: "32px",
-                position: "relative",
-                display: "flex",
-                flexDirection: "column",
-                boxShadow: "0 24px 80px rgba(0, 0, 0, 0.15)",
-                color: "#1a1a1a",
-                zIndex: 10002,
-                animation: "scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards"
-              }}
-            >
-              {/* Close Button */}
-              <div 
-                onClick={() => setSelectedIconDetail(null)}
-                style={{
-                  position: "absolute",
-                  top: "20px",
-                  right: "20px",
-                  background: "rgba(0, 0, 0, 0.05)",
-                  border: "1px solid rgba(0, 0, 0, 0.08)",
-                  borderRadius: "50%",
-                  width: "36px",
-                  height: "36px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#1a1a1a",
-                  cursor: "pointer",
-                  fontSize: "1.2rem",
-                  zIndex: 100,
-                  transition: "background 0.2s, transform 0.2s"
-                }}
-                className="modal-close-btn"
-                title="Փակել"
-              >
-                &times;
-              </div>
 
-              {/* Two-Column Responsive Layout */}
-              <div style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "32px",
-                width: "100%",
-                marginBottom: "16px"
-              }}>
-                
-                {/* Left Column: Details & Snippets */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px", flex: "1 1 320px", minWidth: "0" }}>
-                  <div style={{ textAlign: "left" }}>
-                    <h3 style={{ fontSize: "1.4rem", fontWeight: "700", color: "#1a1a1a", margin: "0 0 4px 0" }}>
-                      {selectedIconDetail.replace("icon-", "").replace(/-/g, " ")}
-                    </h3>
-                    <p style={{ fontSize: "0.85rem", color: "rgba(0, 0, 0, 0.5)", margin: "0", fontFamily: "monospace" }}>
-                      Class: {selectedIconDetail}
-                    </p>
-                  </div>
-
-                  {/* Code Snippets Section */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    
-                    {/* HTML Usage */}
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                        <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "rgba(0, 0, 0, 0.6)", textTransform: "uppercase" }}>HTML</span>
-                        <span 
-                          onClick={() => handleCopySnippet(`<span class="${selectedIconDetail}"></span>`, "html")}
-                          style={{ background: "transparent", border: "none", color: copiedSnippet === "html" ? "var(--primary-color)" : "rgba(0,0,0,0.5)", fontSize: "0.75rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
-                        >
-                          <span className={copiedSnippet === "html" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.85rem" }} />
-                          {copiedSnippet === "html" ? "Պատճենված է" : "Պատճենել"}
-                        </span>
-                      </div>
-                      <div style={{
-                        background: "#f5f5f7",
-                        border: "1px solid rgba(0, 0, 0, 0.06)",
-                        borderRadius: "8px",
-                        padding: "8px 12px",
-                        fontSize: "0.8rem",
-                        color: "#083f39",
-                        fontFamily: "monospace",
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-all"
-                      }}>
-                        {`<span class="${selectedIconDetail}"></span>`}
-                      </div>
-                    </div>
-
-                    {/* React / JSX Usage */}
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                        <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "rgba(0, 0, 0, 0.6)", textTransform: "uppercase" }}>React / JSX</span>
-                        <span 
-                          onClick={() => handleCopySnippet(`<span className="${selectedIconDetail}" />`, "react")}
-                          style={{ background: "transparent", border: "none", color: copiedSnippet === "react" ? "var(--primary-color)" : "rgba(0,0,0,0.5)", fontSize: "0.75rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
-                        >
-                          <span className={copiedSnippet === "react" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.85rem" }} />
-                          {copiedSnippet === "react" ? "Պատճենված է" : "Պատճենել"}
-                        </span>
-                      </div>
-                      <div style={{
-                        background: "#f5f5f7",
-                        border: "1px solid rgba(0, 0, 0, 0.06)",
-                        borderRadius: "8px",
-                        padding: "8px 12px",
-                        fontSize: "0.8rem",
-                        color: "#083f39",
-                        fontFamily: "monospace",
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-all"
-                      }}>
-                        {`<span className="${selectedIconDetail}" />`}
-                      </div>
-                    </div>
-
-                    {/* CSS Class */}
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                        <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "rgba(0, 0, 0, 0.6)", textTransform: "uppercase" }}>CSS Class</span>
-                        <span 
-                          onClick={() => handleCopySnippet(selectedIconDetail, "css")}
-                          style={{ background: "transparent", border: "none", color: copiedSnippet === "css" ? "var(--primary-color)" : "rgba(0,0,0,0.5)", fontSize: "0.75rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
-                        >
-                          <span className={copiedSnippet === "css" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.85rem" }} />
-                          {copiedSnippet === "css" ? "Պատճենված է" : "Պատճենել"}
-                        </span>
-                      </div>
-                      <div style={{
-                        background: "#f5f5f7",
-                        border: "1px solid rgba(0, 0, 0, 0.06)",
-                        borderRadius: "8px",
-                        padding: "8px 12px",
-                        fontSize: "0.8rem",
-                        color: "#083f39",
-                        fontFamily: "monospace",
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-all"
-                      }}>
-                        {`.${selectedIconDetail}`}
-                      </div>
-                    </div>
-
-                  </div>
-                </div>
-
-                {/* Right Column: Large Preview & Sizes */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", flex: "1 1 200px" }}>
-                  {/* Large Icon Preview */}
-                  <div style={{
-                    width: "180px",
-                    height: "180px",
-                    borderRadius: "24px",
-                    background: "linear-gradient(135deg, rgba(8, 63, 57, 0.05) 0%, rgba(8, 63, 57, 0.02) 100%)",
-                    border: "1px solid rgba(8, 63, 57, 0.1)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    boxShadow: "inset 0 0 15px rgba(8, 63, 57, 0.02)"
-                  }}>
-                    <span className={selectedIconDetail} style={{ fontSize: "6.5rem", color: "var(--primary-color)" }} />
-                  </div>
-
-                  {/* Download Buttons Container */}
-                  <div style={{
-                    display: "flex",
-                    gap: "10px",
-                    width: "180px",
-                    justifyContent: "center"
-                  }}>
-                    <hd-button
-                      onClick={() => downloadSvg(selectedIconDetail)}
-                      data-width="85px"
-                      data-height="40px"
-                      data-thickness="1px"
-                      data-color="transparent"
-                      data-text-color="#083f39"
-                      title="Ներբեռնել SVG"
-                    >
-                      <span className="icon-Download" style={{ fontSize: "0.9rem", marginRight: "6px" }} />
-                      SVG
-                    </hd-button>
-                    <hd-button
-                      onClick={() => downloadPng(selectedIconDetail)}
-                      data-width="85px"
-                      data-height="40px"
-                      data-thickness="1px"
-                      data-color="#083f39"
-                      data-text-color="#ffffff"
-                      title="Ներբեռնել PNG"
-                    >
-                      <span className="icon-Download" style={{ fontSize: "0.9rem", marginRight: "6px" }} />
-                      PNG
-                    </hd-button>
-                  </div>
-
-                  {/* 5 Sizes Showcase */}
-                  <div style={{ width: "100%", textAlign: "center" }}>
-                    <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "rgba(0, 0, 0, 0.4)", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
-                      Չափսերի Տարբերակներ (16px - 64px)
-                    </span>
-                    <div style={{
-                      display: "flex",
-                      gap: "14px",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: "#f5f5f7",
-                      padding: "16px 12px",
-                      borderRadius: "16px",
-                      border: "1px solid rgba(0, 0, 0, 0.04)"
-                    }}>
-                      <span className={selectedIconDetail} style={{ fontSize: "16px", color: "var(--primary-color)" }} title="16px" />
-                      <span className={selectedIconDetail} style={{ fontSize: "24px", color: "var(--primary-color)" }} title="24px" />
-                      <span className={selectedIconDetail} style={{ fontSize: "32px", color: "var(--primary-color)" }} title="32px" />
-                      <span className={selectedIconDetail} style={{ fontSize: "48px", color: "var(--primary-color)" }} title="48px" />
-                      <span className={selectedIconDetail} style={{ fontSize: "64px", color: "var(--primary-color)" }} title="64px" />
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* api.hakobian.am CDN Integration Section */}
-              <div style={{ borderTop: "1px solid rgba(0, 0, 0, 0.08)", paddingTop: "16px", marginTop: "4px", width: "100%" }}>
-                <h4 style={{ fontSize: "0.85rem", fontWeight: "700", color: "#1a1a1a", margin: "0 0 6px 0" }}>
-                  Ինչպե՞ս միացնել Ձեր կայքին
-                </h4>
-                <p style={{ fontSize: "0.75rem", color: "rgba(0, 0, 0, 0.6)", margin: "0 0 12px 0", lineHeight: "1.4" }}>
-                  Այս պատկերակն ու դիզայնի համակարգի մյուս տարրերն օգտագործելու համար Ձեր կայքում ներառեք հետևյալ CDN հղումները.
-                </p>
-
-                {/* CSS CDN Link */}
-                <div style={{ marginBottom: "10px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                    <span style={{ fontSize: "0.7rem", fontWeight: "600", color: "rgba(0, 0, 0, 0.5)" }}>CSS Icons Font (տեղադրել &lt;head&gt;-ում)</span>
-                    <span 
-                      onClick={() => handleCopySnippet(`<link rel="stylesheet" href="https://api.hakobian.am/libs/v1/icons/style.css" />`, "libcss")}
-                      style={{ background: "transparent", border: "none", color: copiedSnippet === "libcss" ? "var(--primary-color)" : "rgba(0,0,0,0.5)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
-                    >
-                      <span className={copiedSnippet === "libcss" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.8rem" }} />
-                      {copiedSnippet === "libcss" ? "Պատճենված է" : "Պատճենել"}
-                    </span>
-                  </div>
-                  <div style={{
-                    background: "#f5f5f7",
-                    border: "1px solid rgba(0, 0, 0, 0.06)",
-                    borderRadius: "6px",
-                    padding: "6px 10px",
-                    fontSize: "0.75rem",
-                    color: "#083f39",
-                    fontFamily: "monospace",
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-all"
-                  }}>
-                    {`<link rel="stylesheet" href="https://api.hakobian.am/libs/v1/icons/style.css" />`}
-                  </div>
-                </div>
-
-                {/* JS CDN Link */}
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                    <span style={{ fontSize: "0.7rem", fontWeight: "600", color: "rgba(0, 0, 0, 0.5)" }}>JS Elements Script (տեղադրել &lt;body&gt;-ի վերջում)</span>
-                    <span 
-                      onClick={() => handleCopySnippet(`<script src="https://api.hakobian.am/libs/v1/script.js" defer></script>`, "libjs")}
-                      style={{ background: "transparent", border: "none", color: copiedSnippet === "libjs" ? "var(--primary-color)" : "rgba(0,0,0,0.5)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}
-                    >
-                      <span className={copiedSnippet === "libjs" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.8rem" }} />
-                      {copiedSnippet === "libjs" ? "Պատճենված է" : "Պատճենել"}
-                    </span>
-                  </div>
-                  <div style={{
-                    background: "#f5f5f7",
-                    border: "1px solid rgba(0, 0, 0, 0.06)",
-                    borderRadius: "6px",
-                    padding: "6px 10px",
-                    fontSize: "0.75rem",
-                    color: "#083f39",
-                    fontFamily: "monospace",
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-all"
-                  }}>
-                    {`<script src="https://api.hakobian.am/libs/v1/script.js" defer></script>`}
-                  </div>
-                </div>
-
-              </div>
-
-            </div>
-          </div>
-        , document.body)}
 
       </>
     );

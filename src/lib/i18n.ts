@@ -166,6 +166,42 @@ nav_home = Տուն
 nav_about = Մասին
 nav_works = Աշխատանքներ
 nav_docs = Փաստաթղթեր
+fonts_nav = Տառատեսակներ
+
+[fonts]
+title = HDesign Տառատեսակներ
+subtitle = Մասնագիտացված հայերեն և անգլերեն տառատեսակներ ձեր դիզայն նախագծերի համար
+search_placeholder = Որոնել տառատեսակներ...
+advanced_search = Ընդլայնված որոնում
+filters_title = Զտիչներ
+category_label = Կատեգորիա
+license_label = Լիցենզիա
+creator_label = Հեղինակ
+price_free = Անվճար
+price_paid = Վճարովի
+downloadable = Ներբեռնելի
+all = Բոլորը
+preview_text_placeholder = Գրեք տեքստ փորձարկման համար...
+try_font = Փորձարկել
+download = Ներբեռնել
+purchase = Գնել
+size = Չափս
+letter_spacing = Տառատարածություն
+line_height = Տողի բարձրություն
+alignment = Հավասարեցում
+color = Գույն
+bg_color = Ֆոնի գույն
+waterfall = Ջրվեժ (Waterfall)
+character_map = Նիշերի քարտեզ
+css_use = Օգտագործումը CSS-ում
+no_fonts = Տառատեսակներ չեն գտնվել:
+pangrams = Պանգրամներ
+numbers_symbols = Թվեր և նշաններ
+case_label = Տեքստի ռեգիստր
+case_normal = Լռելյայն
+case_upper = ՄԵԾԱՏԱՌ
+case_lower = փոքրատառ
+reset = Վերականգնել
 `;
 
 const enIniContent = `[common]
@@ -332,6 +368,42 @@ nav_home = Home
 nav_about = About
 nav_works = Works
 nav_docs = Docs
+fonts_nav = Fonts
+
+[fonts]
+title = HDesign Fonts
+subtitle = Specialized Armenian and English fonts for your design projects
+search_placeholder = Search fonts...
+advanced_search = Advanced Search
+filters_title = Filters
+category_label = Category
+license_label = License
+creator_label = Creator
+price_free = Free
+price_paid = Paid
+downloadable = Downloadable
+all = All
+preview_text_placeholder = Type custom text to preview...
+try_font = Try Font
+download = Download
+purchase = Purchase
+size = Size
+letter_spacing = Letter Spacing
+line_height = Line Height
+alignment = Alignment
+color = Color
+bg_color = Background Color
+waterfall = Waterfall
+character_map = Character Map
+css_use = Usage in CSS
+no_fonts = No fonts found.
+pangrams = Pangrams
+numbers_symbols = Numbers & Symbols
+case_label = Text Case
+case_normal = Normal
+case_upper = UPPERCASE
+case_lower = lowercase
+reset = Reset
 `;
 
 export function parseINI(iniText: string): Record<string, Record<string, string>> {

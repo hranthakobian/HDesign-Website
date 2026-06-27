@@ -19,6 +19,7 @@ const CASES_FILE = isServer ? path.join(DATA_DIR, 'cases.json') : '';
 const MESSAGES_FILE = isServer ? path.join(DATA_DIR, 'messages.json') : '';
 const VISITS_FILE = isServer ? path.join(DATA_DIR, 'visits.json') : '';
 const SETTINGS_FILE = isServer ? path.join(DATA_DIR, 'settings.json') : '';
+const FONTS_FILE = isServer ? path.join(DATA_DIR, 'fonts.json') : '';
 
 // Ensure database directory and files exist
 async function ensureLocalDbFiles() {
@@ -53,6 +54,13 @@ async function ensureLocalDbFiles() {
       await fs.access(SETTINGS_FILE);
     } catch {
       await fs.writeFile(SETTINGS_FILE, JSON.stringify({}, null, 2), 'utf-8');
+    }
+
+    // Check and create fonts.json if missing
+    try {
+      await fs.access(FONTS_FILE);
+    } catch {
+      await fs.writeFile(FONTS_FILE, JSON.stringify([], null, 2), 'utf-8');
     }
   } catch (err) {
     console.error('Error initializing local JSON database files:', err);
@@ -146,7 +154,9 @@ export async function getCases(): Promise<Case[]> {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        return [...data, ...defaultSeededCases];
+        const dynamicIds = new Set((data as any[]).map((x: any) => x.id));
+        const filteredSeeds = defaultSeededCases.filter((x: Case) => !dynamicIds.has(x.id));
+        return [...data, ...filteredSeeds];
       }
     } catch (err) {
       console.warn('Supabase getCases failed, falling back to local storage:', err);
@@ -158,8 +168,10 @@ export async function getCases(): Promise<Case[]> {
     const fs = getFs();
     try {
       const content = await fs.readFile(CASES_FILE, 'utf-8');
-      const localCases = JSON.parse(content);
-      return [...localCases, ...defaultSeededCases];
+      const localCases = JSON.parse(content) as Case[];
+      const dynamicIds = new Set(localCases.map((x: Case) => x.id));
+      const filteredSeeds = defaultSeededCases.filter((x: Case) => !dynamicIds.has(x.id));
+      return [...localCases, ...filteredSeeds];
     } catch (err) {
       console.error('Error reading local cases:', err);
     }
@@ -180,7 +192,7 @@ export async function saveCase(c: Case): Promise<Case | null> {
     try {
       const { data, error } = await adminClient
         .from('cases')
-        .insert([newCase])
+        .upsert(newCase)
         .select()
         .single();
       
@@ -596,4 +608,164 @@ export async function saveSiteSetting(key: string, value: any): Promise<{ succes
   }
 
   return { success: false, error: supabaseErrorMsg || 'No server/database connection' };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FONTS (Custom fonts)
+// ══════════════════════════════════════════════════════════════════════════════
+
+export type Font = {
+  id: string;
+  name_am: string;
+  name_en: string;
+  category: string;
+  creator?: string;
+  year?: string;
+  description_am?: string;
+  description_en?: string;
+  downloadable: boolean;
+  paid: boolean;
+  price?: string;
+  font_file_url: string;
+  download_url?: string;
+  purchase_url?: string;
+  created_at?: string;
+};
+
+// Default seed font
+export const defaultSeededFonts: Font[] = [
+  {
+    id: 'hdesign-font',
+    name_am: 'HDesign Տառատեսակ',
+    name_en: 'HDesign Font',
+    category: 'Display',
+    creator: 'Հրանտ Հակոբյան',
+    year: '2026',
+    description_am: 'HDesign-ի սեփական երկրաչափական և մինիմալիստական տառատեսակը, որը նախագծված է հատուկ դիզայն համակարգի պահանջներին համապատասխան։',
+    description_en: 'HDesign\'s proprietary geometric and minimalist font, designed specifically to match the design system requirements.',
+    downloadable: true,
+    paid: false,
+    font_file_url: '/HDesign.ttf',
+    download_url: '/HDesign.ttf',
+    created_at: '2026-06-27T00:00:00.000Z'
+  }
+];
+
+export async function getFonts(): Promise<Font[]> {
+  await ensureLocalDbFiles();
+  
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('fonts')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        // filter out dynamic duplicates of seed font if any
+        const dynamicIds = new Set((data as any[]).map((x: any) => x.id));
+        const filteredSeeds = defaultSeededFonts.filter((x: Font) => !dynamicIds.has(x.id));
+        return [...data, ...filteredSeeds];
+      }
+    } catch (err) {
+      console.warn('Supabase getFonts failed, falling back to local storage:', err);
+    }
+  }
+
+  // Fallback to local JSON database
+  if (isServer) {
+    const fs = getFs();
+    try {
+      const content = await fs.readFile(FONTS_FILE, 'utf-8');
+      const localFonts = JSON.parse(content) as Font[];
+      const dynamicIds = new Set(localFonts.map((x: Font) => x.id));
+      const filteredSeeds = defaultSeededFonts.filter((x: Font) => !dynamicIds.has(x.id));
+      return [...localFonts, ...filteredSeeds];
+    } catch (err) {
+      console.error('Error reading local fonts:', err);
+    }
+  }
+
+  return defaultSeededFonts;
+}
+
+export async function saveFont(f: Font): Promise<Font | null> {
+  await ensureLocalDbFiles();
+  const newFont = {
+    ...f,
+    created_at: f.created_at || new Date().toISOString()
+  };
+
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
+    try {
+      const { data, error } = await adminClient
+        .from('fonts')
+        .upsert(newFont)
+        .select()
+        .single();
+      
+      if (!error && data) return data;
+      console.warn('Supabase saveFont error:', error?.message);
+    } catch (err) {
+      console.warn('Supabase saveFont failed, using local storage:', err);
+    }
+  }
+
+  // Fallback to local JSON database
+  if (isServer) {
+    const fs = getFs();
+    try {
+      const content = await fs.readFile(FONTS_FILE, 'utf-8');
+      const fonts = JSON.parse(content) as Font[];
+      
+      const index = fonts.findIndex(x => x.id === f.id);
+      if (index !== -1) {
+        fonts[index] = newFont;
+      } else {
+        fonts.unshift(newFont);
+      }
+
+      await fs.writeFile(FONTS_FILE, JSON.stringify(fonts, null, 2), 'utf-8');
+      return newFont;
+    } catch (err) {
+      console.error('Error writing font locally:', err);
+    }
+  }
+
+  return null;
+}
+
+export async function deleteFont(id: string): Promise<boolean> {
+  await ensureLocalDbFiles();
+  
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
+    try {
+      const { error } = await adminClient
+        .from('fonts')
+        .delete()
+        .eq('id', id);
+      
+      if (!error) return true;
+    } catch (err) {
+      console.warn('Supabase deleteFont failed, using local storage:', err);
+    }
+  }
+
+  // Fallback to local JSON database
+  if (isServer) {
+    const fs = getFs();
+    try {
+      const content = await fs.readFile(FONTS_FILE, 'utf-8');
+      const fonts = JSON.parse(content) as Font[];
+      const filtered = fonts.filter(x => x.id !== id);
+      await fs.writeFile(FONTS_FILE, JSON.stringify(filtered, null, 2), 'utf-8');
+      return true;
+    } catch (err) {
+      console.error('Error deleting font locally:', err);
+    }
+  }
+
+  return false;
 }
