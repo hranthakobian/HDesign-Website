@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Lenis from "lenis";
 
 export default function SmoothScroll() {
+  const pathname = usePathname();
+
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (pathname?.startsWith("/admin")) return;
 
     // Initialize Lenis smooth scroll
     const lenis = new Lenis({
@@ -32,7 +36,7 @@ export default function SmoothScroll() {
       cancelAnimationFrame(rafId);
       (window as any).lenis = null;
     };
-  }, []);
+  }, [pathname]);
 
   return null;
 }

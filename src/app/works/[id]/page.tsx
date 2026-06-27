@@ -18,6 +18,23 @@ type Case = {
   created_at?: string;
 };
 
+function parseBg(bgString: string) {
+  const parts = (bgString || "").split(" | ");
+  const bg = parts[0] || "linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%)";
+  let overlay = true;
+  let positionY = 50;
+  let height = 55; // default height for public view page
+
+  for (let i = 1; i < parts.length; i++) {
+    const [k, v] = parts[i].split("=");
+    if (k === "overlay") overlay = v === "true";
+    if (k === "position_y") positionY = parseInt(v) || 50;
+    if (k === "height") height = parseInt(v) || 55;
+  }
+
+  return { bg, overlay, positionY, height };
+}
+
 export default function BrandingDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -133,15 +150,17 @@ export default function BrandingDetailPage() {
     );
   }
 
+  const hero = parseBg(work.bg);
+
   return (
     <main style={{ marginTop: "80px", minHeight: "100vh" }}>
       {/* Huge Case Hero Header */}
       <div 
         style={{
           width: "100%",
-          height: "55vh",
+          height: `${hero.height}vh`,
           position: "relative",
-          backgroundColor: work.bg,
+          backgroundColor: hero.bg,
           display: "flex",
           alignItems: "flex-end",
           overflow: "hidden"
@@ -157,18 +176,21 @@ export default function BrandingDetailPage() {
               width: "100%", 
               height: "100%", 
               objectFit: "cover", 
+              objectPosition: `50% ${hero.positionY}%`,
               opacity: 0.8 
             }} 
           />
         )}
         
         {/* Shadow Overlay */}
-        <div style={{
-          position: "absolute",
-          inset: 0,
-          background: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 60%, rgba(0,0,0,0) 100%)",
-          zIndex: 1
-        }} />
+        {hero.overlay && (
+          <div style={{
+            position: "absolute",
+            inset: 0,
+            background: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 60%, rgba(0,0,0,0) 100%)",
+            zIndex: 1
+          }} />
+        )}
 
         {/* Hero Title Container */}
         <div 
@@ -214,182 +236,129 @@ export default function BrandingDetailPage() {
         </div>
       </div>
 
-      {/* Main Content Details */}
-      <div className="shell" style={{ padding: "60px 24px" }}>
-        
-        {/* Details Grid */}
-        <div 
-          style={{ 
-            display: "grid", 
-            gridTemplateColumns: "1.4fr 0.8fr", 
-            gap: "56px",
-            alignItems: "start" 
-          }} 
-          className="case-grid"
-        >
-          {/* Left Column: Dynamic Behance Blocks list */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "48px", minWidth: 0 }}>
-            {blocks.map((block, idx) => {
-              if (block.type === "text") {
-                return (
-                  <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    {(block.title_am || block.title_en) && (
-                      <h2 style={{ fontSize: "1.8rem", fontWeight: "800", color: "var(--text)", margin: 0 }}>
-                        {block.title_am || block.title_en}
-                      </h2>
-                    )}
-                    <p style={{ fontSize: "1.08rem", lineHeight: "1.75", opacity: 0.9, margin: 0, whiteSpace: "pre-line" }}>
-                      {block.content_am || block.content_en}
-                    </p>
-                  </div>
-                );
-              }
-
-              if (block.type === "image" && block.image_url) {
-                return (
-                  <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
-                    <div style={{
-                      borderRadius: "16px",
-                      overflow: "hidden",
-                      border: "1px solid var(--panel-border)",
-                      width: "100%",
-                      maxWidth: block.fullWidth ? "100%" : "680px"
-                    }}>
-                      <img src={block.image_url} alt="Project spec" style={{ width: "100%", display: "block" }} />
-                    </div>
-                    {(block.caption_am || block.caption_en) && (
-                      <span style={{ fontSize: "0.82rem", color: "var(--muted)", fontStyle: "italic", textAlign: "center" }}>
-                        {block.caption_am || block.caption_en}
-                      </span>
-                    )}
-                  </div>
-                );
-              }
-
-              if (block.type === "embed" && block.embed_url) {
-                // simple parser for youtube/vimeo embed
-                let src = block.embed_url;
-                if (src.includes("youtube.com/watch?v=")) {
-                  src = `https://www.youtube.com/embed/${src.split("v=")[1].split("&")[0]}`;
-                } else if (src.includes("youtu.be/")) {
-                  src = `https://www.youtube.com/embed/${src.split("youtu.be/")[1]}`;
-                }
-                return (
-                  <div key={idx} style={{ width: "100%", aspectRatio: "16/9", borderRadius: "16px", overflow: "hidden", border: "1px solid var(--panel-border)" }}>
-                    <iframe src={src} style={{ width: "100%", height: "100%", border: "none" }} allowFullScreen />
-                  </div>
-                );
-              }
-
-              if (block.type === "color_palette" && block.colors) {
-                return (
-                  <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    <h3 style={{ fontSize: "1.2rem", fontWeight: "700", margin: 0 }}>Բրենդի Գունապնակ (Brand Palette)</h3>
-                    <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-                      {block.colors.map((color: string, cIdx: number) => (
-                        <div key={cIdx} style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "center" }}>
-                          <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: color, border: "2px solid var(--panel-border)", boxShadow: "var(--shadow)" }} />
-                          <span style={{ fontSize: "0.78rem", fontFamily: "monospace", color: "var(--muted)" }}>{color}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              }
-
-              if (block.type === "typography_showcase" && block.fonts) {
-                return (
-                  <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    <h3 style={{ fontSize: "1.2rem", fontWeight: "700", margin: 0 }}>Տառատեսակներ (Typography Showcase)</h3>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                      {block.fonts.map((fName: string, fIdx: number) => (
-                        <div key={fIdx} style={{ padding: "16px", background: "var(--panel)", borderRadius: "12px", border: "1px solid var(--panel-border)" }}>
-                          <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase" }}>{fName}</span>
-                          <div style={{ fontFamily: `${fName}, sans-serif`, fontSize: "1.8rem", marginTop: "8px", color: "var(--text)" }}>
-                            {block.previewText || "Հրանտ Հակոբյան Դիզայն"}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              }
-
-              return null;
-            })}
+      {/* Horizontal Metadata Bar */}
+      <div style={{ borderBottom: "1px solid var(--panel-border)", background: "var(--panel)", padding: "24px 0" }}>
+        <div className="shell" style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-around", gap: "24px", textAlign: "center" }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>Կարգ</span>
+            <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{work.category || "Branding"}</span>
           </div>
-
-          {/* Right Column: Project Sidebar Details */}
-          <div 
-            style={{ 
-              display: "flex", 
-              flexDirection: "column", 
-              gap: "28px",
-              background: "var(--panel)",
-              border: "1px solid var(--panel-border)",
-              borderRadius: "24px",
-              padding: "36px",
-              boxShadow: "var(--shadow)",
-              position: "sticky",
-              top: "140px"
-            }}
-            className="case-sidebar"
-          >
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>
-                Կարգ
-              </span>
-              <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)" }}>
-                {work.category || "Branding"}
-              </span>
+          {work.client && (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>Հաճախորդ</span>
+              <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{work.client}</span>
             </div>
-
-            {work.client && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>
-                  Հաճախորդ
-                </span>
-                <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)" }}>
-                  {work.client}
-                </span>
-              </div>
-            )}
-
-            {work.year && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>
-                  Տարեթիվ
-                </span>
-                <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)" }}>
-                  {work.year}
-                </span>
-              </div>
-            )}
-
-            <div style={{ borderTop: "1px solid var(--panel-border)", paddingTop: "24px", marginTop: "12px" }}>
-              <Link href="/works" style={{ textDecoration: "none", width: "100%" }}>
-                <hd-button data-width="100%" data-height="44px" data-thickness="1px" style={{ background: "transparent", color: "var(--text)" }}>
-                  Հետ դեպի ցուցակ
-                </hd-button>
-              </Link>
+          )}
+          {work.year && (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>Տարեթիվ</span>
+              <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{work.year}</span>
             </div>
-          </div>
+          )}
         </div>
-
       </div>
 
-      <style jsx global>{`
-        @media (max-width: 992px) {
-          .case-grid {
-            grid-template-columns: 1fr !important;
-            gap: 40px !important;
+      {/* Single-Column stack (Images/Videos occupy 100% width, other specs centered) */}
+      <div style={{ width: "100%", padding: "40px 0", display: "flex", flexDirection: "column" }}>
+        {blocks.map((block, idx) => {
+          if (block.type === "text") {
+            return (
+              <div key={idx} style={{ width: "100%", padding: "48px 24px", boxSizing: "border-box" }}>
+                <div style={{ maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {(block.title_am || block.title_en) && (
+                    <h2 style={{ fontSize: "2rem", fontWeight: "900", color: "var(--text)", margin: 0 }}>
+                      {block.title_am || block.title_en}
+                    </h2>
+                  )}
+                  <p style={{ fontSize: "1.15rem", lineHeight: "1.8", color: "var(--text)", opacity: 0.85, margin: 0, whiteSpace: "pre-line" }}>
+                    {block.content_am || block.content_en}
+                  </p>
+                </div>
+              </div>
+            );
           }
-          .case-sidebar {
-            position: relative !important;
-            top: 0 !important;
+
+          if (block.type === "image" && block.image_url) {
+            return (
+              <div key={idx} style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", margin: "20px 0" }}>
+                <div style={{ width: "100%", overflow: "hidden" }}>
+                  <img src={block.image_url} alt="Project spec" style={{ width: "100%", height: "auto", display: "block" }} />
+                </div>
+                {(block.caption_am || block.caption_en) && (
+                  <div style={{ maxWidth: "900px", margin: "12px auto 0", padding: "0 24px", textAlign: "center" }}>
+                    <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontStyle: "italic" }}>
+                      {block.caption_am || block.caption_en}
+                    </span>
+                  </div>
+                )}
+              </div>
+            );
           }
-        }
-      `}</style>
+
+          if (block.type === "embed" && block.embed_url) {
+            let src = block.embed_url;
+            if (src.includes("youtube.com/watch?v=")) {
+              src = `https://www.youtube.com/embed/${src.split("v=")[1].split("&")[0]}`;
+            } else if (src.includes("youtu.be/")) {
+              src = `https://www.youtube.com/embed/${src.split("youtu.be/")[1]}`;
+            }
+            return (
+              <div key={idx} style={{ width: "100%", aspectRatio: "16/9", overflow: "hidden", margin: "20px 0" }}>
+                <iframe src={src} style={{ width: "100%", height: "100%", border: "none" }} allowFullScreen />
+              </div>
+            );
+          }
+
+          if (block.type === "color_palette" && block.colors) {
+            return (
+              <div key={idx} style={{ width: "100%", padding: "48px 24px", boxSizing: "border-box" }}>
+                <div style={{ maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "24px" }}>
+                  <h3 style={{ fontSize: "1.3rem", fontWeight: "800", color: "var(--text)", margin: 0 }}>Բրենդի Գունապնակ</h3>
+                  <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
+                    {block.colors.map((color: string, cIdx: number) => (
+                      <div key={cIdx} style={{ display: "flex", flexDirection: "column", gap: "10px", alignItems: "center" }}>
+                        <div style={{ width: "72px", height: "72px", borderRadius: "50%", background: color, border: "2px solid var(--panel-border)", boxShadow: "var(--shadow)" }} />
+                        <span style={{ fontSize: "0.85rem", fontFamily: "monospace", color: "var(--muted)" }}>{color}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          if (block.type === "typography_showcase" && block.fonts) {
+            return (
+              <div key={idx} style={{ width: "100%", padding: "48px 24px", boxSizing: "border-box" }}>
+                <div style={{ maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "24px" }}>
+                  <h3 style={{ fontSize: "1.3rem", fontWeight: "800", color: "var(--text)", margin: 0 }}>Տառատեսակներ</h3>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                    {block.fonts.map((fName: string, fIdx: number) => (
+                      <div key={fIdx} style={{ padding: "24px", background: "var(--panel)", borderRadius: "16px", border: "1px solid var(--panel-border)" }}>
+                        <span style={{ fontSize: "0.85rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>{fName}</span>
+                        <div style={{ fontFamily: `${fName}, sans-serif`, fontSize: "2rem", marginTop: "12px", color: "var(--text)" }}>
+                          {block.previewText || "Հրանտ Հակոբյան Դիզայն"}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          return null;
+        })}
+      </div>
+
+      {/* Back to works button */}
+      <div style={{ padding: "40px 24px 80px", display: "flex", justifyContent: "center" }}>
+        <Link href="/works" style={{ textDecoration: "none" }}>
+          <hd-button data-width="220px" data-height="50px" data-thickness="2px">
+            ← Հետ դեպի ցուցակ
+          </hd-button>
+        </Link>
+      </div>
     </main>
   );
 }

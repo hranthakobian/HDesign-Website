@@ -56,8 +56,8 @@ export default function FontWysiwygEditor() {
   const [blocks, setBlocks] = useState<FontBlock[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadingFontFile, setUploadingFontFile] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [activeStep, setActiveStep] = useState<"details" | "files" | "pricing" | "specimen">("details");
 
   // Load auth token & initial font data
   useEffect(() => {
@@ -72,6 +72,22 @@ export default function FontWysiwygEditor() {
       loadFont(savedToken);
     }
   }, [id]);
+
+  /* ─ Theme ─ */
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('hdesign-theme');
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      document.documentElement.setAttribute('data-color', savedTheme === 'light' ? '#083f39' : '#ffffff');
+      document.documentElement.classList.remove('light', 'dark', 'green');
+      document.documentElement.classList.add(savedTheme);
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      document.documentElement.setAttribute('data-color', '#083f39');
+      document.documentElement.classList.remove('light', 'dark', 'green');
+      document.documentElement.classList.add('light');
+    }
+  }, []);
 
   async function loadFont(authToken: string) {
     try {
@@ -248,7 +264,9 @@ export default function FontWysiwygEditor() {
       const data = await res.json();
       if (res.ok) {
         alert("Տառատեսակը հաջողությամբ պահպանվեց:");
-        router.push("/admin?tab=fonts");
+        if (isNew) {
+          router.replace(`/admin/editor/font/${fontForm.id}`);
+        }
       } else {
         alert("Սխալ՝ " + (data.error || "Չհաջողվեց պահպանել"));
       }
@@ -268,7 +286,7 @@ export default function FontWysiwygEditor() {
   }
 
   return (
-    <div style={{ background: '#0a0a0c', color: '#eaeaea', minHeight: '100vh', display: 'flex', flexDirection: 'column', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ background: 'var(--bg)', color: 'var(--text)', height: '100vh', display: 'flex', flexDirection: 'column', fontFamily: 'system-ui, sans-serif' }}>
       
       {/* Dynamic Font Injection for Previewing */}
       {fontForm.font_file_url && (
@@ -284,19 +302,19 @@ export default function FontWysiwygEditor() {
 
       {/* Top sticky editor bar */}
       <div style={{
-        height: '70px', background: '#121216', borderBottom: '1px solid #22222a',
+        height: '70px', background: 'var(--panel)', borderBottom: '1px solid var(--panel-border)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px',
         position: 'sticky', top: 0, zIndex: 100
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Link href="/admin?tab=fonts" style={{ textDecoration: 'none' }}>
-            <button style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.06)', border: '1px solid #333', borderRadius: '8px', color: '#fff', cursor: 'pointer', fontSize: '0.85rem' }}>
+            <button style={{ padding: '8px 16px', background: 'var(--btn-bg)', border: '1px solid var(--panel-border)', borderRadius: '8px', color: 'var(--text)', cursor: 'pointer', fontSize: '0.85rem' }}>
               ← Հետ դեպի Ադմին
             </button>
           </Link>
-          <span style={{ fontSize: '0.9rem', color: '#888' }}>|</span>
-          <span style={{ fontWeight: 700, color: '#fff', fontSize: '1rem' }}>
-            {isNew ? 'Ավելացնել Նոր Տառատեսակ' : `Խմբագրել՝ ${fontForm.name_am}`}
+          <span style={{ fontSize: '0.9rem', color: 'var(--panel-border)' }}>|</span>
+          <span style={{ fontWeight: 700, color: 'var(--text)', fontSize: '1rem' }}>
+            {isNew ? 'Ավելացնել Նոր Տառատեսակ (MyFonts ոճով)' : `Խմբագրել՝ ${fontForm.name_am}`}
           </span>
         </div>
 
@@ -321,16 +339,16 @@ export default function FontWysiwygEditor() {
       <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', flex: 1, minHeight: 'calc(100vh - 70px)' }}>
         
         {/* Left Side: Real-time Live Specimen Showcase Preview (3/4 of the width) */}
-        <div style={{ background: '#07070a', overflowY: 'auto', maxHeight: 'calc(100vh - 70px)', padding: '48px', boxSizing: 'border-box' }}>
+        <div style={{ background: 'var(--bg)', overflowY: 'auto', maxHeight: 'calc(100vh - 70px)', padding: '48px', boxSizing: 'border-box' }}>
           
           <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '48px' }}>
             
             {/* Header info */}
             <div>
-              <span style={{ fontSize: '0.8rem', color: '#ffcc00', letterSpacing: '2px', textTransform: 'uppercase', fontWeight: 800 }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--accent)', letterSpacing: '2px', textTransform: 'uppercase', fontWeight: 800 }}>
                 {fontForm.category} • {fontForm.creator}
               </span>
-              <h1 style={{ fontSize: '3rem', fontWeight: 900, color: '#fff', margin: '12px 0 0 0' }}>
+              <h1 style={{ fontSize: '3rem', fontWeight: 900, color: 'var(--text)', margin: '12px 0 0 0' }}>
                 {fontForm.name_am || 'Տառատեսակի անուն'}
               </h1>
             </div>
@@ -338,7 +356,7 @@ export default function FontWysiwygEditor() {
             {/* Specimen Blocks rendering */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
               {blocks.length === 0 ? (
-                <div style={{ border: '2px dashed #333', borderRadius: '16px', padding: '48px', textAlign: 'center', color: '#666' }}>
+                <div style={{ border: '2px dashed var(--panel-border)', borderRadius: '16px', padding: '48px', textAlign: 'center', color: 'var(--muted)' }}>
                   <h4>Ցուցադրման բլոկներ չկան</h4>
                   <p style={{ fontSize: '0.85rem' }}>Ավելացրեք նմուշներ, գլիֆների ցանց կամ տեքստեր աջակողմյան վահանակից՝ ձեր տառատեսակը ցուցադրելու համար:</p>
                 </div>
@@ -348,11 +366,11 @@ export default function FontWysiwygEditor() {
                     return (
                       <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '800px' }}>
                         {(block.title_am || block.title_en) && (
-                          <h4 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#fff', margin: 0 }}>
+                          <h4 style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--text)', margin: 0 }}>
                             {block.title_am || block.title_en}
                           </h4>
                         )}
-                        <p style={{ fontSize: '1.05rem', lineHeight: '1.7', color: '#aaa', margin: 0, whiteSpace: 'pre-line' }}>
+                        <p style={{ fontSize: '1.05rem', lineHeight: '1.7', color: 'var(--muted)', margin: 0, whiteSpace: 'pre-line' }}>
                           {block.content_am || block.content_en}
                         </p>
                       </div>
@@ -361,12 +379,12 @@ export default function FontWysiwygEditor() {
 
                   if (block.type === 'specimen_banner' && block.previewText) {
                     return (
-                      <div key={idx} style={{ padding: '36px', background: '#121216', borderRadius: '16px', border: '1px solid #222', overflow: 'hidden' }}>
-                        <span style={{ fontSize: '0.72rem', color: '#666', textTransform: 'uppercase', marginBottom: '12px', display: 'block' }}>Specimen Banner ({block.size || 54}px)</span>
+                      <div key={idx} style={{ padding: '36px', background: 'var(--panel)', borderRadius: '16px', border: '1px solid var(--panel-border)', overflow: 'hidden' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase', marginBottom: '12px', display: 'block' }}>Specimen Banner ({block.size || 54}px)</span>
                         <div style={{ 
                           fontFamily: fontForm.font_file_url ? `wysiwyg-preview-font-${fontForm.id}` : 'sans-serif', 
                           fontSize: `${block.size || 54}px`, 
-                          color: '#fff', 
+                          color: 'var(--text)', 
                           lineHeight: '1.2', 
                           wordBreak: 'break-word' 
                         }}>
@@ -380,15 +398,15 @@ export default function FontWysiwygEditor() {
                     const weightList = block.weights || [300, 400, 700];
                     return (
                       <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <h4 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#fff', margin: 0 }}>{block.title_am || block.title_en}</h4>
+                        <h4 style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text)', margin: 0 }}>{block.title_am || block.title_en}</h4>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                           {weightList.map((w, wIdx) => (
-                            <div key={wIdx} style={{ display: 'flex', gap: '16px', alignItems: 'baseline', borderBottom: '1px solid #222', paddingBottom: '10px' }}>
-                              <span style={{ fontSize: '0.75rem', color: '#666', width: '80px' }}>Weight {w}</span>
+                            <div key={wIdx} style={{ display: 'flex', gap: '16px', alignItems: 'baseline', borderBottom: '1px solid var(--panel-border)', paddingBottom: '10px' }}>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--muted)', width: '80px' }}>Weight {w}</span>
                               <div style={{ 
                                 fontFamily: fontForm.font_file_url ? `wysiwyg-preview-font-${fontForm.id}` : 'sans-serif', 
                                 fontSize: '1.8rem', 
-                                color: '#fff', 
+                                color: 'var(--text)', 
                                 fontWeight: w,
                                 flex: 1
                               }}>
@@ -405,14 +423,14 @@ export default function FontWysiwygEditor() {
                     const lettersList = block.letters.split(' ').filter(s => s.length > 0);
                     return (
                       <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <h4 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#fff', margin: 0 }}>{block.title_am || block.title_en}</h4>
+                        <h4 style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text)', margin: 0 }}>{block.title_am || block.title_en}</h4>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: '12px' }}>
                           {lettersList.map((letter, lIdx) => (
-                            <div key={lIdx} style={{ height: '110px', background: '#121216', border: '1px solid #222', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div key={lIdx} style={{ height: '110px', background: 'var(--panel)', border: '1px solid var(--panel-border)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                               <div style={{ 
                                 fontFamily: fontForm.font_file_url ? `wysiwyg-preview-font-${fontForm.id}` : 'sans-serif', 
                                 fontSize: '3rem', 
-                                color: '#fff', 
+                                color: 'var(--text)', 
                                 lineHeight: 1 
                               }}>
                                 {letter}
@@ -427,11 +445,11 @@ export default function FontWysiwygEditor() {
                   if (block.type === 'image' && block.image_url) {
                     return (
                       <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
-                        <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #222' }}>
+                        <div style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--panel-border)' }}>
                           <img src={block.image_url} alt="Font graphic" style={{ width: '100%', display: 'block' }} />
                         </div>
                         {(block.caption_am || block.caption_en) && (
-                          <span style={{ fontSize: '0.8rem', color: '#666', fontStyle: 'italic', textAlign: 'center' }}>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--muted)', fontStyle: 'italic', textAlign: 'center' }}>
                             {block.caption_am || block.caption_en}
                           </span>
                         )}
@@ -448,333 +466,338 @@ export default function FontWysiwygEditor() {
 
         </div>
 
-        {/* Right Side: Tools Sidebar Pane (1/4 of the width) */}
+        {/* Right Side: Tools Sidebar Pane (1/4 of the width) - Styled as MyFonts Font Family Upload Wizard */}
         <div style={{
-          background: '#121216', borderLeft: '1px solid #22222a',
+          background: 'var(--panel)', borderLeft: '1px solid var(--panel-border)',
           padding: '24px', overflowY: 'auto', maxHeight: 'calc(100vh - 70px)',
-          display: 'flex', flexDirection: 'column', gap: '24px'
+          display: 'flex', flexDirection: 'column', gap: '20px'
         }}>
           
-          {/* Metadata Section */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: '#888' }}>
-              Տառատեսակի Տվյալներ
+          <div style={{ borderBottom: '1px solid var(--panel-border)', paddingBottom: '12px' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 800, textTransform: 'uppercase' }}>
+              MyFonts Publishing Portal
             </span>
-
-            <div>
-              <label style={{ fontSize: '0.78rem', color: '#aaa', display: 'block', marginBottom: '6px' }}>Տառատեսակի ID*</label>
-              <input 
-                type="text" 
-                value={fontForm.id} 
-                disabled={!isNew}
-                onChange={e => setFontForm(prev => ({ ...prev, id: e.target.value }))}
-                style={{ width: '100%', height: '36px', background: '#1e1e24', border: '1px solid #333', borderRadius: '6px', padding: '0 10px', color: '#fff', fontSize: '0.85rem' }} 
-              />
-            </div>
-
-            <div>
-              <label style={{ fontSize: '0.78rem', color: '#aaa', display: 'block', marginBottom: '6px' }}>Անուն (Հայերեն)*</label>
-              <input 
-                type="text" 
-                value={fontForm.name_am} 
-                onChange={e => setFontForm(prev => ({ ...prev, name_am: e.target.value }))}
-                style={{ width: '100%', height: '36px', background: '#1e1e24', border: '1px solid #333', borderRadius: '6px', padding: '0 10px', color: '#fff', fontSize: '0.85rem' }} 
-              />
-            </div>
-
-            <div>
-              <label style={{ fontSize: '0.78rem', color: '#aaa', display: 'block', marginBottom: '6px' }}>Name (English)*</label>
-              <input 
-                type="text" 
-                value={fontForm.name_en} 
-                onChange={e => setFontForm(prev => ({ ...prev, name_en: e.target.value }))}
-                style={{ width: '100%', height: '36px', background: '#1e1e24', border: '1px solid #333', borderRadius: '6px', padding: '0 10px', color: '#fff', fontSize: '0.85rem' }} 
-              />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '10px' }}>
-              <div>
-                <label style={{ fontSize: '0.78rem', color: '#aaa', display: 'block', marginBottom: '6px' }}>Կատեգորիա</label>
-                <select 
-                  value={fontForm.category} 
-                  onChange={e => setFontForm(prev => ({ ...prev, category: e.target.value }))}
-                  style={{ width: '100%', height: '36px', background: '#1e1e24', border: '1px solid #333', borderRadius: '6px', padding: '0 10px', color: '#fff', fontSize: '0.85rem' }}
-                >
-                  <option value="Sans-Serif">Sans-Serif</option>
-                  <option value="Serif">Serif</option>
-                  <option value="Display">Display</option>
-                  <option value="Monospace">Monospace</option>
-                  <option value="Variable">Variable</option>
-                </select>
-              </div>
-              <div>
-                <label style={{ fontSize: '0.78rem', color: '#aaa', display: 'block', marginBottom: '6px' }}>Տարեթիվ</label>
-                <input 
-                  type="text" 
-                  value={fontForm.year} 
-                  onChange={e => setFontForm(prev => ({ ...prev, year: e.target.value }))}
-                  style={{ width: '100%', height: '36px', background: '#1e1e24', border: '1px solid #333', borderRadius: '6px', padding: '0 10px', color: '#fff', fontSize: '0.85rem' }} 
-                />
-              </div>
-            </div>
-
-            <div>
-              <label style={{ fontSize: '0.78rem', color: '#aaa', display: 'block', marginBottom: '6px' }}>Հեղինակ</label>
-              <input 
-                type="text" 
-                value={fontForm.creator} 
-                onChange={e => setFontForm(prev => ({ ...prev, creator: e.target.value }))}
-                style={{ width: '100%', height: '36px', background: '#1e1e24', border: '1px solid #333', borderRadius: '6px', padding: '0 10px', color: '#fff', fontSize: '0.85rem' }} 
-              />
-            </div>
-
-            {/* Font File Uploader */}
-            <div>
-              <label style={{ fontSize: '0.78rem', color: '#aaa', display: 'block', marginBottom: '6px' }}>Տառատեսակի Ֆայլ (.TTF, .OTF)*</label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input 
-                  type="text" 
-                  value={fontForm.font_file_url} 
-                  placeholder="/uploads/my-font.ttf"
-                  onChange={e => setFontForm(prev => ({ ...prev, font_file_url: e.target.value, download_url: e.target.value }))}
-                  style={{ flex: 1, height: '36px', background: '#1e1e24', border: '1px solid #333', borderRadius: '6px', padding: '0 10px', color: '#fff', fontSize: '0.85rem' }} 
-                />
-                <label style={{ height: '36px', padding: '0 12px', background: 'rgba(255,255,255,0.06)', border: '1px solid #444', borderRadius: '6px', display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '0.78rem', color: '#fff' }}>
-                  {uploadingFontFile ? '...' : 'Վերբեռնել'}
-                  <input type="file" accept=".ttf,.otf" onChange={handleFontFileUpload} disabled={uploadingFontFile} style={{ display: 'none' }} />
-                </label>
-              </div>
-            </div>
-
-            {/* Checkboxes/Switches for Downloadable & Paid */}
-            <div style={{ 
-              display: 'flex', flexDirection: 'column', gap: '10px',
-              background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid #333'
-            }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', cursor: 'pointer' }}>
-                <input 
-                  type="checkbox" 
-                  checked={fontForm.downloadable} 
-                  onChange={e => setFontForm(prev => ({ ...prev, downloadable: e.target.checked }))} 
-                  style={{ accentColor: '#00ffcc', cursor: 'pointer' }}
-                />
-                Անվճար ներբեռնելի (Downloadable)
-              </label>
-
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', cursor: 'pointer' }}>
-                <input 
-                  type="checkbox" 
-                  checked={fontForm.paid} 
-                  onChange={e => setFontForm(prev => ({ ...prev, paid: e.target.checked }))} 
-                  style={{ accentColor: '#00ffcc', cursor: 'pointer' }}
-                />
-                Վճարովի (Commercial License)
-              </label>
-
-              {fontForm.paid && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-                  <input 
-                    type="text" 
-                    placeholder="Գինը (օրինակ՝ $29 կամ 15,000 ֏)..." 
-                    value={fontForm.price} 
-                    onChange={e => setFontForm(prev => ({ ...prev, price: e.target.value }))}
-                    style={{ width: '100%', height: '32px', background: '#1e1e24', border: '1px solid #333', borderRadius: '4px', padding: '0 8px', color: '#fff', fontSize: '0.8rem' }}
-                  />
-                  <input 
-                    type="text" 
-                    placeholder="Գնելու հղում (URL)..." 
-                    value={fontForm.purchase_url} 
-                    onChange={e => setFontForm(prev => ({ ...prev, purchase_url: e.target.value }))}
-                    style={{ width: '100%', height: '32px', background: '#1e1e24', border: '1px solid #333', borderRadius: '4px', padding: '0 8px', color: '#fff', fontSize: '0.8rem' }}
-                  />
-                </div>
-              )}
-            </div>
-
+            <h3 style={{ margin: '4px 0 0 0', fontSize: '1.15rem', color: 'var(--text)', fontWeight: 700 }}>
+              Font Family Builder
+            </h3>
           </div>
 
-          {/* Blocks Builder List */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderTop: '1px solid #22222a', paddingTop: '20px' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', color: '#888' }}>
-              Շնորհանդեսի Բլոկներ
-            </span>
+          {/* Wizard step navigation */}
+          <div style={{ display: 'flex', gap: '4px', background: 'var(--bg)', padding: '4px', borderRadius: '8px' }}>
+            <button 
+              onClick={() => setActiveStep("details")}
+              style={{
+                flex: 1, padding: '8px 0', border: 'none', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600,
+                background: activeStep === 'details' ? 'var(--btn-hover-bg)' : 'transparent',
+                color: activeStep === 'details' ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer'
+              }}
+            >
+              1. Details
+            </button>
+            <button 
+              onClick={() => setActiveStep("files")}
+              style={{
+                flex: 1, padding: '8px 0', border: 'none', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600,
+                background: activeStep === 'files' ? 'var(--btn-hover-bg)' : 'transparent',
+                color: activeStep === 'files' ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer'
+              }}
+            >
+              2. Files
+            </button>
+            <button 
+              onClick={() => setActiveStep("pricing")}
+              style={{
+                flex: 1, padding: '8px 0', border: 'none', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600,
+                background: activeStep === 'pricing' ? 'var(--btn-hover-bg)' : 'transparent',
+                color: activeStep === 'pricing' ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer'
+              }}
+            >
+              3. Pricing
+            </button>
+            <button 
+              onClick={() => setActiveStep("specimen")}
+              style={{
+                flex: 1, padding: '8px 0', border: 'none', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600,
+                background: activeStep === 'specimen' ? 'var(--btn-hover-bg)' : 'transparent',
+                color: activeStep === 'specimen' ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer'
+              }}
+            >
+              4. Specimen
+            </button>
+          </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {blocks.map((block, index) => (
-                <div key={index} style={{ background: '#1a1a22', border: '1px solid #333', borderRadius: '8px', padding: '12px' }}>
-                  
-                  {/* Block Header */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#00ffcc', textTransform: 'uppercase' }}>
-                      #{index + 1}: {block.type === 'text' ? 'Տեքստ' : block.type === 'image' ? 'Նկար' : block.type === 'specimen_banner' ? 'Specimen Banner' : block.type === 'weights_comparison' ? 'Հաստություններ' : 'Գլիֆներ'}
-                    </span>
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                      <button type="button" onClick={() => moveBlock(index, 'up')} disabled={index === 0} style={{ padding: '2px 6px', background: '#2a2a35', border: 'none', borderRadius: '4px', cursor: 'pointer', color: '#fff', fontSize: '0.7rem' }}>↑</button>
-                      <button type="button" onClick={() => moveBlock(index, 'down')} disabled={index === blocks.length - 1} style={{ padding: '2px 6px', background: '#2a2a35', border: 'none', borderRadius: '4px', cursor: 'pointer', color: '#fff', fontSize: '0.7rem' }}>↓</button>
-                      <button type="button" onClick={() => deleteBlock(index)} style={{ padding: '2px 6px', background: 'rgba(255,107,107,0.15)', border: 'none', borderRadius: '4px', cursor: 'pointer', color: '#ff6b6b', fontSize: '0.7rem' }}>✕</button>
+          {/* STEP 1: Family Details */}
+          {activeStep === "details" && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ background: 'var(--panel)', padding: '16px', borderRadius: '12px', border: '1px solid var(--panel-border)' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 'bold', textTransform: 'uppercase' }}>Step 1</span>
+                <h4 style={{ margin: '4px 0 12px 0', fontSize: '0.9rem', color: 'var(--text)' }}>Family Metadata</h4>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Font ID*</label>
+                    <input 
+                      type="text" value={fontForm.id} disabled={!isNew}
+                      onChange={e => setFontForm(prev => ({ ...prev, id: e.target.value }))}
+                      style={{ width: '100%', height: '34px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '6px', padding: '0 8px', color: 'var(--text)', fontSize: '0.8rem' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Family Name (Հայերեն)*</label>
+                    <input 
+                      type="text" value={fontForm.name_am}
+                      onChange={e => setFontForm(prev => ({ ...prev, name_am: e.target.value }))}
+                      style={{ width: '100%', height: '34px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '6px', padding: '0 8px', color: 'var(--text)', fontSize: '0.8rem' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Family Name (English)*</label>
+                    <input 
+                      type="text" value={fontForm.name_en}
+                      onChange={e => setFontForm(prev => ({ ...prev, name_en: e.target.value }))}
+                      style={{ width: '100%', height: '34px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '6px', padding: '0 8px', color: 'var(--text)', fontSize: '0.8rem' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '8px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Category</label>
+                      <select 
+                        value={fontForm.category}
+                        onChange={e => setFontForm(prev => ({ ...prev, category: e.target.value }))}
+                        style={{ width: '100%', height: '34px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '6px', padding: '0 8px', color: 'var(--text)', fontSize: '0.8rem' }}
+                      >
+                        <option value="Sans-Serif">Sans-Serif</option>
+                        <option value="Serif">Serif</option>
+                        <option value="Display">Display</option>
+                        <option value="Monospace">Monospace</option>
+                        <option value="Variable">Variable</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Year</label>
+                      <input 
+                        type="text" value={fontForm.year}
+                        onChange={e => setFontForm(prev => ({ ...prev, year: e.target.value }))}
+                        style={{ width: '100%', height: '34px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '6px', padding: '0 8px', color: 'var(--text)', fontSize: '0.8rem' }}
+                      />
                     </div>
                   </div>
 
-                  {/* Block Forms */}
-                  {block.type === 'text' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <input 
-                        type="text" 
-                        placeholder="Հայերեն վերնագիր..." 
-                        value={block.title_am} 
-                        onChange={e => updateBlock(index, { ...block, title_am: e.target.value })}
-                        style={{ width: '100%', height: '30px', background: '#121216', border: '1px solid #333', borderRadius: '4px', padding: '0 8px', color: '#fff', fontSize: '0.8rem' }}
-                      />
-                      <input 
-                        type="text" 
-                        placeholder="Անգլերեն վերնագիր..." 
-                        value={block.title_en} 
-                        onChange={e => updateBlock(index, { ...block, title_en: e.target.value })}
-                        style={{ width: '100%', height: '30px', background: '#121216', border: '1px solid #333', borderRadius: '4px', padding: '0 8px', color: '#fff', fontSize: '0.8rem' }}
-                      />
-                      <textarea 
-                        placeholder="Հայերեն տեքստ..." 
-                        value={block.content_am} 
-                        onChange={e => updateBlock(index, { ...block, content_am: e.target.value })}
-                        style={{ width: '100%', minHeight: '60px', background: '#121216', border: '1px solid #333', borderRadius: '4px', padding: '8px', color: '#fff', fontSize: '0.8rem', resize: 'vertical' }}
-                      />
-                      <textarea 
-                        placeholder="Անգլերեն տեքստ..." 
-                        value={block.content_en} 
-                        onChange={e => updateBlock(index, { ...block, content_en: e.target.value })}
-                        style={{ width: '100%', minHeight: '60px', background: '#121216', border: '1px solid #333', borderRadius: '4px', padding: '8px', color: '#fff', fontSize: '0.8rem', resize: 'vertical' }}
-                      />
-                    </div>
-                  )}
-
-                  {block.type === 'image' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <input 
-                          type="text" 
-                          placeholder="Նկարի հղում (URL)..." 
-                          value={block.image_url} 
-                          onChange={e => updateBlock(index, { ...block, image_url: e.target.value })}
-                          style={{ flex: 1, height: '30px', background: '#121216', border: '1px solid #333', borderRadius: '4px', padding: '0 8px', color: '#fff', fontSize: '0.8rem' }}
-                        />
-                        <label style={{ height: '30px', padding: '0 8px', background: 'rgba(255,255,255,0.06)', border: '1px solid #444', borderRadius: '4px', display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '0.72rem', color: '#fff' }}>
-                          Վերբեռնել
-                          <input 
-                            type="file" 
-                            accept="image/*" 
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file || !token) return;
-                              const fd = new FormData();
-                              fd.append('file', file);
-                              try {
-                                const res = await fetch('/api/upload', { method: 'POST', headers: { 'Authorization': token }, body: fd });
-                                const d = await res.json();
-                                if (res.ok && d.url) {
-                                  updateBlock(index, { ...block, image_url: d.url });
-                                }
-                              } catch(err) {}
-                            }} 
-                            style={{ display: 'none' }} 
-                          />
-                        </label>
-                      </div>
-                      <input 
-                        type="text" 
-                        placeholder="Հայերեն Caption..." 
-                        value={block.caption_am || ''} 
-                        onChange={e => updateBlock(index, { ...block, caption_am: e.target.value })}
-                        style={{ width: '100%', height: '30px', background: '#121216', border: '1px solid #333', borderRadius: '4px', padding: '0 8px', color: '#fff', fontSize: '0.8rem' }}
-                      />
-                    </div>
-                  )}
-
-                  {block.type === 'specimen_banner' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <input 
-                        type="text" 
-                        placeholder="Ցուցադրման տեքստ..." 
-                        value={block.previewText} 
-                        onChange={e => updateBlock(index, { ...block, previewText: e.target.value })}
-                        style={{ width: '100%', height: '30px', background: '#121216', border: '1px solid #333', borderRadius: '4px', padding: '0 8px', color: '#fff', fontSize: '0.8rem' }}
-                      />
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.72rem' }}>Տառաչափս (`{block.size || 64}`px)</span>
-                        <input 
-                          type="range" min="14" max="120" value={block.size || 64}
-                          onChange={e => updateBlock(index, { ...block, size: Number(e.target.value) })}
-                          style={{ width: '100px', accentColor: '#00ffcc' }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {block.type === 'weights_comparison' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <input 
-                        type="text" 
-                        placeholder="Հայերեն վերնագիր..." 
-                        value={block.title_am} 
-                        onChange={e => updateBlock(index, { ...block, title_am: e.target.value })}
-                        style={{ width: '100%', height: '30px', background: '#121216', border: '1px solid #333', borderRadius: '4px', padding: '0 8px', color: '#fff', fontSize: '0.8rem' }}
-                      />
-                      <input 
-                        type="text" 
-                        placeholder="Անգլերեն վերնագիր..." 
-                        value={block.title_en} 
-                        onChange={e => updateBlock(index, { ...block, title_en: e.target.value })}
-                        style={{ width: '100%', height: '30px', background: '#121216', border: '1px solid #333', borderRadius: '4px', padding: '0 8px', color: '#fff', fontSize: '0.8rem' }}
-                      />
-                      <input 
-                        type="text" 
-                        placeholder="Ցուցադրման տեքստ..." 
-                        value={block.previewText} 
-                        onChange={e => updateBlock(index, { ...block, previewText: e.target.value })}
-                        style={{ width: '100%', height: '30px', background: '#121216', border: '1px solid #333', borderRadius: '4px', padding: '0 8px', color: '#fff', fontSize: '0.8rem' }}
-                      />
-                    </div>
-                  )}
-
-                  {block.type === 'glyph_showcase' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <input 
-                        type="text" 
-                        placeholder="Հայերեն վերնագիր..." 
-                        value={block.title_am} 
-                        onChange={e => updateBlock(index, { ...block, title_am: e.target.value })}
-                        style={{ width: '100%', height: '30px', background: '#121216', border: '1px solid #333', borderRadius: '4px', padding: '0 8px', color: '#fff', fontSize: '0.8rem' }}
-                      />
-                      <input 
-                        type="text" 
-                        placeholder="Անգլերեն վերնագիր..." 
-                        value={block.title_en} 
-                        onChange={e => updateBlock(index, { ...block, title_en: e.target.value })}
-                        style={{ width: '100%', height: '30px', background: '#121216', border: '1px solid #333', borderRadius: '4px', padding: '0 8px', color: '#fff', fontSize: '0.8rem' }}
-                      />
-                      <input 
-                        type="text" 
-                        placeholder="Նիշեր (Ա Բ Գ Դ)..." 
-                        value={block.letters} 
-                        onChange={e => updateBlock(index, { ...block, letters: e.target.value })}
-                        style={{ width: '100%', height: '30px', background: '#121216', border: '1px solid #333', borderRadius: '4px', padding: '0 8px', color: '#fff', fontSize: '0.8rem' }}
-                      />
-                    </div>
-                  )}
-
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Designer / Foundry</label>
+                    <input 
+                      type="text" value={fontForm.creator}
+                      onChange={e => setFontForm(prev => ({ ...prev, creator: e.target.value }))}
+                      style={{ width: '100%', height: '34px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '6px', padding: '0 8px', color: 'var(--text)', fontSize: '0.8rem' }}
+                    />
+                  </div>
                 </div>
-              ))}
+              </div>
+              <button onClick={() => setActiveStep("files")} style={{ width: '100%', height: '36px', background: 'var(--btn-bg)', border: '1px solid var(--panel-border)', borderRadius: '8px', color: 'var(--text)', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>Հաջորդը՝ Files →</button>
             </div>
+          )}
 
-            {/* Quick insert bar */}
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', borderTop: '1px solid #22222a', paddingTop: '16px' }}>
-              <button onClick={() => addBlock('text')} style={{ flex: '1 1 45%', padding: '8px', background: 'rgba(0, 136, 254, 0.15)', border: '1px solid rgba(0, 136, 254, 0.3)', borderRadius: '6px', color: '#3b82f6', cursor: 'pointer', fontWeight: 600, fontSize: '0.75rem' }}>+ Տեքստ</button>
-              <button onClick={() => addBlock('image')} style={{ flex: '1 1 45%', padding: '8px', background: 'rgba(0, 196, 159, 0.15)', border: '1px solid rgba(0, 196, 159, 0.3)', borderRadius: '6px', color: '#10b981', cursor: 'pointer', fontWeight: 600, fontSize: '0.75rem' }}>+ Նկար</button>
-              <button onClick={() => addBlock('specimen_banner')} style={{ flex: '1 1 45%', padding: '8px', background: 'rgba(255, 187, 40, 0.15)', border: '1px solid rgba(255, 187, 40, 0.3)', borderRadius: '6px', color: '#fbbf24', cursor: 'pointer', fontWeight: 600, fontSize: '0.75rem' }}>+ Specimen Banner</button>
-              <button onClick={() => addBlock('weights_comparison')} style={{ flex: '1 1 45%', padding: '8px', background: 'rgba(255, 128, 66, 0.15)', border: '1px solid rgba(255, 128, 66, 0.3)', borderRadius: '6px', color: '#f97316', cursor: 'pointer', fontWeight: 600, fontSize: '0.75rem' }}>+ Հաստություններ</button>
-              <button onClick={() => addBlock('glyph_showcase')} style={{ flex: '1 1 100%', padding: '8px', background: 'rgba(167, 243, 208, 0.2)', border: '1px solid rgba(167, 243, 208, 0.4)', borderRadius: '6px', color: '#34d399', cursor: 'pointer', fontWeight: 600, fontSize: '0.75rem' }}>+ Գլիֆներ</button>
+          {/* STEP 2: Files & Styles */}
+          {activeStep === "files" && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ background: 'var(--panel)', padding: '16px', borderRadius: '12px', border: '1px solid var(--panel-border)' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 'bold', textTransform: 'uppercase' }}>Step 2</span>
+                <h4 style={{ margin: '4px 0 12px 0', fontSize: '0.9rem', color: 'var(--text)' }}>Font Source Files</h4>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ background: 'var(--input-bg)', border: '1px dashed var(--input-border)', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--muted)', display: 'block', marginBottom: '10px' }}>Upload OTF, TTF package file</span>
+                    <label style={{
+                      padding: '8px 16px', background: 'rgba(0, 255, 204, 0.1)', border: '1px solid rgba(0, 255, 204, 0.3)',
+                      borderRadius: '6px', color: 'var(--accent)', fontSize: '0.78rem', cursor: 'pointer', display: 'inline-block', fontWeight: 600
+                    }}>
+                      {uploadingFontFile ? 'Վերբեռնվում է...' : 'Ընտրել ֆայլ'}
+                      <input type="file" accept=".ttf,.otf" onChange={handleFontFileUpload} disabled={uploadingFontFile} style={{ display: 'none' }} />
+                    </label>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Active Font Path (URL)</label>
+                    <input 
+                      type="text" value={fontForm.font_file_url}
+                      onChange={e => setFontForm(prev => ({ ...prev, font_file_url: e.target.value, download_url: e.target.value }))}
+                      style={{ width: '100%', height: '34px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '6px', padding: '0 8px', color: 'var(--text)', fontSize: '0.8rem' }}
+                    />
+                  </div>
+
+                  {fontForm.font_file_url && (
+                    <div style={{ background: 'rgba(102,187,106,0.1)', border: '1px solid rgba(102,187,106,0.2)', padding: '10px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ color: '#66bb6a', fontSize: '1rem' }}>✓</span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        File successfully registered
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => setActiveStep("details")} style={{ flex: 1, height: '36px', background: 'var(--btn-bg)', border: '1px solid var(--panel-border)', borderRadius: '8px', color: 'var(--text)', cursor: 'pointer', fontSize: '0.8rem' }}>← Back</button>
+                <button onClick={() => setActiveStep("pricing")} style={{ flex: 1, height: '36px', background: 'var(--btn-bg)', border: '1px solid var(--panel-border)', borderRadius: '8px', color: 'var(--text)', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>Next →</button>
+              </div>
             </div>
+          )}
 
-          </div>
+          {/* STEP 3: Pricing & Licensing */}
+          {activeStep === "pricing" && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ background: 'var(--panel)', padding: '16px', borderRadius: '12px', border: '1px solid var(--panel-border)' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 'bold', textTransform: 'uppercase' }}>Step 3</span>
+                <h4 style={{ margin: '4px 0 12px 0', fontSize: '0.9rem', color: 'var(--text)' }}>Rights & Pricing</h4>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', cursor: 'pointer', color: 'var(--text)' }}>
+                    <input 
+                      type="checkbox" checked={fontForm.downloadable}
+                      onChange={e => setFontForm(prev => ({ ...prev, downloadable: e.target.checked }))}
+                      style={{ accentColor: 'var(--accent)', cursor: 'pointer' }}
+                    />
+                    Mark as Free Downloadable
+                  </label>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', cursor: 'pointer', color: 'var(--text)' }}>
+                    <input 
+                      type="checkbox" checked={fontForm.paid}
+                      onChange={e => setFontForm(prev => ({ ...prev, paid: e.target.checked }))}
+                      style={{ accentColor: 'var(--accent)', cursor: 'pointer' }}
+                    />
+                    Paid Commercial License
+                  </label>
+
+                  {fontForm.paid && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '4px', borderTop: '1px solid var(--input-border)', paddingTop: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Price tag (e.g. $19)</label>
+                        <input 
+                          type="text" placeholder="$19.00" value={fontForm.price}
+                          onChange={e => setFontForm(prev => ({ ...prev, price: e.target.value }))}
+                          style={{ width: '100%', height: '34px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '6px', padding: '0 8px', color: 'var(--text)', fontSize: '0.8rem' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Purchase Link (URL)</label>
+                        <input 
+                          type="text" placeholder="https://myfonts.com/..." value={fontForm.purchase_url}
+                          onChange={e => setFontForm(prev => ({ ...prev, purchase_url: e.target.value }))}
+                          style={{ width: '100%', height: '34px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '6px', padding: '0 8px', color: 'var(--text)', fontSize: '0.8rem' }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => setActiveStep("files")} style={{ flex: 1, height: '36px', background: 'var(--btn-bg)', border: '1px solid var(--panel-border)', borderRadius: '8px', color: 'var(--text)', cursor: 'pointer', fontSize: '0.8rem' }}>← Back</button>
+                <button onClick={() => setActiveStep("specimen")} style={{ flex: 1, height: '36px', background: 'var(--btn-bg)', border: '1px solid var(--panel-border)', borderRadius: '8px', color: 'var(--text)', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}>Next →</button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4: Specimen Showcase Builder */}
+          {activeStep === "specimen" && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ background: 'var(--panel)', padding: '16px', borderRadius: '12px', border: '1px solid var(--panel-border)' }}>
+                <span style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 'bold', textTransform: 'uppercase' }}>Step 4</span>
+                <h4 style={{ margin: '4px 0 12px 0', fontSize: '0.9rem', color: 'var(--text)' }}>Showcase Builder</h4>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {blocks.map((block, index) => (
+                    <div key={index} style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '8px', padding: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--accent)', textTransform: 'uppercase' }}>
+                          #{index + 1}: {block.type}
+                        </span>
+                        <div style={{ display: 'flex', gap: '2px' }}>
+                          <button type="button" onClick={() => moveBlock(index, 'up')} disabled={index === 0} style={{ padding: '1px 4px', background: 'var(--btn-bg)', border: 'none', borderRadius: '3px', color: 'var(--text)', fontSize: '0.65rem', cursor: 'pointer' }}>↑</button>
+                          <button type="button" onClick={() => moveBlock(index, 'down')} disabled={index === blocks.length - 1} style={{ padding: '1px 4px', background: 'var(--btn-bg)', border: 'none', borderRadius: '3px', color: 'var(--text)', fontSize: '0.65rem', cursor: 'pointer' }}>↓</button>
+                          <button type="button" onClick={() => deleteBlock(index)} style={{ padding: '1px 4px', background: 'rgba(255,107,107,0.15)', border: 'none', borderRadius: '3px', color: '#ff6b6b', fontSize: '0.65rem', cursor: 'pointer' }}>✕</button>
+                        </div>
+                      </div>
+
+                      {block.type === 'text' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <input 
+                            type="text" placeholder="Title (Armenian)" value={block.title_am} 
+                            onChange={e => updateBlock(index, { ...block, title_am: e.target.value })}
+                            style={{ width: '100%', height: '28px', background: 'var(--panel)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '0 6px', color: 'var(--text)', fontSize: '0.75rem' }}
+                          />
+                          <textarea 
+                            placeholder="Content (Armenian)" value={block.content_am} 
+                            onChange={e => updateBlock(index, { ...block, content_am: e.target.value })}
+                            style={{ width: '100%', minHeight: '40px', background: 'var(--panel)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '6px', color: 'var(--text)', fontSize: '0.75rem', resize: 'vertical' }}
+                          />
+                        </div>
+                      )}
+
+                      {block.type === 'specimen_banner' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <input 
+                            type="text" placeholder="Preview Text" value={block.previewText} 
+                            onChange={e => updateBlock(index, { ...block, previewText: e.target.value })}
+                            style={{ width: '100%', height: '28px', background: 'var(--panel)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '0 6px', color: 'var(--text)', fontSize: '0.75rem' }}
+                          />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.7rem', color: 'var(--muted)' }}>
+                            <span>Size: {block.size}px</span>
+                            <input 
+                              type="range" min="14" max="120" value={block.size} 
+                              onChange={e => updateBlock(index, { ...block, size: Number(e.target.value) })}
+                              style={{ width: '80px', accentColor: 'var(--accent)' }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {block.type === 'weights_comparison' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <input 
+                            type="text" placeholder="Title (Armenian)" value={block.title_am} 
+                            onChange={e => updateBlock(index, { ...block, title_am: e.target.value })}
+                            style={{ width: '100%', height: '28px', background: 'var(--panel)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '0 6px', color: 'var(--text)', fontSize: '0.75rem' }}
+                          />
+                          <input 
+                            type="text" placeholder="Sample pangram..." value={block.previewText} 
+                            onChange={e => updateBlock(index, { ...block, previewText: e.target.value })}
+                            style={{ width: '100%', height: '28px', background: 'var(--panel)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '0 6px', color: 'var(--text)', fontSize: '0.75rem' }}
+                          />
+                        </div>
+                      )}
+
+                      {block.type === 'glyph_showcase' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <input 
+                            type="text" placeholder="Title (Armenian)" value={block.title_am} 
+                            onChange={e => updateBlock(index, { ...block, title_am: e.target.value })}
+                            style={{ width: '100%', height: '28px', background: 'var(--panel)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '0 6px', color: 'var(--text)', fontSize: '0.75rem' }}
+                          />
+                          <input 
+                            type="text" placeholder="Characters (split with space)" value={block.letters} 
+                            onChange={e => updateBlock(index, { ...block, letters: e.target.value })}
+                            style={{ width: '100%', height: '28px', background: 'var(--panel)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '0 6px', color: 'var(--text)', fontSize: '0.75rem' }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '12px' }}>
+                  <button onClick={() => addBlock('text')} style={{ flex: '1 1 45%', padding: '6px', background: 'rgba(0,136,254,0.1)', border: 'none', borderRadius: '4px', color: '#0088fe', fontSize: '0.7rem', cursor: 'pointer' }}>+ Text</button>
+                  <button onClick={() => addBlock('specimen_banner')} style={{ flex: '1 1 45%', padding: '6px', background: 'rgba(255,187,40,0.1)', border: 'none', borderRadius: '4px', color: '#fbbf24', fontSize: '0.7rem', cursor: 'pointer' }}>+ Banner</button>
+                  <button onClick={() => addBlock('weights_comparison')} style={{ flex: '1 1 45%', padding: '6px', background: 'rgba(255,128,66,0.1)', border: 'none', borderRadius: '4px', color: '#f97316', fontSize: '0.7rem', cursor: 'pointer' }}>+ Weights</button>
+                  <button onClick={() => addBlock('glyph_showcase')} style={{ flex: '1 1 45%', padding: '6px', background: 'rgba(167,243,208,0.15)', border: 'none', borderRadius: '4px', color: '#34d399', fontSize: '0.7rem', cursor: 'pointer' }}>+ Glyphs</button>
+                </div>
+              </div>
+
+              <button onClick={() => setActiveStep("pricing")} style={{ width: '100%', height: '36px', background: 'var(--btn-bg)', border: '1px solid var(--panel-border)', borderRadius: '8px', color: 'var(--text)', cursor: 'pointer', fontSize: '0.8rem' }}>← Back</button>
+            </div>
+          )}
 
         </div>
 

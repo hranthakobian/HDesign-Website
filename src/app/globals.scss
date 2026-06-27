@@ -34,7 +34,47 @@ p, h1, h2, h3, h4, h5, h6, li, label, figcaption, blockquote {
   --custom-cursor: auto;
   --custom-cursor-pointer: pointer;
   --custom-cursor-text: text;
-  /* Default: Green theme */
+  /* Default: Light theme */
+  --bg: #f8fafc;
+  --panel: #ffffff;
+  --panel-border: rgba(8, 63, 57, 0.08);
+  --text: #083f39;
+  --muted: rgba(8, 63, 57, 0.6);
+  --accent: #083f39;
+  --shadow: 0 10px 40px rgba(8, 63, 57, 0.06);
+
+  /* Open-Border System Overrides */
+  --hue: 172;
+  --primary-color: #083f39;
+  --text-color: rgba(8, 63, 57, 0.7);
+  --inactive-color: rgba(8, 63, 57, 0.25);
+  --check-color: #083f39;
+  --line-thickness: 3px;
+  --border-radius: 12px;
+  --border-left-bottom-gap: 12px;
+  --border-top-right-gap: 24px;
+
+  /* Form & Button Elements */
+  --input-bg: rgba(8, 63, 57, 0.03);
+  --input-border: rgba(8, 63, 57, 0.12);
+  --btn-bg: rgba(8, 63, 57, 0.04);
+  --btn-hover-bg: rgba(8, 63, 57, 0.08);
+  --nav-bg: rgba(255, 255, 255, 0.85);
+  --logo-panel-bg: rgba(255, 255, 255, 0.85);
+
+  /* Switcher & Language Toggles */
+  --switcher-bg: rgba(8, 63, 57, 0.06);
+  --switcher-border: rgba(8, 63, 57, 0.15);
+  --switcher-capsule-bg: #083f39;
+  --switcher-text-active: #ffffff;
+  --switcher-text-inactive: rgba(8, 63, 57, 0.8);
+  --lang-active-color: #ffffff;
+  --lang-inactive-color: rgba(8, 63, 57, 0.75);
+  --nav-link-color: rgba(8, 63, 57, 0.8);
+  --nav-link-hover-color: #083f39;
+}
+
+html[data-theme="green"] {
   --bg: #083f39;
   --panel: #0b4a41;
   --panel-border: rgba(255, 255, 255, 0.05);
@@ -43,18 +83,12 @@ p, h1, h2, h3, h4, h5, h6, li, label, figcaption, blockquote {
   --accent: #ffffff;
   --shadow: 0 28px 90px rgba(0, 0, 0, 0.26);
 
-  /* Open-Border System Overrides */
   --hue: 172;
   --primary-color: #ffffff;
   --text-color: rgba(255, 255, 255, 0.7);
   --inactive-color: rgba(255, 255, 255, 0.25);
   --check-color: #ffffff;
-  --line-thickness: 3px;
-  --border-radius: 12px;
-  --border-left-bottom-gap: 12px;
-  --border-top-right-gap: 24px;
 
-  /* Form & Button Elements */
   --input-bg: rgba(255, 255, 255, 0.04);
   --input-border: rgba(255, 255, 255, 0.08);
   --btn-bg: rgba(255, 255, 255, 0.05);
@@ -62,7 +96,6 @@ p, h1, h2, h3, h4, h5, h6, li, label, figcaption, blockquote {
   --nav-bg: rgba(11, 74, 65, 0.45);
   --logo-panel-bg: rgba(11, 74, 65, 0.45);
 
-  /* Switcher & Language Toggles */
   --switcher-bg: rgba(0, 0, 0, 0.15);
   --switcher-border: rgba(255, 255, 255, 0.08);
   --switcher-capsule-bg: rgba(255, 255, 255, 0.15);
@@ -72,10 +105,6 @@ p, h1, h2, h3, h4, h5, h6, li, label, figcaption, blockquote {
   --lang-inactive-color: rgba(255, 255, 255, 0.55);
   --nav-link-color: rgba(255, 255, 255, 0.65);
   --nav-link-hover-color: #ffffff;
-}
-
-html[data-theme="green"] {
-  /* Green theme matches defaults */
 }
 
 html[data-theme="dark"] {

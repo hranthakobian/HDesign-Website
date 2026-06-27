@@ -146,6 +146,17 @@ export const defaultSeededCases: Case[] = [
 export async function getCases(): Promise<Case[]> {
   await ensureLocalDbFiles();
   
+  let localCases: Case[] = [];
+  if (isServer) {
+    try {
+      const fs = getFs();
+      const content = await fs.readFile(CASES_FILE, 'utf-8');
+      localCases = JSON.parse(content) as Case[];
+    } catch (err) {
+      console.warn('Failed to read local cases:', err);
+    }
+  }
+
   if (supabase) {
     try {
       const { data, error } = await supabase
@@ -155,29 +166,21 @@ export async function getCases(): Promise<Case[]> {
 
       if (!error && data) {
         const dynamicIds = new Set((data as any[]).map((x: any) => x.id));
-        const filteredSeeds = defaultSeededCases.filter((x: Case) => !dynamicIds.has(x.id));
-        return [...data, ...filteredSeeds];
+        const localFiltered = localCases.filter(x => !dynamicIds.has(x.id));
+        
+        const combinedIds = new Set([...data.map((x: any) => x.id), ...localFiltered.map(x => x.id)]);
+        const filteredSeeds = defaultSeededCases.filter((x: Case) => !combinedIds.has(x.id));
+        
+        return [...data, ...localFiltered, ...filteredSeeds];
       }
     } catch (err) {
       console.warn('Supabase getCases failed, falling back to local storage:', err);
     }
   }
 
-  // Fallback to local JSON database
-  if (isServer) {
-    const fs = getFs();
-    try {
-      const content = await fs.readFile(CASES_FILE, 'utf-8');
-      const localCases = JSON.parse(content) as Case[];
-      const dynamicIds = new Set(localCases.map((x: Case) => x.id));
-      const filteredSeeds = defaultSeededCases.filter((x: Case) => !dynamicIds.has(x.id));
-      return [...localCases, ...filteredSeeds];
-    } catch (err) {
-      console.error('Error reading local cases:', err);
-    }
-  }
-
-  return defaultSeededCases;
+  const dynamicIds = new Set(localCases.map((x: Case) => x.id));
+  const filteredSeeds = defaultSeededCases.filter((x: Case) => !dynamicIds.has(x.id));
+  return [...localCases, ...filteredSeeds];
 }
 
 export async function saveCase(c: Case): Promise<Case | null> {
@@ -654,6 +657,17 @@ export const defaultSeededFonts: Font[] = [
 export async function getFonts(): Promise<Font[]> {
   await ensureLocalDbFiles();
   
+  let localFonts: Font[] = [];
+  if (isServer) {
+    try {
+      const fs = getFs();
+      const content = await fs.readFile(FONTS_FILE, 'utf-8');
+      localFonts = JSON.parse(content) as Font[];
+    } catch (err) {
+      console.warn('Failed to read local fonts:', err);
+    }
+  }
+
   if (supabase) {
     try {
       const { data, error } = await supabase
@@ -662,31 +676,22 @@ export async function getFonts(): Promise<Font[]> {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        // filter out dynamic duplicates of seed font if any
         const dynamicIds = new Set((data as any[]).map((x: any) => x.id));
-        const filteredSeeds = defaultSeededFonts.filter((x: Font) => !dynamicIds.has(x.id));
-        return [...data, ...filteredSeeds];
+        const localFiltered = localFonts.filter(x => !dynamicIds.has(x.id));
+        
+        const combinedIds = new Set([...data.map((x: any) => x.id), ...localFiltered.map(x => x.id)]);
+        const filteredSeeds = defaultSeededFonts.filter((x: Font) => !combinedIds.has(x.id));
+        
+        return [...data, ...localFiltered, ...filteredSeeds];
       }
     } catch (err) {
       console.warn('Supabase getFonts failed, falling back to local storage:', err);
     }
   }
 
-  // Fallback to local JSON database
-  if (isServer) {
-    const fs = getFs();
-    try {
-      const content = await fs.readFile(FONTS_FILE, 'utf-8');
-      const localFonts = JSON.parse(content) as Font[];
-      const dynamicIds = new Set(localFonts.map((x: Font) => x.id));
-      const filteredSeeds = defaultSeededFonts.filter((x: Font) => !dynamicIds.has(x.id));
-      return [...localFonts, ...filteredSeeds];
-    } catch (err) {
-      console.error('Error reading local fonts:', err);
-    }
-  }
-
-  return defaultSeededFonts;
+  const dynamicIds = new Set(localFonts.map((x: Font) => x.id));
+  const filteredSeeds = defaultSeededFonts.filter((x: Font) => !dynamicIds.has(x.id));
+  return [...localFonts, ...filteredSeeds];
 }
 
 export async function saveFont(f: Font): Promise<Font | null> {
