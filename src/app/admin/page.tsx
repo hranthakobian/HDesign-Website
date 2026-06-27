@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
@@ -173,6 +173,105 @@ export default function AdminDashboard() {
   const [newCursorColor, setNewCursorColor] = useState('#ffffff');
   const [cases, setCases] = useState<Case[]>([]);
   const [fonts, setFonts] = useState<Font[]>([]);
+
+  // Behance-style project block states
+  const [caseBlocks, setCaseBlocks] = useState<any[]>([]);
+  const [fontBlocks, setFontBlocks] = useState<any[]>([]);
+
+  // Case Blocks Helpers
+  const addCaseBlock = (type: string) => {
+    const newBlock: any = { type };
+    if (type === 'text') {
+      newBlock.title_am = '';
+      newBlock.title_en = '';
+      newBlock.content_am = '';
+      newBlock.content_en = '';
+    } else if (type === 'image') {
+      newBlock.image_url = '';
+      newBlock.caption_am = '';
+      newBlock.caption_en = '';
+      newBlock.fullWidth = false;
+    } else if (type === 'embed') {
+      newBlock.embed_url = '';
+    } else if (type === 'color_palette') {
+      newBlock.colors = ['#ffffff'];
+    } else if (type === 'typography_showcase') {
+      newBlock.fonts = ['Outfit'];
+      newBlock.previewText = 'Հրանտ Հակոբյան Դիզայն 2026';
+    }
+    setCaseBlocks(prev => [...prev, newBlock]);
+  };
+
+  const updateCaseBlock = (idx: number, updated: any) => {
+    setCaseBlocks(prev => prev.map((b, i) => i === idx ? updated : b));
+  };
+
+  const deleteCaseBlock = (idx: number) => {
+    setCaseBlocks(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const moveCaseBlock = (idx: number, dir: 'up' | 'down') => {
+    setCaseBlocks(prev => {
+      const copy = [...prev];
+      const target = dir === 'up' ? idx - 1 : idx + 1;
+      if (target >= 0 && target < copy.length) {
+        const temp = copy[idx];
+        copy[idx] = copy[target];
+        copy[target] = temp;
+      }
+      return copy;
+    });
+  };
+
+  // Font Blocks Helpers
+  const addFontBlock = (type: string) => {
+    const newBlock: any = { type };
+    if (type === 'text') {
+      newBlock.title_am = '';
+      newBlock.title_en = '';
+      newBlock.content_am = '';
+      newBlock.content_en = '';
+    } else if (type === 'image') {
+      newBlock.image_url = '';
+      newBlock.caption_am = '';
+      newBlock.caption_en = '';
+    } else if (type === 'specimen_banner') {
+      newBlock.previewText = 'Աբգդեզէըթժիլխծկհձղճմյնշոչպջռսվտրցուփքևօֆ';
+      newBlock.size = 72;
+    } else if (type === 'weights_comparison') {
+      newBlock.title_am = 'Հաստության ցուցադրում';
+      newBlock.title_en = 'Weights Comparison';
+      newBlock.previewText = 'Հրանտ Հակոբյան Դիզայն 2026';
+      newBlock.weights = [300, 400, 700];
+    } else if (type === 'glyph_showcase') {
+      newBlock.title_am = 'Գլիֆների ցուցադրում';
+      newBlock.title_en = 'Key Glyphs Detail';
+      newBlock.letters = 'Ա Բ Գ Դ';
+    }
+    setFontBlocks(prev => [...prev, newBlock]);
+  };
+
+  const updateFontBlock = (idx: number, updated: any) => {
+    setFontBlocks(prev => prev.map((b, i) => i === idx ? updated : b));
+  };
+
+  const deleteFontBlock = (idx: number) => {
+    setFontBlocks(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const moveFontBlock = (idx: number, dir: 'up' | 'down') => {
+    setFontBlocks(prev => {
+      const copy = [...prev];
+      const target = dir === 'up' ? idx - 1 : idx + 1;
+      if (target >= 0 && target < copy.length) {
+        const temp = copy[idx];
+        copy[idx] = copy[target];
+        copy[target] = temp;
+      }
+      return copy;
+    });
+  };
+
   const [showFontForm, setShowFontForm] = useState(false);
   const [editingFont, setEditingFont] = useState<Font | null>(null);
   const [fontForm, setFontForm] = useState<Partial<Font>>({
@@ -519,12 +618,22 @@ export default function AdminDashboard() {
       client: '',
       year: new Date().getFullYear().toString()
     });
+    setCaseBlocks([]);
     setShowCaseForm(true);
   };
 
   const openEditCase = (c: Case) => {
     setEditingCase(c);
     setCaseForm({ ...c });
+    try {
+      if (c.details && c.details.startsWith('[')) {
+        setCaseBlocks(JSON.parse(c.details));
+      } else {
+        setCaseBlocks([{ type: 'text', title_am: 'Նախագծի Մասին', title_en: 'About the Project', content_am: c.details || '', content_en: c.details || '' }]);
+      }
+    } catch (e) {
+      setCaseBlocks([{ type: 'text', title_am: 'Նախագծի Մասին', title_en: 'About the Project', content_am: c.details || '', content_en: c.details || '' }]);
+    }
     setShowCaseForm(true);
   };
 
@@ -539,13 +648,18 @@ export default function AdminDashboard() {
       const url = editingCase ? `/api/cases/${editingCase.id}` : '/api/cases';
       const method = editingCase ? 'PATCH' : 'POST';
 
+      const finalForm = {
+        ...caseForm,
+        details: JSON.stringify(caseBlocks)
+      };
+
       const res = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': token || ''
         },
-        body: JSON.stringify(caseForm)
+        body: JSON.stringify(finalForm)
       });
 
       const data = await res.json();
@@ -645,12 +759,22 @@ export default function AdminDashboard() {
       download_url: '',
       purchase_url: ''
     });
+    setFontBlocks([]);
     setShowFontForm(true);
   };
 
   const openEditFont = (f: Font) => {
     setEditingFont(f);
     setFontForm({ ...f });
+    try {
+      if (f.description_am && f.description_am.startsWith('[')) {
+        setFontBlocks(JSON.parse(f.description_am));
+      } else {
+        setFontBlocks([{ type: 'text', title_am: 'Տառատեսակի Մասին', title_en: 'About the Font', content_am: f.description_am || '', content_en: f.description_en || '' }]);
+      }
+    } catch (e) {
+      setFontBlocks([{ type: 'text', title_am: 'Տառատեսակի Մասին', title_en: 'About the Font', content_am: f.description_am || '', content_en: f.description_en || '' }]);
+    }
     setShowFontForm(true);
   };
 
@@ -665,13 +789,19 @@ export default function AdminDashboard() {
       const url = editingFont ? `/api/fonts/${editingFont.id}` : '/api/fonts';
       const method = editingFont ? 'PATCH' : 'POST';
 
+      const finalForm = {
+        ...fontForm,
+        description_am: JSON.stringify(fontBlocks),
+        description_en: JSON.stringify(fontBlocks)
+      };
+
       const res = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': token || ''
         },
-        body: JSON.stringify(fontForm)
+        body: JSON.stringify(finalForm)
       });
 
       const data = await res.json();
@@ -1643,7 +1773,17 @@ export default function AdminDashboard() {
                             {c.year && <span><strong>Տարի՝</strong> {c.year}</span>}
                           </div>
 
-                          <div style={{ borderTop: '1px solid var(--panel-border)', paddingTop: '12px', display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: 'auto' }}>
+                          <div style={{ borderTop: '1px solid var(--panel-border)', paddingTop: '12px', display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: 'auto', flexWrap: 'wrap' }}>
+                            <a href={`/admin/editor/case/${c.id}`} style={{ textDecoration: 'none' }}>
+                              <hd-button 
+                                data-color="var(--accent)"
+                                data-width="110px"
+                                data-height="30px"
+                                data-font-size="0.7rem"
+                              >
+                                ✏ WYSIWYG
+                              </hd-button>
+                            </a>
                             <hd-button 
                               onClick={() => openEditCase(c)}
                               data-color="#FFBB28" 
@@ -1651,7 +1791,7 @@ export default function AdminDashboard() {
                               data-height="30px"
                               data-font-size="0.75rem"
                             >
-                              Խմբագրել
+                              Խmbagrel
                             </hd-button>
                             <hd-button 
                               onClick={() => handleDeleteCase(c.id)}
@@ -1660,7 +1800,7 @@ export default function AdminDashboard() {
                               data-height="30px"
                               data-font-size="0.75rem"
                             >
-                              Ջնջել
+                              Jnjel
                             </hd-button>
                           </div>
                         </div>
@@ -1764,6 +1904,206 @@ export default function AdminDashboard() {
                               data-width="100%"
                               data-height="40px"
                             />
+                          </div>
+                        </div>
+
+                        {/* Behance-Style Block Builder */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderTop: '1px solid var(--panel-border)', paddingTop: '20px' }}>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>Նախագծի Կառուցվածքը (Behance-Style Project Builder)</span>
+                          
+                          {/* Stacked list of blocks */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                            {caseBlocks.map((block, index) => (
+                              <div key={index} style={{ border: '1px solid var(--panel-border)', borderRadius: '12px', padding: '16px', background: 'rgba(0,0,0,0.1)', position: 'relative' }}>
+                                
+                                {/* Header of Block: type and reorder actions */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                  <span style={{ fontSize: '0.78rem', textTransform: 'uppercase', color: 'var(--accent)', fontWeight: 'bold' }}>
+                                    Բլոկ #{index + 1}: {block.type === 'text' ? 'Տեքստ' : block.type === 'image' ? 'Նկար' : block.type === 'embed' ? 'Տեսանյութ' : block.type === 'color_palette' ? 'Գույներ' : 'Տառաձևեր'}
+                                  </span>
+                                  <div style={{ display: 'flex', gap: '6px' }}>
+                                    <button type="button" onClick={() => moveCaseBlock(index, 'up')} disabled={index === 0} style={{ padding: '2px 8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--panel-border)', borderRadius: '4px', cursor: 'pointer', color: '#fff' }}>↑</button>
+                                    <button type="button" onClick={() => moveCaseBlock(index, 'down')} disabled={index === caseBlocks.length - 1} style={{ padding: '2px 8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--panel-border)', borderRadius: '4px', cursor: 'pointer', color: '#fff' }}>↓</button>
+                                    <button type="button" onClick={() => deleteCaseBlock(index)} style={{ padding: '2px 8px', background: 'rgba(255,107,107,0.1)', border: '1px solid rgba(255,107,107,0.2)', borderRadius: '4px', cursor: 'pointer', color: '#ff6b6b' }}>✕</button>
+                                  </div>
+                                </div>
+
+                                {/* Block specific inputs */}
+                                {block.type === 'text' && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <hd-input 
+                                      placeholder="Հայերեն վերնագիր..." 
+                                      value={block.title_am || ''} 
+                                      onInput={(e: any) => updateCaseBlock(index, { ...block, title_am: e.target.value })}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                    <hd-input 
+                                      placeholder="Անգլերեն վերնագիր..." 
+                                      value={block.title_en || ''} 
+                                      onInput={(e: any) => updateCaseBlock(index, { ...block, title_en: e.target.value })}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                    <hd-textarea 
+                                      placeholder="Հայերեն տեքստ..." 
+                                      value={block.content_am || ''} 
+                                      onInput={(e: any) => updateCaseBlock(index, { ...block, content_am: e.target.value })}
+                                      data-width="100%"
+                                      style={{ minHeight: '80px' }}
+                                    />
+                                    <hd-textarea 
+                                      placeholder="Անգլերեն տեքստ..." 
+                                      value={block.content_en || ''} 
+                                      onInput={(e: any) => updateCaseBlock(index, { ...block, content_en: e.target.value })}
+                                      data-width="100%"
+                                      style={{ minHeight: '80px' }}
+                                    />
+                                  </div>
+                                )}
+
+                                {block.type === 'image' && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                      <hd-input 
+                                        placeholder="Նկարի հղում (URL)..." 
+                                        value={block.image_url || ''} 
+                                        onInput={(e: any) => updateCaseBlock(index, { ...block, image_url: e.target.value })}
+                                        data-width="70%"
+                                        data-height="36px"
+                                      />
+                                      
+                                      <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '36px', flex: 1, cursor: 'pointer', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '0.8rem', color: '#fff', textAlign: 'center' }}>
+                                        Վերբեռնել
+                                        <input 
+                                          type="file" 
+                                          accept="image/*" 
+                                          onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            const formData = new FormData();
+                                            formData.append('file', file);
+                                            try {
+                                              const res = await fetch('/api/upload', {
+                                                method: 'POST',
+                                                headers: { 'Authorization': token || '' },
+                                                body: formData
+                                              });
+                                              const data = await res.json();
+                                              if (res.ok && data.url) {
+                                                updateCaseBlock(index, { ...block, image_url: data.url });
+                                              }
+                                            } catch (err) {
+                                              alert('Վերբեռնումը ձախողվեց:');
+                                            }
+                                          }} 
+                                          style={{ display: 'none' }} 
+                                        />
+                                      </label>
+                                    </div>
+                                    <hd-input 
+                                      placeholder="Հայերեն նկարագրություն (Caption)..." 
+                                      value={block.caption_am || ''} 
+                                      onInput={(e: any) => updateCaseBlock(index, { ...block, caption_am: e.target.value })}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                    <hd-input 
+                                      placeholder="Անգլերեն նկարագրություն (Caption)..." 
+                                      value={block.caption_en || ''} 
+                                      onInput={(e: any) => updateCaseBlock(index, { ...block, caption_en: e.target.value })}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', cursor: 'pointer' }}>
+                                      <input 
+                                        type="checkbox" 
+                                        checked={!!block.fullWidth} 
+                                        onChange={(e) => updateCaseBlock(index, { ...block, fullWidth: e.target.checked })} 
+                                        style={{ accentColor: 'var(--accent)', cursor: 'pointer' }}
+                                      />
+                                      Ամբողջ լայնությամբ (Full Width)
+                                    </label>
+                                  </div>
+                                )}
+
+                                {block.type === 'embed' && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <hd-input 
+                                      placeholder="YouTube/Vimeo կամ Iframe հղում..." 
+                                      value={block.embed_url || ''} 
+                                      onInput={(e: any) => updateCaseBlock(index, { ...block, embed_url: e.target.value })}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                  </div>
+                                )}
+
+                                {block.type === 'color_palette' && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                      {(block.colors || []).map((col: string, cIndex: number) => (
+                                        <div key={cIndex} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255,255,255,0.02)', padding: '4px', borderRadius: '6px', border: '1px solid var(--panel-border)' }}>
+                                          <hd-color-picker 
+                                            value={col} 
+                                            onChange={(e: any) => {
+                                              const newCols = [...(block.colors || [])];
+                                              newCols[cIndex] = e.target.value;
+                                              updateCaseBlock(index, { ...block, colors: newCols });
+                                            }}
+                                            data-width="32px"
+                                            data-height="32px"
+                                          />
+                                          <button type="button" onClick={() => {
+                                            const newCols = (block.colors || []).filter((_: any, i: number) => i !== cIndex);
+                                            updateCaseBlock(index, { ...block, colors: newCols });
+                                          }} style={{ padding: '0 4px', background: 'transparent', border: 'none', color: '#ff6b6b', cursor: 'pointer' }}>✕</button>
+                                        </div>
+                                      ))}
+                                      <button 
+                                        type="button" 
+                                        onClick={() => {
+                                          const newCols = [...(block.colors || []), '#ffffff'];
+                                          updateCaseBlock(index, { ...block, colors: newCols });
+                                        }} 
+                                        style={{ height: '32px', padding: '0 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--panel-border)', borderRadius: '6px', color: '#fff', cursor: 'pointer', fontSize: '0.8rem' }}
+                                      >
+                                        + Ավելացնել Գույն
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {block.type === 'typography_showcase' && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <hd-input 
+                                      placeholder="Տառատեսակի անունը (օրինակ՝ Outfit)..." 
+                                      value={(block.fonts || []).join(', ')} 
+                                      onInput={(e: any) => updateCaseBlock(index, { ...block, fonts: e.target.value.split(',').map((s: string) => s.trim()) })}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                    <hd-input 
+                                      placeholder="Նմուշային տեքստ (ցանկացած տեքստ)..." 
+                                      value={block.previewText || ''} 
+                                      onInput={(e: any) => updateCaseBlock(index, { ...block, previewText: e.target.value })}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                  </div>
+                                )}
+
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Buttons to append block types */}
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', borderTop: '1px solid var(--panel-border)', paddingTop: '16px' }}>
+                            <button type="button" onClick={() => addCaseBlock('text')} style={{ flex: 1, padding: '10px', background: 'rgba(0, 136, 254, 0.1)', border: '1px solid rgba(0, 136, 254, 0.2)', borderRadius: '8px', color: '#0088FE', cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem' }}>+ Տեքստ</button>
+                            <button type="button" onClick={() => addCaseBlock('image')} style={{ flex: 1, padding: '10px', background: 'rgba(0, 196, 159, 0.1)', border: '1px solid rgba(0, 196, 159, 0.2)', borderRadius: '8px', color: '#00C49F', cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem' }}>+ Նկար</button>
+                            <button type="button" onClick={() => addCaseBlock('embed')} style={{ flex: 1, padding: '10px', background: 'rgba(255, 187, 40, 0.1)', border: '1px solid rgba(255, 187, 40, 0.2)', borderRadius: '8px', color: '#FFBB28', cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem' }}>+ Տեսանյութ</button>
+                            <button type="button" onClick={() => addCaseBlock('color_palette')} style={{ flex: 1, padding: '10px', background: 'rgba(255, 128, 66, 0.1)', border: '1px solid rgba(255, 128, 66, 0.2)', borderRadius: '8px', color: '#FF8042', cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem' }}>+ Գույներ</button>
+                            <button type="button" onClick={() => addCaseBlock('typography_showcase')} style={{ flex: 1, padding: '10px', background: 'rgba(167, 243, 208, 0.15)', border: '1px solid rgba(167, 243, 208, 0.3)', borderRadius: '8px', color: '#34d399', cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem' }}>+ Տառաձևեր</button>
                           </div>
                         </div>
 
@@ -1965,18 +2305,28 @@ export default function AdminDashboard() {
                             {f.year && <span><strong>Տարեթիվ՝</strong> {f.year}</span>}
                           </div>
 
-                          <div style={{ borderTop: '1px solid var(--panel-border)', paddingTop: '12px', display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: 'auto' }}>
+                          <div style={{ borderTop: '1px solid var(--panel-border)', paddingTop: '12px', display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: 'auto', flexWrap: 'wrap' }}>
+                            <a href={`/admin/editor/font/${f.id}`} style={{ textDecoration: 'none' }}>
+                              <hd-button 
+                                data-color="var(--accent)"
+                                data-width="110px"
+                                data-height="30px"
+                                data-font-size="0.7rem"
+                              >
+                                ✏ WYSIWYG
+                              </hd-button>
+                            </a>
                             <button 
                               onClick={() => openEditFont(f)}
                               style={{ background: 'transparent', border: 'none', color: '#FFBB28', fontSize: '0.82rem', padding: '6px 12px', cursor: 'pointer', fontWeight: 600 }}
                             >
-                              Խմբագրել
+                              Խmbagrel
                             </button>
                             <button 
                               onClick={() => handleDeleteFont(f.id)}
                               style={{ background: 'transparent', border: 'none', color: '#ff6b6b', fontSize: '0.82rem', padding: '6px 12px', cursor: 'pointer', fontWeight: 600 }}
                             >
-                              Ջնջել
+                              Jnjel
                             </button>
                           </div>
                         </div>
@@ -2100,26 +2450,201 @@ export default function AdminDashboard() {
                           </div>
                         </div>
 
-                        <div>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Նկարագրություն (Հայերեն)</label>
-                          <hd-textarea 
-                            placeholder="Տառատեսակի մասին հայերեն նկարագրություն..."
-                            value={fontForm.description_am}
-                            onInput={(e: any) => setFontForm(prev => ({ ...prev, description_am: e.target.value }))}
-                            data-width="100%"
-                            style={{ minHeight: '80px', display: 'block' }}
-                          />
-                        </div>
+                        {/* Behance-Style Font Block Builder */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderTop: '1px solid var(--panel-border)', paddingTop: '20px' }}>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>Տառատեսակի Շնորհանդես (Behance-Style Specimen Showcase Builder)</span>
+                          
+                          {/* Stacked list of blocks */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                            {fontBlocks.map((block, index) => (
+                              <div key={index} style={{ border: '1px solid var(--panel-border)', borderRadius: '12px', padding: '16px', background: 'rgba(0,0,0,0.1)', position: 'relative' }}>
+                                
+                                {/* Header of Block */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                  <span style={{ fontSize: '0.78rem', textTransform: 'uppercase', color: 'var(--accent)', fontWeight: 'bold' }}>
+                                    Բլոկ #{index + 1}: {block.type === 'text' ? 'Տեքստ' : block.type === 'image' ? 'Նկար' : block.type === 'specimen_banner' ? 'Specimen Banner' : block.type === 'weights_comparison' ? 'Հաստությունների ցուցադրում' : 'Գլիֆների ցուցադրում'}
+                                  </span>
+                                  <div style={{ display: 'flex', gap: '6px' }}>
+                                    <button type="button" onClick={() => moveFontBlock(index, 'up')} disabled={index === 0} style={{ padding: '2px 8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--panel-border)', borderRadius: '4px', cursor: 'pointer', color: '#fff' }}>↑</button>
+                                    <button type="button" onClick={() => moveFontBlock(index, 'down')} disabled={index === fontBlocks.length - 1} style={{ padding: '2px 8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--panel-border)', borderRadius: '4px', cursor: 'pointer', color: '#fff' }}>↓</button>
+                                    <button type="button" onClick={() => deleteFontBlock(index)} style={{ padding: '2px 8px', background: 'rgba(255,107,107,0.1)', border: '1px solid rgba(255,107,107,0.2)', borderRadius: '4px', cursor: 'pointer', color: '#ff6b6b' }}>✕</button>
+                                  </div>
+                                </div>
 
-                        <div>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Description (English)</label>
-                          <hd-textarea 
-                            placeholder="English description about the font..."
-                            value={fontForm.description_en}
-                            onInput={(e: any) => setFontForm(prev => ({ ...prev, description_en: e.target.value }))}
-                            data-width="100%"
-                            style={{ minHeight: '80px', display: 'block' }}
-                          />
+                                {/* Block specific inputs */}
+                                {block.type === 'text' && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <hd-input 
+                                      placeholder="Հայերեն վերնագիր..." 
+                                      value={block.title_am || ''} 
+                                      onInput={(e: any) => updateFontBlock(index, { ...block, title_am: e.target.value })}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                    <hd-input 
+                                      placeholder="Անգլերեն վերնագիր..." 
+                                      value={block.title_en || ''} 
+                                      onInput={(e: any) => updateFontBlock(index, { ...block, title_en: e.target.value })}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                    <hd-textarea 
+                                      placeholder="Հայերեն տեքստ..." 
+                                      value={block.content_am || ''} 
+                                      onInput={(e: any) => updateFontBlock(index, { ...block, content_am: e.target.value })}
+                                      data-width="100%"
+                                      style={{ minHeight: '80px' }}
+                                    />
+                                    <hd-textarea 
+                                      placeholder="Անգլերեն տեքստ..." 
+                                      value={block.content_en || ''} 
+                                      onInput={(e: any) => updateFontBlock(index, { ...block, content_en: e.target.value })}
+                                      data-width="100%"
+                                      style={{ minHeight: '80px' }}
+                                    />
+                                  </div>
+                                )}
+
+                                {block.type === 'image' && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                      <hd-input 
+                                        placeholder="Նկարի հղում (URL)..." 
+                                        value={block.image_url || ''} 
+                                        onInput={(e: any) => updateFontBlock(index, { ...block, image_url: e.target.value })}
+                                        data-width="70%"
+                                        data-height="36px"
+                                      />
+                                      
+                                      <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '36px', flex: 1, cursor: 'pointer', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: '0.8rem', color: '#fff', textAlign: 'center' }}>
+                                        Վերբեռնել
+                                        <input 
+                                          type="file" 
+                                          accept="image/*" 
+                                          onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            const formData = new FormData();
+                                            formData.append('file', file);
+                                            try {
+                                              const res = await fetch('/api/upload', {
+                                                method: 'POST',
+                                                headers: { 'Authorization': token || '' },
+                                                body: formData
+                                              });
+                                              const data = await res.json();
+                                              if (res.ok && data.url) {
+                                                updateFontBlock(index, { ...block, image_url: data.url });
+                                              }
+                                            } catch (err) {
+                                              alert('Վերբեռնումը ձախողվեց:');
+                                            }
+                                          }} 
+                                          style={{ display: 'none' }} 
+                                        />
+                                      </label>
+                                    </div>
+                                    <hd-input 
+                                      placeholder="Հայերեն նկարագրություն (Caption)..." 
+                                      value={block.caption_am || ''} 
+                                      onInput={(e: any) => updateFontBlock(index, { ...block, caption_am: e.target.value })}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                    <hd-input 
+                                      placeholder="Անգլերեն նկարագրություն (Caption)..." 
+                                      value={block.caption_en || ''} 
+                                      onInput={(e: any) => updateFontBlock(index, { ...block, caption_en: e.target.value })}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                  </div>
+                                )}
+
+                                {block.type === 'specimen_banner' && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <hd-input 
+                                      placeholder="Ցուցադրման տեքստ..." 
+                                      value={block.previewText || ''} 
+                                      onInput={(e: any) => updateFontBlock(index, { ...block, previewText: e.target.value })}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span style={{ fontSize: '0.8rem' }}>Տառաչափս (`{block.size || 72}`px)</span>
+                                      <hd-slider 
+                                        min="24" max="150" value={block.size || 72} 
+                                        onChange={(e: any) => updateFontBlock(index, { ...block, size: Number(e.target.value) })}
+                                        data-width="200px"
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+
+                                {block.type === 'weights_comparison' && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <hd-input 
+                                      placeholder="Հայերեն վերնագիր..." 
+                                      value={block.title_am || ''} 
+                                      onInput={(e: any) => updateFontBlock(index, { ...block, title_am: e.target.value })}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                    <hd-input 
+                                      placeholder="Անգլերեն վերնագիր..." 
+                                      value={block.title_en || ''} 
+                                      onInput={(e: any) => updateFontBlock(index, { ...block, title_en: e.target.value })}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                    <hd-input 
+                                      placeholder="Նմուշային տեքստ..." 
+                                      value={block.previewText || ''} 
+                                      onInput={(e: any) => updateFontBlock(index, { ...block, previewText: e.target.value })}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                  </div>
+                                )}
+
+                                {block.type === 'glyph_showcase' && (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    <hd-input 
+                                      placeholder="Հայերեն վերնագիր..." 
+                                      value={block.title_am || ''} 
+                                      onInput={(e: any) => updateFontBlock(index, { ...block, title_am: e.target.value })}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                    <hd-input 
+                                      placeholder="Անգլերեն վերնագիր..." 
+                                      value={block.title_en || ''} 
+                                      onInput={(e: any) => updateFontBlock(index, { ...block, title_en: e.target.value })}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                    <hd-input 
+                                      placeholder="Նիշեր (բաժանեք դատարկ տարածությամբ, օրինակ՝ Ա Բ g 5)..." 
+                                      value={block.letters || ''} 
+                                      onInput={(e: any) => updateFontBlock(index, { ...block, letters: e.target.value })}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                  </div>
+                                )}
+
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Action buttons to add block types */}
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', borderTop: '1px solid var(--panel-border)', paddingTop: '16px' }}>
+                            <button type="button" onClick={() => addFontBlock('text')} style={{ flex: 1, padding: '10px', background: 'rgba(0, 136, 254, 0.1)', border: '1px solid rgba(0, 136, 254, 0.2)', borderRadius: '8px', color: '#0088FE', cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem' }}>+ Տեքստ</button>
+                            <button type="button" onClick={() => addFontBlock('image')} style={{ flex: 1, padding: '10px', background: 'rgba(0, 196, 159, 0.1)', border: '1px solid rgba(0, 196, 159, 0.2)', borderRadius: '8px', color: '#00C49F', cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem' }}>+ Նկար</button>
+                            <button type="button" onClick={() => addFontBlock('specimen_banner')} style={{ flex: 1, padding: '10px', background: 'rgba(255, 187, 40, 0.1)', border: '1px solid rgba(255, 187, 40, 0.2)', borderRadius: '8px', color: '#FFBB28', cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem' }}>+ Specimen Banner</button>
+                            <button type="button" onClick={() => addFontBlock('weights_comparison')} style={{ flex: 1, padding: '10px', background: 'rgba(255, 128, 66, 0.1)', border: '1px solid rgba(255, 128, 66, 0.2)', borderRadius: '8px', color: '#FF8042', cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem' }}>+ Հաստություններ</button>
+                            <button type="button" onClick={() => addFontBlock('glyph_showcase')} style={{ flex: 1, padding: '10px', background: 'rgba(167, 243, 208, 0.15)', border: '1px solid rgba(167, 243, 208, 0.3)', borderRadius: '8px', color: '#34d399', cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem' }}>+ Գլիֆներ</button>
+                          </div>
                         </div>
 
                         {/* Checkboxes/Switches for Downloadable & Paid */}

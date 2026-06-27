@@ -52,9 +52,9 @@ export default function WorksPage() {
             bg: s.color,
             image_url: s.image,
             details: s.description,
-            category: s.category,
-            client: s.client,
-            year: s.year
+            category: (s as any).category || "Branding",
+            client: (s as any).client || "HDesign Studio",
+            year: (s as any).year || "2026"
           })));
         }
       } catch (err) {
@@ -66,9 +66,9 @@ export default function WorksPage() {
           bg: s.color,
           image_url: s.image,
           details: s.description,
-          category: s.category,
-          client: s.client,
-          year: s.year
+          category: (s as any).category || "Branding",
+          client: (s as any).client || "HDesign Studio",
+          year: (s as any).year || "2026"
         })));
       } finally {
         setLoading(false);

@@ -49,9 +49,9 @@ export default function BrandingDetailPage() {
               bg: staticFound.color,
               image_url: staticFound.image,
               details: staticFound.description,
-              category: staticFound.category,
-              client: staticFound.client,
-              year: staticFound.year
+              category: (staticFound as any).category || "Branding",
+              client: (staticFound as any).client || "HDesign Studio",
+              year: (staticFound as any).year || "2026"
             };
             setWork(mappedStatic);
             
@@ -77,9 +77,9 @@ export default function BrandingDetailPage() {
             bg: staticFound.color,
             image_url: staticFound.image,
             details: staticFound.description,
-            category: staticFound.category,
-            client: staticFound.client,
-            year: staticFound.year
+            category: (staticFound as any).category || "Branding",
+            client: (staticFound as any).client || "HDesign Studio",
+            year: (staticFound as any).year || "2026"
           };
           setWork(mappedStatic);
           setBlocks([
