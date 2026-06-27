@@ -12,7 +12,7 @@ const iconsList = [
   "icon-Check", "icon-Home", "icon-Profile", "icon-Monitor", "icon-Eye",
   "icon-Locked", "icon-Unlocked", "icon-Close-Eye", "icon-Warning", "icon-Info",
   "icon-Call", "icon-Mail", "icon-Map-Pin", "icon-Clock", "icon-Calendar",
-  "icon-Pin", "icon-Pencil", "icon-Trash", "icon-Close", "icon-Plus",
+  "icon-Pin", "icon-Trash", "icon-Close", "icon-Plus",
   "icon-Arrow-Up", "icon-North-West-Arrow", "icon-Chevrolt-Arrow-Left", "icon-Chevrolt-Arrow-Right",
   "icon-Image", "icon-Camera", "icon-Download", "icon-Attech", "icon-Bell", "icon-Notifications",
   "icon-Chat-Bubble", "icon-Two-Chat-Bubble", "icon-Earth", "icon-Cursor"
