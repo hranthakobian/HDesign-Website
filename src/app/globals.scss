@@ -622,29 +622,14 @@ hd-slider,
   display: block !important;
 }
 
-/* Page Transition Styles — Directional Slide */
-.page-transition-wrapper {
-  width: 100%;
+/* Page Transition — Slide + Fade In (matches admin dashboard style) */
+.page-slide-in {
+  animation: pageSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.page-transition-wrapper.state-entering {
-  will-change: transform;
-  animation: pageSlideEnter 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-}
-
-.page-transition-wrapper.state-leaving {
-  will-change: transform;
-  animation: pageSlideLeave 0.28s cubic-bezier(0.55, 0, 1, 0.45) forwards;
-}
-
-@keyframes pageSlideEnter {
-  from { transform: translateX(64px); }
-  to   { transform: translateX(0);   }
-}
-
-@keyframes pageSlideLeave {
-  from { transform: translateX(0);    }
-  to   { transform: translateX(-64px); }
+@keyframes pageSlideIn {
+  0%   { transform: translateX(30px); opacity: 0; }
+  100% { transform: translateX(0);    opacity: 1; }
 }
 
 
@@ -947,11 +932,13 @@ html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header {
   right: 0;
   width: 220px;
   background: var(--panel);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--panel-border);
-  box-shadow: var(--shadow);
-  border-radius: 12px;
-  padding: 8px;
-  margin-top: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18), 0 4px 16px rgba(0, 0, 0, 0.1);
+  border-radius: 24px;
+  padding: 12px;
+  margin-top: 14px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -963,17 +950,26 @@ html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header {
 }
 
 .header-dropdown-item {
-  padding: 10px 16px;
-  font-size: 0.85rem;
+  padding: 12px 18px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--text);
   text-decoration: none;
-  border-radius: 8px;
-  transition: background 0.2s ease;
+  border-radius: 14px;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
   
+  &:first-child {
+    border-radius: 16px 16px 14px 14px;
+  }
+
+  &:last-child {
+    border-radius: 14px 14px 16px 16px;
+  }
+
   &:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--primary-color);
+    background: rgba(199, 186, 255, 0.1);
+    color: #C7BAFF;
+    transform: translateX(2px);
   }
 }
 
@@ -1017,20 +1013,21 @@ html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header {
   justify-content: flex-end;
   color: #ffffff;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: none;
   transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   flex-shrink: 0;
 
   &:hover {
-    transform: translateY(-8px) scale(1.02);
+    transform: scale(1.02);
   }
 
   .card-bg-design {
     position: absolute;
     inset: 0;
     z-index: 1;
+    border-radius: 16px;
   }
 
   .card-content {
@@ -1116,20 +1113,21 @@ html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header {
   position: relative;
   aspect-ratio: 4/3;
   border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  overflow: visible;
+  box-shadow: none;
   cursor: pointer;
   border: 1px solid var(--panel-border);
   background: var(--panel);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   
   &:hover {
-    transform: translateY(-6px);
-    box-shadow: var(--shadow);
-    
     .gallery-overlay {
       opacity: 1;
     }
+  }
+
+  .gallery-img-container, .gallery-overlay, img {
+    border-radius: 16px;
   }
 
   .gallery-img-container {
@@ -1323,12 +1321,81 @@ body {
 
 /* Multi-page styling additions */
 
+/* Corner Hover Decorations */
+.card-hover-decor {
+  position: absolute;
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  width: 64px;
+  height: 260px;
+
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  &.top-left {
+    top: -60px;
+    left: 40px;
+  }
+
+  &.bottom-right {
+    bottom: -60px;
+    right: 40px;
+  }
+
+  .svg-pill {
+    transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transform-origin: center;
+  }
+
+  &.top-left .pill-1 {
+    transform: translateY(-220px);
+  }
+
+  &.top-left .pill-2 {
+    transform: translateY(-280px);
+  }
+
+  &.bottom-right .pill-1 {
+    transform: translateY(280px);
+  }
+
+  &.bottom-right .pill-2 {
+    transform: translateY(220px);
+  }
+}
+
+/* Card Hover States */
+.branding-case-card:hover .card-hover-decor,
+.gallery-card:hover .card-hover-decor,
+.marquee-card:hover .card-hover-decor {
+  opacity: 1;
+
+  .svg-pill {
+    transform: translateY(0);
+  }
+
+  .pill-1 {
+    transition-delay: 0s;
+  }
+
+  .pill-2 {
+    transition-delay: 0.12s; /* Delayed secondary pill animation */
+  }
+}
+
+.branding-case-card {
+  .branding-card-img, .branding-card-overlay {
+    border-radius: 24px;
+  }
+}
+
 .branding-case-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 30px 60px rgba(0,0,0,0.3) !important;
-  
   .branding-card-img {
-    transform: scale(1.05);
     opacity: 1 !important;
   }
   

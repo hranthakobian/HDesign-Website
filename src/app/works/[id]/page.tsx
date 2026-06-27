@@ -172,24 +172,6 @@ export default function BrandingDetailPage() {
 
   return (
     <main style={{ marginTop: "80px", minHeight: "100vh" }}>
-      {/* Rating Reminder Banner */}
-      <div 
-        style={{ 
-          background: "rgba(0, 255, 204, 0.05)", 
-          borderBottom: "1px solid rgba(0, 255, 204, 0.1)", 
-          padding: "10px 24px", 
-          textAlign: "center",
-          fontSize: "0.85rem",
-          color: "var(--accent)",
-          fontWeight: 600
-        }}
-      >
-        <span>
-          {lang === 'en' 
-            ? "⭐ Love this project? Feel free to rate it on the cover stars!" 
-            : "⭐ Հավանեցի՞ք նախագիծը։ Կարող եք գնահատել այն կազմի աստղերով։"}
-        </span>
-      </div>
 
       {/* Huge Case Hero Header */}
       <div 

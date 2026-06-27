@@ -132,6 +132,29 @@ export default function RatingSystem({ id, locale }: RatingSystemProps) {
     }
   };
 
+  const handleDeleteRating = async () => {
+    if (submitting || !userId) return;
+    setSubmitting(true);
+
+    try {
+      const res = await fetch(`/api/ratings?id=${id}&userId=${userId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSum(data.sum);
+        setCount(data.count);
+        setHasRated(false);
+      } else {
+        alert(locale === "hy" ? "Գնահատումը հեռացնել չհաջողվեց" : "Failed to remove rating");
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const avg = count > 0 ? (sum / count) : 0;
   const linesCount = Math.round((avg / 5) * 45);
 
@@ -161,51 +184,88 @@ export default function RatingSystem({ id, locale }: RatingSystemProps) {
       </div>
 
       <div 
-        style={{ display: "flex", alignItems: "center", gap: 4, margin: "4px 0" }}
+        style={{ display: "flex", alignItems: "center", gap: 12, margin: "4px 0" }}
         onMouseLeave={() => setHoverIdx(null)}
       >
-        {[0, 1, 2, 3, 4].map((starIdx) => (
-          <svg
-            key={starIdx}
-            width="42"
-            height="42"
-            viewBox="0 0 57 57"
-            style={{ overflow: "visible" }}
-          >
-            {STAR_PATH_GROUPS.map((col, i) => {
-              const globalIdx = starIdx * 9 + i;
-              const active = hoverIdx !== null ? globalIdx <= hoverIdx : globalIdx < linesCount;
-              
-              return (
-                <g
-                  key={i}
-                  onMouseEnter={() => setHoverIdx(globalIdx)}
-                  onClick={() => handleRate(globalIdx)}
-                  style={{ cursor: "pointer" }}
-                >
-                  {/* Invisible thick background rect for easy mouse hover targeting */}
-                  <rect
-                    x={col.x - 3}
-                    y={0}
-                    width={6}
-                    height={57}
-                    fill="transparent"
-                  />
-                  
-                  {/* Vector Paths representing the star lines */}
-                  {col.paths.map((d, pIdx) => (
-                    <path
-                      key={pIdx}
-                      d={d}
-                      fill={active ? "#ffcc00" : "rgba(255,255,255,0.15)"}
-                      style={{ transition: "fill 0.15s" }}
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          {[0, 1, 2, 3, 4].map((starIdx) => (
+            <svg
+              key={starIdx}
+              width="42"
+              height="42"
+              viewBox="0 0 57 57"
+              style={{ overflow: "visible" }}
+            >
+              {STAR_PATH_GROUPS.map((col, i) => {
+                const globalIdx = starIdx * 9 + i;
+                const active = hoverIdx !== null ? globalIdx <= hoverIdx : globalIdx < linesCount;
+                
+                return (
+                  <g
+                    key={i}
+                    onMouseEnter={() => setHoverIdx(globalIdx)}
+                    onClick={() => handleRate(globalIdx)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    {/* Invisible thick background rect for easy mouse hover targeting */}
+                    <rect
+                      x={col.x - 3}
+                      y={0}
+                      width={6}
+                      height={57}
+                      fill="transparent"
                     />
-                  ))}
-                </g>
-              );
-            })}
-          </svg>
-        ))}
+                    
+                    {/* Vector Paths representing the star lines */}
+                    {col.paths.map((d, pIdx) => (
+                      <path
+                        key={pIdx}
+                        d={d}
+                        fill={active ? "#ffcc00" : "rgba(255,255,255,0.15)"}
+                        style={{ transition: "fill 0.15s" }}
+                      />
+                    ))}
+                  </g>
+                );
+              })}
+            </svg>
+          ))}
+        </div>
+
+        {hasRated && (
+          <button
+            onClick={handleDeleteRating}
+            disabled={submitting}
+            title={locale === "hy" ? "Հեռացնել գնահատականը" : "Remove My Rating"}
+            style={{
+              padding: "8px",
+              background: "rgba(255, 59, 48, 0.12)",
+              border: "1px solid rgba(255, 59, 48, 0.25)",
+              borderRadius: 8,
+              color: "#ff453a",
+              fontSize: "1.1rem",
+              cursor: submitting ? "not-allowed" : "pointer",
+              transition: "all 0.2s",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              lineHeight: 1,
+              width: 38,
+              height: 38,
+              flexShrink: 0
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255, 59, 48, 0.22)";
+              e.currentTarget.style.borderColor = "rgba(255, 59, 48, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(255, 59, 48, 0.12)";
+              e.currentTarget.style.borderColor = "rgba(255, 59, 48, 0.25)";
+            }}
+          >
+            🗑
+          </button>
+        )}
       </div>
     </div>
   );

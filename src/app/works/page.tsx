@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { brandingCases as staticCases } from "@/lib/brandingData";
+import { brandingCases as staticCases, getPastelColor, getCasePastelColor } from "@/lib/brandingData";
+import { useI18n } from "@/lib/i18n";
 
 type Case = {
   id: string;
@@ -17,9 +18,38 @@ type Case = {
   created_at?: string;
 };
 
+function parseLangText(text: string, lang: 'hy' | 'en') {
+  if (!text) return "";
+  const parts = text.split(" | ");
+  if (parts.length > 1) {
+    return lang === 'en' ? parts[1] : parts[0];
+  }
+  return text;
+}
+
 export default function WorksPage() {
+  const { locale } = useI18n();
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ratings, setRatings] = useState<Record<string, { sum: number; count: number }>>({});
+
+  const renderCardRating = (workId: string) => {
+    const item = ratings[workId];
+    if (!item || item.count === 0) return null;
+    const avg = (item.sum / item.count).toFixed(1);
+    return (
+      <div style={{ display: "inline-flex", alignItems: "center", gap: "4px", background: "rgba(255,255,0,0.12)", border: "1px solid rgba(255,204,0,0.3)", padding: "4px 8px", borderRadius: "8px", fontSize: "0.8rem", color: "#ffcc00", fontWeight: 700 }}>
+        ★ {avg}
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    fetch("/api/ratings")
+      .then(res => res.json())
+      .then(data => setRatings(data || {}))
+      .catch(err => console.warn("Failed to load ratings:", err));
+  }, []);
 
   useEffect(() => {
     async function loadCases() {
@@ -113,10 +143,10 @@ export default function WorksPage() {
                 style={{
                   position: "relative",
                   borderRadius: "24px",
-                  overflow: "hidden",
+                  overflow: "visible",
                   aspectRatio: "1.5",
                   backgroundColor: work.bg,
-                  boxShadow: "var(--shadow)",
+                  boxShadow: "none",
                   cursor: "pointer",
                   transition: "all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)",
                   border: "1px solid var(--panel-border)"
@@ -138,6 +168,20 @@ export default function WorksPage() {
                   />
                 )}
                 
+                {/* Decorative Hover SVGs */}
+                <div className="card-hover-decor top-left">
+                  <svg width="64" height="260" viewBox="0 0 64 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect className="svg-pill pill-1" x="0" y="0" width="24" height="180" rx="12" fill={getCasePastelColor(work)}></rect>
+                    <rect className="svg-pill pill-2" x="40" y="80" width="24" height="180" rx="12" fill={getCasePastelColor(work)}></rect>
+                  </svg>
+                </div>
+                <div className="card-hover-decor bottom-right">
+                  <svg width="64" height="260" viewBox="0 0 64 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect className="svg-pill pill-1" x="0" y="0" width="24" height="180" rx="12" fill={getCasePastelColor(work)}></rect>
+                    <rect className="svg-pill pill-2" x="40" y="80" width="24" height="180" rx="12" fill={getCasePastelColor(work)}></rect>
+                  </svg>
+                </div>
+
                 {/* Hover overlay with detail */}
                 <div 
                   className="branding-card-overlay"
@@ -152,39 +196,45 @@ export default function WorksPage() {
                     boxSizing: "border-box"
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+                  <span 
+                    className="icon-Chevrolt-Arrow-Left" 
+                    style={{ 
+                      position: "absolute",
+                      top: "40px",
+                      right: "40px",
+                      color: "#ffffff", 
+                      fontSize: "1.2rem", 
+                      background: "rgba(255,255,255,0.15)",
+                      padding: "10px",
+                      borderRadius: "50%",
+                      transition: "all 0.3s"
+                    }} 
+                  />
+
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", width: "100%" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      <span style={{ 
-                        fontSize: "0.85rem", 
-                        fontWeight: 700, 
-                        textTransform: "uppercase", 
-                        letterSpacing: "2px", 
-                        color: "#ffffff", 
-                        opacity: 0.7 
-                      }}>
-                        {work.category || "Branding"}
-                      </span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <span style={{ 
+                          fontSize: "0.85rem", 
+                          fontWeight: 700, 
+                          textTransform: "uppercase", 
+                          letterSpacing: "2px", 
+                          color: "#ffffff", 
+                          opacity: 0.7 
+                        }}>
+                          {parseLangText(work.category || "", locale === 'en' ? 'en' : 'hy') || (locale === 'en' ? "Branding" : "Բրենդավորում")}
+                        </span>
+                        {renderCardRating(work.id)}
+                      </div>
                       <h2 style={{ 
                         fontSize: "1.6rem", 
                         fontWeight: "900", 
                         color: "#ffffff", 
                         margin: 0 
                       }}>
-                        {work.title}
+                        {parseLangText(work.title, locale === 'en' ? 'en' : 'hy')}
                       </h2>
                     </div>
-                    
-                    <span 
-                      className="icon-Chevrolt-Arrow-Right" 
-                      style={{ 
-                        color: "#ffffff", 
-                        fontSize: "1.2rem", 
-                        background: "rgba(255,255,255,0.15)",
-                        padding: "10px",
-                        borderRadius: "50%",
-                        transition: "all 0.3s"
-                      }} 
-                    />
                   </div>
                 </div>
               </div>

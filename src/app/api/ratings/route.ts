@@ -124,3 +124,53 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    const userId = searchParams.get('userId');
+    
+    if (!id || !userId) {
+      return NextResponse.json({ error: "Missing parameters" }, { status: 400 });
+    }
+
+    const ratings = await getRatingsMap();
+    const item = ratings[id];
+    
+    if (!item) {
+      return NextResponse.json({ error: "Item not found" }, { status: 404 });
+    }
+
+    // Convert old array format to object map if necessary
+    if (Array.isArray(item.users)) {
+      const oldUsers = item.users;
+      item.users = {};
+      const assumedRating = item.count > 0 ? parseFloat((item.sum / item.count).toFixed(2)) : 5;
+      for (const u of oldUsers) {
+        item.users[u] = assumedRating;
+      }
+    } else if (!item.users || typeof item.users !== 'object') {
+      item.users = {};
+    }
+
+    const oldRating = item.users[userId];
+    if (oldRating !== undefined) {
+      item.sum = parseFloat((item.sum - oldRating).toFixed(2));
+      item.count = Math.max(0, item.count - 1);
+      delete item.users[userId];
+      
+      if (item.count === 0) {
+        item.sum = 0;
+      }
+      
+      ratings[id] = item;
+      await saveRatingsMap(ratings);
+      return NextResponse.json({ success: true, sum: item.sum, count: item.count });
+    } else {
+      return NextResponse.json({ error: "User rating not found" }, { status: 404 });
+    }
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}

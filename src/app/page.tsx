@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
+import { getPastelColor, getCasePastelColor } from "@/lib/brandingData";
 import selectionJson from "../../icons/selection.json";
 
 // Custom icons list for the explorer section
@@ -309,13 +310,25 @@ const downloadPng = (iconName: string) => {
 };
 
 export default function Home() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const sectionRef = useRef<HTMLDivElement>(null);
   const stickyPanelRef = useRef<HTMLDivElement>(null);
   
   // Dynamic cases and details modal states
   const [casesList, setCasesList] = useState<any[]>([]);
   const [selectedCase, setSelectedCase] = useState<any | null>(null);
+  const [ratings, setRatings] = useState<Record<string, { sum: number; count: number }>>({});
+
+  const renderCardRating = (workId: string) => {
+    const item = ratings[workId];
+    if (!item || item.count === 0) return null;
+    const avg = (item.sum / item.count).toFixed(1);
+    return (
+      <div style={{ display: "inline-flex", alignItems: "center", gap: "4px", background: "rgba(255,255,0,0.15)", border: "1px solid rgba(255,204,0,0.3)", padding: "2px 6px", borderRadius: "6px", fontSize: "0.72rem", color: "#ffcc00", fontWeight: 700, marginTop: "4px" }}>
+        ★ {avg}
+      </div>
+    );
+  };
 
 
   // Icon explorer states
@@ -346,6 +359,11 @@ export default function Home() {
 
   // Load dynamic cases combined with fallbacks
   useEffect(() => {
+    fetch("/api/ratings")
+      .then(res => res.json())
+      .then(data => setRatings(data || {}))
+      .catch(err => console.warn("Failed to load ratings:", err));
+
     async function loadCases() {
       try {
         const res = await fetch("/api/cases");
@@ -553,7 +571,25 @@ export default function Home() {
                       opacity: 0.85 
                     }} 
                   />
-                  <div className="card-content">{card.title}</div>
+                  
+                  {/* Decorative Hover SVGs */}
+                  <div className="card-hover-decor top-left">
+                    <svg width="64" height="260" viewBox="0 0 64 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect className="svg-pill pill-1" x="0" y="0" width="24" height="180" rx="12" fill={getCasePastelColor({ title: card.title, bg: card.bg || card.color })}></rect>
+                      <rect className="svg-pill pill-2" x="40" y="80" width="24" height="180" rx="12" fill={getCasePastelColor({ title: card.title, bg: card.bg || card.color })}></rect>
+                    </svg>
+                  </div>
+                  <div className="card-hover-decor bottom-right">
+                    <svg width="64" height="260" viewBox="0 0 64 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect className="svg-pill pill-1" x="0" y="0" width="24" height="180" rx="12" fill={getCasePastelColor({ title: card.title, bg: card.bg || card.color })}></rect>
+                      <rect className="svg-pill pill-2" x="40" y="80" width="24" height="180" rx="12" fill={getCasePastelColor({ title: card.title, bg: card.bg || card.color })}></rect>
+                    </svg>
+                  </div>
+
+                  <div className="card-content" style={{ display: "flex", flexDirection: "column", gap: "2px", alignItems: "flex-start", position: "relative", zIndex: 3 }}>
+                    <span>{card.title}</span>
+                    {renderCardRating(card.id)}
+                  </div>
                 </div>
               ))}
             </div>
@@ -613,9 +649,8 @@ export default function Home() {
                   data-width="160px"
                   data-height="52px"
                   data-thickness="3px"
-                  data-color="#ffffff"
-                  data-text-color="#ffffff"
-                  style={{ color: "#ffffff" }}
+                  data-color="#083F39"
+                  data-text-color="#fff"
                 >
                   Կապնվել
                 </hd-button>
@@ -654,8 +689,24 @@ export default function Home() {
                   )}
                 </div>
                 <div className="gallery-overlay">
-                  <h3 style={{ fontSize: "1.1rem", fontWeight: "700", margin: "0 0 6px" }}>{work.title}</h3>
-                  <p style={{ fontSize: "0.85rem", opacity: 0.8, margin: 0 }}>{work.subtitle}</p>
+                  {/* Decorative Hover SVGs */}
+                  <div className="card-hover-decor top-left">
+                    <svg width="64" height="260" viewBox="0 0 64 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect className="svg-pill pill-1" x="0" y="0" width="24" height="180" rx="12" fill={getCasePastelColor(work)}></rect>
+                      <rect className="svg-pill pill-2" x="40" y="80" width="24" height="180" rx="12" fill={getCasePastelColor(work)}></rect>
+                    </svg>
+                  </div>
+                  <div className="card-hover-decor bottom-right">
+                    <svg width="64" height="260" viewBox="0 0 64 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect className="svg-pill pill-1" x="0" y="0" width="24" height="180" rx="12" fill={getCasePastelColor(work)}></rect>
+                      <rect className="svg-pill pill-2" x="40" y="80" width="24" height="180" rx="12" fill={getCasePastelColor(work)}></rect>
+                    </svg>
+                  </div>
+
+                  <div style={{ position: "relative", zIndex: 3 }}>
+                    <h3 style={{ fontSize: "1.1rem", fontWeight: "700", margin: "0 0 6px" }}>{work.title}</h3>
+                    <p style={{ fontSize: "0.85rem", opacity: 0.8, margin: 0 }}>{work.subtitle}</p>
+                  </div>
                 </div>
               </div>
             ))}
@@ -1216,6 +1267,14 @@ export default function Home() {
                     <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>
                       {selectedCase.details || "Այս նախագծի համար մանրամասն նկարագրություն դեռևս ավելացված չէ:"}
                     </p>
+                  </div>
+
+                  <div style={{ marginTop: "auto", paddingTop: "12px", display: "flex", gap: "12px" }}>
+                    <Link href={`/works/${selectedCase.id.includes('local-b-') ? ['pasta', 'eleven', 'posters', 'teal', 'mobile'][parseInt(selectedCase.id.replace('local-b-', '')) - 1] || selectedCase.id : selectedCase.id}`} style={{ textDecoration: "none" }}>
+                      <hd-button data-height="40px" data-thickness="1px" style={{ background: "var(--accent)", color: "#000", fontWeight: "bold" }}>
+                        {locale === "en" ? "View Full Case Study" : "Տեսնել Ամբողջական Քեյսը"}
+                      </hd-button>
+                    </Link>
                   </div>
                 </div>
               </div>
