@@ -61,6 +61,7 @@ p, h1, h2, h3, h4, h5, h6, li, label, figcaption, blockquote {
   --btn-hover-bg: rgba(8, 63, 57, 0.08);
   --nav-bg: rgba(255, 255, 255, 0.85);
   --logo-panel-bg: rgba(255, 255, 255, 0.85);
+  --dropdown-bg: rgba(255, 255, 255, 0.55);
 
   /* Switcher & Language Toggles */
   --switcher-bg: rgba(8, 63, 57, 0.06);
@@ -95,6 +96,7 @@ html[data-theme="green"] {
   --btn-hover-bg: rgba(255, 255, 255, 0.1);
   --nav-bg: rgba(11, 74, 65, 0.45);
   --logo-panel-bg: rgba(11, 74, 65, 0.45);
+  --dropdown-bg: rgba(11, 74, 65, 0.55);
 
   --switcher-bg: rgba(0, 0, 0, 0.15);
   --switcher-border: rgba(255, 255, 255, 0.08);
@@ -128,6 +130,7 @@ html[data-theme="dark"] {
   --btn-hover-bg: rgba(255, 255, 255, 0.1);
   --nav-bg: rgba(30, 41, 59, 0.7);
   --logo-panel-bg: rgba(30, 41, 59, 0.7);
+  --dropdown-bg: rgba(15, 23, 42, 0.55);
 
   --switcher-bg: rgba(0, 0, 0, 0.25);
   --switcher-border: rgba(255, 255, 255, 0.08);
@@ -721,31 +724,42 @@ html[data-theme="green"] .hero-signature {
 }
 
 .portfolio-header {
+  position: relative; // Ensure positioning context for ::before
   width: 100%;
   max-width: 100%;
   height: 80px;
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02);
-  border-radius: 0;
+  background: transparent !important; // Handled by ::before
+  border: none !important; // Handled by ::before
+  box-shadow: none !important; // Handled by ::before
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 48px;
   transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-  border-bottom: 1px solid rgba(8, 63, 57, 0.08);
-  border-left: none;
-  border-right: none;
-  border-top: none;
-  backdrop-filter: blur(20px);
+
+  // Background and backdrop filter are placed here to prevent stacking context nesting issues with child dropdowns
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(8, 63, 57, 0.08);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02);
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    pointer-events: none;
+  }
 }
 
-html[data-theme="dark"] .portfolio-header {
+html[data-theme="dark"] .portfolio-header::before {
   background: rgba(15, 23, 42, 0.95);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
 }
 
-html[data-theme="green"] .portfolio-header {
+html[data-theme="green"] .portfolio-header::before {
   background: rgba(11, 74, 65, 0.95);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
@@ -758,29 +772,27 @@ html[data-theme="green"] .portfolio-header {
   .portfolio-header {
     max-width: 1400px;
     height: 64px;
-    border-radius: 32px;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    box-shadow: 0 10px 40px rgba(8, 63, 57, 0.08);
-    border: 1px solid rgba(8, 63, 57, 0.05);
     padding: 0 28px;
-    backdrop-filter: blur(20px);
+
+    &::before {
+      border-radius: 32px;
+      background: rgba(255, 255, 255, 0.85);
+      box-shadow: 0 10px 40px rgba(8, 63, 57, 0.08);
+      border: 1px solid rgba(8, 63, 57, 0.05);
+    }
   }
 }
 
-html[data-theme="dark"] .portfolio-header-wrapper.scrolled .portfolio-header {
+html[data-theme="dark"] .portfolio-header-wrapper.scrolled .portfolio-header::before {
   background: rgba(15, 23, 42, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(20px);
 }
 
-html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header {
+html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header::before {
   background: rgba(11, 74, 65, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(20px);
 }
 
 /* Nav Links with double lines */
@@ -790,6 +802,40 @@ html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header {
   gap: 32px;
   margin-left: auto;
   margin-right: 48px;
+  height: 100%;
+
+  // Set distinct hover colors for each slot in the navigation
+  & > * {
+    // 1. Տուն (Home) - Pastel Coral/Peach
+    &:nth-child(1) {
+      --hover-color: #F2A499;
+    }
+    
+    // 2. Մասին (About) - Pastel Blue
+    &:nth-child(2) {
+      --hover-color: #A3C2F7;
+    }
+    
+    // 3. Աշխատանքներ (Works) - Pastel Yellow/Gold
+    &:nth-child(3) {
+      --hover-color: #F7DB8F;
+    }
+    
+    // 4. Տառատեսակներ (Fonts) - Pastel Violet/Pink
+    &:nth-child(4) {
+      --hover-color: #E2BCFF;
+    }
+    
+    // 5. Կապ (Contact) - Pastel Mint Green
+    &:nth-child(5) {
+      --hover-color: #A6D5C7;
+    }
+
+    // 6. HDesign - Pastel Lavender
+    &:nth-child(6) {
+      --hover-color: #C7BAFF;
+    }
+  }
 }
 
 .portfolio-nav-item {
@@ -799,35 +845,22 @@ html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header {
   color: var(--text);
   text-decoration: none;
   cursor: pointer;
-  padding: 6px 32px;
+  padding: 6px 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  
-  // 1. Տուն (Home) - Pastel Coral/Peach
-  &:nth-child(1) {
-    --hover-color: #F2A499;
-  }
-  
-  // 2. Մասին (About) - Pastel Blue
-  &:nth-child(2) {
-    --hover-color: #A3C2F7;
-  }
-  
-  // 3. Աշխատանքներ (Works) - Pastel Yellow/Gold
-  &:nth-child(3) {
-    --hover-color: #F7DB8F;
-  }
-  
-  // 4. Կապ (Contact) - Pastel Mint Green
-  &:nth-child(4) {
-    --hover-color: #A6D5C7;
-  }
 
   &:hover, &.active {
     color: var(--hover-color);
   }
+}
+
+.nav-item-text-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 22px; /* space for lines */
 }
 
 .nav-double-lines {
@@ -840,12 +873,12 @@ html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header {
   height: 28px;
 
   &.left-side {
-    left: 10px;
+    left: 0;
     transform: translateY(calc(-50% - 3px));
   }
 
   &.right-side {
-    right: 10px;
+    right: 0;
     transform: translateY(calc(-50% + 2px));
   }
 }
@@ -892,12 +925,19 @@ html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header {
 .header-dropdown-container {
   position: relative;
   --hover-color: #C7BAFF; // Pastel Lavender
+  height: 100%;
+  display: flex;
+  align-items: center;
 
   .portfolio-nav-item {
     color: var(--text);
   }
   
   &:hover {
+    .dropdown-chevron {
+      transform: rotate(-90deg) !important;
+    }
+
     .portfolio-nav-item {
       color: var(--hover-color);
       
@@ -921,55 +961,179 @@ html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header {
 
   &:hover .header-dropdown-menu {
     opacity: 1;
-    transform: translateY(0);
     pointer-events: auto;
+    animation: dropletDrop 0.55s cubic-bezier(0.25, 0.8, 0.25, 1.25) forwards;
+  }
+}
+
+.header-dropdown-trigger {
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -32px; /* extends down to bridge the gap to the menu */
+    left: 0;
+    right: 0;
+    height: 32px;
+    background: transparent;
+    pointer-events: auto;
+    z-index: 10;
+  }
+}
+
+@keyframes dropletDrop {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.8, 0.05) translateY(-10px);
+  }
+  40% {
+    opacity: 1;
+    transform: translateX(-50%) scale(0.9, 1.25) translateY(12px);
+  }
+  65% {
+    transform: translateX(-50%) scale(1.06, 0.9) translateY(-3px);
+  }
+  82% {
+    transform: translateX(-50%) scale(0.98, 1.02) translateY(1px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1, 1) translateY(0);
   }
 }
 
 .header-dropdown-menu {
   position: absolute;
-  top: 100%;
-  right: 0;
-  width: 220px;
-  background: var(--panel);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--panel-border);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18), 0 4px 16px rgba(0, 0, 0, 0.1);
-  border-radius: 24px;
-  padding: 12px;
-  margin-top: 14px;
+  top: 100%; // Flush against the bottom of the header
+  left: 50%;
+  right: auto;
+  width: 190px; /* Increased width to 190px */
+  background: transparent; /* Handled by .dropdown-menu-bg */
+  border: none; /* Removed thin borders */
+  /* Pull shadow inwards with a negative spread so it does not overlap the header on top */
+  box-shadow: 0 20px 32px -8px rgba(0, 0, 0, 0.15);
+  border-radius: 0 0 30px 30px; /* Increased bottom rounded corners */
+  padding: 12px 12px 18px; /* Extra bottom padding for the larger roundness */
+  margin-top: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
   opacity: 0;
-  transform: translateY(10px);
+  transform: translateX(-50%) scale(0.8, 0.05) translateY(-10px);
+  transform-origin: top center;
   pointer-events: none;
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: opacity 0.2s ease, transform 0.2s ease;
   z-index: 100;
+
+  .dropdown-menu-bg {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--dropdown-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 0 0 30px 30px;
+    pointer-events: none;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+
+    .portfolio-header-wrapper.scrolled & {
+      border-radius: 0 0 20px 20px;
+    }
+  }
+
+  /* Left fillet (concave corner using the custom SVG) */
+  &::before {
+    content: '';
+    position: absolute;
+    top: -1px; /* Overlaps bottom header border */
+    left: -46px;
+    width: 46px;
+    height: 46px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    pointer-events: none;
+    /* Light Theme (default) - Semi-transparent fill matching light dropdown background */
+    background-image: url("data:image/svg+xml;utf8,<svg width='46' height='46' viewBox='0 0 46 46' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M0 0C24.7587 1.12855 44.7441 20.95 45.877 45.7085V0L0 0Z' fill='rgba(255,255,255,0.55)'/></svg>");
+  }
+
+  /* Right fillet (concave corner using the custom SVG, mirrored) */
+  &::after {
+    content: '';
+    position: absolute;
+    top: -1px; /* Overlaps bottom header border */
+    right: -46px;
+    width: 46px;
+    height: 46px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    pointer-events: none;
+    transform: scaleX(-1);
+    /* Light Theme (default) - Semi-transparent fill matching light dropdown background */
+    background-image: url("data:image/svg+xml;utf8,<svg width='46' height='46' viewBox='0 0 46 46' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M0 0C24.7587 1.12855 44.7441 20.95 45.877 45.7085V0L0 0Z' fill='rgba(255,255,255,0.55)'/></svg>");
+  }
+
+  /* Green Theme Overrides - Fill path only */
+  html[data-theme="green"] & {
+    &::before, &::after {
+      background-image: url("data:image/svg+xml;utf8,<svg width='46' height='46' viewBox='0 0 46 46' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M0 0C24.7587 1.12855 44.7441 20.95 45.877 45.7085V0L0 0Z' fill='rgba(11,74,65,0.55)'/></svg>");
+    }
+  }
+
+  /* Dark Theme Overrides - Fill path only */
+  html[data-theme="dark"] & {
+    &::before, &::after {
+      background-image: url("data:image/svg+xml;utf8,<svg width='46' height='46' viewBox='0 0 46 46' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M0 0C24.7587 1.12855 44.7441 20.95 45.877 45.7085V0L0 0Z' fill='rgba(15,23,42,0.55)'/></svg>");
+    }
+  }
+
+  /* Responsive overrides when the header shrinks in scrolled state */
+  .portfolio-header-wrapper.scrolled & {
+    border-radius: 0 0 20px 20px; /* Slightly smaller roundness */
+
+    &::before {
+      width: 30px;
+      height: 30px;
+      left: -30px;
+    }
+
+    &::after {
+      width: 30px;
+      height: 30px;
+      right: -30px;
+    }
+  }
 }
 
 .header-dropdown-item {
-  padding: 12px 18px;
+  position: relative; /* relative parent for absolute double lines */
+  /* --hover-color is inherited dynamically from the parent dropdown container */
+  padding: 10px 14px;
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--text);
   text-decoration: none;
+  text-align: center; /* Centered texts */
   border-radius: 14px;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+  transition: color 0.2s ease;
   
-  &:first-child {
-    border-radius: 16px 16px 14px 14px;
-  }
+  &:hover, &.active {
+    color: var(--hover-color);
 
-  &:last-child {
-    border-radius: 14px 14px 16px 16px;
-  }
+    .nav-double-lines {
+      .nav-line {
+        path {
+          stroke: var(--hover-color);
+        }
+        
+        &.line-top {
+          transform: translateY(-4px) scale(1);
+        }
 
-  &:hover {
-    background: rgba(199, 186, 255, 0.1);
-    color: #C7BAFF;
-    transform: translateX(2px);
+        &.line-bottom {
+          transform: translateY(4px) scale(1);
+        }
+      }
+    }
   }
 }
 
@@ -982,14 +1146,14 @@ html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header {
   right: 50%;
   margin-left: -50vw;
   margin-right: -50vw;
-  padding: 24px 0;
+  padding: 40px 0;
   mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
   -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
 }
 
 .marquee-track {
   display: flex;
-  gap: 24px;
+  gap: 0;
   width: max-content;
   animation: marquee 25s linear infinite;
   
@@ -1018,6 +1182,7 @@ html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header {
   box-shadow: none;
   transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   flex-shrink: 0;
+  margin-right: 24px;
 
   &:hover {
     transform: scale(1.02);
@@ -1037,6 +1202,38 @@ html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header {
     font-size: 1.1rem;
     letter-spacing: 0.5px;
     text-shadow: 0 2px 4px rgba(0,0,0,0.25);
+  }
+
+  /* Smaller hover decoration specifically for the marquee slider cards */
+  .card-hover-decor {
+    width: 32px;
+    height: 130px;
+
+    &.top-left {
+      top: -30px;
+      left: 24px;
+    }
+
+    &.bottom-right {
+      bottom: -30px;
+      right: 24px;
+    }
+
+    &.top-left .pill-1 {
+      transform: translateY(-110px);
+    }
+
+    &.top-left .pill-2 {
+      transform: translateY(-140px);
+    }
+
+    &.bottom-right .pill-1 {
+      transform: translateY(140px);
+    }
+
+    &.bottom-right .pill-2 {
+      transform: translateY(110px);
+    }
   }
 }
 

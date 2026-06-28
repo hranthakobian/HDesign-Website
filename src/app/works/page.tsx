@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
+import { useParams, useSearchParams } from "next/navigation";
 import { brandingCases as staticCases, getPastelColor, getCasePastelColor } from "@/lib/brandingData";
 import { useI18n } from "@/lib/i18n";
 
@@ -27,11 +28,18 @@ function parseLangText(text: string, lang: 'hy' | 'en') {
   return text;
 }
 
-export default function WorksPage() {
+function WorksContent() {
   const { locale } = useI18n();
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
   const [ratings, setRatings] = useState<Record<string, { sum: number; count: number }>>({});
+  
+  const searchParams = useSearchParams();
+  const activeCategory = searchParams ? searchParams.get("category") : null;
+
+  const filteredCases = activeCategory
+    ? cases.filter(c => c.category?.toLowerCase() === activeCategory.toLowerCase())
+    : cases;
 
   const renderCardRating = (workId: string) => {
     const item = ratings[workId];
@@ -82,7 +90,7 @@ export default function WorksPage() {
             bg: s.color,
             image_url: s.image,
             details: s.description,
-            category: (s as any).category || "Branding",
+            category: s.id === "mobile-ui" || s.id === "posters" ? "Design" : "Branding",
             client: (s as any).client || "HDesign Studio",
             year: (s as any).year || "2026"
           })));
@@ -96,7 +104,7 @@ export default function WorksPage() {
           bg: s.color,
           image_url: s.image,
           details: s.description,
-          category: (s as any).category || "Branding",
+          category: s.id === "mobile-ui" || s.id === "posters" ? "Design" : "Branding",
           client: (s as any).client || "HDesign Studio",
           year: (s as any).year || "2026"
         })));
@@ -132,7 +140,7 @@ export default function WorksPage() {
           gap: "40px",
           paddingBottom: "60px"
         }}>
-          {cases.map((work) => (
+          {filteredCases.map((work) => (
             <Link 
               key={work.id} 
               href={`/works/${work.id}`}
@@ -243,5 +251,17 @@ export default function WorksPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function WorksPage() {
+  return (
+    <Suspense fallback={
+      <main className="shell" style={{ marginTop: "140px", minHeight: "80vh", textAlign: "center" }}>
+        <div style={{ color: "var(--muted)", paddingTop: "60px" }}>Բեռնվում է...</div>
+      </main>
+    }>
+      <WorksContent />
+    </Suspense>
   );
 }

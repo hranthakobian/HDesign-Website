@@ -22,6 +22,20 @@ export default function Header() {
   // Portfolio Page Header States
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [currentCategory, setCurrentCategory] = useState<string | null>(null);
+
+  // Track search parameters (for dynamic active states like works categories)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const checkCategory = () => {
+        const params = new URLSearchParams(window.location.search);
+        setCurrentCategory(params.get('category'));
+      };
+      checkCategory();
+      const interval = setInterval(checkCategory, 200);
+      return () => clearInterval(interval);
+    }
+  }, []);
 
   // Close mobile menu on pathname change
   useEffect(() => {
@@ -88,9 +102,9 @@ export default function Header() {
   };
 
   // Helper function to render active navigation item styling
-  const renderNavLinkText = (id: string, text: string) => {
+  const renderNavLinkText = (id: string, text: string, hasDropdown: boolean = false) => {
     return (
-      <>
+      <span className="nav-item-text-wrapper">
         {/* Left Side Double Lines */}
         <div className="nav-double-lines left-side">
           <svg className="nav-line line-top" width="3" height="28" viewBox="0 0 3 28" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -103,6 +117,10 @@ export default function Header() {
         
         <span className="nav-item-text">{text}</span>
         
+        {hasDropdown && (
+          <span className="icon-Chevrolt-Arrow-Right dropdown-chevron" style={{ fontSize: "0.6rem", marginLeft: "6px", display: "inline-block", transform: "rotate(90deg)", transition: "transform 0.3s ease" }} />
+        )}
+        
         {/* Right Side Double Lines */}
         <div className="nav-double-lines right-side">
           <svg className="nav-line line-top" width="3" height="28" viewBox="0 0 3 28" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -112,7 +130,7 @@ export default function Header() {
             <path d="M1.5 1.5V25.7963" stroke="#4A897C" strokeWidth="3" strokeLinecap="round"/>
           </svg>
         </div>
-      </>
+      </span>
     );
   };
 
@@ -158,9 +176,21 @@ export default function Header() {
             <Link href="/about" className={`portfolio-nav-item ${activeNav === "about" ? "active" : ""}`}>
               {renderNavLinkText("about", "Մասին")}
             </Link>
-             <Link href="/works" className={`portfolio-nav-item ${activeNav === "works" ? "active" : ""}`}>
-              {renderNavLinkText("works", "Աշխատանքներ")}
-            </Link>
+             {/* Աշխատանքներ Dropdown */}
+             <div className="header-dropdown-container">
+               <Link href="/works" className={`portfolio-nav-item header-dropdown-trigger ${activeNav === "works" ? "active" : ""}`} style={{ cursor: "pointer", userSelect: "none" }}>
+                 {renderNavLinkText("works", "Աշխատանքներ", true)}
+               </Link>
+               <div className="header-dropdown-menu">
+                 <div className="dropdown-menu-bg" />
+                 <Link href="/works?category=branding" className={`header-dropdown-item ${pathname === "/works" && currentCategory === "branding" ? "active" : ""}`}>
+                   {renderNavLinkText("works-branding", "Բրենդինգներ")}
+                 </Link>
+                 <Link href="/works?category=design" className={`header-dropdown-item ${pathname === "/works" && currentCategory === "design" ? "active" : ""}`}>
+                   {renderNavLinkText("works-design", "Դիզայն")}
+                 </Link>
+               </div>
+             </div>
             <Link href="/fonts" className={`portfolio-nav-item ${activeNav === "fonts" ? "active" : ""}`}>
               {renderNavLinkText("fonts", "Տառատեսակներ")}
             </Link>
@@ -170,13 +200,20 @@ export default function Header() {
 
             {/* HDesign Dropdown as a regular link with dropdown list */}
             <div className="header-dropdown-container">
-              <Link href="/hdesign" className={`portfolio-nav-item header-dropdown-trigger ${activeNav === "hdesign" ? "active" : ""}`} style={{ cursor: "pointer", userSelect: "none" }}>
-                {renderNavLinkText("hdesign", "HDesign")}
-              </Link>
+               <Link href="/hdesign" className={`portfolio-nav-item header-dropdown-trigger ${activeNav === "hdesign" ? "active" : ""}`} style={{ cursor: "pointer", userSelect: "none" }}>
+                 {renderNavLinkText("hdesign", "HDesign", true)}
+               </Link>
                <div className="header-dropdown-menu">
-                <Link href="/hdesign" className={`header-dropdown-item ${pathname === "/hdesign" ? "active" : ""}`}>Ընդհանուր</Link>
-                <Link href="/hdesign/docs" className={`header-dropdown-item ${pathname === "/hdesign/docs" ? "active" : ""}`}>Փաստաթղթեր</Link>
-                <Link href="/hdesign/samples" className={`header-dropdown-item ${pathname === "/hdesign/samples" ? "active" : ""}`}>Փորձանմուշներ</Link>
+                <div className="dropdown-menu-bg" />
+                <Link href="/hdesign" className={`header-dropdown-item ${pathname === "/hdesign" ? "active" : ""}`}>
+                  {renderNavLinkText("hdesign-general", "Ընդհանուր")}
+                </Link>
+                <Link href="/hdesign/docs" className={`header-dropdown-item ${pathname === "/hdesign/docs" ? "active" : ""}`}>
+                  {renderNavLinkText("hdesign-docs", "Փաստաթղթեր")}
+                </Link>
+                <Link href="/hdesign/samples" className={`header-dropdown-item ${pathname === "/hdesign/samples" ? "active" : ""}`}>
+                  {renderNavLinkText("hdesign-samples", "Փորձանմուշներ")}
+                </Link>
               </div>
             </div>
           </nav>

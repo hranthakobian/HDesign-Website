@@ -454,6 +454,36 @@ export default function Home() {
   // Filter cases that have a preview image for marquee display
   const marqueeItems = casesList.filter(c => c.image_url);
 
+  // Helper to retrieve the correct branding details link
+  const getBrandingLink = (card: any) => {
+    const cardId = String(card.id);
+    if (cardId.includes('local-b-')) {
+      const idx = parseInt(cardId.replace('local-b-', '')) - 1;
+      const staticIds = ['pasta', 'eleven', 'posters', 'teal-lines', 'mobile-ui'];
+      return `/works/${staticIds[idx] || cardId}`;
+    }
+    return `/works/${cardId}`;
+  };
+
+  // Helper to duplicate marquee items so the track width is always large enough for seamless infinite scrolling
+  const getRepeatedMarqueeItems = () => {
+    const baseItems = marqueeItems.length > 0 ? marqueeItems : brandingCases.map(c => ({
+      id: `local-b-${c.id}`,
+      title: c.title,
+      bg: c.color,
+      image: c.image,
+      image_url: c.image
+    }));
+    
+    if (baseItems.length === 0) return [];
+    
+    let repeated = [...baseItems];
+    while (repeated.length < 12) {
+      repeated = [...repeated, ...baseItems];
+    }
+    return [...repeated, ...repeated];
+  };
+
   const handleCopyIcon = (className: string) => {
     navigator.clipboard.writeText(className).then(() => {
       setCopiedIcon(className);
@@ -549,12 +579,12 @@ export default function Home() {
           <div className="marquee-container">
             <div className="marquee-track">
               {/* Loop twice to make it seamless */}
-              {(marqueeItems.length > 0 ? [...marqueeItems, ...marqueeItems] : [...brandingCases, ...brandingCases]).map((card, idx) => (
-                <div 
+              {getRepeatedMarqueeItems().map((card, idx) => (
+                <Link 
                   key={idx} 
+                  href={getBrandingLink(card)}
                   className="marquee-card" 
-                  style={{ backgroundColor: card.bg || card.color }}
-                  onClick={() => setSelectedCase(card)}
+                  style={{ backgroundColor: card.bg || card.color, textDecoration: "none" }}
                   title="Սեղմեք մանրամասների համար"
                 >
                   <img 
@@ -590,7 +620,7 @@ export default function Home() {
                     <span>{card.title}</span>
                     {renderCardRating(card.id)}
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
@@ -1270,7 +1300,7 @@ export default function Home() {
                   </div>
 
                   <div style={{ marginTop: "auto", paddingTop: "12px", display: "flex", gap: "12px" }}>
-                    <Link href={`/works/${selectedCase.id.includes('local-b-') ? ['pasta', 'eleven', 'posters', 'teal', 'mobile'][parseInt(selectedCase.id.replace('local-b-', '')) - 1] || selectedCase.id : selectedCase.id}`} style={{ textDecoration: "none" }}>
+                    <Link href={`/works/${selectedCase.id.includes('local-b-') ? ['pasta', 'eleven', 'posters', 'teal-lines', 'mobile-ui'][parseInt(selectedCase.id.replace('local-b-', '')) - 1] || selectedCase.id : selectedCase.id}`} style={{ textDecoration: "none" }}>
                       <hd-button data-height="40px" data-thickness="1px" style={{ background: "var(--accent)", color: "#000", fontWeight: "bold" }}>
                         {locale === "en" ? "View Full Case Study" : "Տեսնել Ամբողջական Քեյսը"}
                       </hd-button>
