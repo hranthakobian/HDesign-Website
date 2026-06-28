@@ -279,14 +279,14 @@ export default function FontWysiwygEditor() {
 
   if (loading) {
     return (
-      <div style={{ background: '#0a0a0c', color: '#fff', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'system-ui' }}>
+      <div style={{ background: '#0a0a0c', color: '#fff', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'HDesign, system-ui, sans-serif' }}>
         <h3>Բեռնվում է WYSIWYG խմբագրիչը...</h3>
       </div>
     );
   }
 
   return (
-    <div style={{ background: 'var(--bg)', color: 'var(--text)', height: '100vh', display: 'flex', flexDirection: 'column', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ background: 'var(--bg)', color: 'var(--text)', height: '100vh', display: 'flex', flexDirection: 'column', fontFamily: 'HDesign, system-ui, sans-serif' }}>
       
       {/* Dynamic Font Injection for Previewing */}
       {fontForm.font_file_url && (
