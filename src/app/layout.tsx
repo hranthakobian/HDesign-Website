@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.scss";
+import localFont from "next/font/local";
+
+const hdesign = localFont({
+  src: "../assets/HDesign.ttf",
+  variable: "--font-hdesign",
+});
 import { I18nProvider } from "@/lib/i18n";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -66,7 +72,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const upcomingMode = !!generalSettings?.upcoming_mode;
 
   return (
-    <html lang="en" data-theme="light" data-color="#083f39" style={{ "--hue": themeHue } as any}>
+    <html lang="en" data-theme="light" data-color="#083f39" className={hdesign.variable} style={{ "--hue": themeHue } as any}>
       <head>
         <link rel="stylesheet" href="https://api.hakobian.am/libs/v1/style.css" />
         <link rel="stylesheet" href="https://api.hakobian.am/libs/v1/icons/style.css" />
