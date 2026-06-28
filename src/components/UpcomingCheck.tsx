@@ -71,7 +71,7 @@ export default function UpcomingCheck({ initialUpcomingMode, initialSettings, ch
         zIndex: 99999,
         background: '#ffffff',
         color: '#1a1a1a',
-        fontFamily: 'Calibri, sans-serif',
+        fontFamily: 'HDesign, Calibri, sans-serif',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

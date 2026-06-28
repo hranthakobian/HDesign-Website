@@ -88,12 +88,12 @@ export default function HDesignGeneralPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                 <div>
                   <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>ՀԻՄՆԱԿԱՆ ՏԱՌԱՏԵՍԱԿ (BRAND FONT)</span>
-                  <div style={{ fontSize: "2rem", fontWeight: "900", fontFamily: "Calibri, sans-serif" }}>Calibri</div>
+                  <div style={{ fontSize: "2rem", fontWeight: "900", fontFamily: "HDesign, sans-serif" }}>HDesign</div>
                 </div>
                 <hr style={{ border: "none", borderTop: "1px solid var(--panel-border)", margin: "8px 0" }} />
                 <div>
                   <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>ՏԵՔՍՏԵՐ ԵՒ ՊԻՏԱԿՆԵՐ (FALLBACK)</span>
-                  <div style={{ fontSize: "1.2rem", fontWeight: "400", fontFamily: "Calibri, sans-serif" }}>Calibri, sans-serif</div>
+                  <div style={{ fontSize: "1.2rem", fontWeight: "400", fontFamily: "HDesign, Calibri, sans-serif" }}>HDesign, Calibri, sans-serif</div>
                 </div>
               </div>
             </div>
