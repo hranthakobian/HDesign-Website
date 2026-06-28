@@ -93,7 +93,7 @@ export default function HDesignGeneralPage() {
                 <hr style={{ border: "none", borderTop: "1px solid var(--panel-border)", margin: "8px 0" }} />
                 <div>
                   <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>ՏԵՔՍՏԵՐ ԵՒ ՊԻՏԱԿՆԵՐ (FALLBACK)</span>
-                  <div style={{ fontSize: "1.2rem", fontWeight: "400", fontFamily: "HDesign, Calibri, sans-serif" }}>HDesign, Calibri, sans-serif</div>
+                  <div style={{ fontSize: "1.2rem", fontWeight: "400", fontFamily: "HDesign, sans-serif" }}>HDesign, sans-serif</div>
                 </div>
               </div>
             </div>
