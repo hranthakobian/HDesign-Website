@@ -53,5 +53,15 @@
         "r_43193tbtqxf": 4.56
       }
     }
+  },
+  "api_settings": {
+    "tildo_enabled": true,
+    "tildo_widget_id": "kyotf2ewxeqh07w0fo8dg4iyodch4isg",
+    "google_analytics_enabled": false,
+    "google_analytics_id": "",
+    "custom_head_script": "",
+    "custom_footer_script": "",
+    "supabase_url": "https://jveaaytpcviwuvpgdvxl.supabase.co",
+    "supabase_key": "sb_publishable_1A2YK7GaX_aXdwLNnXNAdw_NEhHU4mf"
   }
 }

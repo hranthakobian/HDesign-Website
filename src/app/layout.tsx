@@ -25,6 +25,30 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+function extractTidioWidgetId(input: string): string {
+  if (!input) return '';
+  const trimmed = input.trim();
+  
+  // Try to match standard Tidio code URL pattern: code.tidio.co/{id}(.js)
+  const match = trimmed.match(/code\.tidio\.co\/([a-zA-Z0-9]+)/);
+  if (match && match[1]) {
+    return match[1];
+  }
+  
+  // If it's a raw alphanumeric ID
+  if (/^[a-zA-Z0-9]+$/.test(trimmed)) {
+    return trimmed;
+  }
+  
+  // Try to match any alphanumeric string of typical Tidio ID length (usually 32 chars)
+  const fallbackMatch = trimmed.match(/[a-zA-Z0-9]{20,40}/);
+  if (fallbackMatch) {
+    return fallbackMatch[0];
+  }
+  
+  return trimmed;
+}
+
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   const personalization = await getSiteSetting('personalization_settings', {});
   const themeHue = personalization.theme_hue || "172";
@@ -100,7 +124,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         {/* Tidio Chat (Tildo) script */}
         {apiSettings.tildo_enabled && apiSettings.tildo_widget_id && (
           <Script 
-            src={`//code.tidio.co/${apiSettings.tildo_widget_id}.js`} 
+            src={`//code.tidio.co/${extractTidioWidgetId(apiSettings.tildo_widget_id)}.js`} 
             strategy="lazyOnload" 
           />
         )}

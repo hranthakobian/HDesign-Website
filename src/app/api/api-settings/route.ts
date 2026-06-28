@@ -71,6 +71,30 @@ export async function GET() {
   }
 }
 
+function extractTidioWidgetId(input: string): string {
+  if (!input) return '';
+  const trimmed = input.trim();
+  
+  // Try to match standard Tidio code URL pattern: code.tidio.co/{id}(.js)
+  const match = trimmed.match(/code\.tidio\.co\/([a-zA-Z0-9]+)/);
+  if (match && match[1]) {
+    return match[1];
+  }
+  
+  // If it's a raw alphanumeric ID
+  if (/^[a-zA-Z0-9]+$/.test(trimmed)) {
+    return trimmed;
+  }
+  
+  // Try to match any alphanumeric string of typical Tidio ID length (usually 32 chars)
+  const fallbackMatch = trimmed.match(/[a-zA-Z0-9]{20,40}/);
+  if (fallbackMatch) {
+    return fallbackMatch[0];
+  }
+  
+  return trimmed;
+}
+
 export async function POST(request: Request) {
   try {
     // Auth check
@@ -81,6 +105,11 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+    
+    // Clean Tidio Widget ID
+    if (body.tildo_widget_id !== undefined) {
+      body.tildo_widget_id = extractTidioWidgetId(body.tildo_widget_id);
+    }
     
     // Sync to .env if provided
     if (body.supabase_url !== undefined && body.supabase_key !== undefined) {

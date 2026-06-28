@@ -152,6 +152,30 @@ const DEFAULT_CURSORS = {
   }
 };
 
+function extractTidioWidgetId(input: string): string {
+  if (!input) return '';
+  const trimmed = input.trim();
+  
+  // Try to match standard Tidio code URL pattern: code.tidio.co/{id}(.js)
+  const match = trimmed.match(/code\.tidio\.co\/([a-zA-Z0-9]+)/);
+  if (match && match[1]) {
+    return match[1];
+  }
+  
+  // If it's a raw alphanumeric ID
+  if (/^[a-zA-Z0-9]+$/.test(trimmed)) {
+    return trimmed;
+  }
+  
+  // Try to match any alphanumeric string of typical Tidio ID length (usually 32 chars)
+  const fallbackMatch = trimmed.match(/[a-zA-Z0-9]{20,40}/);
+  if (fallbackMatch) {
+    return fallbackMatch[0];
+  }
+  
+  return trimmed;
+}
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [passcode, setPasscode] = useState('');
@@ -579,7 +603,10 @@ export default function AdminDashboard() {
         setFonts(fontsData || []);
         setMessages(msgData || []);
         setVisits(visitsData || []);
-        setApiSettings(apiSettingsData || {
+        setApiSettings(apiSettingsData ? {
+          ...apiSettingsData,
+          tildo_widget_id: extractTidioWidgetId(apiSettingsData.tildo_widget_id || '')
+        } : {
           tildo_enabled: false,
           tildo_widget_id: '',
           google_analytics_enabled: false,
@@ -1107,6 +1134,13 @@ export default function AdminDashboard() {
     e.preventDefault();
     if (!token) return;
 
+    const cleanedWidgetId = extractTidioWidgetId(apiSettings.tildo_widget_id);
+    const cleanedSettings = {
+      ...apiSettings,
+      tildo_widget_id: cleanedWidgetId
+    };
+    setApiSettings(cleanedSettings);
+
     try {
       const res = await fetch('/api/api-settings', {
         method: 'POST',
@@ -1114,7 +1148,7 @@ export default function AdminDashboard() {
           'Content-Type': 'application/json',
           'Authorization': token
         },
-        body: JSON.stringify(apiSettings)
+        body: JSON.stringify(cleanedSettings)
       });
 
       if (res.ok) {
@@ -1879,7 +1913,7 @@ export default function AdminDashboard() {
                               <a href={`/admin/editor/case/${c.id}`} style={{ textDecoration: 'none' }}>
                                 <hd-button 
                                   data-color="var(--accent)"
-                                  data-width="90px"
+                                  data-width="120px"
                                   data-height="30px"
                                   data-font-size="0.7rem"
                                 >
@@ -1889,7 +1923,7 @@ export default function AdminDashboard() {
                               <hd-button 
                                 onClick={() => openCaseDrawer(c, 'case_preview')}
                                 data-color="#2196f3" 
-                                data-width="95px" 
+                                data-width="110px" 
                                 data-height="30px"
                                 data-font-size="0.7rem"
                               >
@@ -1898,7 +1932,7 @@ export default function AdminDashboard() {
                               <hd-button 
                                 onClick={() => openCaseDrawer(c, 'case_edit')}
                                 data-color="#FFBB28" 
-                                data-width="100px" 
+                                data-width="130px" 
                                 data-height="30px"
                                 data-font-size="0.7rem"
                               >
@@ -1907,7 +1941,7 @@ export default function AdminDashboard() {
                               <hd-button 
                                 onClick={() => handleDeleteCase(c.id)}
                                 data-color="#ff6b6b" 
-                                data-width="65px" 
+                                data-width="90px" 
                                 data-height="30px"
                                 data-font-size="0.7rem"
                               >
@@ -2157,7 +2191,7 @@ export default function AdminDashboard() {
                               <a href={`/admin/editor/font/${f.id}`} style={{ textDecoration: 'none' }}>
                                 <hd-button 
                                   data-color="var(--accent)"
-                                  data-width="90px"
+                                  data-width="120px"
                                   data-height="30px"
                                   data-font-size="0.7rem"
                                 >
@@ -2167,7 +2201,7 @@ export default function AdminDashboard() {
                               <hd-button 
                                 onClick={() => openFontDrawer(f, 'font_preview')}
                                 data-color="#2196f3" 
-                                data-width="95px" 
+                                data-width="110px" 
                                 data-height="30px"
                                 data-font-size="0.7rem"
                               >
@@ -2176,7 +2210,7 @@ export default function AdminDashboard() {
                               <hd-button 
                                 onClick={() => openFontDrawer(f, 'font_edit')}
                                 data-color="#FFBB28" 
-                                data-width="100px" 
+                                data-width="130px" 
                                 data-height="30px"
                                 data-font-size="0.7rem"
                               >
@@ -2185,7 +2219,7 @@ export default function AdminDashboard() {
                               <hd-button 
                                 onClick={() => handleDeleteFont(f.id)}
                                 data-color="#ff6b6b" 
-                                data-width="65px" 
+                                data-width="90px" 
                                 data-height="30px"
                                 data-font-size="0.7rem"
                               >
