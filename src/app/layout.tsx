@@ -72,7 +72,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <link rel="stylesheet" href="https://api.hakobian.am/libs/v1/icons/style.css" />
         
         {/* Preload main font and default icon font to prevent flashing/layout shifts */}
-        <link rel="preload" href="https://api.hakobian.am/libs/v1/fonts/hdesign.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
+        <link rel="preload" href="/HDesign.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
         <link rel="preload" href="https://api.hakobian.am/libs/v1/icons/varFonts/HDesign-Regular.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         
         {/* Google Analytics Script */}
