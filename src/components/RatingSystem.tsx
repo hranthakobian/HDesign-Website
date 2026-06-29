@@ -171,7 +171,7 @@ export default function RatingSystem({ id, locale }: RatingSystemProps) {
         borderRadius: 16,
         maxWidth: 340,
         boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-        fontFamily: "HDesignText, sans-serif",
+        fontFamily: "HDesign, sans-serif",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>

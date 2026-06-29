@@ -1,6 +1,6 @@
 @font-face {
-  font-family: 'HDesignText';
-  src: url('/HDesign.ttf') format('truetype');
+  font-family: 'HDesign';
+  src: url('https://api.hakobian.am/libs/v1/fonts/hdesign.ttf') format('truetype');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -216,12 +216,12 @@ body {
 
 p {
   font-size: 22pt;
-  line-height: 1;
+  line-height: 1.2;
 }
 
 body, h1, h2, h3, h4, h5, h6, p, a, span, li, label, input, button, select, textarea,
 hd-input, hd-textarea, hd-button, hd-select {
-  font-family: 'HDesignText', sans-serif !important;
+  font-family: 'HDesign', sans-serif !important;
   text-rendering: optimizeLegibility;
   font-kerning: normal;
 }
@@ -337,7 +337,7 @@ body {
 .poster-text {
   margin: 0;
   text-align: center;
-  font-family: 'HDesignText', sans-serif;
+  font-family: 'HDesign', sans-serif;
   font-weight: 300;
 }
 

@@ -62,7 +62,7 @@ const containerStyle: React.CSSProperties = {
   minHeight: '100vh',
   background: 'var(--bg)',
   color: 'var(--text)',
-  fontFamily: 'HDesignText, sans-serif',
+  fontFamily: 'HDesign, sans-serif',
   padding: '40px',
   boxSizing: 'border-box',
 };
