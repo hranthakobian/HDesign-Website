@@ -81,6 +81,10 @@ p, h1, h2, h3, h4, h5, h6, li, label, figcaption, blockquote {
   --lang-inactive-color: rgba(8, 63, 57, 0.75);
   --nav-link-color: rgba(8, 63, 57, 0.8);
   --nav-link-hover-color: #083f39;
+
+  /* Font spacing adjustments for custom HDesign font */
+  --font-letter-spacing: -0.02em;
+  --font-word-spacing: -0.06em;
 }
 
 html[data-theme="green"] {
@@ -217,6 +221,8 @@ body {
 body, h1, h2, h3, h4, h5, h6, p, a, span, li, label, input, button, select, textarea,
 hd-input, hd-textarea, hd-button, hd-select {
   font-family: 'HDesign', sans-serif !important;
+  letter-spacing: var(--font-letter-spacing, normal);
+  word-spacing: var(--font-word-spacing, normal);
 }
 
 body {
