@@ -116,8 +116,8 @@ export default function FontDetailPage() {
 
   const cssRules = useMemo(() => {
     if (!font) return "";
-    return `font-family: '${font.name_en}', sans-serif;\nfont-size: ${fontSize}px;\nletter-spacing: ${letterSpacing}px;\nline-height: ${lineHeight};\nfont-variation-settings: 'wght' ${wght}, 'slnt' ${slnt}, 'wdth' ${wdth}, 'ital' ${ital};\nfont-variant-ligatures: ${ligatures ? "common-ligatures" : "none"};\nfont-kerning: ${kerning ? "normal" : "none"};\nfont-variant-caps: ${smallCaps ? "small-caps" : "normal"};\nfont-variant-numeric: ${oldstyleNums ? "oldstyle-nums" : "normal"};`;
-  }, [font, fontSize, letterSpacing, lineHeight, wght, slnt, wdth, ital, ligatures, kerning, smallCaps, oldstyleNums]);
+    return `font-family: '${font.name_en}', sans-serif;\nfont-size: ${fontSize}px;\nline-height: ${lineHeight};\nfont-variation-settings: 'wght' ${wght}, 'slnt' ${slnt}, 'wdth' ${wdth}, 'ital' ${ital};\nfont-variant-ligatures: ${ligatures ? "common-ligatures" : "none"};\nfont-kerning: ${kerning ? "normal" : "none"};\nfont-variant-caps: ${smallCaps ? "small-caps" : "normal"};\nfont-variant-numeric: ${oldstyleNums ? "oldstyle-nums" : "normal"};`;
+  }, [font, fontSize, lineHeight, wght, slnt, wdth, ital, ligatures, kerning, smallCaps, oldstyleNums]);
 
 
   // Loading indicator
