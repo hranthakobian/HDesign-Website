@@ -1377,7 +1377,7 @@ export default function AdminDashboard() {
   // Loading indicator for login verify
   if (loadingAuth) {
     return (
-      <div style={{ background: '#083f39', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: 'HDesign, sans-serif' }}>
+      <div style={{ background: '#083f39', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: 'HDesignText, sans-serif' }}>
         <h3>Ստուգվում է լիազորումը...</h3>
       </div>
     );
@@ -1392,7 +1392,7 @@ export default function AdminDashboard() {
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'center',
-        fontFamily: 'HDesign, sans-serif',
+        fontFamily: 'HDesignText, sans-serif',
         padding: '20px'
       }}>
         <div style={{
@@ -1457,7 +1457,7 @@ export default function AdminDashboard() {
       background: 'var(--bg)', 
       color: 'var(--text)', 
       minHeight: '100vh',
-      fontFamily: 'HDesign, sans-serif',
+      fontFamily: 'HDesignText, sans-serif',
       paddingBottom: '120px'
     }}>
       <style>{`

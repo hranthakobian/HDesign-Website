@@ -71,7 +71,7 @@ export default function UpcomingCheck({ initialUpcomingMode, initialSettings, ch
         zIndex: 99999,
         background: '#ffffff',
         color: '#1a1a1a',
-        fontFamily: 'HDesign, sans-serif',
+        fontFamily: 'HDesignText, sans-serif',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -208,6 +208,7 @@ export default function UpcomingCheck({ initialUpcomingMode, initialSettings, ch
 
           <div>
             <h1 style={{
+              fontFamily: 'HDesignText, sans-serif',
               fontSize: '2.4rem',
               fontWeight: 800,
               margin: '0 0 14px',
@@ -219,6 +220,7 @@ export default function UpcomingCheck({ initialUpcomingMode, initialSettings, ch
               {locale === 'hy' ? upcomingTitleHy : upcomingTitleEn}
             </h1>
             <p style={{
+              fontFamily: 'HDesignText, sans-serif',
               fontSize: '0.96rem',
               lineHeight: '1.6',
               color: '#4a4a4a',
@@ -238,6 +240,7 @@ export default function UpcomingCheck({ initialUpcomingMode, initialSettings, ch
 
           {/* Social and contacts info */}
           <div style={{
+            fontFamily: 'HDesignText, sans-serif',
             display: 'flex',
             flexDirection: 'column',
             gap: '8px',
