@@ -71,16 +71,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <link rel="stylesheet" href="https://api.hakobian.am/libs/v1/style.css" />
         <link rel="stylesheet" href="https://api.hakobian.am/libs/v1/icons/style.css" />
         
-        {/* Preload main variable font */}
-        <link 
-          rel="preload" 
-          href="https://api.hakobian.am/libs/v1/fonts/hdesign.ttf" 
-          as="font" 
-          type="font/ttf" 
-          crossOrigin="anonymous" 
-        />
-        
-        {/* Preload all 9 weights of the icons font */}
+        {/* Preload main font and icon font weights to prevent flashing/layout shifts and render slider weights instantly */}
+        <link rel="preload" href="https://api.hakobian.am/libs/v1/fonts/hdesign.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
         <link rel="preload" href="https://api.hakobian.am/libs/v1/icons/varFonts/HDesign-Thin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preload" href="https://api.hakobian.am/libs/v1/icons/varFonts/HDesign-ExtraLight.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preload" href="https://api.hakobian.am/libs/v1/icons/varFonts/HDesign-Light.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
