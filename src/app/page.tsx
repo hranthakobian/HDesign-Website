@@ -506,6 +506,19 @@ export default function Home() {
 
   return (
     <>
+      {/* Invisible elements using the icon font at all weights to force immediate background download by the browser */}
+      <div style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0, overflow: 'hidden' }} aria-hidden="true">
+        <span className="icon-Mail" style={{ fontWeight: 100 }} />
+        <span className="icon-Mail" style={{ fontWeight: 200 }} />
+        <span className="icon-Mail" style={{ fontWeight: 300 }} />
+        <span className="icon-Mail" style={{ fontWeight: 400 }} />
+        <span className="icon-Mail" style={{ fontWeight: 500 }} />
+        <span className="icon-Mail" style={{ fontWeight: 600 }} />
+        <span className="icon-Mail" style={{ fontWeight: 700 }} />
+        <span className="icon-Mail" style={{ fontWeight: 800 }} />
+        <span className="icon-Mail" style={{ fontWeight: 900 }} />
+      </div>
+
       <main style={{ position: "relative", zIndex: 0, overflow: "hidden" }}>
       
 
