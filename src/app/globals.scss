@@ -1,6 +1,6 @@
 @font-face {
   font-family: 'HDesign';
-  src: url('https://api.hakobian.am/libs/v1/fonts/hdesign.ttf') format('truetype');
+  src: url('https://api.hakobian.am/libs/v1/hdesign.ttf') format('truetype');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -267,7 +267,6 @@ body {
 
 .poster-title {
   font-size: 0.95rem;
-  : 0.04em;
   color: rgba(255, 255, 255, 0.2);
   font-weight: 700;
 }
@@ -307,7 +306,6 @@ body {
   writing-mode: vertical-rl;
   text-orientation: mixed;
   color: rgba(255, 255, 255, 0.14);
-  : 0.25em;
   font-size: 0.9rem;
   font-weight: 700;
 }
@@ -334,7 +332,6 @@ body {
   text-align: center;
   font-family: 'HDesign', sans-serif;
   font-weight: 300;
-  : 0.01em;
 }
 
 .poster-text-top {
@@ -393,7 +390,6 @@ body {
   text-align: center;
   color: rgba(255, 255, 255, 0.12);
   font-size: 0.78rem;
-  : 0.06em;
 }
 
 .controls {
@@ -603,7 +599,6 @@ body {
     transition: color 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s ease;
     width: 50%;
     text-align: center;
-    : 0.5px;
     color: var(--lang-inactive-color);
 
     &.active {
@@ -1208,7 +1203,6 @@ html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header::b
     z-index: 2;
     font-weight: bold;
     font-size: 1.1rem;
-    : 0.5px;
     text-shadow: 0 2px 4px rgba(0,0,0,0.25);
   }
 
@@ -1823,7 +1817,6 @@ html[data-theme="green"] .mobile-menu-drawer {
     font-size: 0.8rem;
     font-weight: 700;
     text-transform: uppercase;
-    : 2px;
     color: var(--muted);
     margin-bottom: 6px;
   }
@@ -2161,7 +2154,6 @@ html.preloader-active body {
     color: var(--text, #1a1a1a);
     opacity: 0.8;
     text-transform: uppercase;
-    : 0.05em;
   }
   
   .slider-value {
