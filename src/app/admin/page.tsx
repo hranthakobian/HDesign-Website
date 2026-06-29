@@ -1601,7 +1601,7 @@ export default function AdminDashboard() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <img src="/logo.png" alt="Logo" style={{ height: '36px', borderRadius: '6px' }} />
           <div>
-            <h1 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, letterSpacing: '0.5px' }}>HDesign Ադմին</h1>
+            <h1 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0 }}>HDesign Ադմին</h1>
             <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>Կառավարման Համակարգ</span>
           </div>
         </div>

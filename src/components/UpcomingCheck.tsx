@@ -210,7 +210,6 @@ export default function UpcomingCheck({ initialUpcomingMode, initialSettings, ch
             <h1 style={{
               fontSize: '2.4rem',
               fontWeight: 800,
-              letterSpacing: '-0.02em',
               margin: '0 0 14px',
               color: '#083f39',
               background: 'linear-gradient(135deg, #083f39 0%, #156257 100%)',

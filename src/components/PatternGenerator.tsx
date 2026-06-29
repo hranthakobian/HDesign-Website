@@ -418,7 +418,7 @@ export default function PatternGenerator() {
         {/* ══ LEFT: PRESETS ══ */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'sticky', top: 100 }}>
           <div style={{ background: 'var(--panel)', borderRadius: 16, border: '1px solid var(--panel-border)', padding: 16, minHeight: 'fit-content', display: 'flex', flexDirection: 'column' }}>
-            <h3 style={{ margin: '0 0 12px', fontSize: '0.9rem', color: 'var(--primary-color)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            <h3 style={{ margin: '0 0 12px', fontSize: '0.9rem', color: 'var(--primary-color)', textTransform: 'uppercase' }}>
               Պրեսեթներ
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>

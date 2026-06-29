@@ -345,7 +345,7 @@ export default function FontWysiwygEditor() {
             
             {/* Header info */}
             <div>
-              <span style={{ fontSize: '0.8rem', color: 'var(--accent)', letterSpacing: '2px', textTransform: 'uppercase', fontWeight: 800 }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--accent)', textTransform: 'uppercase', fontWeight: 800 }}>
                 {fontForm.category} • {fontForm.creator}
               </span>
               <h1 style={{ fontSize: '3rem', fontWeight: 900, color: 'var(--text)', margin: '12px 0 0 0' }}>

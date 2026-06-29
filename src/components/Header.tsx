@@ -332,7 +332,7 @@ export default function Header() {
       }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: 'var(--text)' }}>
           <LogoLegacy />
-          <span style={{ fontSize: '1.2rem', fontWeight: 'bold', letterSpacing: '0.5px' }}>HDesign</span>
+          <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>HDesign</span>
         </Link>
 
         {/* Smooth Language Switcher Toggle */}
