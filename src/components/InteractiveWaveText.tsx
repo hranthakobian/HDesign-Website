@@ -76,10 +76,10 @@ export default function InteractiveWaveText({ lines, className, style }: Interac
     // Animation constants
     const minWeight = 200; // narrowed range to reduce horizontal shift jitter
     const maxWeight = 800; // narrowed range to reduce horizontal shift jitter
-    const speed = 1.5; // continuous wave speed (a balanced, natural tempo)
+    const speed = 3; // continuous wave speed (a balanced, natural tempo)
     const waveSpacing = 0.15; // delay spacing between letters (closer spacing for smoother wave)
     const radius = 220; // mouse influence radius (in pixels)
-    const lerpFactor = 0.05; // smoothness factor
+    const lerpFactor = 0.1; // smoothness factor
 
     let animationFrameId: number;
 
