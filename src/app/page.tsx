@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 import { getPastelColor, getCasePastelColor } from "@/lib/brandingData";
+import InteractiveWaveText from "@/components/InteractiveWaveText";
 import selectionJson from "../../icons/selection.json";
 
 // Custom icons list for the explorer section
@@ -536,17 +537,9 @@ export default function Home() {
           width: "100%",
           boxSizing: "border-box"
         }}>
-          <h1 style={{ 
-            fontSize: "clamp(3.5rem, 8.5vw, 6rem)", 
-            fontWeight: "900", 
-            color: "var(--text)", 
-            margin: "0 0 40px 0", 
-            letterSpacing: "-2px",
-            lineHeight: "1.05",
-            textAlign: "left"
-          }}>
-            ՍՏԵՂԾԱ<br />ԵՒ ԳՈՐԾՆԱԿԱՆ
-          </h1>
+          <InteractiveWaveText 
+            lines={["ՍՏԵՂԾԱ", "ԵՒ ԳՈՐԾՆԱԿԱՆ"]}
+          />
           <div style={{ 
             display: "flex", 
             flexDirection: "column", 
