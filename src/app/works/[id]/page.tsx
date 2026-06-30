@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { brandingCases as staticCases } from "@/lib/brandingData";
 import RatingSystem from "@/components/RatingSystem";
+import LoadingAnimation from "@/components/LoadingAnimation";
 
 type Case = {
   id: string;
@@ -150,7 +151,7 @@ export default function BrandingDetailPage() {
   if (loading) {
     return (
       <main className="shell" style={{ marginTop: "160px", minHeight: "75vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ color: "var(--muted)", fontSize: "1.2rem" }}>Բեռնվում է...</span>
+        <LoadingAnimation fullPage={false} message={lang === "en" ? "Loading details..." : "Բեռնվում է..."} />
       </main>
     );
   }

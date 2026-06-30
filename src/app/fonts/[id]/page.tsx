@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
 import RatingSystem from "@/components/RatingSystem";
+import LoadingAnimation from "@/components/LoadingAnimation";
 
 type Font = {
   id: string;
@@ -124,9 +125,7 @@ export default function FontDetailPage() {
   if (loading) {
     return (
       <main className="shell" style={{ marginTop: "160px", minHeight: "75vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ color: "var(--muted)", fontSize: "1.2rem" }}>
-          {locale === "hy" ? "Տվյալները բեռնվում են..." : "Loading playground details..."}
-        </span>
+        <LoadingAnimation fullPage={false} message={locale === "hy" ? "Տվյալները բեռնվում են..." : "Loading playground details..."} />
       </main>
     );
   }

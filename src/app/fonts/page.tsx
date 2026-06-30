@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
+import LoadingAnimation from "@/components/LoadingAnimation";
 
 type Font = {
   id: string;
@@ -319,8 +320,8 @@ export default function FontsListingPage() {
 
       {/* Loading state */}
       {loading && (
-        <div style={{ textAlign: "center", padding: "60px 0", color: "var(--muted)" }}>
-          <span style={{ fontSize: "1.1rem" }}>{locale === "hy" ? "Տառատեսակները բեռնվում են..." : "Loading fonts..."}</span>
+        <div style={{ display: "flex", justifyContent: "center", padding: "60px 0" }}>
+          <LoadingAnimation fullPage={false} message={locale === "hy" ? "Տառատեսակները բեռնվում են..." : "Loading fonts..."} />
         </div>
       )}
 

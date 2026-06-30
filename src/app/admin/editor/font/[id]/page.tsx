@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import LoadingAnimation from "@/components/LoadingAnimation";
 
 type FontBlock = 
   | { type: 'text'; title_am: string; title_en: string; content_am: string; content_en: string }
@@ -279,9 +280,7 @@ export default function FontWysiwygEditor() {
 
   if (loading) {
     return (
-      <div style={{ background: '#0a0a0c', color: '#fff', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'HDesign, sans-serif' }}>
-        <h3>Բեռնվում է WYSIWYG խմբագրիչը...</h3>
-      </div>
+      <LoadingAnimation message="Բեռնվում է WYSIWYG խմբագրիչը..." />
     );
   }
 

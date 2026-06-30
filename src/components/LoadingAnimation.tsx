@@ -5,9 +5,10 @@ import animationData from '@/assets/loading-animation.json';
 
 interface LoadingAnimationProps {
   message?: string;
+  fullPage?: boolean;
 }
 
-export default function LoadingAnimation({ message }: LoadingAnimationProps) {
+export default function LoadingAnimation({ message, fullPage = true }: LoadingAnimationProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<any>(null);
 
@@ -43,10 +44,23 @@ export default function LoadingAnimation({ message }: LoadingAnimationProps) {
     };
   }, []);
 
+  const mergedContainerStyle: React.CSSProperties = {
+    ...containerStyle,
+    minHeight: fullPage ? '100vh' : 'auto',
+    background: fullPage ? 'var(--bg)' : 'transparent',
+    padding: fullPage ? '40px' : '0',
+  };
+
+  const mergedLottieStyle: React.CSSProperties = {
+    ...lottieContainerStyle,
+    width: fullPage ? '180px' : '100px',
+    height: fullPage ? '180px' : '100px',
+  };
+
   return (
-    <div style={containerStyle}>
+    <div style={mergedContainerStyle}>
       <div style={contentStyle}>
-        <div ref={containerRef} style={lottieContainerStyle} />
+        <div ref={containerRef} style={mergedLottieStyle} />
         {message && <p style={messageStyle}>{message}</p>}
       </div>
     </div>
@@ -59,11 +73,8 @@ const containerStyle: React.CSSProperties = {
   justifyContent: 'center',
   alignItems: 'center',
   width: '100%',
-  minHeight: '100vh',
-  background: 'var(--bg)',
   color: 'var(--text)',
   fontFamily: 'HDesign, sans-serif',
-  padding: '40px',
   boxSizing: 'border-box',
 };
 

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { brandingCases as staticCases, getPastelColor, getCasePastelColor } from "@/lib/brandingData";
 import { useI18n } from "@/lib/i18n";
+import LoadingAnimation from "@/components/LoadingAnimation";
 
 type Case = {
   id: string;
@@ -230,8 +231,8 @@ function WorksContent() {
       </div>
 
       {loading && (
-        <div style={{ textAlign: "center", padding: "60px 0", color: "var(--muted)" }}>
-          <span>Բեռնվում է...</span>
+        <div style={{ display: "flex", justifyContent: "center", padding: "60px 0" }}>
+          <LoadingAnimation fullPage={false} message={locale === "en" ? "Loading works..." : "Բեռնվում է..."} />
         </div>
       )}
 
@@ -711,8 +712,8 @@ function WorksContent() {
 export default function WorksPage() {
   return (
     <Suspense fallback={
-      <main className="shell" style={{ marginTop: "140px", minHeight: "80vh", textAlign: "center" }}>
-        <div style={{ color: "var(--muted)", paddingTop: "60px" }}>Բեռնվում է...</div>
+      <main className="shell" style={{ marginTop: "140px", minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <LoadingAnimation fullPage={false} />
       </main>
     }>
       <WorksContent />

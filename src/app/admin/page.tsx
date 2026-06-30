@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { hyTranslations, enTranslations } from '@/lib/i18n';
+import LoadingAnimation from '@/components/LoadingAnimation';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, BarChart, Bar 
@@ -1645,8 +1646,8 @@ export default function AdminDashboard() {
       {/* Main Content Area */}
       <div className="admin-main-container" style={{ maxWidth: '1400px', margin: '40px auto 0', padding: '0 40px' }}>
         {loadingData ? (
-          <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--muted)' }}>
-            <h3>Բեռնվում է...</h3>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+            <LoadingAnimation fullPage={false} message="Բեռնվում է..." />
           </div>
         ) : dataError ? (
           <div style={{ padding: '24px', background: 'rgba(255, 107, 107, 0.05)', border: '1px solid rgba(255, 107, 107, 0.1)', color: '#ff6b6b', borderRadius: '16px' }}>
