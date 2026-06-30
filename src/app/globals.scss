@@ -69,7 +69,7 @@ p, h1, h2, h3, h4, h5, h6, li, label, figcaption, blockquote {
   --btn-hover-bg: rgba(8, 63, 57, 0.08);
   --nav-bg: rgba(255, 255, 255, 0.85);
   --logo-panel-bg: rgba(255, 255, 255, 0.85);
-  --dropdown-bg: rgba(255, 255, 255, 0.55);
+  --dropdown-bg: #ffffffd9;
 
   /* Switcher & Language Toggles */
   --switcher-bg: rgba(8, 63, 57, 0.06);
@@ -728,7 +728,7 @@ html[data-theme="green"] .hero-signature {
   width: 100%;
   z-index: 1000;
   padding: 0;
-  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67);
   display: flex;
   justify-content: center;
 }
@@ -745,7 +745,7 @@ html[data-theme="green"] .hero-signature {
   align-items: center;
   justify-content: space-between;
   padding: 0 48px;
-  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67);
 
   // Background and backdrop filter are placed here to prevent stacking context nesting issues with child dropdowns
   &::before {
@@ -758,7 +758,7 @@ html[data-theme="green"] .hero-signature {
     -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid rgba(8, 63, 57, 0.08);
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02);
-    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67);
     pointer-events: none;
   }
 }
@@ -787,6 +787,7 @@ html[data-theme="green"] .portfolio-header::before {
     &::before {
       border-radius: 32px;
       background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(20px);
       box-shadow: 0 10px 40px rgba(8, 63, 57, 0.08);
       border: 1px solid rgba(8, 63, 57, 0.05);
     }
@@ -1040,7 +1041,6 @@ html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header::b
     z-index: -1;
     background: var(--dropdown-bg);
     backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     border-radius: 0 0 30px 30px;
     pointer-events: none;
     transform: translate3d(0, 0, 0);
@@ -1051,49 +1051,33 @@ html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header::b
     }
   }
 
-  /* Left fillet (concave corner using the custom SVG) */
+  /* Left fillet (concave corner using clip-path) */
   &::before {
     content: '';
     position: absolute;
-    top: -1px; /* Overlaps bottom header border */
+    top: -0.5px; /* Overlaps bottom header border */
     left: -46px;
     width: 46px;
     height: 46px;
-    background-size: contain;
-    background-repeat: no-repeat;
     pointer-events: none;
-    /* Light Theme (default) - Semi-transparent fill matching light dropdown background */
-    background-image: url("data:image/svg+xml;utf8,<svg width='46' height='46' viewBox='0 0 46 46' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M0 0C24.7587 1.12855 44.7441 20.95 45.877 45.7085V0L0 0Z' fill='rgba(255,255,255,0.55)'/></svg>");
+    background: var(--dropdown-bg);
+    backdrop-filter: blur(20px);
+    clip-path: polygon(0% 0%, 5.3% 0.4%, 10.6% 1%, 15.8% 1.9%, 20.9% 3.1%, 25.9% 4.5%, 30.8% 6.1%, 35.6% 8%, 40.3% 10.1%, 44.8% 12.4%, 49.2% 14.9%, 53.5% 17.6%, 57.6% 20.5%, 61.6% 23.6%, 65.5% 26.9%, 69.1% 30.4%, 72.6% 34.1%, 75.9% 37.9%, 79.1% 41.8%, 82% 46%, 84.7% 50.2%, 87.3% 54.6%, 89.6% 59.2%, 91.7% 63.8%, 93.6% 68.6%, 95.2% 73.5%, 96.6% 78.5%, 97.8% 83.6%, 98.7% 88.8%, 99.4% 94%, 99.7% 99.4%, 99.7% 0%);
   }
 
-  /* Right fillet (concave corner using the custom SVG, mirrored) */
+  /* Right fillet (concave corner using clip-path, mirrored) */
   &::after {
     content: '';
     position: absolute;
-    top: -1px; /* Overlaps bottom header border */
+    top: -0.5px; /* Overlaps bottom header border */
     right: -46px;
     width: 46px;
     height: 46px;
-    background-size: contain;
-    background-repeat: no-repeat;
     pointer-events: none;
     transform: scaleX(-1);
-    /* Light Theme (default) - Semi-transparent fill matching light dropdown background */
-    background-image: url("data:image/svg+xml;utf8,<svg width='46' height='46' viewBox='0 0 46 46' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M0 0C24.7587 1.12855 44.7441 20.95 45.877 45.7085V0L0 0Z' fill='rgba(255,255,255,0.55)'/></svg>");
-  }
-
-  /* Green Theme Overrides - Fill path only */
-  html[data-theme="green"] & {
-    &::before, &::after {
-      background-image: url("data:image/svg+xml;utf8,<svg width='46' height='46' viewBox='0 0 46 46' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M0 0C24.7587 1.12855 44.7441 20.95 45.877 45.7085V0L0 0Z' fill='rgba(11,74,65,0.55)'/></svg>");
-    }
-  }
-
-  /* Dark Theme Overrides - Fill path only */
-  html[data-theme="dark"] & {
-    &::before, &::after {
-      background-image: url("data:image/svg+xml;utf8,<svg width='46' height='46' viewBox='0 0 46 46' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M0 0C24.7587 1.12855 44.7441 20.95 45.877 45.7085V0L0 0Z' fill='rgba(15,23,42,0.55)'/></svg>");
-    }
+    background: var(--dropdown-bg);
+    backdrop-filter: blur(20px);
+    clip-path: polygon(0% 0%, 5.3% 0.4%, 10.6% 1%, 15.8% 1.9%, 20.9% 3.1%, 25.9% 4.5%, 30.8% 6.1%, 35.6% 8%, 40.3% 10.1%, 44.8% 12.4%, 49.2% 14.9%, 53.5% 17.6%, 57.6% 20.5%, 61.6% 23.6%, 65.5% 26.9%, 69.1% 30.4%, 72.6% 34.1%, 75.9% 37.9%, 79.1% 41.8%, 82% 46%, 84.7% 50.2%, 87.3% 54.6%, 89.6% 59.2%, 91.7% 63.8%, 93.6% 68.6%, 95.2% 73.5%, 96.6% 78.5%, 97.8% 83.6%, 98.7% 88.8%, 99.4% 94%, 99.7% 99.4%, 99.7% 0%);
   }
 
   /* Responsive overrides when the header shrinks in scrolled state */
