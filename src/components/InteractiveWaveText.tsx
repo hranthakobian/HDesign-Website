@@ -153,7 +153,8 @@ export default function InteractiveWaveText({ lines, className, style }: Interac
           key={wordIdx}
           style={{ 
             display: "inline-block", 
-            whiteSpace: "nowrap"
+            whiteSpace: "nowrap",
+            lineHeight: "0"
           }}
         >
           {chars.map((char) => {
@@ -176,7 +177,8 @@ export default function InteractiveWaveText({ lines, className, style }: Interac
                   display: "inline-block",
                   fontFamily: "HDesign",
                   transition: "color 0.3s ease",
-                  userSelect: "none"
+                  userSelect: "none",
+                  lineHeight: "0"
                 }}
               >
                 {char}
@@ -187,7 +189,8 @@ export default function InteractiveWaveText({ lines, className, style }: Interac
           {wordIdx < words.length - 1 && (
             <span style={{ 
               display: "inline-block", 
-              userSelect: "none"
+              userSelect: "none",
+              lineHeight: "0"
             }}>
               &nbsp;
             </span>

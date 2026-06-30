@@ -767,8 +767,8 @@ export default function Home() {
 
         {/* ══ SECTION 2: BRANDING CASES (Բրենդինգի Քեյսեր) ══ */}
         <section>
-          <h2 style={{ fontSize: "1.4rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "24px", paddingLeft: "20px", color: "var(--text)" }}>
-            Բրենդինգներ
+          <h2 style={{ fontSize: "32pt", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "-20px", paddingLeft: "20px", color: "var(--text)" }}>
+            {locale === "en" ? "Branding" : "Բրենդինգ"}
           </h2>
           <div className="marquee-container">
             <div className="marquee-track">

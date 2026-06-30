@@ -6,6 +6,67 @@ import { useI18n } from "@/lib/i18n";
 import { useEffect, useState } from "react";
 import { saveSettingsToSupabase } from "@/lib/settingsSync";
 
+function hexToRgb(hex: string) {
+  const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+  const fullHex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : null;
+}
+
+function applyCustomThemeColor(hexColor: string) {
+  if (typeof window === 'undefined') return;
+  const rgb = hexToRgb(hexColor);
+  if (!rgb) return;
+  const { r, g, b } = rgb;
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  const isLight = luminance > 0.5;
+
+  const root = document.documentElement;
+  root.style.setProperty('--custom-bg', hexColor);
+  
+  if (isLight) {
+    root.style.setProperty('--custom-text', '#083f39');
+    root.style.setProperty('--custom-muted', 'rgba(8, 63, 57, 0.6)');
+    root.style.setProperty('--custom-panel', 'rgba(255, 255, 255, 0.7)');
+    root.style.setProperty('--custom-panel-border', 'rgba(8, 63, 57, 0.08)');
+    root.style.setProperty('--custom-primary', '#083f39');
+    root.style.setProperty('--custom-btn-bg', 'rgba(8, 63, 57, 0.04)');
+    root.style.setProperty('--custom-btn-hover-bg', 'rgba(8, 63, 57, 0.08)');
+    root.style.setProperty('--custom-input-bg', 'rgba(8, 63, 57, 0.03)');
+    root.style.setProperty('--custom-input-border', 'rgba(8, 63, 57, 0.12)');
+    root.style.setProperty('--custom-switcher-bg', 'rgba(8, 63, 57, 0.06)');
+    root.style.setProperty('--custom-switcher-border', 'rgba(8, 63, 57, 0.15)');
+    root.style.setProperty('--custom-switcher-capsule-bg', '#083f39');
+    root.style.setProperty('--custom-switcher-text-active', '#ffffff');
+    root.style.setProperty('--custom-switcher-text-inactive', 'rgba(8, 63, 57, 0.8)');
+    root.style.setProperty('--custom-lang-active', '#ffffff');
+    root.style.setProperty('--custom-lang-inactive', 'rgba(8, 63, 57, 0.75)');
+    root.style.setProperty('--custom-nav-bg', 'rgba(255, 255, 255, 0.85)');
+  } else {
+    root.style.setProperty('--custom-text', '#ffffff');
+    root.style.setProperty('--custom-muted', 'rgba(255, 255, 255, 0.45)');
+    root.style.setProperty('--custom-panel', 'rgba(255, 255, 255, 0.05)');
+    root.style.setProperty('--custom-panel-border', 'rgba(255, 255, 255, 0.05)');
+    root.style.setProperty('--custom-primary', '#ffffff');
+    root.style.setProperty('--custom-btn-bg', 'rgba(255, 255, 255, 0.05)');
+    root.style.setProperty('--custom-btn-hover-bg', 'rgba(255, 255, 255, 0.1)');
+    root.style.setProperty('--custom-input-bg', 'rgba(255, 255, 255, 0.04)');
+    root.style.setProperty('--custom-input-border', 'rgba(255, 255, 255, 0.08)');
+    root.style.setProperty('--custom-switcher-bg', 'rgba(0, 0, 0, 0.25)');
+    root.style.setProperty('--custom-switcher-border', 'rgba(255, 255, 255, 0.08)');
+    root.style.setProperty('--custom-switcher-capsule-bg', 'rgba(255, 255, 255, 0.15)');
+    root.style.setProperty('--custom-switcher-text-active', '#ffffff');
+    root.style.setProperty('--custom-switcher-text-inactive', 'rgba(255, 255, 255, 0.5)');
+    root.style.setProperty('--custom-lang-active', '#0f172a');
+    root.style.setProperty('--custom-lang-inactive', 'rgba(255, 255, 255, 0.55)');
+    root.style.setProperty('--custom-nav-bg', 'rgba(255, 255, 255, 0.1)');
+  }
+}
+
 const LogoLegacy = () => (
   <img 
     src="/logo.png" 
@@ -17,7 +78,8 @@ const LogoLegacy = () => (
 export default function Header() {
   const { locale, setLocale, t } = useI18n();
   const pathname = usePathname();
-  const [theme, setTheme] = useState<'light' | 'dark' | 'green'>('light');
+  const [theme, setTheme] = useState<'light' | 'dark' | 'green' | 'custom'>('light');
+  const [customColor, setCustomColor] = useState<string>('#7c3aed');
 
   // Portfolio Page Header States
   const [isScrolled, setIsScrolled] = useState(false);
@@ -44,27 +106,38 @@ export default function Header() {
 
   // Track theme changes
   useEffect(() => {
-    const savedTheme = localStorage.getItem('hdesign-theme') as 'light' | 'dark' | 'green';
+    const savedTheme = localStorage.getItem('hdesign-theme') as 'light' | 'dark' | 'green' | 'custom';
+    const savedCustomColor = localStorage.getItem('hdesign-custom-color') || '#7c3aed';
+    setCustomColor(savedCustomColor);
+
     if (savedTheme) {
       setTheme(savedTheme);
       document.documentElement.setAttribute('data-theme', savedTheme);
-      document.documentElement.setAttribute('data-color', savedTheme === 'light' ? '#083f39' : '#ffffff');
-      document.documentElement.classList.remove('light', 'dark', 'green');
-      document.documentElement.classList.add(savedTheme);
+      if (savedTheme === 'custom') {
+        applyCustomThemeColor(savedCustomColor);
+      } else {
+        document.documentElement.setAttribute('data-color', savedTheme === 'light' ? '#083f39' : '#ffffff');
+        document.documentElement.classList.remove('light', 'dark', 'green', 'custom');
+        document.documentElement.classList.add(savedTheme);
+      }
     } else {
       setTheme('light');
       document.documentElement.setAttribute('data-theme', 'light');
       document.documentElement.setAttribute('data-color', '#083f39');
-      document.documentElement.classList.remove('light', 'dark', 'green');
+      document.documentElement.classList.remove('light', 'dark', 'green', 'custom');
       document.documentElement.classList.add('light');
     }
 
     const handleThemeChange = () => {
-      const currentTheme = localStorage.getItem('hdesign-theme') as 'light' | 'dark' | 'green';
+      const currentTheme = localStorage.getItem('hdesign-theme') as 'light' | 'dark' | 'green' | 'custom';
       if (currentTheme) {
         setTheme(currentTheme);
-        document.documentElement.classList.remove('light', 'dark', 'green');
+        document.documentElement.classList.remove('light', 'dark', 'green', 'custom');
         document.documentElement.classList.add(currentTheme);
+        if (currentTheme === 'custom') {
+          const col = localStorage.getItem('hdesign-custom-color') || '#7c3aed';
+          applyCustomThemeColor(col);
+        }
       }
     };
 
@@ -88,18 +161,51 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [pathname]);
 
-  const changeTheme = (newTheme: 'light' | 'dark' | 'green') => {
+  const changeTheme = (newTheme: 'light' | 'dark' | 'green' | 'custom') => {
     setTheme(newTheme);
     localStorage.setItem('hdesign-theme', newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
-    document.documentElement.setAttribute('data-color', newTheme === 'light' ? '#083f39' : '#ffffff');
-    document.documentElement.classList.remove('light', 'dark', 'green');
-    document.documentElement.classList.add(newTheme);
+    
+    if (newTheme === 'custom') {
+      applyCustomThemeColor(customColor);
+    } else {
+      document.documentElement.setAttribute('data-color', newTheme === 'light' ? '#083f39' : '#ffffff');
+      document.documentElement.classList.remove('light', 'dark', 'green', 'custom');
+      document.documentElement.classList.add(newTheme);
+      // clean style attributes for custom color
+      document.documentElement.style.removeProperty('--custom-bg');
+      document.documentElement.style.removeProperty('--custom-text');
+      document.documentElement.style.removeProperty('--custom-muted');
+      document.documentElement.style.removeProperty('--custom-panel');
+      document.documentElement.style.removeProperty('--custom-panel-border');
+      document.documentElement.style.removeProperty('--custom-primary');
+      document.documentElement.style.removeProperty('--custom-btn-bg');
+      document.documentElement.style.removeProperty('--custom-btn-hover-bg');
+      document.documentElement.style.removeProperty('--custom-input-bg');
+      document.documentElement.style.removeProperty('--custom-input-border');
+      document.documentElement.style.removeProperty('--custom-switcher-bg');
+      document.documentElement.style.removeProperty('--custom-switcher-border');
+      document.documentElement.style.removeProperty('--custom-switcher-capsule-bg');
+      document.documentElement.style.removeProperty('--custom-switcher-text-active');
+      document.documentElement.style.removeProperty('--custom-switcher-text-inactive');
+      document.documentElement.style.removeProperty('--custom-lang-active');
+      document.documentElement.style.removeProperty('--custom-lang-inactive');
+      document.documentElement.style.removeProperty('--custom-nav-bg');
+    }
 
     // Save settings to Supabase
     const currentLang = localStorage.getItem('hdesign_locale') || 'hy';
     saveSettingsToSupabase(newTheme, currentLang);
   };
+
+  const handleCustomColorChange = (newColor: string) => {
+    setCustomColor(newColor);
+    localStorage.setItem('hdesign-custom-color', newColor);
+    if (theme === 'custom') {
+      applyCustomThemeColor(newColor);
+    }
+  };
+
 
   // Helper function to render active navigation item styling
   const renderNavLinkText = (id: string, text: string, hasDropdown: boolean = false) => {
@@ -154,19 +260,20 @@ export default function Header() {
   if (isPortfolioPage) {
     return (
       <div className={`portfolio-header-wrapper ${isScrolled ? "scrolled" : ""} ${isMobileMenuOpen ? "menu-open" : ""}`}>
+        {/* Logo Section */}
+        <Link href="/" className="portfolio-logo-panel" onClick={() => setIsMobileMenuOpen(false)}>
+          <img 
+            src="/logo.png" 
+            alt="HDesign Logo" 
+            style={{ width: "38px", height: "38px", objectFit: "contain", borderRadius: "8px" }} 
+          />
+          <div className="logo-text">
+            <span style={{ fontWeight: 800, fontSize: "0.95rem", letterSpacing: "0.5px" }}>Հրանտ</span>
+            <span style={{ fontWeight: 500, fontSize: "0.85rem", opacity: 0.8 }}>Հակոբյան</span>
+          </div>
+        </Link>
+
         <header className="portfolio-header">
-          {/* Logo Section */}
-          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none", color: "var(--text)" }} onClick={() => setIsMobileMenuOpen(false)}>
-            <img 
-              src="/logo.png" 
-              alt="HDesign Logo" 
-              style={{ width: "38px", height: "38px", objectFit: "contain", borderRadius: "8px" }} 
-            />
-            <div style={{ display: "flex", flexDirection: "column", lineHeight: "1.1" }}>
-              <span style={{ fontWeight: 800, fontSize: "0.95rem", letterSpacing: "0.5px" }}>Հրանտ</span>
-              <span style={{ fontWeight: 500, fontSize: "0.85rem", opacity: 0.8 }}>Հակոբյան</span>
-            </div>
-          </Link>
 
           {/* Navigation Links */}
           <nav className="portfolio-nav">
@@ -232,6 +339,52 @@ export default function Header() {
           </div>
         </header>
 
+        {/* Desktop Controls (Language & Theme Switcher) */}
+        <div className="portfolio-header-controls">
+          <hd-segment
+            id="langSelectorDesktop"
+            value={locale}
+            onChange={(e: any) => setLocale(e.target.value)}
+            data-color="var(--primary-color)"
+            data-inactive-color="var(--lang-inactive-color)"
+            data-width="95px"
+            data-height="34px"
+            data-thickness="1px"
+          >
+            <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
+            <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
+          </hd-segment>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <hd-segment
+              id="themeSelectorDesktop"
+              value={theme}
+              onChange={(e: any) => changeTheme(e.target.value)}
+              data-color="var(--primary-color)"
+              data-inactive-color="var(--lang-inactive-color)"
+              data-width="240px"
+              data-height="34px"
+              data-thickness="1px"
+            >
+              <span value="light" {...(theme === 'light' ? { selected: true } : {})}>Բաց</span>
+              <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>Մութ</span>
+              <span value="green" {...(theme === 'green' ? { selected: true } : {})}>Կանաչ</span>
+              <span value="custom" {...(theme === 'custom' ? { selected: true } : {})}>Գույն</span>
+            </hd-segment>
+            
+            {theme === 'custom' && (
+              <div className="custom-color-picker-wrapper">
+                <hd-color-picker
+                  value={customColor}
+                  onChange={(e: any) => handleCustomColorChange(e.target.value)}
+                  data-width="34px"
+                  data-height="34px"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Mobile Menu Drawer Overlay */}
         <div className={`mobile-menu-drawer ${isMobileMenuOpen ? "open" : ""}`}>
           <nav className="mobile-nav-links">
@@ -267,35 +420,57 @@ export default function Header() {
             <div className="mobile-nav-divider" />
 
             {/* Mobile Settings Row (Language & Theme switchers) */}
-            <div className="mobile-settings-container">
+            <div className="mobile-settings-container" style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '20px', width: '100%' }}>
               <span className="mobile-nav-section-title">Կարգավորումներ</span>
               
-              <div className="mobile-settings-row">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
                 {/* Language Toggle */}
-                <hd-segment
-                  id="langSelectorMobile"
-                  value={locale}
-                  onChange={(e: any) => setLocale(e.target.value)}
-                  data-color="var(--primary-color)"
-                  data-inactive-color="var(--lang-inactive-color)"
-                  data-width="130px"
-                  data-height="36px"
-                  data-thickness="1px"
-                >
-                  <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
-                  <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
-                </hd-segment>
+                <div style={{ width: '100%' }}>
+                  <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block", marginBottom: "6px" }}>Լեզու</span>
+                  <hd-segment
+                    id="langSelectorMobile"
+                    value={locale}
+                    onChange={(e: any) => setLocale(e.target.value)}
+                    data-color="var(--primary-color)"
+                    data-inactive-color="var(--lang-inactive-color)"
+                    data-width="100%"
+                    data-height="36px"
+                    data-thickness="1px"
+                  >
+                    <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
+                    <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
+                  </hd-segment>
+                </div>
 
                 {/* Theme Switcher Toggle */}
-                <div className="mobile-theme-switcher">
-                  <div onClick={() => changeTheme('light')} className={`theme-btn ${theme === 'light' ? 'active' : ''}`}>
-                    Բաց
-                  </div>
-                  <div onClick={() => changeTheme('dark')} className={`theme-btn ${theme === 'dark' ? 'active' : ''}`}>
-                    Մութ
-                  </div>
-                  <div onClick={() => changeTheme('green')} className={`theme-btn ${theme === 'green' ? 'active' : ''}`}>
-                    Կանաչ
+                <div style={{ width: '100%' }}>
+                  <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block", marginBottom: "6px" }}>Թեմա</span>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
+                    <hd-segment
+                      id="themeSelectorMobile"
+                      value={theme}
+                      onChange={(e: any) => changeTheme(e.target.value)}
+                      data-color="var(--primary-color)"
+                      data-inactive-color="var(--lang-inactive-color)"
+                      data-width="100%"
+                      data-height="36px"
+                      data-thickness="1px"
+                      style={{ flex: 1 }}
+                    >
+                      <span value="light" {...(theme === 'light' ? { selected: true } : {})}>Բաց</span>
+                      <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>Մութ</span>
+                      <span value="green" {...(theme === 'green' ? { selected: true } : {})}>Կանաչ</span>
+                      <span value="custom" {...(theme === 'custom' ? { selected: true } : {})}>Գույն</span>
+                    </hd-segment>
+                    
+                    {theme === 'custom' && (
+                      <hd-color-picker
+                        value={customColor}
+                        onChange={(e: any) => handleCustomColorChange(e.target.value)}
+                        data-width="36px"
+                        data-height="36px"
+                      />
+                    )}
                   </div>
                 </div>
               </div>
@@ -350,40 +525,32 @@ export default function Header() {
           <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
         </hd-segment>
 
-        {/* Premium Theme Switcher 3-Way Toggle */}
-        <div style={{ display: 'flex', alignItems: 'center', background: 'var(--switcher-bg)', border: '1px solid var(--switcher-border)', borderRadius: '20px', padding: '2px', position: 'relative', height: '36px', width: '160px', userSelect: 'none', transition: 'all 0.3s ease' }}>
-          {/* sliding capsule */}
-          <div style={{
-            position: 'absolute',
-            top: '2px',
-            left: theme === 'light' ? '2px' : theme === 'dark' ? '54px' : '104px',
-            width: '54px',
-            height: '30px',
-            background: 'var(--switcher-capsule-bg)',
-            borderRadius: '16px',
-            transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-            zIndex: 1
-          }} />
+        {/* Premium Theme Switcher 4-Way Toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <hd-segment
+            id="themeSelectorLegacy"
+            value={theme}
+            onChange={(e: any) => changeTheme(e.target.value)}
+            data-color="var(--primary-color)"
+            data-inactive-color="var(--lang-inactive-color)"
+            data-width="260px"
+            data-height="36px"
+            data-thickness="1px"
+          >
+            <span value="light" {...(theme === 'light' ? { selected: true } : {})}>Բաց</span>
+            <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>Մութ</span>
+            <span value="green" {...(theme === 'green' ? { selected: true } : {})}>Կանաչ</span>
+            <span value="custom" {...(theme === 'custom' ? { selected: true } : {})}>Գույն</span>
+          </hd-segment>
           
-          <div 
-            onClick={() => changeTheme('light')}
-            style={{ flex: 1, border: 'none', background: 'transparent', color: theme === 'light' ? 'var(--switcher-text-active)' : 'var(--switcher-text-inactive)', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer', zIndex: 2, position: 'relative', textAlign: 'center', transition: 'color 0.2s', padding: 0 }}
-          >
-            {t('common', 'theme_light', 'Բաց')}
-          </div>
-          <div 
-            onClick={() => changeTheme('dark')}
-            style={{ flex: 1, border: 'none', background: 'transparent', color: theme === 'dark' ? 'var(--switcher-text-active)' : 'var(--switcher-text-inactive)', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer', zIndex: 2, position: 'relative', textAlign: 'center', transition: 'color 0.2s', padding: 0 }}
-          >
-            {t('common', 'theme_dark', 'Մութ')}
-          </div>
-          <div 
-            onClick={() => changeTheme('green')}
-            style={{ flex: 1, border: 'none', background: 'transparent', color: theme === 'green' ? 'var(--switcher-text-active)' : 'var(--switcher-text-inactive)', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer', zIndex: 2, position: 'relative', textAlign: 'center', transition: 'color 0.2s', padding: 0 }}
-          >
-            {t('common', 'theme_green', 'Կանաչ')}
-          </div>
+          {theme === 'custom' && (
+            <hd-color-picker
+              value={customColor}
+              onChange={(e: any) => handleCustomColorChange(e.target.value)}
+              data-width="36px"
+              data-height="36px"
+            />
+          )}
         </div>
       </div>
 

@@ -184,6 +184,40 @@ html[data-theme="light"] {
   --nav-link-hover-color: #083f39;
 }
 
+html[data-theme="custom"] {
+  --bg: var(--custom-bg, #7c3aed);
+  --panel: var(--custom-panel, rgba(255, 255, 255, 0.05));
+  --panel-border: var(--custom-panel-border, rgba(255, 255, 255, 0.05));
+  --text: var(--custom-text, #ffffff);
+  --muted: var(--custom-muted, rgba(255, 255, 255, 0.45));
+  --accent: var(--custom-text, #ffffff);
+  --shadow: 0 28px 90px rgba(0, 0, 0, 0.3);
+
+  --hue: 260;
+  --primary-color: var(--custom-primary, #ffffff);
+  --text-color: var(--custom-muted, rgba(255, 255, 255, 0.7));
+  --inactive-color: rgba(255, 255, 255, 0.25);
+  --check-color: var(--custom-primary, #ffffff);
+
+  --input-bg: var(--custom-input-bg, rgba(255, 255, 255, 0.04));
+  --input-border: var(--custom-input-border, rgba(255, 255, 255, 0.08));
+  --btn-bg: var(--custom-btn-bg, rgba(255, 255, 255, 0.05));
+  --btn-hover-bg: var(--custom-btn-hover-bg, rgba(255, 255, 255, 0.1));
+  --nav-bg: var(--custom-nav-bg, rgba(15, 23, 42, 0.55));
+  --logo-panel-bg: var(--custom-nav-bg, rgba(15, 23, 42, 0.55));
+  --dropdown-bg: var(--custom-nav-bg, rgba(15, 23, 42, 0.55));
+
+  --switcher-bg: var(--custom-switcher-bg, rgba(0, 0, 0, 0.25));
+  --switcher-border: var(--custom-switcher-border, rgba(255, 255, 255, 0.08));
+  --switcher-capsule-bg: var(--custom-switcher-capsule-bg, rgba(255, 255, 255, 0.15));
+  --switcher-text-active: var(--custom-switcher-text-active, #ffffff);
+  --switcher-text-inactive: var(--custom-switcher-text-inactive, rgba(255, 255, 255, 0.5));
+  --lang-active-color: var(--custom-lang-active, #ffffff);
+  --lang-inactive-color: var(--custom-lang-inactive, rgba(255, 255, 255, 0.55));
+  --nav-link-color: var(--custom-muted, rgba(255, 255, 255, 0.65));
+  --nav-link-hover-color: var(--custom-text, #ffffff);
+}
+
 /*
 html[data-theme="dark"],
 html[data-theme="green"] {
@@ -728,14 +762,61 @@ html[data-theme="green"] .hero-signature {
   width: 100%;
   z-index: 1000;
   padding: 0;
-  transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67);
+  transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67), gap 0.4s ease;
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 0;
+}
+
+.portfolio-logo-panel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 80px;
+  padding: 0 24px 0 48px;
+  flex: 0 0 auto;
+  text-decoration: none;
+  color: var(--text);
+  transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67);
+    pointer-events: none;
+  }
+
+  .logo-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+  }
+}
+
+html[data-theme="dark"] .portfolio-logo-panel::before {
+  background: rgba(15, 23, 42, 0.95);
+}
+
+html[data-theme="green"] .portfolio-logo-panel::before {
+  background: rgba(11, 74, 65, 0.95);
+}
+
+html[data-theme="custom"] .portfolio-logo-panel::before {
+  background: var(--custom-bg, #7c3aed);
+  opacity: 0.95;
 }
 
 .portfolio-header {
   position: relative; // Ensure positioning context for ::before
-  width: 100%;
+  flex: 1;
+  width: auto;
   max-width: 100%;
   height: 80px;
   background: transparent !important; // Handled by ::before
@@ -745,7 +826,7 @@ html[data-theme="green"] .hero-signature {
   align-items: center;
   justify-content: space-between;
   padding: 0 48px;
-  transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67);
+  transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67), flex 0.4s ease, max-width 0.4s ease;
 
   // Background and backdrop filter are placed here to prevent stacking context nesting issues with child dropdowns
   &::before {
@@ -772,12 +853,35 @@ html[data-theme="green"] .portfolio-header::before {
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
 }
 
+html[data-theme="custom"] .portfolio-header::before {
+  background: var(--custom-bg, #7c3aed);
+  opacity: 0.95;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+}
+
 /* Scrolled state of Header */
 .portfolio-header-wrapper.scrolled {
   padding: 16px 24px;
+  gap: 16px;
   
+  .portfolio-logo-panel {
+    height: 64px;
+    padding: 0 20px;
+    border-radius: 32px;
+    box-shadow: 0 10px 40px rgba(8, 63, 57, 0.08);
+
+    &::before {
+      border-radius: 32px;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 10px 40px rgba(8, 63, 57, 0.08);
+    }
+  }
+
   .portfolio-header {
-    max-width: 1400px;
+    flex: 0 1 auto;
+    width: auto;
+    max-width: fit-content;
     height: 64px;
     padding: 0 28px;
 
@@ -790,23 +894,44 @@ html[data-theme="green"] .portfolio-header::before {
   }
 }
 
-html[data-theme="dark"] .portfolio-header-wrapper.scrolled .portfolio-header::before {
-  background: rgba(15, 23, 42, 0.8);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+/* Theme overrides for scrolled header & logo elements */
+html[data-theme="dark"] .portfolio-header-wrapper.scrolled {
+  .portfolio-logo-panel, .portfolio-header {
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    &::before {
+      background: rgba(15, 23, 42, 0.8);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+  }
 }
 
-html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header::before {
-  background: rgba(11, 74, 65, 0.8);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+html[data-theme="green"] .portfolio-header-wrapper.scrolled {
+  .portfolio-logo-panel, .portfolio-header {
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    &::before {
+      background: rgba(11, 74, 65, 0.8);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+  }
 }
+
+html[data-theme="custom"] .portfolio-header-wrapper.scrolled {
+  .portfolio-logo-panel, .portfolio-header {
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    &::before {
+      background: var(--custom-bg, #7c3aed);
+      opacity: 0.85;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+  }
+}
+
 
 /* Nav Links with double lines */
 .portfolio-nav {
   display: flex;
   align-items: center;
-  gap: 32px;
-  margin-left: auto;
-  margin-right: 48px;
+  gap: 15px;
   height: 100%;
 
   // Set distinct hover colors for each slot in the navigation
@@ -842,6 +967,102 @@ html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header::b
     }
   }
 }
+
+.portfolio-header-controls {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 80px;
+  padding: 0 48px 0 24px;
+  flex: 0 0 auto;
+  transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67);
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67);
+    pointer-events: none;
+  }
+
+  .custom-color-picker-wrapper {
+    display: flex;
+    align-items: center;
+  }
+}
+
+html[data-theme="dark"] .portfolio-header-controls::before {
+  background: rgba(15, 23, 42, 0.95);
+}
+
+html[data-theme="green"] .portfolio-header-controls::before {
+  background: rgba(11, 74, 65, 0.95);
+}
+
+html[data-theme="custom"] .portfolio-header-controls::before {
+  background: var(--custom-bg, #7c3aed);
+  opacity: 0.95;
+}
+
+/* Scrolled controls state */
+.portfolio-header-wrapper.scrolled .portfolio-header-controls {
+  height: 64px;
+  padding: 0 24px;
+  border-radius: 32px;
+  box-shadow: 0 10px 40px rgba(8, 63, 57, 0.08);
+
+  &::before {
+    border-radius: 32px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 10px 40px rgba(8, 63, 57, 0.08);
+  }
+}
+
+html[data-theme="dark"] .portfolio-header-wrapper.scrolled .portfolio-header-controls {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  &::before {
+    background: rgba(15, 23, 42, 0.8);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  }
+}
+
+html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header-controls {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  &::before {
+    background: rgba(11, 74, 65, 0.8);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  }
+}
+
+html[data-theme="custom"] .portfolio-header-wrapper.scrolled .portfolio-header-controls {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  &::before {
+    background: var(--custom-bg, #7c3aed);
+    opacity: 0.85;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  }
+}
+
+@media (max-width: 1024px) {
+  .portfolio-header-controls {
+    gap: 8px;
+    padding: 0 24px 0 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .portfolio-header-controls {
+    display: none !important;
+  }
+}
+
+
 
 .portfolio-nav-item {
   position: relative;
@@ -1816,6 +2037,12 @@ html[data-theme="green"] .mobile-menu-drawer {
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+html[data-theme="custom"] .mobile-menu-drawer {
+  background: var(--custom-bg, #7c3aed);
+  border-bottom: 1px solid var(--custom-panel-border, rgba(255, 255, 255, 0.05));
+}
+
+
 /* Mobile Nav Structure */
 .mobile-nav-links {
   display: flex;
@@ -1929,18 +2156,42 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     display: none !important; /* Hide standard desktop navigation links */
   }
   
+  .portfolio-logo-panel {
+    height: 70px !important;
+    padding: 0 12px 0 20px !important;
+  }
+
   .portfolio-header {
     height: 70px !important;
-    padding: 0 20px !important;
+    padding: 0 20px 0 12px !important;
+    flex: 0 1 auto;
+    width: auto;
   }
 
   .portfolio-header-wrapper.scrolled {
     padding: 10px 12px !important;
+    gap: 8px;
     
+    .portfolio-logo-panel {
+      height: 60px !important;
+      padding: 0 16px !important;
+      border-radius: 20px !important;
+      box-shadow: 0 10px 40px rgba(8, 63, 57, 0.08);
+
+      &::before {
+        border-radius: 20px !important;
+      }
+    }
+
     .portfolio-header {
       height: 60px !important;
       padding: 0 16px !important;
       border-radius: 20px !important;
+      box-shadow: 0 10px 40px rgba(8, 63, 57, 0.08);
+
+      &::before {
+        border-radius: 20px !important;
+      }
     }
   }
 
