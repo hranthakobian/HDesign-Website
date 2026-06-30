@@ -199,6 +199,7 @@ export default function AdminDashboard() {
   const [newCursorColor, setNewCursorColor] = useState('#ffffff');
   const [cases, setCases] = useState<Case[]>([]);
   const [fonts, setFonts] = useState<Font[]>([]);
+  const [casesSubTab, setCasesSubTab] = useState<'branding' | 'gallery' | 'fonts'>('branding');
 
   // Slide-over drawer states
   const [drawerType, setDrawerType] = useState<'case_preview' | 'case_edit' | 'font_preview' | 'font_edit' | null>(null);
@@ -253,6 +254,17 @@ export default function AdminDashboard() {
     }
     return copy;
   }, [cases, casesSortBy]);
+
+  const filteredCasesForAdmin = useMemo(() => {
+    return sortedCases.filter(c => {
+      const isPort = String(c.id).startsWith('port-');
+      if (casesSubTab === 'branding') {
+        return !isPort;
+      } else {
+        return isPort;
+      }
+    });
+  }, [sortedCases, casesSubTab]);
 
   const sortedFonts = useMemo(() => {
     let copy = [...fonts];
@@ -1797,588 +1809,628 @@ export default function AdminDashboard() {
             {activeTab === 'cases' && (
               <div className={getTabClass('cases')} style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0 }}>Աշխատանքներ / Քեյսեր</h2>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0 }}>
+                    {casesSubTab === 'fonts' ? 'Աշխատանքներ / Տառատեսակներ' : 'Աշխատանքներ / Քեյսեր'}
+                  </h2>
                   <hd-button 
-                    onClick={openAddCase}
-                    data-width="180px" 
+                    onClick={casesSubTab === 'fonts' ? openAddFont : openAddCase}
+                    data-width={casesSubTab === 'fonts' ? "200px" : "180px"} 
                     data-height="42px"
                     data-thickness="2px"
                   >
-                    Ավելացնել Քեյս
+                    {casesSubTab === 'fonts' ? 'Ավելացնել Տառատեսակ' : 'Ավելացնել Քեյս'}
                   </hd-button>
                 </div>
 
-                {/* Sorting and View Switcher bar */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--panel-border)', padding: '10px 16px', borderRadius: '12px', flexWrap: 'wrap', gap: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>Դասավորել ըստ՝</span>
-                    <select 
-                      value={casesSortBy} 
-                      onChange={(e: any) => setCasesSortBy(e.target.value)}
-                      style={{ background: 'var(--panel)', border: '1px solid var(--panel-border)', color: '#fff', padding: '6px 12px', borderRadius: '8px', outline: 'none', fontSize: '0.82rem', cursor: 'pointer' }}
-                    >
-                      <option value="newest">Նորագույն</option>
-                      <option value="title">Անուն (A-Z)</option>
-                      <option value="year">Տարեթիվ</option>
-                      <option value="category">Կատեգորիա</option>
-                    </select>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <button 
-                      onClick={() => setCasesViewMode('grid')}
-                      style={{
-                        background: casesViewMode === 'grid' ? 'var(--switcher-capsule-bg)' : 'transparent',
-                        border: '1px solid var(--panel-border)', color: '#fff', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: casesViewMode === 'grid' ? 'bold' : 'normal'
-                      }}
-                    >
-                      Grid
-                    </button>
-                    <button 
-                      onClick={() => setCasesViewMode('list')}
-                      style={{
-                        background: casesViewMode === 'list' ? 'var(--switcher-capsule-bg)' : 'transparent',
-                        border: '1px solid var(--panel-border)', color: '#fff', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: casesViewMode === 'list' ? 'bold' : 'normal'
-                      }}
-                    >
-                      List
-                    </button>
-                  </div>
+                {/* Sub-tabs for Branding vs Gallery vs Fonts */}
+                <div style={{ display: 'flex', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '12px', width: 'fit-content' }}>
+                  <button
+                    onClick={() => setCasesSubTab('branding')}
+                    style={{
+                      background: casesSubTab === 'branding' ? 'var(--switcher-capsule-bg)' : 'transparent',
+                      color: casesSubTab === 'branding' ? '#fff' : 'var(--muted)',
+                      border: 'none',
+                      padding: '8px 20px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '0.88rem',
+                      fontWeight: 600,
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    Բրենդինգի Քեյսեր
+                  </button>
+                  <button
+                    onClick={() => setCasesSubTab('gallery')}
+                    style={{
+                      background: casesSubTab === 'gallery' ? 'var(--switcher-capsule-bg)' : 'transparent',
+                      color: casesSubTab === 'gallery' ? '#fff' : 'var(--muted)',
+                      border: 'none',
+                      padding: '8px 20px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '0.88rem',
+                      fontWeight: 600,
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    Պատկերասրահ
+                  </button>
+                  <button
+                    onClick={() => setCasesSubTab('fonts')}
+                    style={{
+                      background: casesSubTab === 'fonts' ? 'var(--switcher-capsule-bg)' : 'transparent',
+                      color: casesSubTab === 'fonts' ? '#fff' : 'var(--muted)',
+                      border: 'none',
+                      padding: '8px 20px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '0.88rem',
+                      fontWeight: 600,
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    Տառատեսակներ
+                  </button>
                 </div>
 
-                {/* Main Split Layout: Cards Left, Quick Panel Right */}
-                <div style={{ display: 'grid', gridTemplateColumns: drawerType && drawerType.startsWith('case_') ? '1fr 400px' : '1fr', gap: '30px', alignItems: 'start' }}>
-                  
-                  {/* Left Column: Cards List */}
-                  <div style={{ display: 'grid', gridTemplateColumns: casesViewMode === 'grid' ? 'repeat(auto-fill, minmax(280px, 1fr))' : '1fr', gap: '20px' }}>
-                    {sortedCases.map(c => {
-                      return (
-                        <div 
-                          key={c.id} 
-                          style={{ 
-                            background: 'var(--panel)', 
-                            border: '1px solid var(--panel-border)', 
-                            borderRadius: '16px', 
-                            overflow: 'hidden',
-                            display: 'flex',
-                            flexDirection: casesViewMode === 'grid' ? 'column' : 'row',
-                            boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
-                            alignItems: casesViewMode === 'grid' ? 'stretch' : 'center'
+                {casesSubTab !== 'fonts' ? (
+                  <>
+                    {/* Sorting and View Switcher bar */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--panel-border)', padding: '10px 16px', borderRadius: '12px', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>Դասավորել ըստ՝</span>
+                        <select 
+                          value={casesSortBy} 
+                          onChange={(e: any) => setCasesSortBy(e.target.value)}
+                          style={{ background: 'var(--panel)', border: '1px solid var(--panel-border)', color: '#fff', padding: '6px 12px', borderRadius: '8px', outline: 'none', fontSize: '0.82rem', cursor: 'pointer' }}
+                        >
+                          <option value="newest">Նորագույն</option>
+                          <option value="title">Անուն (A-Z)</option>
+                          <option value="year">Տարեթիվ</option>
+                          <option value="category">Կատեգորիա</option>
+                        </select>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button 
+                          onClick={() => setCasesViewMode('grid')}
+                          style={{
+                            background: casesViewMode === 'grid' ? 'var(--switcher-capsule-bg)' : 'transparent',
+                            border: '1px solid var(--panel-border)', color: '#fff', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: casesViewMode === 'grid' ? 'bold' : 'normal'
                           }}
                         >
-                          {/* Case Card Preview */}
-                          <div style={{ 
-                            background: c.bg, 
-                            height: casesViewMode === 'grid' ? '160px' : '90px', 
-                            width: casesViewMode === 'grid' ? '100%' : '140px',
-                            flexShrink: 0,
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center', 
-                            position: 'relative' 
-                          }}>
-                            {c.image_url ? (
-                              <img src={c.image_url} alt={c.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            ) : (
-                              <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', border: '1px dashed rgba(255,255,255,0.3)', padding: '6px 12px', borderRadius: '4px' }}>
-                                Default SVG
-                              </span>
-                            )}
-                            <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(0,0,0,0.6)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.72rem', color: '#fff' }}>
-                              {c.category || 'Portfolio'}
-                            </div>
-                          </div>
-
-                          {/* Case Content */}
-                          <div style={{ 
-                            padding: '16px', 
-                            flex: 1, 
-                            display: 'flex', 
-                            flexDirection: casesViewMode === 'grid' ? 'column' : 'row', 
-                            alignItems: casesViewMode === 'grid' ? 'stretch' : 'center',
-                            justifyContent: 'space-between',
-                            gap: '12px',
-                            width: '100%'
-                          }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0' }}>{c.title}</h3>
-                              <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{c.subtitle}</span>
-                              <div style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'flex', gap: '12px', marginTop: '4px' }}>
-                                {c.client && <span><strong>Հաճախորդ՝</strong> {c.client}</span>}
-                                {c.year && <span><strong>Տարի՝</strong> {c.year}</span>}
-                              </div>
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end', marginTop: casesViewMode === 'grid' ? '12px' : '0' }}>
-                              <a href={`/admin/editor/case/${c.id}`} style={{ textDecoration: 'none' }}>
-                                <hd-button 
-                                  data-color="var(--accent)"
-                                  data-width="120px"
-                                  data-height="30px"
-                                  data-font-size="0.7rem"
-                                >
-                                  ✏ WYSIWYG
-                                </hd-button>
-                              </a>
-                              <hd-button 
-                                onClick={() => openCaseDrawer(c, 'case_preview')}
-                                data-color="#2196f3" 
-                                data-width="110px" 
-                                data-height="30px"
-                                data-font-size="0.7rem"
-                              >
-                                👁 Դիտում
-                              </hd-button>
-                              <hd-button 
-                                onClick={() => openCaseDrawer(c, 'case_edit')}
-                                data-color="#FFBB28" 
-                                data-width="130px" 
-                                data-height="30px"
-                                data-font-size="0.7rem"
-                              >
-                                ⚙ Խմբագրել
-                              </hd-button>
-                              <hd-button 
-                                onClick={() => handleDeleteCase(c.id)}
-                                data-color="#ff6b6b" 
-                                data-width="90px" 
-                                data-height="30px"
-                                data-font-size="0.7rem"
-                              >
-                                ✕ Ջնջել
-                              </hd-button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {sortedCases.length === 0 && (
-                      <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '60px', color: 'var(--muted)', border: '1px dashed var(--panel-border)', borderRadius: '16px' }}>
-                        Քեյսեր գոյություն չունեն
+                          Grid
+                        </button>
+                        <button 
+                          onClick={() => setCasesViewMode('list')}
+                          style={{
+                            background: casesViewMode === 'list' ? 'var(--switcher-capsule-bg)' : 'transparent',
+                            border: '1px solid var(--panel-border)', color: '#fff', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: casesViewMode === 'list' ? 'bold' : 'normal'
+                          }}
+                        >
+                          List
+                        </button>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Right Column: Sticky Quick Sidebar */}
-                  {drawerType && drawerType.startsWith('case_') && drawerCaseOriginal && (
-                    <div style={{ background: 'var(--panel)', border: '1px solid var(--panel-border)', borderRadius: '24px', padding: '24px', position: 'sticky', top: '80px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 8px 30px rgba(0,0,0,0.1)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--panel-border)', paddingBottom: '12px' }}>
-                        <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#fff' }}>
-                          {drawerType === 'case_preview' ? '👁 Արագ Դիտում' : '⚙ Արագ Խմբագրում'}
-                        </h4>
-                        <button onClick={() => setDrawerType(null)} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '1.1rem', cursor: 'pointer' }}>✕</button>
-                      </div>
-
-                      {drawerType === 'case_preview' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                          {drawerCaseImageUrl && (
-                            <div style={{ borderRadius: '12px', overflow: 'hidden', height: '150px', border: '1px solid var(--panel-border)' }}>
-                              <img src={drawerCaseImageUrl} alt="Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            </div>
-                          )}
-                          <div>
-                            <span style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase' }}>Վերնագիր</span>
-                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', marginTop: '2px' }}>{drawerCaseTitle}</div>
-                          </div>
-                          <div>
-                            <span style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase' }}>Ենթավերնագիր</span>
-                            <div style={{ fontSize: '0.88rem', color: '#ccc', marginTop: '2px' }}>{drawerCaseSubtitle}</div>
-                          </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                            <div>
-                              <span style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase' }}>Հաճախորդ</span>
-                              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff' }}>{drawerCaseClient || 'N/A'}</div>
-                            </div>
-                            <div>
-                              <span style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase' }}>Տարեթիվ</span>
-                              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff' }}>{drawerCaseYear || 'N/A'}</div>
-                            </div>
-                          </div>
-                          <div style={{ borderTop: '1px solid var(--panel-border)', paddingTop: '16px', marginTop: '8px' }}>
-                            <a href={`/admin/editor/case/${drawerCaseId}`} style={{ textDecoration: 'none' }}>
-                              <hd-button data-width="100%" data-height="36px" data-thickness="1px">✏ Բացել WYSIWYG խմբագրիչը</hd-button>
-                            </a>
-                          </div>
-                        </div>
-                      )}
-
-                      {drawerType === 'case_edit' && (
-                        <form onSubmit={handleSaveCaseDrawer} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                          <div>
-                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Վերնագիր*</label>
-                            <hd-input value={drawerCaseTitle} onInput={(e: any) => setDrawerCaseTitle(e.target.value)} data-width="100%" data-height="36px" />
-                          </div>
-                          <div>
-                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Ենթավերնագիր*</label>
-                            <hd-input value={drawerCaseSubtitle} onInput={(e: any) => setDrawerCaseSubtitle(e.target.value)} data-width="100%" data-height="36px" />
-                          </div>
-                          <div>
-                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Հաճախորդ</label>
-                            <hd-input value={drawerCaseClient} onInput={(e: any) => setDrawerCaseClient(e.target.value)} data-width="100%" data-height="36px" />
-                          </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                            <div>
-                              <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Տարի</label>
-                              <hd-input value={drawerCaseYear} onInput={(e: any) => setDrawerCaseYear(e.target.value)} data-width="100%" data-height="36px" />
-                            </div>
-                            <div>
-                              <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Կատեգորիա</label>
-                              <hd-input value={drawerCaseCategory} onInput={(e: any) => setDrawerCaseCategory(e.target.value)} data-width="100%" data-height="36px" />
-                            </div>
-                          </div>
-                          <div>
-                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Ֆոնի CSS</label>
-                            <hd-input value={drawerCaseBg} onInput={(e: any) => setDrawerCaseBg(e.target.value)} data-width="100%" data-height="36px" />
-                          </div>
-                          <div>
-                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Cover URL</label>
-                            <hd-input value={drawerCaseImageUrl} onInput={(e: any) => setDrawerCaseImageUrl(e.target.value)} data-width="100%" data-height="36px" />
-                          </div>
-                          <div style={{ marginTop: '10px' }}>
-                            <hd-button type="submit" data-width="100%" data-height="38px" data-thickness="2px">💾 Պահպանել</hd-button>
-                          </div>
-                        </form>
-                      )}
                     </div>
-                  )}
 
-                </div>
-                {/* Case modal markup fully cleaned up */}
-              </div>
-            )}
-
-            {/* ══════════════════════════════════════════════════════════════════════════
-                TAB 2.5: FONTS MANAGEMENT
-                ══════════════════════════════════════════════════════════════════════════ */}
-            {activeTab === 'fonts' && (
-              <div className={getTabClass('fonts')} style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0 }}>Տառատեսակներ / Fonts</h2>
-                  <hd-button 
-                    onClick={openAddFont}
-                    data-width="200px" 
-                    data-height="42px"
-                    data-thickness="2px"
-                  >
-                    Ավելացնել Տառատեսակ
-                  </hd-button>
-                </div>
-
-                {/* Sorting and View Switcher bar */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--panel-border)', padding: '10px 16px', borderRadius: '12px', flexWrap: 'wrap', gap: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>Դասավորել ըստ՝</span>
-                    <select 
-                      value={fontsSortBy} 
-                      onChange={(e: any) => setFontsSortBy(e.target.value)}
-                      style={{ background: 'var(--panel)', border: '1px solid var(--panel-border)', color: '#fff', padding: '6px 12px', borderRadius: '8px', outline: 'none', fontSize: '0.82rem', cursor: 'pointer' }}
-                    >
-                      <option value="name">Անուն (A-Z)</option>
-                      <option value="year">Տարեթիվ</option>
-                      <option value="category">Կատեգորիա</option>
-                      <option value="price">Գին</option>
-                    </select>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <button 
-                      onClick={() => setFontsViewMode('grid')}
-                      style={{
-                        background: fontsViewMode === 'grid' ? 'var(--switcher-capsule-bg)' : 'transparent',
-                        border: '1px solid var(--panel-border)', color: '#fff', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: fontsViewMode === 'grid' ? 'bold' : 'normal'
-                      }}
-                    >
-                      Grid
-                    </button>
-                    <button 
-                      onClick={() => setFontsViewMode('list')}
-                      style={{
-                        background: fontsViewMode === 'list' ? 'var(--switcher-capsule-bg)' : 'transparent',
-                        border: '1px solid var(--panel-border)', color: '#fff', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: fontsViewMode === 'list' ? 'bold' : 'normal'
-                      }}
-                    >
-                      List
-                    </button>
-                  </div>
-                </div>
-
-                {/* Main Split Layout: Cards Left, Quick Panel Right */}
-                <div style={{ display: 'grid', gridTemplateColumns: drawerType && drawerType.startsWith('font_') ? '1fr 400px' : '1fr', gap: '30px', alignItems: 'start' }}>
-                  
-                  {/* Left Column: Fonts List */}
-                  <div style={{ display: 'grid', gridTemplateColumns: fontsViewMode === 'grid' ? 'repeat(auto-fill, minmax(320px, 1fr))' : '1fr', gap: '20px' }}>
-                    {sortedFonts.map(f => {
-                      return (
-                        <div 
-                          key={f.id} 
-                          style={{ 
-                            background: 'var(--panel)', 
-                            border: '1px solid var(--panel-border)', 
-                            borderRadius: '16px', 
-                            overflow: 'hidden',
-                            display: 'flex',
-                            flexDirection: fontsViewMode === 'grid' ? 'column' : 'row',
-                            boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
-                            alignItems: fontsViewMode === 'grid' ? 'stretch' : 'center'
-                          }}
-                        >
-                          {/* Font Card Preview */}
-                          <div style={{ 
-                            background: 'rgba(0,0,0,0.15)', 
-                            padding: fontsViewMode === 'grid' ? '24px' : '16px', 
-                            height: fontsViewMode === 'grid' ? 'auto' : '90px',
-                            width: fontsViewMode === 'grid' ? 'auto' : '180px',
-                            flexShrink: 0,
-                            display: 'flex', 
-                            flexDirection: 'column', 
-                            justifyContent: 'center', 
-                            position: 'relative', 
-                            borderBottom: fontsViewMode === 'grid' ? '1px solid var(--panel-border)' : 'none',
-                            borderRight: fontsViewMode === 'grid' ? 'none' : '1px solid var(--panel-border)'
-                          }}>
-                            <style dangerouslySetInnerHTML={{ __html: `
-                              @font-face {
-                                font-family: 'admin-preview-${f.id}';
-                                src: url('${f.font_file_url}') format('${f.font_file_url.endsWith('.otf') ? 'opentype' : f.font_file_url.endsWith('.woff') ? 'woff' : f.font_file_url.endsWith('.woff2') ? 'woff2' : 'truetype'}');
-                                font-weight: normal;
-                                font-style: normal;
-                              }
-                            `}} />
-                            
-                            <div style={{ 
-                              fontFamily: `admin-preview-${f.id}, sans-serif`, 
-                              fontSize: fontsViewMode === 'grid' ? '1.8rem' : '1.4rem', 
-                              color: 'var(--text)',
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              textAlign: 'center',
-                              margin: '8px 0'
-                            }}>
-                              {f.name_en}
-                            </div>
-                            
-                            <div style={{ position: 'absolute', top: '6px', left: '6px', background: 'rgba(0,0,0,0.6)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', color: '#fff' }}>
-                              {f.category}
-                            </div>
-                          </div>
-
-                          {/* Font Content */}
-                          <div style={{ 
-                            padding: '16px', 
-                            flex: 1, 
-                            display: 'flex', 
-                            flexDirection: fontsViewMode === 'grid' ? 'column' : 'row', 
-                            alignItems: fontsViewMode === 'grid' ? 'stretch' : 'center',
-                            justifyContent: 'space-between',
-                            gap: '12px',
-                            width: '100%'
-                          }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0' }}>
-                                {f.name_am} <span style={{ opacity: 0.5, fontSize: '0.85rem', fontWeight: 'normal' }}>({f.name_en})</span>
-                              </h3>
-                              <span style={{ fontSize: '0.8rem', color: 'var(--muted)', display: '-webkit-box', WebkitLineClamp: '1', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                {f.description_am || f.description_en}
-                              </span>
-                              <div style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'flex', gap: '12px', marginTop: '4px' }}>
-                                {f.creator && <span><strong>Հեղինակ՝</strong> {f.creator}</span>}
-                                {f.year && <span><strong>Տարեթիվ՝</strong> {f.year}</span>}
-                              </div>
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end', marginTop: fontsViewMode === 'grid' ? '12px' : '0' }}>
-                              <a href={`/admin/editor/font/${f.id}`} style={{ textDecoration: 'none' }}>
-                                <hd-button 
-                                  data-color="var(--accent)"
-                                  data-width="120px"
-                                  data-height="30px"
-                                  data-font-size="0.7rem"
-                                >
-                                  ✏ WYSIWYG
-                                </hd-button>
-                              </a>
-                              <hd-button 
-                                onClick={() => openFontDrawer(f, 'font_preview')}
-                                data-color="#2196f3" 
-                                data-width="110px" 
-                                data-height="30px"
-                                data-font-size="0.7rem"
-                              >
-                                👁 Դիտում
-                              </hd-button>
-                              <hd-button 
-                                onClick={() => openFontDrawer(f, 'font_edit')}
-                                data-color="#FFBB28" 
-                                data-width="130px" 
-                                data-height="30px"
-                                data-font-size="0.7rem"
-                              >
-                                ⚙ Խմբագրել
-                              </hd-button>
-                              <hd-button 
-                                onClick={() => handleDeleteFont(f.id)}
-                                data-color="#ff6b6b" 
-                                data-width="90px" 
-                                data-height="30px"
-                                data-font-size="0.7rem"
-                              >
-                                ✕ Ջնջել
-                              </hd-button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Right Column: Sticky Quick Sidebar */}
-                  {drawerType && drawerType.startsWith('font_') && drawerFontOriginal && (
-                    <div style={{ background: 'var(--panel)', border: '1px solid var(--panel-border)', borderRadius: '24px', padding: '24px', position: 'sticky', top: '80px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 8px 30px rgba(0,0,0,0.1)' }}>
-                      <style dangerouslySetInnerHTML={{ __html: `
-                        @font-face {
-                          font-family: 'drawer-preview-${drawerFontId}';
-                          src: url('${drawerFontFileUrl}') format('truetype');
-                          font-weight: normal;
-                          font-style: normal;
-                        }
-                      ` }} />
+                    {/* Main Split Layout: Cards Left, Quick Panel Right */}
+                    <div style={{ display: 'grid', gridTemplateColumns: drawerType && drawerType.startsWith('case_') ? '1fr 400px' : '1fr', gap: '30px', alignItems: 'start' }}>
                       
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--panel-border)', paddingBottom: '12px' }}>
-                        <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#fff' }}>
-                          {drawerType === 'font_preview' ? '👁 Արագ Դիտում' : '⚙ Արագ Խմբագրում'}
-                        </h4>
-                        <button onClick={() => setDrawerType(null)} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '1.1rem', cursor: 'pointer' }}>✕</button>
+                      {/* Left Column: Cards List */}
+                      <div style={{ display: 'grid', gridTemplateColumns: casesViewMode === 'grid' ? 'repeat(auto-fill, minmax(280px, 1fr))' : '1fr', gap: '20px' }}>
+                        {filteredCasesForAdmin.map(c => {
+                          return (
+                            <div 
+                              key={c.id} 
+                              style={{ 
+                                background: 'var(--panel)', 
+                                border: '1px solid var(--panel-border)', 
+                                borderRadius: '16px', 
+                                overflow: 'hidden',
+                                display: 'flex',
+                                flexDirection: casesViewMode === 'grid' ? 'column' : 'row',
+                                boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+                                alignItems: casesViewMode === 'grid' ? 'stretch' : 'center'
+                              }}
+                            >
+                              {/* Case Card Preview */}
+                              <div style={{ 
+                                background: c.bg, 
+                                height: casesViewMode === 'grid' ? '160px' : '90px', 
+                                width: casesViewMode === 'grid' ? '100%' : '140px',
+                                flexShrink: 0,
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'center', 
+                                position: 'relative' 
+                              }}>
+                                {c.image_url ? (
+                                   <img src={c.image_url} alt={c.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                  <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', border: '1px dashed rgba(255,255,255,0.3)', padding: '6px 12px', borderRadius: '4px' }}>
+                                    Default SVG
+                                  </span>
+                                )}
+                                <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(0,0,0,0.6)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.72rem', color: '#fff' }}>
+                                  {c.category || 'Portfolio'}
+                                </div>
+                              </div>
+
+                              {/* Case Content */}
+                              <div style={{ 
+                                padding: '16px', 
+                                flex: 1, 
+                                display: 'flex', 
+                                flexDirection: casesViewMode === 'grid' ? 'column' : 'row', 
+                                alignItems: casesViewMode === 'grid' ? 'stretch' : 'center',
+                                justifyContent: 'space-between',
+                                gap: '12px',
+                                width: '100%'
+                              }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0' }}>{c.title}</h3>
+                                  <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{c.subtitle}</span>
+                                  <div style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'flex', gap: '12px', marginTop: '4px' }}>
+                                    {c.client && <span><strong>Հաճախորդ՝</strong> {c.client}</span>}
+                                    {c.year && <span><strong>Տարի՝</strong> {c.year}</span>}
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end', marginTop: casesViewMode === 'grid' ? '12px' : '0' }}>
+                                  <a href={`/admin/editor/case/${c.id}`} style={{ textDecoration: 'none' }}>
+                                    <hd-button 
+                                      data-color="var(--accent)"
+                                      data-width="120px"
+                                      data-height="30px"
+                                      data-font-size="0.7rem"
+                                    >
+                                      ✏ WYSIWYG
+                                    </hd-button>
+                                  </a>
+                                  <hd-button 
+                                    onClick={() => openCaseDrawer(c, 'case_preview')}
+                                    data-color="#2196f3" 
+                                    data-width="110px" 
+                                    data-height="30px"
+                                    data-font-size="0.7rem"
+                                  >
+                                    👁 Դիտում
+                                  </hd-button>
+                                  <hd-button 
+                                    onClick={() => openCaseDrawer(c, 'case_edit')}
+                                    data-color="#FFBB28" 
+                                    data-width="130px" 
+                                    data-height="30px"
+                                    data-font-size="0.7rem"
+                                  >
+                                    ⚙ Խմբագրել
+                                  </hd-button>
+                                  <hd-button 
+                                    onClick={() => handleDeleteCase(c.id)}
+                                    data-color="#ff6b6b" 
+                                    data-width="90px" 
+                                    data-height="30px"
+                                    data-font-size="0.7rem"
+                                  >
+                                    ✕ Ջնջել
+                                  </hd-button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {filteredCasesForAdmin.length === 0 && (
+                          <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '60px', color: 'var(--muted)', border: '1px dashed var(--panel-border)', borderRadius: '16px' }}>
+                            Քեյսեր գոյություն չունեն
+                          </div>
+                        )}
                       </div>
 
-                      {drawerType === 'font_preview' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                          <div>
-                            <span style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase' }}>Դասակարգում</span>
-                            <div style={{ fontSize: '0.88rem', color: '#fff', marginTop: '2px' }}>{drawerFontCategory} • {drawerFontCreator}</div>
+                      {/* Right Column: Sticky Quick Sidebar */}
+                      {drawerType && drawerType.startsWith('case_') && drawerCaseOriginal && (
+                        <div style={{ background: 'var(--panel)', border: '1px solid var(--panel-border)', borderRadius: '24px', padding: '24px', position: 'sticky', top: '80px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 8px 30px rgba(0,0,0,0.1)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--panel-border)', paddingBottom: '12px' }}>
+                            <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#fff' }}>
+                              {drawerType === 'case_preview' ? '👁 Արագ Դիտում' : '⚙ Արագ Խմբագրում'}
+                            </h4>
+                            <button onClick={() => setDrawerType(null)} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '1.1rem', cursor: 'pointer' }}>✕</button>
                           </div>
 
-                          {/* Live Sandbox */}
-                          <div style={{ background: '#0a0a0c', border: '1px solid var(--panel-border)', borderRadius: '12px', padding: '16px' }}>
-                            <label style={{ fontSize: '0.72rem', color: 'var(--muted)', display: 'block', marginBottom: '8px' }}>Փորձարկման Դաշտ (Live Sandbox)</label>
-                            <textarea 
-                              value={drawerFontSandboxText}
-                              onChange={e => setDrawerFontSandboxText(e.target.value)}
-                              style={{
-                                width: '100%', minHeight: '60px', background: 'transparent', border: 'none', outline: 'none',
-                                color: '#fff', fontFamily: `drawer-preview-${drawerFontId}, sans-serif`,
-                                fontSize: `${drawerFontSize}px`, resize: 'vertical'
-                              }}
-                            />
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px', marginTop: '8px' }}>
-                              <span style={{ fontSize: '0.68rem', color: 'var(--muted)' }}>Տառաչափս՝ {drawerFontSize}px</span>
-                              <input 
-                                type="range" min="14" max="72" value={drawerFontSize}
-                                onChange={e => setDrawerFontSize(Number(e.target.value))}
-                                style={{ width: '100px', accentColor: 'var(--accent)' }}
-                              />
-                            </div>
-                          </div>
-
-                          {/* Waterfall */}
-                          <div>
-                            <span style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Waterfall Test</span>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontFamily: `drawer-preview-${drawerFontId}, sans-serif` }}>
-                              <div style={{ fontSize: '12px', opacity: 0.6 }}>12px: Quick brown fox jumps over.</div>
-                              <div style={{ fontSize: '18px', opacity: 0.8 }}>18px: Quick brown fox jumps.</div>
-                              <div style={{ fontSize: '24px' }}>24px: Quick brown fox.</div>
-                            </div>
-                          </div>
-
-                          <div style={{ borderTop: '1px solid var(--panel-border)', paddingTop: '16px', marginTop: '8px' }}>
-                            <a href={`/admin/editor/font/${drawerFontId}`} style={{ textDecoration: 'none' }}>
-                              <hd-button data-width="100%" data-height="36px" data-thickness="1px">✏ Բացել WYSIWYG խմբագրիչը</hd-button>
-                            </a>
-                          </div>
-                        </div>
-                      )}
-
-                      {drawerType === 'font_edit' && (
-                        <form onSubmit={handleSaveFontDrawer} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                          <div>
-                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Անուն (Հայերեն)*</label>
-                            <hd-input value={drawerFontNameAm} onInput={(e: any) => setDrawerFontNameAm(e.target.value)} data-width="100%" data-height="36px" />
-                          </div>
-                          <div>
-                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Name (English)*</label>
-                            <hd-input value={drawerFontNameEn} onInput={(e: any) => setDrawerFontNameEn(e.target.value)} data-width="100%" data-height="36px" />
-                          </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '10px' }}>
-                            <div>
-                              <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Կատեգորիա</label>
-                              <select 
-                                value={drawerFontCategory}
-                                onChange={e => setDrawerFontCategory(e.target.value)}
-                                style={{ width: '100%', height: '36px', background: 'var(--panel-border)', border: '1px solid var(--panel-border)', borderRadius: '12px', color: '#fff', padding: '0 8px', outline: 'none' }}
-                              >
-                                <option value="Sans-Serif">Sans-Serif</option>
-                                <option value="Serif">Serif</option>
-                                <option value="Display">Display</option>
-                                <option value="Monospace">Monospace</option>
-                                <option value="Variable">Variable</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Տարեթիվ</label>
-                              <hd-input value={drawerFontYear} onInput={(e: any) => setDrawerFontYear(e.target.value)} data-width="100%" data-height="36px" />
-                            </div>
-                          </div>
-                          <div>
-                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Հեղինակ</label>
-                            <hd-input value={drawerFontCreator} onInput={(e: any) => setDrawerFontCreator(e.target.value)} data-width="100%" data-height="36px" />
-                          </div>
-                          <div>
-                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Ֆայլի հղում</label>
-                            <hd-input value={drawerFontFileUrl} onInput={(e: any) => setDrawerFontFileUrl(e.target.value)} data-width="100%" data-height="36px" />
-                          </div>
-
-                          <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--panel-border)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', cursor: 'pointer' }}>
-                              <input 
-                                type="checkbox" checked={drawerFontDownloadable}
-                                onChange={e => setDrawerFontDownloadable(e.target.checked)}
-                                style={{ accentColor: 'var(--accent)' }}
-                              />
-                              Անվճար ներբեռնելի (Downloadable)
-                            </label>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', cursor: 'pointer' }}>
-                              <input 
-                                type="checkbox" checked={drawerFontPaid}
-                                onChange={e => setDrawerFontPaid(e.target.checked)}
-                                style={{ accentColor: 'var(--accent)' }}
-                              />
-                              Վճարովի (Commercial)
-                            </label>
-                          </div>
-
-                          {drawerFontPaid && (
-                            <div style={{ display: 'grid', gridTemplateColumns: '0.8fr 1.2fr', gap: '10px' }}>
+                          {drawerType === 'case_preview' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                              {drawerCaseImageUrl && (
+                                <div style={{ borderRadius: '12px', overflow: 'hidden', height: '150px', border: '1px solid var(--panel-border)' }}>
+                                  <img src={drawerCaseImageUrl} alt="Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                </div>
+                              )}
                               <div>
-                                <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Գին</label>
-                                <hd-input value={drawerFontPrice} onInput={(e: any) => setDrawerFontPrice(e.target.value)} data-width="100%" data-height="36px" />
+                                <span style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase' }}>Վերնագիր</span>
+                                <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', marginTop: '2px' }}>{drawerCaseTitle}</div>
                               </div>
                               <div>
-                                <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Գնման հղում</label>
-                                <hd-input value={drawerFontPurchaseUrl} onInput={(e: any) => setDrawerFontPurchaseUrl(e.target.value)} data-width="100%" data-height="36px" />
+                                <span style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase' }}>Ենթավերնագիր</span>
+                                <div style={{ fontSize: '0.88rem', color: '#ccc', marginTop: '2px' }}>{drawerCaseSubtitle}</div>
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                <div>
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase' }}>Հաճախորդ</span>
+                                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff' }}>{drawerCaseClient || 'N/A'}</div>
+                                </div>
+                                <div>
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase' }}>Տարեթիվ</span>
+                                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#fff' }}>{drawerCaseYear || 'N/A'}</div>
+                                </div>
+                              </div>
+                              <div style={{ borderTop: '1px solid var(--panel-border)', paddingTop: '16px', marginTop: '8px' }}>
+                                <a href={`/admin/editor/case/${drawerCaseId}`} style={{ textDecoration: 'none' }}>
+                                  <hd-button data-width="100%" data-height="36px" data-thickness="1px">✏ Բացել WYSIWYG խմբագրիչը</hd-button>
+                                </a>
                               </div>
                             </div>
                           )}
 
-                          <div style={{ marginTop: '10px' }}>
-                            <hd-button type="submit" data-width="100%" data-height="38px" data-thickness="2px">💾 Պահպանել</hd-button>
+                          {drawerType === 'case_edit' && (
+                            <form onSubmit={handleSaveCaseDrawer} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                              <div>
+                                <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Վերնագիր*</label>
+                                <hd-input value={drawerCaseTitle} onInput={(e: any) => setDrawerCaseTitle(e.target.value)} data-width="100%" data-height="36px" />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Ենթավերնագիր*</label>
+                                <hd-input value={drawerCaseSubtitle} onInput={(e: any) => setDrawerCaseSubtitle(e.target.value)} data-width="100%" data-height="36px" />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Հաճախորդ</label>
+                                <hd-input value={drawerCaseClient} onInput={(e: any) => setDrawerCaseClient(e.target.value)} data-width="100%" data-height="36px" />
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                <div>
+                                  <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Տարի</label>
+                                  <hd-input value={drawerCaseYear} onInput={(e: any) => setDrawerCaseYear(e.target.value)} data-width="100%" data-height="36px" />
+                                </div>
+                                <div>
+                                  <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Կատեգորիա</label>
+                                  <hd-input value={drawerCaseCategory} onInput={(e: any) => setDrawerCaseCategory(e.target.value)} data-width="100%" data-height="36px" />
+                                </div>
+                              </div>
+                              <div>
+                                <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Ֆոնի CSS</label>
+                                <hd-input value={drawerCaseBg} onInput={(e: any) => setDrawerCaseBg(e.target.value)} data-width="100%" data-height="36px" />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Cover URL</label>
+                                <hd-input value={drawerCaseImageUrl} onInput={(e: any) => setDrawerCaseImageUrl(e.target.value)} data-width="100%" data-height="36px" />
+                              </div>
+                              <div style={{ marginTop: '10px' }}>
+                                <hd-button type="submit" data-width="100%" data-height="38px" data-thickness="2px">💾 Պահպանել</hd-button>
+                              </div>
+                            </form>
+                          )}
+                        </div>
+                      )}
+
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Sorting and View Switcher bar for Fonts */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--panel-border)', padding: '10px 16px', borderRadius: '12px', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>Դասավորել ըստ՝</span>
+                        <select 
+                          value={fontsSortBy} 
+                          onChange={(e: any) => setFontsSortBy(e.target.value)}
+                          style={{ background: 'var(--panel)', border: '1px solid var(--panel-border)', color: '#fff', padding: '6px 12px', borderRadius: '8px', outline: 'none', fontSize: '0.82rem', cursor: 'pointer' }}
+                        >
+                          <option value="name">Անուն (A-Z)</option>
+                          <option value="year">Տարեթիվ</option>
+                          <option value="category">Կատեգորիա</option>
+                          <option value="price">Գին</option>
+                        </select>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button 
+                          onClick={() => setFontsViewMode('grid')}
+                          style={{
+                            background: fontsViewMode === 'grid' ? 'var(--switcher-capsule-bg)' : 'transparent',
+                            border: '1px solid var(--panel-border)', color: '#fff', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: fontsViewMode === 'grid' ? 'bold' : 'normal'
+                          }}
+                        >
+                          Grid
+                        </button>
+                        <button 
+                          onClick={() => setFontsViewMode('list')}
+                          style={{
+                            background: fontsViewMode === 'list' ? 'var(--switcher-capsule-bg)' : 'transparent',
+                            border: '1px solid var(--panel-border)', color: '#fff', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: fontsViewMode === 'list' ? 'bold' : 'normal'
+                          }}
+                        >
+                          List
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Main Split Layout: Cards Left, Quick Panel Right for Fonts */}
+                    <div style={{ display: 'grid', gridTemplateColumns: drawerType && drawerType.startsWith('font_') ? '1fr 400px' : '1fr', gap: '30px', alignItems: 'start' }}>
+                      
+                      {/* Left Column: Fonts List */}
+                      <div style={{ display: 'grid', gridTemplateColumns: fontsViewMode === 'grid' ? 'repeat(auto-fill, minmax(320px, 1fr))' : '1fr', gap: '20px' }}>
+                        {sortedFonts.map(f => {
+                          return (
+                            <div 
+                              key={f.id} 
+                              style={{ 
+                                background: 'var(--panel)', 
+                                border: '1px solid var(--panel-border)', 
+                                borderRadius: '16px', 
+                                overflow: 'hidden',
+                                display: 'flex',
+                                flexDirection: fontsViewMode === 'grid' ? 'column' : 'row',
+                                boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+                                alignItems: fontsViewMode === 'grid' ? 'stretch' : 'center'
+                              }}
+                            >
+                              {/* Font Card Preview */}
+                              <div style={{ 
+                                background: 'rgba(0,0,0,0.15)', 
+                                padding: fontsViewMode === 'grid' ? '24px' : '16px', 
+                                height: fontsViewMode === 'grid' ? 'auto' : '90px',
+                                width: fontsViewMode === 'grid' ? 'auto' : '180px',
+                                flexShrink: 0,
+                                display: 'flex', 
+                                flexDirection: 'column', 
+                                justifyContent: 'center', 
+                                position: 'relative', 
+                                borderBottom: fontsViewMode === 'grid' ? '1px solid var(--panel-border)' : 'none',
+                                borderRight: fontsViewMode === 'grid' ? 'none' : '1px solid var(--panel-border)'
+                              }}>
+                                <style dangerouslySetInnerHTML={{ __html: `
+                                  @font-face {
+                                    font-family: 'admin-preview-${f.id}';
+                                    src: url('${f.font_file_url}') format('${f.font_file_url.endsWith('.otf') ? 'opentype' : f.font_file_url.endsWith('.woff') ? 'woff' : f.font_file_url.endsWith('.woff2') ? 'woff2' : 'truetype'}');
+                                    font-weight: normal;
+                                    font-style: normal;
+                                  }
+                                `}} />
+                                
+                                <div style={{ 
+                                  fontFamily: `admin-preview-${f.id}, sans-serif`, 
+                                  fontSize: fontsViewMode === 'grid' ? '1.8rem' : '1.4rem', 
+                                  color: 'var(--text)',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  textAlign: 'center',
+                                  margin: '8px 0'
+                                }}>
+                                  {f.name_en}
+                                </div>
+                                
+                                <div style={{ position: 'absolute', top: '6px', left: '6px', background: 'rgba(0,0,0,0.6)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', color: '#fff' }}>
+                                  {f.category}
+                                </div>
+                              </div>
+
+                              {/* Font Content */}
+                              <div style={{ 
+                                padding: '16px', 
+                                flex: 1, 
+                                display: 'flex', 
+                                flexDirection: fontsViewMode === 'grid' ? 'column' : 'row', 
+                                alignItems: fontsViewMode === 'grid' ? 'stretch' : 'center',
+                                justifyContent: 'space-between',
+                                gap: '12px',
+                                width: '100%'
+                              }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0' }}>
+                                    {f.name_am} <span style={{ opacity: 0.5, fontSize: '0.85rem', fontWeight: 'normal' }}>({f.name_en})</span>
+                                  </h3>
+                                  <span style={{ fontSize: '0.8rem', color: 'var(--muted)', display: '-webkit-box', WebkitLineClamp: '1', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                    {f.description_am || f.description_en}
+                                  </span>
+                                  <div style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'flex', gap: '12px', marginTop: '4px' }}>
+                                    {f.creator && <span><strong>Հեղինակ՝</strong> {f.creator}</span>}
+                                    {f.year && <span><strong>Տարեթիվ՝</strong> {f.year}</span>}
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end', marginTop: fontsViewMode === 'grid' ? '12px' : '0' }}>
+                                  <a href={`/admin/editor/font/${f.id}`} style={{ textDecoration: 'none' }}>
+                                    <hd-button 
+                                      data-color="var(--accent)"
+                                      data-width="120px"
+                                      data-height="30px"
+                                      data-font-size="0.7rem"
+                                    >
+                                      ✏ WYSIWYG
+                                    </hd-button>
+                                  </a>
+                                  <hd-button 
+                                    onClick={() => openFontDrawer(f, 'font_preview')}
+                                    data-color="#2196f3" 
+                                    data-width="110px" 
+                                    data-height="30px"
+                                    data-font-size="0.7rem"
+                                  >
+                                    👁 Դիտում
+                                  </hd-button>
+                                  <hd-button 
+                                    onClick={() => openFontDrawer(f, 'font_edit')}
+                                    data-color="#FFBB28" 
+                                    data-width="130px" 
+                                    data-height="30px"
+                                    data-font-size="0.7rem"
+                                  >
+                                    ⚙ Խմբագրել
+                                  </hd-button>
+                                  <hd-button 
+                                    onClick={() => handleDeleteFont(f.id)}
+                                    data-color="#ff6b6b" 
+                                    data-width="90px" 
+                                    data-height="30px"
+                                    data-font-size="0.7rem"
+                                  >
+                                    ✕ Ջնջել
+                                  </hd-button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Right Column: Sticky Quick Sidebar for Fonts */}
+                      {drawerType && drawerType.startsWith('font_') && drawerFontOriginal && (
+                        <div style={{ background: 'var(--panel)', border: '1px solid var(--panel-border)', borderRadius: '24px', padding: '24px', position: 'sticky', top: '80px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 8px 30px rgba(0,0,0,0.1)' }}>
+                          <style dangerouslySetInnerHTML={{ __html: `
+                            @font-face {
+                              font-family: 'drawer-preview-${drawerFontId}';
+                              src: url('${drawerFontFileUrl}') format('truetype');
+                              font-weight: normal;
+                              font-style: normal;
+                            }
+                          ` }} />
+                          
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--panel-border)', paddingBottom: '12px' }}>
+                            <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#fff' }}>
+                              {drawerType === 'font_preview' ? '👁 Արագ Դիտում' : '⚙ Արագ Խմբագրում'}
+                            </h4>
+                            <button onClick={() => setDrawerType(null)} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '1.1rem', cursor: 'pointer' }}>✕</button>
                           </div>
-                        </form>
+
+                          {drawerType === 'font_preview' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                              <div>
+                                <span style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase' }}>Դասակարգում</span>
+                                <div style={{ fontSize: '0.88rem', color: '#fff', marginTop: '2px' }}>{drawerFontCategory} • {drawerFontCreator}</div>
+                              </div>
+
+                              {/* Live Sandbox */}
+                              <div style={{ background: '#0a0a0c', border: '1px solid var(--panel-border)', borderRadius: '12px', padding: '16px' }}>
+                                <label style={{ fontSize: '0.72rem', color: 'var(--muted)', display: 'block', marginBottom: '8px' }}>Փորձարկման Դաշտ (Live Sandbox)</label>
+                                <textarea 
+                                  value={drawerFontSandboxText}
+                                  onChange={e => setDrawerFontSandboxText(e.target.value)}
+                                  style={{
+                                    width: '100%', minHeight: '60px', background: 'transparent', border: 'none', outline: 'none',
+                                    color: '#fff', fontFamily: `drawer-preview-${drawerFontId}, sans-serif`,
+                                    fontSize: `${drawerFontSize}px`, resize: 'vertical'
+                                  }}
+                                />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px', marginTop: '8px' }}>
+                                  <span style={{ fontSize: '0.68rem', color: 'var(--muted)' }}>Տառաչափս՝ {drawerFontSize}px</span>
+                                  <input 
+                                    type="range" min="14" max="72" value={drawerFontSize}
+                                    onChange={e => setDrawerFontSize(Number(e.target.value))}
+                                    style={{ width: '100px', accentColor: 'var(--accent)' }}
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Waterfall */}
+                              <div>
+                                <span style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Waterfall Test</span>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontFamily: `drawer-preview-${drawerFontId}, sans-serif` }}>
+                                  <div style={{ fontSize: '12px', opacity: 0.6 }}>12px: Quick brown fox jumps over.</div>
+                                  <div style={{ fontSize: '18px', opacity: 0.8 }}>18px: Quick brown fox jumps.</div>
+                                  <div style={{ fontSize: '24px' }}>24px: Quick brown fox.</div>
+                                </div>
+                              </div>
+
+                              <div style={{ borderTop: '1px solid var(--panel-border)', paddingTop: '16px', marginTop: '8px' }}>
+                                <a href={`/admin/editor/font/${drawerFontId}`} style={{ textDecoration: 'none' }}>
+                                  <hd-button data-width="100%" data-height="36px" data-thickness="1px">✏ Բացել WYSIWYG խմբագրիչը</hd-button>
+                                </a>
+                              </div>
+                            </div>
+                          )}
+
+                          {drawerType === 'font_edit' && (
+                            <form onSubmit={handleSaveFontDrawer} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                              <div>
+                                <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Անուն (Հայերեն)*</label>
+                                <hd-input value={drawerFontNameAm} onInput={(e: any) => setDrawerFontNameAm(e.target.value)} data-width="100%" data-height="36px" />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Name (English)*</label>
+                                <hd-input value={drawerFontNameEn} onInput={(e: any) => setDrawerFontNameEn(e.target.value)} data-width="100%" data-height="36px" />
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '10px' }}>
+                                <div>
+                                  <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Կատեգորիա</label>
+                                  <select 
+                                    value={drawerFontCategory}
+                                    onChange={e => setDrawerFontCategory(e.target.value)}
+                                    style={{ width: '100%', height: '36px', background: 'var(--panel-border)', border: '1px solid var(--panel-border)', borderRadius: '12px', color: '#fff', padding: '0 8px', outline: 'none' }}
+                                  >
+                                    <option value="Sans-Serif">Sans-Serif</option>
+                                    <option value="Serif">Serif</option>
+                                    <option value="Display">Display</option>
+                                    <option value="Monospace">Monospace</option>
+                                    <option value="Variable">Variable</option>
+                                  </select>
+                                </div>
+                                <div>
+                                  <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Տարեթիվ</label>
+                                  <hd-input value={drawerFontYear} onInput={(e: any) => setDrawerFontYear(e.target.value)} data-width="100%" data-height="36px" />
+                                </div>
+                              </div>
+                              <div>
+                                <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Հեղինակ</label>
+                                <hd-input value={drawerFontCreator} onInput={(e: any) => setDrawerFontCreator(e.target.value)} data-width="100%" data-height="36px" />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Ֆայլի հղում</label>
+                                <hd-input value={drawerFontFileUrl} onInput={(e: any) => setDrawerFontFileUrl(e.target.value)} data-width="100%" data-height="36px" />
+                              </div>
+
+                              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--panel-border)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', cursor: 'pointer' }}>
+                                  <input 
+                                    type="checkbox" checked={drawerFontDownloadable}
+                                    onChange={e => setDrawerFontDownloadable(e.target.checked)}
+                                    style={{ accentColor: 'var(--accent)' }}
+                                  />
+                                  Անվճար ներբեռնելի (Downloadable)
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', cursor: 'pointer' }}>
+                                  <input 
+                                    type="checkbox" checked={drawerFontPaid}
+                                    onChange={e => setDrawerFontPaid(e.target.checked)}
+                                    style={{ accentColor: 'var(--accent)' }}
+                                  />
+                                  Վճարովի (Commercial)
+                                </label>
+                              </div>
+
+                              {drawerFontPaid && (
+                                <div style={{ display: 'grid', gridTemplateColumns: '0.8fr 1.2fr', gap: '10px' }}>
+                                  <div>
+                                    <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Գին</label>
+                                    <hd-input value={drawerFontPrice} onInput={(e: any) => setDrawerFontPrice(e.target.value)} data-width="100%" data-height="36px" />
+                                  </div>
+                                  <div>
+                                    <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Գնման հղում</label>
+                                    <hd-input value={drawerFontPurchaseUrl} onInput={(e: any) => setDrawerFontPurchaseUrl(e.target.value)} data-width="100%" data-height="36px" />
+                                  </div>
+                                </div>
+                              )}
+
+                              <div style={{ marginTop: '10px' }}>
+                                <hd-button type="submit" data-width="100%" data-height="38px" data-thickness="2px">💾 Պահպանել</hd-button>
+                              </div>
+                            </form>
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
+                  </>
+                )}
 
-                </div>
-                {/* Font modal markup fully cleaned up */}
+                {/* Case modal markup fully cleaned up */}
               </div>
             )}
 
@@ -3942,26 +3994,6 @@ export default function AdminDashboard() {
         >
           <span className="icon-Image" style={{ fontSize: '1.4rem' }} />
           <div className="nav-tooltip">Քեյսեր</div>
-        </div>
-
-        <div 
-          onClick={() => setActiveTab('fonts')}
-          className="nav-btn"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: activeTab === 'fonts' ? 'var(--switcher-capsule-bg)' : 'transparent',
-            color: activeTab === 'fonts' ? '#fff' : 'var(--muted)',
-            borderRadius: '16px',
-            width: '50px',
-            height: '50px',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-        >
-          <span className="icon-Pencil" style={{ fontSize: '1.4rem' }} />
-          <div className="nav-tooltip">Տառատեսակներ</div>
         </div>
 
 

@@ -239,7 +239,7 @@ body {
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
-  padding: 24px 24px 48px;
+  padding: 24px 24px 0;
 }
 
 .poster {
@@ -756,7 +756,6 @@ html[data-theme="green"] .hero-signature {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(8, 63, 57, 0.08);
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02);
     transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67);
     pointer-events: none;
@@ -765,13 +764,11 @@ html[data-theme="green"] .hero-signature {
 
 html[data-theme="dark"] .portfolio-header::before {
   background: rgba(15, 23, 42, 0.95);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
 }
 
 html[data-theme="green"] .portfolio-header::before {
   background: rgba(11, 74, 65, 0.95);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
 }
 
@@ -789,20 +786,17 @@ html[data-theme="green"] .portfolio-header::before {
       background: rgba(255, 255, 255, 0.85);
       backdrop-filter: blur(20px);
       box-shadow: 0 10px 40px rgba(8, 63, 57, 0.08);
-      border: 1px solid rgba(8, 63, 57, 0.05);
     }
   }
 }
 
 html[data-theme="dark"] .portfolio-header-wrapper.scrolled .portfolio-header::before {
   background: rgba(15, 23, 42, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
 html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header::before {
   background: rgba(11, 74, 65, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
@@ -1293,15 +1287,18 @@ html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header::b
 
 /* Gallery Grid */
 .gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 24px;
   margin-top: 32px;
 }
 
 .gallery-card {
   position: relative;
-  aspect-ratio: 4/3;
+  width: auto;
+  height: 220px;
+  max-width: 600px;
   border-radius: 16px;
   overflow: visible;
   box-shadow: none;
@@ -1309,6 +1306,11 @@ html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header::b
   border: 1px solid var(--panel-border);
   background: var(--panel);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  flex-shrink: 0;
+
+  &.has-svg {
+    aspect-ratio: 4/3;
+  }
   
   &:hover {
     .gallery-overlay {
@@ -1321,9 +1323,19 @@ html[data-theme="green"] .portfolio-header-wrapper.scrolled .portfolio-header::b
   }
 
   .gallery-img-container {
-    width: 100%;
+    width: auto;
     height: 100%;
     position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  img {
+    height: 100%;
+    width: auto;
+    display: block;
+    object-fit: contain;
   }
 
   .gallery-overlay {
@@ -1556,6 +1568,39 @@ body {
 
   &.bottom-right .pill-2 {
     transform: translateY(220px);
+  }
+}
+
+/* Specific Override to Make Hover Lines Smaller for Gallery and Marquee Cards */
+.gallery-card .card-hover-decor,
+.marquee-card .card-hover-decor {
+  width: 32px;
+  height: 140px;
+
+  &.top-left {
+    top: -30px;
+    left: 20px;
+  }
+
+  &.bottom-right {
+    bottom: -30px;
+    right: 20px;
+  }
+
+  &.top-left .pill-1 {
+    transform: translateY(-110px);
+  }
+
+  &.top-left .pill-2 {
+    transform: translateY(-140px);
+  }
+
+  &.bottom-right .pill-1 {
+    transform: translateY(140px);
+  }
+
+  &.bottom-right .pill-2 {
+    transform: translateY(110px);
   }
 }
 

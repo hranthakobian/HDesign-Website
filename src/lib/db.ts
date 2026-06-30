@@ -157,9 +157,10 @@ export async function getCases(): Promise<Case[]> {
     }
   }
 
-  if (supabase) {
+  const readClient = supabaseAdmin || supabase;
+  if (readClient) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await readClient
         .from('cases')
         .select('*')
         .order('created_at', { ascending: false });
@@ -668,9 +669,10 @@ export async function getFonts(): Promise<Font[]> {
     }
   }
 
-  if (supabase) {
+  const readClient = supabaseAdmin || supabase;
+  if (readClient) {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await readClient
         .from('fonts')
         .select('*')
         .order('created_at', { ascending: false });

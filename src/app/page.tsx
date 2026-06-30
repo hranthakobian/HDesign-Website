@@ -8,6 +8,40 @@ import { getPastelColor, getCasePastelColor } from "@/lib/brandingData";
 import InteractiveWaveText from "@/components/InteractiveWaveText";
 import selectionJson from "../../icons/selection.json";
 
+// Helper to convert dynamic RGB to dark overlay background and bright pastel line color
+const getColorsFromRgb = (r: number, g: number, b: number) => {
+  const rNorm = r / 255;
+  const gNorm = g / 255;
+  const bNorm = b / 255;
+  const max = Math.max(rNorm, gNorm, bNorm);
+  const min = Math.min(rNorm, gNorm, bNorm);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case rNorm: h = (gNorm - bNorm) / d + (gNorm < bNorm ? 6 : 0); break;
+      case gNorm: h = (bNorm - rNorm) / d + 2; break;
+      case bNorm: h = (rNorm - gNorm) / d + 4; break;
+    }
+    h /= 6;
+  }
+
+  const hue = Math.round(h * 360);
+  const saturation = Math.round(s * 100);
+
+  // Overlay background: dark, semi-transparent HSL
+  const overlayBg = `hsla(${hue}, ${Math.min(saturation, 35)}%, 10%, 0.88)`;
+
+  // Line color: bright, pastel HSL (80% lightness, max 55% saturation)
+  const lineColor = `hsl(${hue}, ${Math.min(saturation, 55)}%, 80%)`;
+
+  return { overlayBg, lineColor };
+};
+
 // Custom icons list for the explorer section
 const iconsList = [
   "icon-QR-Code", "icon-Pattern", "icon-Dashboard", "icon-Settings", "icon-Search",
@@ -319,6 +353,8 @@ export default function Home() {
   const [casesList, setCasesList] = useState<any[]>([]);
   const [selectedCase, setSelectedCase] = useState<any | null>(null);
   const [ratings, setRatings] = useState<Record<string, { sum: number; count: number }>>({});
+  const [aspectRatios, setAspectRatios] = useState<Record<string, number>>({});
+  const [hoverColors, setHoverColors] = useState<Record<string, { overlay: string; line: string }>>({});
 
   const renderCardRating = (workId: string) => {
     const item = ratings[workId];
@@ -327,6 +363,95 @@ export default function Home() {
     return (
       <div style={{ display: "inline-flex", alignItems: "center", gap: "4px", background: "rgba(255,255,0,0.15)", border: "1px solid rgba(255,204,0,0.3)", padding: "2px 6px", borderRadius: "6px", fontSize: "0.72rem", color: "#ffcc00", fontWeight: 700, marginTop: "4px" }}>
         ★ {avg}
+      </div>
+    );
+  };
+
+  const renderGalleryCard = (work: any, index: number) => {
+    const aspectRatio = aspectRatios[work.id] || (work.image_url ? 1.5 : 4/3);
+    const colors = hoverColors[work.id];
+    const overlayBg = colors?.overlay || "rgba(8, 63, 57, 0.9)";
+    const lineColor = colors?.line || getCasePastelColor(work);
+
+    return (
+      <div 
+        key={work.id} 
+        className={`gallery-card ${!work.image_url ? 'has-svg' : ''}`}
+        onClick={() => setSelectedGalleryIndex(index)}
+        style={{
+          cursor: "pointer",
+          flexGrow: aspectRatio,
+          flexShrink: aspectRatio,
+          flexBasis: `${aspectRatio * 150}px`,
+          height: "220px"
+        }}
+        title="Դիտել պատկերասրահը"
+      >
+        <div className="gallery-img-container" style={{ background: work.bg, width: "100%", height: "100%" }}>
+          {work.image_url ? (
+            <img 
+              src={work.image_url} 
+              alt={work.title} 
+              crossOrigin="anonymous"
+              onLoad={(e) => {
+                const img = e.currentTarget;
+                const { naturalWidth, naturalHeight } = img;
+                if (naturalWidth && naturalHeight) {
+                  setAspectRatios(prev => ({
+                    ...prev,
+                    [work.id]: naturalWidth / naturalHeight
+                  }));
+                }
+
+                // Extract average color using a 1x1 canvas
+                try {
+                  const canvas = document.createElement("canvas");
+                  canvas.width = 1;
+                  canvas.height = 1;
+                  const ctx = canvas.getContext("2d");
+                  if (ctx) {
+                    ctx.drawImage(img, 0, 0, 1, 1);
+                    const pixel = ctx.getImageData(0, 0, 1, 1).data;
+                    const r = pixel[0];
+                    const g = pixel[1];
+                    const b = pixel[2];
+                    
+                    const extracted = getColorsFromRgb(r, g, b);
+                    setHoverColors(prev => ({
+                      ...prev,
+                      [work.id]: { overlay: extracted.overlayBg, line: extracted.lineColor }
+                    }));
+                  }
+                } catch (err) {
+                  console.warn("Color extraction failed for", work.id, err);
+                }
+              }}
+              style={{ height: "100%", width: "100%", objectFit: "cover", opacity: 0.9, display: "block" }} 
+            />
+          ) : (
+            getSvgForCase(work.id)
+          )}
+        </div>
+        <div className="gallery-overlay" style={{ background: overlayBg }}>
+          {/* Decorative Hover SVGs */}
+          <div className="card-hover-decor top-left">
+            <svg width="32" height="140" viewBox="0 0 32 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect className="svg-pill pill-1" x="0" y="0" width="12" height="90" rx="6" fill={lineColor}></rect>
+              <rect className="svg-pill pill-2" x="20" y="40" width="12" height="90" rx="6" fill={lineColor}></rect>
+            </svg>
+          </div>
+          <div className="card-hover-decor bottom-right">
+            <svg width="32" height="140" viewBox="0 0 32 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect className="svg-pill pill-1" x="0" y="0" width="12" height="90" rx="6" fill={lineColor}></rect>
+              <rect className="svg-pill pill-2" x="20" y="40" width="12" height="90" rx="6" fill={lineColor}></rect>
+            </svg>
+          </div>
+
+          <div style={{ position: "relative", zIndex: 3 }}>
+            <h3 style={{ fontSize: "1.1rem", fontWeight: "700", margin: "0 0 6px" }}>{work.title}</h3>
+            <p style={{ fontSize: "0.85rem", opacity: 0.8, margin: 0 }}>{work.subtitle}</p>
+          </div>
+        </div>
       </div>
     );
   };
@@ -452,9 +577,78 @@ export default function Home() {
     };
   }, [selectedIconDetail, iconSearch]);
 
-  // Filter cases that have a preview image for marquee display
-  const marqueeItems = casesList.filter(c => c.image_url);
+  // Filter cases that have a preview image and are brandings for the marquee/slider display
+  const marqueeItems = casesList.filter(c => {
+    if (!c.image_url) return false;
+    const cardId = String(c.id);
+    if (cardId.startsWith('port-')) return false; // exclude uploaded portfolio design items
+    if (cardId.startsWith('local-b-')) return true;
+    if (c.category?.toLowerCase() === 'branding') return true;
+    if (c.subtitle?.includes('Բրենդավորում') || c.subtitle?.includes('Բրենդինգ')) return true;
+    return false;
+  });
 
+  // Filter cases to show only vector/design gallery items (not branding)
+  const portCases = casesList.filter(c => String(c.id).startsWith('port-'));
+  const galleryCases = (portCases.length > 0 
+    ? portCases 
+    : casesList.filter(c => String(c.id).startsWith('local-g-'))).slice(0, 15);
+
+  // Gallery slider states
+  const [selectedGalleryIndex, setSelectedGalleryIndex] = useState<number | null>(null);
+  const [isSlideshowPlaying, setIsSlideshowPlaying] = useState<boolean>(false);
+
+  // Keyboard navigation & Slideshow for Gallery Lightbox
+  useEffect(() => {
+    if (selectedGalleryIndex === null) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectedGalleryIndex(null);
+        setIsSlideshowPlaying(false);
+      } else if (e.key === "ArrowRight") {
+        setSelectedGalleryIndex(prev => (prev !== null ? (prev + 1) % galleryCases.length : null));
+      } else if (e.key === "ArrowLeft") {
+        setSelectedGalleryIndex(prev => (prev !== null ? (prev - 1 + galleryCases.length) % galleryCases.length : null));
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedGalleryIndex, galleryCases.length]);
+
+  useEffect(() => {
+    if (!isSlideshowPlaying || selectedGalleryIndex === null) return;
+
+    const interval = setInterval(() => {
+      setSelectedGalleryIndex(prev => (prev !== null ? (prev + 1) % galleryCases.length : null));
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [isSlideshowPlaying, selectedGalleryIndex, galleryCases.length]);
+  useEffect(() => {
+    if (selectedGalleryIndex === null) return;
+
+    const preventDefault = (e: Event) => {
+      e.preventDefault();
+    };
+
+    const handleKeyScroll = (e: KeyboardEvent) => {
+      if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", " ", "Home", "End"].includes(e.key)) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener("wheel", preventDefault, { passive: false });
+    window.addEventListener("touchmove", preventDefault, { passive: false });
+    window.addEventListener("keydown", handleKeyScroll, { passive: false });
+
+    return () => {
+      window.removeEventListener("wheel", preventDefault);
+      window.removeEventListener("touchmove", preventDefault);
+      window.removeEventListener("keydown", handleKeyScroll);
+    };
+  }, [selectedGalleryIndex]);
   // Helper to retrieve the correct branding details link
   const getBrandingLink = (card: any) => {
     const cardId = String(card.id);
@@ -610,15 +804,15 @@ export default function Home() {
                   
                   {/* Decorative Hover SVGs */}
                   <div className="card-hover-decor top-left">
-                    <svg width="64" height="260" viewBox="0 0 64 260" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect className="svg-pill pill-1" x="0" y="0" width="24" height="180" rx="12" fill={getCasePastelColor({ title: card.title, bg: card.bg || card.color })}></rect>
-                      <rect className="svg-pill pill-2" x="40" y="80" width="24" height="180" rx="12" fill={getCasePastelColor({ title: card.title, bg: card.bg || card.color })}></rect>
+                    <svg width="32" height="140" viewBox="0 0 32 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect className="svg-pill pill-1" x="0" y="0" width="12" height="90" rx="6" fill={getCasePastelColor({ title: card.title, bg: card.bg || card.color })}></rect>
+                      <rect className="svg-pill pill-2" x="20" y="40" width="12" height="90" rx="6" fill={getCasePastelColor({ title: card.title, bg: card.bg || card.color })}></rect>
                     </svg>
                   </div>
                   <div className="card-hover-decor bottom-right">
-                    <svg width="64" height="260" viewBox="0 0 64 260" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect className="svg-pill pill-1" x="0" y="0" width="24" height="180" rx="12" fill={getCasePastelColor({ title: card.title, bg: card.bg || card.color })}></rect>
-                      <rect className="svg-pill pill-2" x="40" y="80" width="24" height="180" rx="12" fill={getCasePastelColor({ title: card.title, bg: card.bg || card.color })}></rect>
+                    <svg width="32" height="140" viewBox="0 0 32 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect className="svg-pill pill-1" x="0" y="0" width="12" height="90" rx="6" fill={getCasePastelColor({ title: card.title, bg: card.bg || card.color })}></rect>
+                      <rect className="svg-pill pill-2" x="20" y="40" width="12" height="90" rx="6" fill={getCasePastelColor({ title: card.title, bg: card.bg || card.color })}></rect>
                     </svg>
                   </div>
 
@@ -704,59 +898,33 @@ export default function Home() {
             Այլ աշխատանքներ
           </h2>
           
-          <div className="gallery-grid">
-            {(showAllGallery ? casesList : casesList.slice(0, 8)).map((work) => (
-              <div 
-                key={work.id} 
-                className="gallery-card"
-                onClick={() => setSelectedCase(work)}
-                style={{ cursor: "pointer" }}
-                title="Սեղմեք մանրամասների համար"
-              >
-                <div className="gallery-img-container" style={{ background: work.bg }}>
-                  {work.image_url ? (
-                    <img 
-                      src={work.image_url} 
-                      alt={work.title} 
-                      style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.9 }} 
-                    />
-                  ) : (
-                    getSvgForCase(work.id)
-                  )}
-                </div>
-                <div className="gallery-overlay">
-                  {/* Decorative Hover SVGs */}
-                  <div className="card-hover-decor top-left">
-                    <svg width="64" height="260" viewBox="0 0 64 260" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect className="svg-pill pill-1" x="0" y="0" width="24" height="180" rx="12" fill={getCasePastelColor(work)}></rect>
-                      <rect className="svg-pill pill-2" x="40" y="80" width="24" height="180" rx="12" fill={getCasePastelColor(work)}></rect>
-                    </svg>
-                  </div>
-                  <div className="card-hover-decor bottom-right">
-                    <svg width="64" height="260" viewBox="0 0 64 260" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect className="svg-pill pill-1" x="0" y="0" width="24" height="180" rx="12" fill={getCasePastelColor(work)}></rect>
-                      <rect className="svg-pill pill-2" x="40" y="80" width="24" height="180" rx="12" fill={getCasePastelColor(work)}></rect>
-                    </svg>
-                  </div>
+          <div className="gallery-grid" style={{ display: "flex", flexDirection: "column", gap: "24px", alignItems: "center" }}>
+            {/* Row 1 (first 5 cases) */}
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "24px", width: "100%" }}>
+              {galleryCases.slice(0, 5).map((work, idx) => renderGalleryCard(work, idx))}
+            </div>
 
-                  <div style={{ position: "relative", zIndex: 3 }}>
-                    <h3 style={{ fontSize: "1.1rem", fontWeight: "700", margin: "0 0 6px" }}>{work.title}</h3>
-                    <p style={{ fontSize: "0.85rem", opacity: 0.8, margin: 0 }}>{work.subtitle}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
+            {/* Row 2 (next 5 cases) */}
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "24px", width: "100%" }}>
+              {galleryCases.slice(5, 10).map((work, idx) => renderGalleryCard(work, 5 + idx))}
+            </div>
+
+            {/* Row 3 (last 5 cases) */}
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "24px", width: "100%" }}>
+              {galleryCases.slice(10, 15).map((work, idx) => renderGalleryCard(work, 10 + idx))}
+            </div>
           </div>
 
           <div style={{ display: "flex", justifyContent: "center", marginTop: "36px" }}>
-            <hd-button 
-              onClick={() => setShowAllGallery(!showAllGallery)}
-              data-width="160px"
-              data-height="52px"
-              data-thickness="3px"
-            >
-              {showAllGallery ? "Փակել" : "Ավելի"}
-            </hd-button>
+            <Link href="/works?category=design">
+              <hd-button 
+                data-width="160px"
+                data-height="52px"
+                data-thickness="3px"
+              >
+                Ավելի
+              </hd-button>
+            </Link>
           </div>
         </section>
 
@@ -1318,7 +1486,265 @@ export default function Home() {
           </div>
         )}
 
+        {/* ══ DYNAMIC GALLERY LIGHTBOX SLIDER ══ */}
+        {selectedGalleryIndex !== null && typeof window !== "undefined" && createPortal(
+          <div 
+            onClick={() => { setSelectedGalleryIndex(null); setIsSlideshowPlaying(false); }}
+            style={{
+              position: "fixed",
+              inset: 0,
+              height: "100vh",
+              overflow: "hidden",
+              zIndex: 999999,
+              background: "#000",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              padding: "24px",
+              animation: "fadeIn 0.3s ease-out"
+            }}
+          >
+            {/* Top Bar / Header */}
+            <div 
+              onClick={(e) => e.stopPropagation()} 
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                color: "#fff",
+                width: "100%",
+                height: "50px",
+                zIndex: 10
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>
+                  {locale === "en" ? "Gallery Preview" : "Պատկերասրահ"} ({selectedGalleryIndex + 1} / {galleryCases.length})
+                </span>
+                <span style={{ fontSize: "1.1rem", fontWeight: 700 }}>
+                  {galleryCases[selectedGalleryIndex]?.title}
+                </span>
+              </div>
 
+              {/* Actions */}
+              <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                {/* Slideshow Button */}
+                <button
+                  onClick={() => setIsSlideshowPlaying(prev => !prev)}
+                  style={{
+                    background: "rgba(255, 255, 255, 0.08)",
+                    border: "1px solid rgba(255, 255, 255, 0.12)",
+                    borderRadius: "20px",
+                    color: "#fff",
+                    padding: "6px 14px",
+                    fontSize: "0.8rem",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)"}
+                >
+                  <span>{isSlideshowPlaying ? "⏸" : "▶"}</span>
+                  <span>{isSlideshowPlaying ? (locale === "en" ? "Pause" : "Դադար") : (locale === "en" ? "Autoplay" : "Ավտոմատ")}</span>
+                </button>
+
+                {/* Close Button */}
+                <div 
+                  onClick={() => { setSelectedGalleryIndex(null); setIsSlideshowPlaying(false); }}
+                  style={{
+                    background: "rgba(255, 255, 255, 0.08)",
+                    border: "1px solid rgba(255, 255, 255, 0.12)",
+                    borderRadius: "50%",
+                    width: "40px",
+                    height: "40px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    transition: "background 0.2s"
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)"}
+                >
+                  <span className="icon-Close" style={{ fontSize: "1rem", color: "#fff" }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Main Stage (Image & Arrows) */}
+            <div 
+              style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                position: "relative",
+                width: "100%",
+                overflow: "hidden"
+              }}
+            >
+              {/* Prev Arrow */}
+              <div 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  setSelectedGalleryIndex(prev => (prev !== null ? (prev - 1 + galleryCases.length) % galleryCases.length : null)); 
+                }}
+                style={{
+                  position: "absolute",
+                  left: "20px",
+                  zIndex: 20,
+                  background: "rgba(255, 255, 255, 0.05)",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  borderRadius: "50%",
+                  width: "54px",
+                  height: "54px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  color: "#fff",
+                  fontSize: "1.2rem",
+                  transition: "all 0.3s ease"
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"; e.currentTarget.style.transform = "scale(1.1)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)"; e.currentTarget.style.transform = "scale(1)"; }}
+              >
+                ←
+              </div>
+
+              {/* Central Viewport */}
+              <div 
+                onClick={(e) => e.stopPropagation()} 
+                style={{ 
+                  maxWidth: "80%", 
+                  maxHeight: "calc(100vh - 260px)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  position: "relative",
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  boxShadow: "0 30px 90px rgba(0,0,0,0.8)",
+                  background: "transparent",
+                  padding: "24px",
+                  animation: "fadeIn 0.25s ease-out"
+                }}
+              >
+                {galleryCases[selectedGalleryIndex]?.image_url ? (
+                  <img 
+                    src={galleryCases[selectedGalleryIndex].image_url} 
+                    alt={galleryCases[selectedGalleryIndex].title} 
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: "calc(100vh - 310px)",
+                      objectFit: "contain",
+                      display: "block",
+                      borderRadius: "8px"
+                    }}
+                  />
+                ) : (
+                  <div style={{ width: "240px", height: "240px", display: "flex", alignItems: "center", justifyItems: "center", color: "#fff" }}>
+                    {getSvgForCase(galleryCases[selectedGalleryIndex]?.id)}
+                  </div>
+                )}
+              </div>
+
+              {/* Next Arrow */}
+              <div 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  setSelectedGalleryIndex(prev => (prev !== null ? (prev + 1) % galleryCases.length : null)); 
+                }}
+                style={{
+                  position: "absolute",
+                  right: "20px",
+                  zIndex: 20,
+                  background: "rgba(255, 255, 255, 0.05)",
+                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  borderRadius: "50%",
+                  width: "54px",
+                  height: "54px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  color: "#fff",
+                  fontSize: "1.2rem",
+                  transition: "all 0.3s ease"
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"; e.currentTarget.style.transform = "scale(1.1)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)"; e.currentTarget.style.transform = "scale(1)"; }}
+              >
+                →
+              </div>
+            </div>
+
+            {/* Bottom Panel (Thumbnail strip & info) */}
+            <div 
+              onClick={(e) => e.stopPropagation()} 
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "14px",
+                width: "100%",
+                zIndex: 10
+              }}
+            >
+              {/* Active description detail */}
+              <p style={{ margin: 0, fontSize: "0.88rem", opacity: 0.75, color: "#fff", textAlign: "center", maxWidth: "600px", minHeight: "20px" }}>
+                {galleryCases[selectedGalleryIndex]?.details || (locale === "en" ? "No details available." : "Այս նախագծի համար մանրամասն նկարագրություն դեռևս ավելացված չէ:")}
+              </p>
+
+              {/* Thumbnails strip */}
+              <div 
+                style={{
+                  display: "flex",
+                  gap: "10px",
+                  overflowX: "auto",
+                  maxWidth: "100%",
+                  padding: "4px 0",
+                  scrollbarWidth: "none"
+                }}
+              >
+                {galleryCases.map((work, idx) => (
+                  <div
+                    key={work.id}
+                    onClick={() => setSelectedGalleryIndex(idx)}
+                    style={{
+                      width: "60px",
+                      height: "45px",
+                      borderRadius: "8px",
+                      overflow: "hidden",
+                      cursor: "pointer",
+                      border: idx === selectedGalleryIndex ? "2px solid var(--accent)" : "2px solid transparent",
+                      opacity: idx === selectedGalleryIndex ? 1 : 0.4,
+                      transform: idx === selectedGalleryIndex ? "scale(1.05)" : "scale(1)",
+                      transition: "all 0.2s ease",
+                      background: work.bg || "#111",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0
+                    }}
+                  >
+                    {work.image_url ? (
+                      <img src={work.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <div style={{ transform: "scale(0.35)", width: "30px", height: "30px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {getSvgForCase(work.id)}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
 
       </>
     );
