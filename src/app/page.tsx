@@ -577,16 +577,10 @@ export default function Home() {
     };
   }, [selectedIconDetail, iconSearch]);
 
-  // Filter cases that have a preview image and are brandings for the marquee/slider display
-  const marqueeItems = casesList.filter(c => {
-    if (!c.image_url) return false;
-    const cardId = String(c.id);
-    if (cardId.startsWith('port-')) return false; // exclude uploaded portfolio design items
-    if (cardId.startsWith('local-b-')) return true;
-    if (c.category?.toLowerCase() === 'branding') return true;
-    if (c.subtitle?.includes('Բրենդավորում') || c.subtitle?.includes('Բրենդինգ')) return true;
-    return false;
-  });
+  // Filter cases to show all branding cases (maximum 10 items) for marquee
+  const marqueeItems = casesList
+    .filter(c => !String(c.id).startsWith('port-') && !String(c.id).startsWith('local-g-'))
+    .slice(0, 10);
 
   // Filter cases to show only vector/design gallery items (not branding)
   const portCases = casesList.filter(c => String(c.id).startsWith('port-'));
