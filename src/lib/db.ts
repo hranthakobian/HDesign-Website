@@ -158,6 +158,9 @@ export async function getCases(): Promise<Case[]> {
   }
 
   const readClient = supabaseAdmin || supabase;
+  let dbCases: Case[] = [];
+  let supabaseSuccess = false;
+
   if (readClient) {
     try {
       const { data, error } = await readClient
@@ -166,21 +169,28 @@ export async function getCases(): Promise<Case[]> {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        const dynamicIds = new Set((data as any[]).map((x: any) => x.id));
-        const localFiltered = localCases.filter(x => !dynamicIds.has(x.id));
-        
-        const combinedIds = new Set([...data.map((x: any) => x.id), ...localFiltered.map(x => x.id)]);
-        const filteredSeeds = defaultSeededCases.filter((x: Case) => !combinedIds.has(x.id));
-        
-        return [...data, ...localFiltered, ...filteredSeeds];
+        dbCases = data;
+        supabaseSuccess = true;
+      } else if (error) {
+        console.warn('Supabase getCases query error:', error.message);
       }
     } catch (err) {
       console.warn('Supabase getCases failed, falling back to local storage:', err);
     }
   }
 
-  const dynamicIds = new Set(localCases.map((x: Case) => x.id));
-  const filteredSeeds = defaultSeededCases.filter((x: Case) => !dynamicIds.has(x.id));
+  const deletedSeeds = await getSiteSetting('deleted_seed_cases', []);
+  const deletedSeedsSet = new Set(deletedSeeds || []);
+
+  const currentDbCases = supabaseSuccess ? dbCases : [];
+  const dynamicIds = new Set([...currentDbCases.map((x: any) => x.id), ...localCases.map(x => x.id)]);
+  const filteredSeeds = defaultSeededCases.filter((x: Case) => !dynamicIds.has(x.id) && !deletedSeedsSet.has(x.id));
+  
+  if (supabaseSuccess) {
+    const localFiltered = localCases.filter(x => !dynamicIds.has(x.id));
+    return [...dbCases, ...localFiltered, ...filteredSeeds];
+  }
+
   return [...localCases, ...filteredSeeds];
 }
 
@@ -234,6 +244,23 @@ export async function saveCase(c: Case): Promise<Case | null> {
 export async function deleteCase(id: string): Promise<boolean> {
   await ensureLocalDbFiles();
   
+  const isSeed = id.startsWith('seed-');
+  let seedRegistered = false;
+
+  if (isSeed) {
+    try {
+      const deletedSeeds = await getSiteSetting('deleted_seed_cases', []);
+      if (!deletedSeeds.includes(id)) {
+        deletedSeeds.push(id);
+        await saveSiteSetting('deleted_seed_cases', deletedSeeds);
+      }
+      seedRegistered = true;
+    } catch (err) {
+      console.warn('Failed to register deleted seed case in settings:', err);
+    }
+  }
+
+  let supabaseErrorMsg = '';
   const adminClient = supabaseAdmin || supabase;
   if (adminClient) {
     try {
@@ -242,13 +269,20 @@ export async function deleteCase(id: string): Promise<boolean> {
         .delete()
         .eq('id', id);
       
-      if (!error) return true;
-    } catch (err) {
+      if (!error) {
+        if (isSeed) return true;
+      } else {
+        supabaseErrorMsg = error.message;
+        console.warn('Supabase deleteCase query error:', error.message);
+      }
+    } catch (err: any) {
+      supabaseErrorMsg = err.message || String(err);
       console.warn('Supabase deleteCase failed, using local storage:', err);
     }
   }
 
   // Fallback to local JSON database
+  let localErrorMsg = '';
   if (isServer) {
     const fs = getFs();
     try {
@@ -257,12 +291,21 @@ export async function deleteCase(id: string): Promise<boolean> {
       const filtered = cases.filter(x => x.id !== id);
       await fs.writeFile(CASES_FILE, JSON.stringify(filtered, null, 2), 'utf-8');
       return true;
-    } catch (err) {
+    } catch (err: any) {
+      localErrorMsg = err.message || String(err);
       console.error('Error deleting case locally:', err);
     }
   }
 
-  return false;
+  if (isSeed && seedRegistered) {
+    return true;
+  }
+
+  const errorParts = [];
+  if (supabaseErrorMsg) errorParts.push(`Supabase error: ${supabaseErrorMsg}`);
+  if (localErrorMsg) errorParts.push(`Local storage fallback error: ${localErrorMsg}`);
+  
+  throw new Error(errorParts.join(' | ') || 'Failed to delete case.');
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -359,6 +402,7 @@ export async function saveMessage(m: Message): Promise<{ success: boolean; data?
 export async function deleteMessage(id: string): Promise<boolean> {
   await ensureLocalDbFiles();
 
+  let supabaseErrorMsg = '';
   const adminClient = supabaseAdmin || supabase;
   if (adminClient) {
     try {
@@ -368,12 +412,16 @@ export async function deleteMessage(id: string): Promise<boolean> {
         .eq('id', id);
       
       if (!error) return true;
-    } catch (err) {
+      supabaseErrorMsg = error.message;
+      console.warn('Supabase deleteMessage query error:', error.message);
+    } catch (err: any) {
+      supabaseErrorMsg = err.message || String(err);
       console.warn('Supabase deleteMessage failed, using local storage:', err);
     }
   }
 
   // Fallback to local JSON database
+  let localErrorMsg = '';
   if (isServer) {
     const fs = getFs();
     try {
@@ -382,12 +430,17 @@ export async function deleteMessage(id: string): Promise<boolean> {
       const filtered = messages.filter(x => x.id !== id);
       await fs.writeFile(MESSAGES_FILE, JSON.stringify(filtered, null, 2), 'utf-8');
       return true;
-    } catch (err) {
+    } catch (err: any) {
+      localErrorMsg = err.message || String(err);
       console.error('Error deleting message locally:', err);
     }
   }
 
-  return false;
+  const errorParts = [];
+  if (supabaseErrorMsg) errorParts.push(`Supabase error: ${supabaseErrorMsg}`);
+  if (localErrorMsg) errorParts.push(`Local storage fallback error: ${localErrorMsg}`);
+  
+  throw new Error(errorParts.join(' | ') || 'Failed to delete message.');
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -670,6 +723,9 @@ export async function getFonts(): Promise<Font[]> {
   }
 
   const readClient = supabaseAdmin || supabase;
+  let dbFonts: Font[] = [];
+  let supabaseSuccess = false;
+
   if (readClient) {
     try {
       const { data, error } = await readClient
@@ -678,21 +734,28 @@ export async function getFonts(): Promise<Font[]> {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        const dynamicIds = new Set((data as any[]).map((x: any) => x.id));
-        const localFiltered = localFonts.filter(x => !dynamicIds.has(x.id));
-        
-        const combinedIds = new Set([...data.map((x: any) => x.id), ...localFiltered.map(x => x.id)]);
-        const filteredSeeds = defaultSeededFonts.filter((x: Font) => !combinedIds.has(x.id));
-        
-        return [...data, ...localFiltered, ...filteredSeeds];
+        dbFonts = data;
+        supabaseSuccess = true;
+      } else if (error) {
+        console.warn('Supabase getFonts query error:', error.message);
       }
     } catch (err) {
       console.warn('Supabase getFonts failed, falling back to local storage:', err);
     }
   }
 
-  const dynamicIds = new Set(localFonts.map((x: Font) => x.id));
-  const filteredSeeds = defaultSeededFonts.filter((x: Font) => !dynamicIds.has(x.id));
+  const deletedSeeds = await getSiteSetting('deleted_seed_fonts', []);
+  const deletedSeedsSet = new Set(deletedSeeds || []);
+
+  const currentDbFonts = supabaseSuccess ? dbFonts : [];
+  const dynamicIds = new Set([...currentDbFonts.map((x: any) => x.id), ...localFonts.map(x => x.id)]);
+  const filteredSeeds = defaultSeededFonts.filter((x: Font) => !dynamicIds.has(x.id) && !deletedSeedsSet.has(x.id));
+  
+  if (supabaseSuccess) {
+    const localFiltered = localFonts.filter(x => !dynamicIds.has(x.id));
+    return [...dbFonts, ...localFiltered, ...filteredSeeds];
+  }
+
   return [...localFonts, ...filteredSeeds];
 }
 
@@ -746,6 +809,23 @@ export async function saveFont(f: Font): Promise<Font | null> {
 export async function deleteFont(id: string): Promise<boolean> {
   await ensureLocalDbFiles();
   
+  const isSeed = id.startsWith('hdesign-font') || id.startsWith('seed-');
+  let seedRegistered = false;
+
+  if (isSeed) {
+    try {
+      const deletedSeeds = await getSiteSetting('deleted_seed_fonts', []);
+      if (!deletedSeeds.includes(id)) {
+        deletedSeeds.push(id);
+        await saveSiteSetting('deleted_seed_fonts', deletedSeeds);
+      }
+      seedRegistered = true;
+    } catch (err) {
+      console.warn('Failed to register deleted seed font in settings:', err);
+    }
+  }
+
+  let supabaseErrorMsg = '';
   const adminClient = supabaseAdmin || supabase;
   if (adminClient) {
     try {
@@ -754,13 +834,20 @@ export async function deleteFont(id: string): Promise<boolean> {
         .delete()
         .eq('id', id);
       
-      if (!error) return true;
-    } catch (err) {
+      if (!error) {
+        if (isSeed) return true;
+      } else {
+        supabaseErrorMsg = error.message;
+        console.warn('Supabase deleteFont query error:', error.message);
+      }
+    } catch (err: any) {
+      supabaseErrorMsg = err.message || String(err);
       console.warn('Supabase deleteFont failed, using local storage:', err);
     }
   }
 
   // Fallback to local JSON database
+  let localErrorMsg = '';
   if (isServer) {
     const fs = getFs();
     try {
@@ -769,10 +856,19 @@ export async function deleteFont(id: string): Promise<boolean> {
       const filtered = fonts.filter(x => x.id !== id);
       await fs.writeFile(FONTS_FILE, JSON.stringify(filtered, null, 2), 'utf-8');
       return true;
-    } catch (err) {
+    } catch (err: any) {
+      localErrorMsg = err.message || String(err);
       console.error('Error deleting font locally:', err);
     }
   }
 
-  return false;
+  if (isSeed && seedRegistered) {
+    return true;
+  }
+
+  const errorParts = [];
+  if (supabaseErrorMsg) errorParts.push(`Supabase error: ${supabaseErrorMsg}`);
+  if (localErrorMsg) errorParts.push(`Local storage fallback error: ${localErrorMsg}`);
+  
+  throw new Error(errorParts.join(' | ') || 'Failed to delete font.');
 }
