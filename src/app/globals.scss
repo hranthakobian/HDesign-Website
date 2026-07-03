@@ -662,11 +662,21 @@ body {
 }
 */
 
-/* Sliders fill their container width */
-hd-slider,
+/* Ստիպում է սլայդերին միշտ ձգվել իր ամբողջ տրված լայնությամբ */
+hd-slider.custom-slider-wrapper,
 .custom-slider-wrapper {
-  width: 100% !important;
-  display: block !important;
+  display: inline-flex !important;
+  width: var(--wrapper-width, 100%) !important;
+}
+/* Կանխում է տեքստային դաշտերի կոլապսը */
+hd-input.custom-input-wrapper,
+.custom-input-wrapper {
+  display: inline-flex !important;
+  width: var(--wrapper-width, 100%) !important;
+}
+/* Կանխում է պիտակների տողադարձը */
+.advanced-options-section span {
+  white-space: nowrap !important;
 }
 
 /* Page Transition — Slide + Fade In (matches admin dashboard style) */
@@ -775,7 +785,7 @@ html[data-theme="green"] .hero-signature {
   align-items: center;
   gap: 12px;
   height: 80px;
-  padding: 0 24px 0 48px;
+  padding: 0 36px 0 72px;
   flex: 0 0 auto;
   text-decoration: none;
   color: var(--text);
@@ -824,8 +834,8 @@ html[data-theme="custom"] .portfolio-logo-panel::before {
   box-shadow: none !important; // Handled by ::before
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 48px;
+  justify-content: center;
+  padding: 0 72px;
   transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67), flex 0.4s ease, max-width 0.4s ease;
 
   // Background and backdrop filter are placed here to prevent stacking context nesting issues with child dropdowns
@@ -866,7 +876,7 @@ html[data-theme="custom"] .portfolio-header::before {
   
   .portfolio-logo-panel {
     height: 64px;
-    padding: 0 20px;
+    padding: 0 30px;
     border-radius: 32px;
     box-shadow: 0 10px 40px rgba(8, 63, 57, 0.08);
 
@@ -883,7 +893,7 @@ html[data-theme="custom"] .portfolio-header::before {
     width: auto;
     max-width: fit-content;
     height: 64px;
-    padding: 0 28px;
+    padding: 0 42px;
 
     &::before {
       border-radius: 32px;
@@ -932,6 +942,7 @@ html[data-theme="custom"] .portfolio-header-wrapper.scrolled {
   display: flex;
   align-items: center;
   gap: 15px;
+  margin: 0 auto; // Center it!
   height: 100%;
 
   // Set distinct hover colors for each slot in the navigation
@@ -974,7 +985,7 @@ html[data-theme="custom"] .portfolio-header-wrapper.scrolled {
   align-items: center;
   gap: 16px;
   height: 80px;
-  padding: 0 48px 0 24px;
+  padding: 0 72px 0 36px;
   flex: 0 0 auto;
   transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67);
 
@@ -993,6 +1004,14 @@ html[data-theme="custom"] .portfolio-header-wrapper.scrolled {
   .custom-color-picker-wrapper {
     display: flex;
     align-items: center;
+    width: 34px;
+    height: 34px;
+
+    hd-color-picker {
+      width: 34px !important;
+      height: 34px !important;
+      display: inline-block !important;
+    }
   }
 }
 
@@ -1012,7 +1031,7 @@ html[data-theme="custom"] .portfolio-header-controls::before {
 /* Scrolled controls state */
 .portfolio-header-wrapper.scrolled .portfolio-header-controls {
   height: 64px;
-  padding: 0 24px;
+  padding: 0 36px;
   border-radius: 32px;
   box-shadow: 0 10px 40px rgba(8, 63, 57, 0.08);
 
@@ -1021,6 +1040,17 @@ html[data-theme="custom"] .portfolio-header-controls::before {
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(20px);
     box-shadow: 0 10px 40px rgba(8, 63, 57, 0.08);
+  }
+
+  .custom-color-picker-wrapper {
+    width: 34px;
+    height: 34px;
+
+    hd-color-picker {
+      width: 34px !important;
+      height: 34px !important;
+      display: inline-block !important;
+    }
   }
 }
 
@@ -2106,6 +2136,20 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
   flex-direction: column;
   gap: 12px;
   margin-top: 16px;
+
+  hd-color-picker {
+    width: 36px !important;
+    height: 36px !important;
+    display: inline-block !important;
+  }
+}
+
+.legacy-header-panel {
+  hd-color-picker {
+    width: 36px !important;
+    height: 36px !important;
+    display: inline-block !important;
+  }
 }
 
 .mobile-settings-row {
@@ -2158,12 +2202,12 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
   
   .portfolio-logo-panel {
     height: 70px !important;
-    padding: 0 12px 0 20px !important;
+    padding: 0 18px 0 30px !important;
   }
 
   .portfolio-header {
     height: 70px !important;
-    padding: 0 20px 0 12px !important;
+    padding: 0 30px 0 18px !important;
     flex: 0 1 auto;
     width: auto;
   }
@@ -2174,7 +2218,7 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     
     .portfolio-logo-panel {
       height: 60px !important;
-      padding: 0 16px !important;
+      padding: 0 24px !important;
       border-radius: 20px !important;
       box-shadow: 0 10px 40px rgba(8, 63, 57, 0.08);
 
@@ -2185,7 +2229,7 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
 
     .portfolio-header {
       height: 60px !important;
-      padding: 0 16px !important;
+      padding: 0 24px !important;
       border-radius: 20px !important;
       box-shadow: 0 10px 40px rgba(8, 63, 57, 0.08);
 

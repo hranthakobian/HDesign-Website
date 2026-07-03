@@ -256,20 +256,21 @@ export default function UpcomingCheck({ initialUpcomingMode, initialSettings, ch
           </div>
 
           {/* Language toggle switcher */}
-          <hd-segment
-            id="langSelector"
-            value={locale}
-            onChange={(e: any) => setLocale(e.target.value)}
-            data-color="#083f39"
-            data-inactive-color="rgba(8, 63, 57, 0.4)"
-            data-width="130px"
-            data-height="36px"
-            data-thickness="1px"
-            style={{ marginTop: '16px' }}
-          >
-            <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
-            <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
-          </hd-segment>
+          <div style={{ marginTop: '16px' }}>
+            <hd-segment
+              id="langSelector"
+              value={locale}
+              onChange={(e: any) => setLocale(e.target.value)}
+              data-color="#083f39"
+              data-inactive-color="rgba(8, 63, 57, 0.4)"
+              data-width="130px"
+              data-height="36px"
+              data-thickness="1px"
+            >
+              <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
+              <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
+            </hd-segment>
+          </div>
         </div>
       </div>
     );

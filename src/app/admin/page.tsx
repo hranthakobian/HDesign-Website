@@ -3397,9 +3397,11 @@ export default function AdminDashboard() {
 
                         {/* Add color color-picker bar */}
                         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                          <hd-color-picker 
-                            value={newCursorColor}
+                          <hd-color-picker
+                            data-color={newCursorColor}
                             onChange={(e: any) => setNewCursorColor(e.target.value)}
+                            data-width="40px"
+                            data-height="40px"
                           />
                           <hd-button
                             onClick={() => {

@@ -345,9 +345,7 @@ export default function Header() {
             id="langSelectorDesktop"
             value={locale}
             onChange={(e: any) => setLocale(e.target.value)}
-            data-color="var(--primary-color)"
-            data-inactive-color="var(--lang-inactive-color)"
-            data-width="95px"
+            data-width="130px"
             data-height="34px"
             data-thickness="1px"
           >
@@ -356,26 +354,25 @@ export default function Header() {
           </hd-segment>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <hd-segment
+            <hd-select
               id="themeSelectorDesktop"
               value={theme}
               onChange={(e: any) => changeTheme(e.target.value)}
-              data-color="var(--primary-color)"
-              data-inactive-color="var(--lang-inactive-color)"
-              data-width="240px"
+              data-width="120px"
               data-height="34px"
               data-thickness="1px"
+              placeholder="Թեմա"
             >
               <span value="light" {...(theme === 'light' ? { selected: true } : {})}>Բաց</span>
               <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>Մութ</span>
               <span value="green" {...(theme === 'green' ? { selected: true } : {})}>Կանաչ</span>
               <span value="custom" {...(theme === 'custom' ? { selected: true } : {})}>Գույն</span>
-            </hd-segment>
+            </hd-select>
             
             {theme === 'custom' && (
               <div className="custom-color-picker-wrapper">
                 <hd-color-picker
-                  value={customColor}
+                  data-color={customColor}
                   onChange={(e: any) => handleCustomColorChange(e.target.value)}
                   data-width="34px"
                   data-height="34px"
@@ -431,8 +428,6 @@ export default function Header() {
                     id="langSelectorMobile"
                     value={locale}
                     onChange={(e: any) => setLocale(e.target.value)}
-                    data-color="var(--primary-color)"
-                    data-inactive-color="var(--lang-inactive-color)"
                     data-width="100%"
                     data-height="36px"
                     data-thickness="1px"
@@ -446,26 +441,24 @@ export default function Header() {
                 <div style={{ width: '100%' }}>
                   <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block", marginBottom: "6px" }}>Թեմա</span>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
-                    <hd-segment
+                    <hd-select
                       id="themeSelectorMobile"
                       value={theme}
                       onChange={(e: any) => changeTheme(e.target.value)}
-                      data-color="var(--primary-color)"
-                      data-inactive-color="var(--lang-inactive-color)"
                       data-width="100%"
                       data-height="36px"
                       data-thickness="1px"
-                      style={{ flex: 1 }}
+                      placeholder="Թեմա"
                     >
                       <span value="light" {...(theme === 'light' ? { selected: true } : {})}>Բաց</span>
                       <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>Մութ</span>
                       <span value="green" {...(theme === 'green' ? { selected: true } : {})}>Կանաչ</span>
                       <span value="custom" {...(theme === 'custom' ? { selected: true } : {})}>Գույն</span>
-                    </hd-segment>
+                    </hd-select>
                     
                     {theme === 'custom' && (
                       <hd-color-picker
-                        value={customColor}
+                        data-color={customColor}
                         onChange={(e: any) => handleCustomColorChange(e.target.value)}
                         data-width="36px"
                         data-height="36px"
@@ -515,8 +508,6 @@ export default function Header() {
           id="langSelector"
           value={locale}
           onChange={(e: any) => setLocale(e.target.value)}
-          data-color="var(--primary-color)"
-          data-inactive-color="var(--lang-inactive-color)"
           data-width="130px"
           data-height="36px"
           data-thickness="1px"
@@ -527,25 +518,24 @@ export default function Header() {
 
         {/* Premium Theme Switcher 4-Way Toggle */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <hd-segment
+          <hd-select
             id="themeSelectorLegacy"
             value={theme}
             onChange={(e: any) => changeTheme(e.target.value)}
-            data-color="var(--primary-color)"
-            data-inactive-color="var(--lang-inactive-color)"
-            data-width="260px"
+            data-width="120px"
             data-height="36px"
             data-thickness="1px"
+            placeholder="Թեմա"
           >
             <span value="light" {...(theme === 'light' ? { selected: true } : {})}>Բաց</span>
             <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>Մութ</span>
             <span value="green" {...(theme === 'green' ? { selected: true } : {})}>Կանաչ</span>
             <span value="custom" {...(theme === 'custom' ? { selected: true } : {})}>Գույն</span>
-          </hd-segment>
+          </hd-select>
           
           {theme === 'custom' && (
             <hd-color-picker
-              value={customColor}
+              data-color={customColor}
               onChange={(e: any) => handleCustomColorChange(e.target.value)}
               data-width="36px"
               data-height="36px"

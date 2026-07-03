@@ -548,7 +548,7 @@ export default function FontDetailPage() {
                   {t("fonts", "color", "Գույն")}
                 </span>
                 <hd-color-picker
-                  value={textColor}
+                  data-color={textColor}
                   onChange={(e: any) => setTextColor(e.target.value)}
                   data-width="100%"
                   data-height="36px"
@@ -559,7 +559,7 @@ export default function FontDetailPage() {
                   {t("fonts", "bg_color", "Ֆոնի գույն")}
                 </span>
                 <hd-color-picker
-                  value={bgColor}
+                  data-color={bgColor}
                   onChange={(e: any) => setBgColor(e.target.value)}
                   data-width="100%"
                   data-height="36px"
@@ -796,7 +796,7 @@ export default function FontDetailPage() {
               
               {font.paid && font.purchase_url && (
                 <a href={font.purchase_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", width: "100%" }}>
-                  <hd-button data-width="100%" data-height="46px" data-thickness="2px" style={{ background: "transparent", color: "var(--text)" }}>
+                  <hd-button data-width="100%" data-height="46px" data-thickness="2px">
                     {t("fonts", "purchase", "Գնել")}
                   </hd-button>
                 </a>

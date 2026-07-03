@@ -461,7 +461,9 @@ export default function PatternGenerator() {
                   <div key={preset.id} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--btn-bg)', padding: '5px 8px', borderRadius: 8, border: '1px solid var(--panel-border)' }}>
                     {renamingPresetId === preset.id ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
-                        <hd-input value={renamingName} onInput={(e: any) => setRenamingName(e.target.value)} data-height="28px" data-font-size="0.78rem" style={{ flex: 1 }} autoFocus />
+                        <div style={{ flex: 1 }}>
+                          <hd-input value={renamingName} onInput={(e: any) => setRenamingName(e.target.value)} data-height="28px" data-font-size="0.78rem" autoFocus />
+                        </div>
                         <span onClick={() => finishRename(preset.id)} style={{ background: 'none', border: 'none', color: '#00C49F', cursor: 'pointer', padding: 0 }}><span className="icon-Check" /></span>
                         <span onClick={() => setRenamingPresetId(null)} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', padding: 0 }}><span className="icon-Close" /></span>
                       </div>
@@ -524,9 +526,9 @@ export default function PatternGenerator() {
 
           {/* Export buttons */}
           <div style={{ display: 'flex', gap: 8 }}>
-            <hd-button onClick={downloadSVG} data-height="38px" data-font-size="0.82rem" style={{ flex: 1 }}>{t('pattern_generator', 'export_svg_btn', 'SVG')}</hd-button>
-            <hd-button onClick={() => downloadRaster('image/png')} data-height="38px" data-font-size="0.82rem" style={{ flex: 1 }}>{t('pattern_generator', 'export_png_btn', 'PNG')}</hd-button>
-            <hd-button onClick={() => downloadRaster('image/jpeg')} data-height="38px" data-font-size="0.82rem" style={{ flex: 1 }}>{t('pattern_generator', 'export_jpg_btn', 'JPG')}</hd-button>
+            <div style={{ flex: 1 }}><hd-button onClick={downloadSVG} data-height="38px" data-font-size="0.82rem" data-width="100%">{t('pattern_generator', 'export_svg_btn', 'SVG')}</hd-button></div>
+            <div style={{ flex: 1 }}><hd-button onClick={() => downloadRaster('image/png')} data-height="38px" data-font-size="0.82rem" data-width="100%">{t('pattern_generator', 'export_png_btn', 'PNG')}</hd-button></div>
+            <div style={{ flex: 1 }}><hd-button onClick={() => downloadRaster('image/jpeg')} data-height="38px" data-font-size="0.82rem" data-width="100%">{t('pattern_generator', 'export_jpg_btn', 'JPG')}</hd-button></div>
           </div>
         </div>
 
@@ -558,28 +560,28 @@ export default function PatternGenerator() {
                 <label style={{ ...labelStyle, fontSize: '0.78rem' }}>
                   {t('randomizer', 'layers_count', 'Շերտ')} ({randConstraints.minLayers}–{randConstraints.maxLayers})
                   <div style={{ display: 'flex', gap: 6, height: '24px' }}>
-                    <hd-slider min="1" max="5" value={randConstraints.minLayers} onInput={(e: any) => setRandConstraints({...randConstraints, minLayers: Math.min(Number(e.target.value), randConstraints.maxLayers)})} style={{ flex: 1 }} />
-                    <hd-slider min="1" max="5" value={randConstraints.maxLayers} onInput={(e: any) => setRandConstraints({...randConstraints, maxLayers: Math.max(Number(e.target.value), randConstraints.minLayers)})} style={{ flex: 1 }} />
+                    <div style={{ flex: 1 }}><hd-slider min="1" max="5" value={randConstraints.minLayers} onInput={(e: any) => setRandConstraints({...randConstraints, minLayers: Math.min(Number(e.target.value), randConstraints.maxLayers)})} data-width="100%" /></div>
+                    <div style={{ flex: 1 }}><hd-slider min="1" max="5" value={randConstraints.maxLayers} onInput={(e: any) => setRandConstraints({...randConstraints, maxLayers: Math.max(Number(e.target.value), randConstraints.minLayers)})} data-width="100%" /></div>
                   </div>
                 </label>
                 <label style={{ ...labelStyle, fontSize: '0.78rem' }}>
                   {t('randomizer', 'thickness_range', 'Հաստ.')} ({randConstraints.minThickness}–{randConstraints.maxThickness}px)
                   <div style={{ display: 'flex', gap: 6, height: '24px' }}>
-                    <hd-slider min="1" max="30" value={randConstraints.minThickness} onInput={(e: any) => setRandConstraints({...randConstraints, minThickness: Math.min(Number(e.target.value), randConstraints.maxThickness)})} style={{ flex: 1 }} />
-                    <hd-slider min="1" max="30" value={randConstraints.maxThickness} onInput={(e: any) => setRandConstraints({...randConstraints, maxThickness: Math.max(Number(e.target.value), randConstraints.minThickness)})} style={{ flex: 1 }} />
+                    <div style={{ flex: 1 }}><hd-slider min="1" max="30" value={randConstraints.minThickness} onInput={(e: any) => setRandConstraints({...randConstraints, minThickness: Math.min(Number(e.target.value), randConstraints.maxThickness)})} data-width="100%" /></div>
+                    <div style={{ flex: 1 }}><hd-slider min="1" max="30" value={randConstraints.maxThickness} onInput={(e: any) => setRandConstraints({...randConstraints, maxThickness: Math.max(Number(e.target.value), randConstraints.minThickness)})} data-width="100%" /></div>
                   </div>
                 </label>
                 <label style={{ ...labelStyle, fontSize: '0.78rem' }}>
                   {t('randomizer', 'gap_range', 'Gap')} ({randConstraints.minGap}–{randConstraints.maxGap}px)
                   <div style={{ display: 'flex', gap: 6, height: '24px' }}>
-                    <hd-slider min="5" max="150" value={randConstraints.minGap} onInput={(e: any) => setRandConstraints({...randConstraints, minGap: Math.min(Number(e.target.value), randConstraints.maxGap)})} style={{ flex: 1 }} />
-                    <hd-slider min="5" max="150" value={randConstraints.maxGap} onInput={(e: any) => setRandConstraints({...randConstraints, maxGap: Math.max(Number(e.target.value), randConstraints.minGap)})} style={{ flex: 1 }} />
+                    <div style={{ flex: 1 }}><hd-slider min="5" max="150" value={randConstraints.minGap} onInput={(e: any) => setRandConstraints({...randConstraints, minGap: Math.min(Number(e.target.value), randConstraints.maxGap)})} data-width="100%" /></div>
+                    <div style={{ flex: 1 }}><hd-slider min="5" max="150" value={randConstraints.maxGap} onInput={(e: any) => setRandConstraints({...randConstraints, maxGap: Math.max(Number(e.target.value), randConstraints.minGap)})} data-width="100%" /></div>
                   </div>
                 </label>
 
                 <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
-                  <hd-button onClick={() => setRandConstraints({...randConstraints, angleMode: 'discrete'})} data-height="28px" data-font-size="0.72rem" style={{ flex: 1 }}>{randConstraints.angleMode === 'discrete' && <span className="icon-Check" style={{ marginRight: 4 }} />}{t('randomizer', 'angle_mode_discrete', 'Ընտրովի')}</hd-button>
-                  <hd-button onClick={() => setRandConstraints({...randConstraints, angleMode: 'range'})} data-height="28px" data-font-size="0.72rem" style={{ flex: 1 }}>{randConstraints.angleMode === 'range' && <span className="icon-Check" style={{ marginRight: 4 }} />}{t('randomizer', 'angle_mode_range', 'Միջ.')}</hd-button>
+                  <div style={{ flex: 1 }}><hd-button onClick={() => setRandConstraints({...randConstraints, angleMode: 'discrete'})} data-height="28px" data-font-size="0.72rem" data-width="100%">{randConstraints.angleMode === 'discrete' && <span className="icon-Check" style={{ marginRight: 4 }} />}{t('randomizer', 'angle_mode_discrete', 'Ընտրովի')}</hd-button></div>
+                  <div style={{ flex: 1 }}><hd-button onClick={() => setRandConstraints({...randConstraints, angleMode: 'range'})} data-height="28px" data-font-size="0.72rem" data-width="100%">{randConstraints.angleMode === 'range' && <span className="icon-Check" style={{ marginRight: 4 }} />}{t('randomizer', 'angle_mode_range', 'Միջ.')}</hd-button></div>
                 </div>
 
                 {randConstraints.angleMode === 'discrete' ? (
@@ -709,9 +711,11 @@ export default function PatternGenerator() {
                             </h3>
                             <span onClick={() => setSelectedLineIndex(null)} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', fontSize: '0.8rem' }}>{t('pattern_generator', 'close_btn', 'Փակել')}</span>
                           </div>
-                          <hd-checkbox data-size="15px" checked={selectedLineProps.isLinked} onChange={(e: any) => updateLine(selectedLayer.id, selectedLineIndex, { isLinked: e.target.checked })} data-font-size="0.82rem" style={{ background: 'var(--btn-bg)', padding: '8px', borderRadius: '8px' }}>
-                            <span style={{ color: selectedLineProps.isLinked ? '#00C49F' : '#888' }}>{t('pattern_generator', 'link_to_layer_label', 'Կապ շերտին')}</span>
-                          </hd-checkbox>
+                          <div style={{ background: 'var(--btn-bg)', padding: '8px', borderRadius: '8px', display: 'flex', alignItems: 'center' }}>
+                            <hd-checkbox data-size="15px" checked={selectedLineProps.isLinked} onChange={(e: any) => updateLine(selectedLayer.id, selectedLineIndex, { isLinked: e.target.checked })} data-font-size="0.82rem">
+                              <span style={{ color: selectedLineProps.isLinked ? '#00C49F' : '#888' }}>{t('pattern_generator', 'link_to_layer_label', 'Կապ շերտին')}</span>
+                            </hd-checkbox>
+                          </div>
                           <div className={`smooth-expand ${!selectedLineProps.isLinked ? 'expanded' : ''}`} style={{ marginTop: !selectedLineProps.isLinked ? '4px' : '0', transition: 'margin 0.35s' }}>
                             <div className="smooth-expand-content" style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingTop: '4px' }}>
                               <label style={labelStyle}>{t('pattern_generator', 'thickness_label', 'Հաստ.')}: {selectedLineProps.thickness}px<hd-slider min="1" max="50" value={selectedLineProps.thickness} onInput={(e: any) => updateLine(selectedLayer.id, selectedLineIndex, { thickness: Number(e.target.value) })} data-height="16px" /></label>
@@ -760,7 +764,8 @@ export default function PatternGenerator() {
                 <span className="icon-Plus" style={{ marginRight: 4 }} />{t('pattern_generator', 'add_layer_btn', 'Շերտ')}
               </hd-button>
             </div>
-            <hd-scrollbar style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, maxHeight: 370, overflowY: 'auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1, maxHeight: 370, overflowY: 'auto' }}>
+              <hd-scrollbar>
               {layers.map(layer => (
                 <div
                   key={layer.id}
@@ -787,7 +792,7 @@ export default function PatternGenerator() {
                       </span>
                       {renamingLayerId === layer.id ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }} onClick={e => e.stopPropagation()}>
-                          <hd-input value={renamingLayerName} onInput={(e: any) => setRenamingLayerName(e.target.value)} data-height="28px" data-font-size="0.78rem" style={{ flex: 1 }} autoFocus onKeyDown={(e: any) => { if (e.key === 'Enter') finishRenameLayer(layer.id); if (e.key === 'Escape') setRenamingLayerId(null); }} />
+                          <div style={{ flex: 1 }}><hd-input value={renamingLayerName} onInput={(e: any) => setRenamingLayerName(e.target.value)} data-height="28px" data-font-size="0.78rem" autoFocus onKeyDown={(e: any) => { if (e.key === 'Enter') finishRenameLayer(layer.id); if (e.key === 'Escape') setRenamingLayerId(null); }} /></div>
                           <span onClick={() => finishRenameLayer(layer.id)} style={{ background: 'none', border: 'none', color: '#00C49F', cursor: 'pointer', padding: '0 3px' }}><span className="icon-Check" /></span>
                           <span onClick={() => setRenamingLayerId(null)} style={{ background: 'none', border: 'none', color: '#888', cursor: 'pointer', padding: '0 3px' }}><span className="icon-Close" /></span>
                         </div>
@@ -802,26 +807,29 @@ export default function PatternGenerator() {
 
                   <div className={`smooth-expand ${expandedLayerIds[layer.id] ? 'expanded' : ''}`} style={{ marginTop: expandedLayerIds[layer.id] ? '6px' : '0', transition: 'margin 0.35s' }}>
                     <div className="smooth-expand-content" onClick={(e: any) => e.stopPropagation()}>
-                      <hd-scrollbar style={{ marginLeft: 14, display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 120, overflowY: 'auto', paddingLeft: 8, borderLeft: '1px solid #444' }}>
-                        {Array.from({ length: layer.lineCount }, (_, idx) => {
-                          const startIdx = -Math.floor((layer.lineCount - 1) / 2);
-                          const lineIdx = startIdx + idx;
-                          const override = layer.overrides[lineIdx];
-                          const isLinked = override ? override.isLinked : true;
-                          const isSelected = selectedLayerId === layer.id && selectedLineIndex === lineIdx;
-                          return (
-                            <div key={lineIdx} onClick={(e) => { e.stopPropagation(); setSelectedLayerId(layer.id); setSelectedLineIndex(lineIdx); }} style={{ fontSize: '0.75rem', padding: '3px 6px', borderRadius: 4, background: isSelected ? 'rgba(0,196,159,0.2)' : 'transparent', color: isSelected ? '#00C49F' : (isLinked ? '#888' : '#FFBB28'), cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>Գիծ {idx + 1}</span>
-                              <span style={{ fontSize: '0.65rem', opacity: 0.8 }}>{isLinked ? <span className="icon-Attech" /> : <span className="icon-Pencil" />}</span>
-                            </div>
-                          );
-                        })}
-                      </hd-scrollbar>
+                      <div style={{ marginLeft: 14, display: 'flex', flexDirection: 'column', gap: 3, maxHeight: 120, overflowY: 'auto', paddingLeft: 8, borderLeft: '1px solid #444' }}>
+                        <hd-scrollbar>
+                          {Array.from({ length: layer.lineCount }, (_, idx) => {
+                            const startIdx = -Math.floor((layer.lineCount - 1) / 2);
+                            const lineIdx = startIdx + idx;
+                            const override = layer.overrides[lineIdx];
+                            const isLinked = override ? override.isLinked : true;
+                            const isSelected = selectedLayerId === layer.id && selectedLineIndex === lineIdx;
+                            return (
+                              <div key={lineIdx} onClick={(e) => { e.stopPropagation(); setSelectedLayerId(layer.id); setSelectedLineIndex(lineIdx); }} style={{ fontSize: '0.75rem', padding: '3px 6px', borderRadius: 4, background: isSelected ? 'rgba(0,196,159,0.2)' : 'transparent', color: isSelected ? '#00C49F' : (isLinked ? '#888' : '#FFBB28'), cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span>Գիծ {idx + 1}</span>
+                                <span style={{ fontSize: '0.65rem', opacity: 0.8 }}>{isLinked ? <span className="icon-Attech" /> : <span className="icon-Pencil" />}</span>
+                              </div>
+                            );
+                          })}
+                        </hd-scrollbar>
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
-            </hd-scrollbar>
+              </hd-scrollbar>
+            </div>
           </div>
         </div>
       </div>
