@@ -138,7 +138,7 @@ export default function FontDetailPage() {
           {locale === "hy" ? "Տառատեսակը չի գտնվել" : "Font Not Found"}
         </h2>
         <Link href="/fonts" style={{ textDecoration: "none" }}>
-          <hd-button data-width="180px" data-height="48px" data-thickness="2px">
+          <hd-button data-width="180px" data-height="48px" data-thickness="3px">
             {locale === "hy" ? "Հետ դեպի ցուցակ" : "Back to Listing"}
           </hd-button>
         </Link>
@@ -485,7 +485,7 @@ export default function FontDetailPage() {
                 data-color="var(--accent)"
                 data-width="100%"
                 data-height="36px"
-                data-thickness="1px"
+                data-thickness="3px"
               >
                 <span value="left" {...(textAlign === "left" ? { selected: true } : {})}>Left</span>
                 <span value="center" {...(textAlign === "center" ? { selected: true } : {})}>Center</span>
@@ -505,7 +505,7 @@ export default function FontDetailPage() {
                 data-color="var(--accent)"
                 data-width="100%"
                 data-height="36px"
-                data-thickness="1px"
+                data-thickness="3px"
               >
                 <span value="none" {...(textCase === "none" ? { selected: true } : {})}>{t("fonts", "case_normal", "Լռելյայն")}</span>
                 <span value="uppercase" {...(textCase === "uppercase" ? { selected: true } : {})}>AA</span>
@@ -515,30 +515,38 @@ export default function FontDetailPage() {
 
             {/* Row: Bold / Italic Toggles */}
             <div style={{ display: "flex", gap: "12px", width: "100%" }}>
-              <hd-button
-                onClick={() => setIsBold(!isBold)}
-                data-height="38px"
-                data-thickness="1px"
+              <div
                 style={{
                   flex: 1,
                   background: isBold ? "var(--btn-hover-bg)" : "transparent",
                   color: "var(--text)",
                 }}
               >
-                <strong>Bold</strong>
-              </hd-button>
-              <hd-button
-                onClick={() => setIsItalic(!isItalic)}
-                data-height="38px"
-                data-thickness="1px"
+                <hd-button
+                  onClick={() => setIsBold(!isBold)}
+                  data-height="38px"
+                  data-thickness="3px"
+                  data-width="100%"
+                >
+                  <strong>Bold</strong>
+                </hd-button>
+              </div>
+              <div
                 style={{
                   flex: 1,
                   background: isItalic ? "var(--btn-hover-bg)" : "transparent",
                   color: "var(--text)",
                 }}
               >
-                <em>Italic</em>
-              </hd-button>
+                <hd-button
+                  onClick={() => setIsItalic(!isItalic)}
+                  data-height="38px"
+                  data-thickness="3px"
+                  data-width="100%"
+                >
+                  <em>Italic</em>
+                </hd-button>
+              </div>
             </div>
 
             {/* Row: Text & BG Color Pickers */}
@@ -707,33 +715,34 @@ export default function FontDetailPage() {
             </div>
 
             {/* Reset controls button */}
-            <hd-button
-              onClick={() => {
-                setFontSize(48);
-                setLetterSpacing(0);
-                setLineHeight(1.4);
-                setTextAlign("left");
-                setIsBold(false);
-                setIsItalic(false);
-                setTextCase("none");
-                setTextColor("#ffffff");
-                setBgColor("#0b4a41");
-                setWght(400);
-                setSlnt(0);
-                setWdth(100);
-                setItal(0);
-                setLigatures(true);
-                setKerning(true);
-                setSmallCaps(false);
-                setOldstyleNums(false);
-              }}
-              data-width="100%"
-              data-height="38px"
-              data-thickness="1px"
-              style={{ background: "transparent", color: "var(--text)", border: "1px solid var(--panel-border)" }}
-            >
-              {t("fonts", "reset", "Վերականգնել")}
-            </hd-button>
+            <div style={{ border: "1px solid var(--panel-border)", borderRadius: "var(--border-radius, 12px)", overflow: "hidden" }}>
+              <hd-button
+                onClick={() => {
+                  setFontSize(48);
+                  setLetterSpacing(0);
+                  setLineHeight(1.4);
+                  setTextAlign("left");
+                  setIsBold(false);
+                  setIsItalic(false);
+                  setTextCase("none");
+                  setTextColor("#ffffff");
+                  setBgColor("#0b4a41");
+                  setWght(400);
+                  setSlnt(0);
+                  setWdth(100);
+                  setItal(0);
+                  setLigatures(true);
+                  setKerning(true);
+                  setSmallCaps(false);
+                  setOldstyleNums(false);
+                }}
+                data-width="100%"
+                data-height="38px"
+                data-thickness="3px"
+              >
+                {t("fonts", "reset", "Վերականգնել")}
+              </hd-button>
+            </div>
 
           </div>
 
@@ -787,7 +796,7 @@ export default function FontDetailPage() {
                   download={`${font.id}_font.ttf`}
                   style={{ textDecoration: "none", width: "100%" }}
                 >
-                  <hd-button data-width="100%" data-height="46px" data-thickness="2px">
+                  <hd-button data-width="100%" data-height="46px" data-thickness="3px">
                     <span className="icon-Download" style={{ marginRight: "8px" }} />
                     {t("fonts", "download", "Ներբեռնել")}
                   </hd-button>
@@ -796,7 +805,7 @@ export default function FontDetailPage() {
               
               {font.paid && font.purchase_url && (
                 <a href={font.purchase_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", width: "100%" }}>
-                  <hd-button data-width="100%" data-height="46px" data-thickness="2px">
+                  <hd-button data-width="100%" data-height="46px" data-thickness="3px">
                     {t("fonts", "purchase", "Գնել")}
                   </hd-button>
                 </a>

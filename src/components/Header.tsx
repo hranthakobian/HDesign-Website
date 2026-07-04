@@ -347,7 +347,7 @@ export default function Header() {
             onChange={(e: any) => setLocale(e.target.value)}
             data-width="130px"
             data-height="34px"
-            data-thickness="1px"
+            data-thickness="3px"
           >
             <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
             <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
@@ -360,7 +360,7 @@ export default function Header() {
               onChange={(e: any) => changeTheme(e.target.value)}
               data-width="120px"
               data-height="34px"
-              data-thickness="1px"
+              data-thickness="3px"
               placeholder="Թեմա"
             >
               <span value="light" {...(theme === 'light' ? { selected: true } : {})}>Բաց</span>
@@ -430,7 +430,7 @@ export default function Header() {
                     onChange={(e: any) => setLocale(e.target.value)}
                     data-width="100%"
                     data-height="36px"
-                    data-thickness="1px"
+                    data-thickness="3px"
                   >
                     <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
                     <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
@@ -447,7 +447,7 @@ export default function Header() {
                       onChange={(e: any) => changeTheme(e.target.value)}
                       data-width="100%"
                       data-height="36px"
-                      data-thickness="1px"
+                      data-thickness="3px"
                       placeholder="Թեմա"
                     >
                       <span value="light" {...(theme === 'light' ? { selected: true } : {})}>Բաց</span>
@@ -510,7 +510,7 @@ export default function Header() {
           onChange={(e: any) => setLocale(e.target.value)}
           data-width="130px"
           data-height="36px"
-          data-thickness="1px"
+          data-thickness="3px"
         >
           <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
           <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
@@ -524,7 +524,7 @@ export default function Header() {
             onChange={(e: any) => changeTheme(e.target.value)}
             data-width="120px"
             data-height="36px"
-            data-thickness="1px"
+            data-thickness="3px"
             placeholder="Թեմա"
           >
             <span value="light" {...(theme === 'light' ? { selected: true } : {})}>Բաց</span>

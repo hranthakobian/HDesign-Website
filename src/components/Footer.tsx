@@ -131,7 +131,7 @@ export default function Footer() {
                   onInput={(e: any) => setContactName(e.target.value)}
                   data-width="100%"
                   data-height="42px"
-                  data-thickness="1px"
+                  data-thickness="3px"
                 />
               </div>
               <div>
@@ -142,7 +142,7 @@ export default function Footer() {
                   onInput={(e: any) => setContactEmail(e.target.value)}
                   data-width="100%"
                   data-height="42px"
-                  data-thickness="1px"
+                  data-thickness="3px"
                 />
               </div>
               <div>
@@ -173,7 +173,7 @@ export default function Footer() {
                 type="submit"
                 data-width="100%" 
                 data-height="44px"
-                data-thickness="2px"
+                data-thickness="3px"
                 disabled={submittingContact}
                 style={{ opacity: submittingContact ? 0.7 : 1 }}
               >

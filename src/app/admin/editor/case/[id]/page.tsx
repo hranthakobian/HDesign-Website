@@ -252,7 +252,7 @@ export default function CaseEditor() {
 
   const [form, setForm] = useState<Case>({
     id, title: "", subtitle: "", bg: GRADIENT_PRESETS[0].value,
-    image_url: "", details: "[]", category: "Branding", client: "", year: new Date().getFullYear().toString()
+    image_url: "", details: "[]", category: id.startsWith('port-') ? "Design" : "Branding", client: "", year: new Date().getFullYear().toString()
   });
   const [blocks, setBlocks] = useState<CaseBlock[]>([]);
 
@@ -577,11 +577,13 @@ export default function CaseEditor() {
           </div>
 
           <Link href={`/works/${id}`} target="_blank" style={{ textDecoration: "none" }}>
-            <hd-button data-width="100px" data-height="34px" data-thickness="1px" style={{ background: "transparent", color: "var(--muted)" }}>
-              Տեսնել →
-            </hd-button>
+            <div style={{ background: "transparent", color: "var(--muted)" }}>
+              <hd-button data-width="100px" data-height="34px" data-thickness="3px">
+                Տեսնել →
+              </hd-button>
+            </div>
           </Link>
-          <hd-button onClick={save} disabled={saving} data-width="120px" data-height="34px" data-thickness="2px">
+          <hd-button onClick={save} disabled={saving} data-width="120px" data-height="34px" data-thickness="3px">
             {saving ? "Պահպանվում..." : "Պահպանել"}
           </hd-button>
         </div>
@@ -902,10 +904,11 @@ export default function CaseEditor() {
                 { type: "color_palette",       label: "Գույներ",     color: "#f97316" },
                 { type: "typography_showcase", label: "Տառատեսակ",   color: "#8b5cf6" },
               ] as { type: BlockType; label: string; color: string }[]).map(({ type, label, color }) => (
-                <hd-button key={type} onClick={() => add(type)} data-width="100%" data-height="36px" data-thickness="1px"
-                  style={{ color, background: `${color}18`, borderColor: `${color}44` }}>
-                  + {label}
-                </hd-button>
+                <div key={type} style={{ color, background: `${color}18`, border: `1px solid ${color}44`, borderRadius: "var(--border-radius, 12px)", overflow: "hidden" }}>
+                  <hd-button onClick={() => add(type)} data-width="100%" data-height="36px" data-thickness="3px">
+                    + {label}
+                  </hd-button>
+                </div>
               ))}
             </div>
           </div>
@@ -913,9 +916,11 @@ export default function CaseEditor() {
           {/* ── Windows Toggles ── */}
           <div style={{ padding: 18, borderTop: "1px solid var(--panel-border)" }}>
             <SectionLabel>Գործիքներ</SectionLabel>
-            <hd-button onClick={() => setShowLayersPanel(true)} data-width="100%" data-height="34px" data-thickness="1px" style={{ background: "transparent" }}>
-              🥞 Բացել Շերտերի պատուհանը
-            </hd-button>
+            <div style={{ background: "transparent" }}>
+              <hd-button onClick={() => setShowLayersPanel(true)} data-width="100%" data-height="34px" data-thickness="3px">
+                🥞 Բացել Շերտերի պատուհանը
+              </hd-button>
+            </div>
           </div>
 
         </div>
@@ -1051,10 +1056,12 @@ export default function CaseEditor() {
                         style={{ background: "none", border: "none", color: "#ff6b6b", cursor: "pointer", flexShrink: 0 }}>✕</button>
                     </div>
                   ))}
-                  <hd-button onClick={() => upd(selected, { ...block, colors: [...block.colors, "#ffffff"] })}
-                    data-width="100%" data-height="34px" data-thickness="1px" style={{ background: "transparent" }}>
-                    + Ավելացնել Գույն
-                  </hd-button>
+                  <div style={{ background: "transparent" }}>
+                    <hd-button onClick={() => upd(selected, { ...block, colors: [...block.colors, "#ffffff"] })}
+                      data-width="100%" data-height="34px" data-thickness="3px">
+                      + Ավելացնել Գույն
+                    </hd-button>
+                  </div>
                 </div>
               )}
 
@@ -1222,7 +1229,9 @@ function FieldArea({ label, value, onChange }: { label: string; value: string; o
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       {label && <span style={{ fontSize: "0.72rem", color: "var(--muted)" }}>{label}</span>}
-      <hd-textarea value={value} onInput={(e: any) => onChange(e.target.value)} data-width="100%" style={{ minHeight: "100px" }} />
+      <div style={{ minHeight: "100px", display: "flex", flexDirection: "column" }}>
+        <hd-textarea value={value} onInput={(e: any) => onChange(e.target.value)} data-width="100%" />
+      </div>
     </div>
   );
 }

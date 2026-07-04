@@ -265,7 +265,7 @@ export default function UpcomingCheck({ initialUpcomingMode, initialSettings, ch
               data-inactive-color="rgba(8, 63, 57, 0.4)"
               data-width="130px"
               data-height="36px"
-              data-thickness="1px"
+              data-thickness="3px"
             >
               <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
               <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>

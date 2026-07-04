@@ -720,7 +720,8 @@ export default function AdminDashboard() {
   };
 
   const openAddCase = () => {
-    const newId = 'case-' + Math.random().toString(36).substring(2, 8);
+    const prefix = casesSubTab === 'gallery' ? 'port-' : 'case-';
+    const newId = prefix + Math.random().toString(36).substring(2, 8);
     router.push(`/admin/editor/case/${newId}?new=true`);
   };
 
@@ -1434,7 +1435,7 @@ export default function AdminDashboard() {
               onInput={(e: any) => setPasscode(e.target.value)}
               data-width="100%"
               data-height="46px"
-              data-thickness="1px"
+              data-thickness="3px"
             />
 
             {authError && (
@@ -1454,7 +1455,7 @@ export default function AdminDashboard() {
               type="submit"
               data-width="100%" 
               data-height="46px"
-              data-thickness="2px"
+              data-thickness="3px"
             >
               Մուտք
             </hd-button>
@@ -1817,7 +1818,7 @@ export default function AdminDashboard() {
                     onClick={casesSubTab === 'fonts' ? openAddFont : openAddCase}
                     data-width={casesSubTab === 'fonts' ? "200px" : "180px"} 
                     data-height="42px"
-                    data-thickness="2px"
+                    data-thickness="3px"
                   >
                     {casesSubTab === 'fonts' ? 'Ավելացնել Տառատեսակ' : 'Ավելացնել Քեյս'}
                   </hd-button>
@@ -2065,7 +2066,7 @@ export default function AdminDashboard() {
                               </div>
                               <div style={{ borderTop: '1px solid var(--panel-border)', paddingTop: '16px', marginTop: '8px' }}>
                                 <a href={`/admin/editor/case/${drawerCaseId}`} style={{ textDecoration: 'none' }}>
-                                  <hd-button data-width="100%" data-height="36px" data-thickness="1px">✏ Բացել WYSIWYG խմբագրիչը</hd-button>
+                                  <hd-button data-width="100%" data-height="36px" data-thickness="3px">✏ Բացել WYSIWYG խմբագրիչը</hd-button>
                                 </a>
                               </div>
                             </div>
@@ -2104,7 +2105,7 @@ export default function AdminDashboard() {
                                 <hd-input value={drawerCaseImageUrl} onInput={(e: any) => setDrawerCaseImageUrl(e.target.value)} data-width="100%" data-height="36px" />
                               </div>
                               <div style={{ marginTop: '10px' }}>
-                                <hd-button type="submit" data-width="100%" data-height="38px" data-thickness="2px">💾 Պահպանել</hd-button>
+                                <hd-button type="submit" data-width="100%" data-height="38px" data-thickness="3px">💾 Պահպանել</hd-button>
                               </div>
                             </form>
                           )}
@@ -2343,7 +2344,7 @@ export default function AdminDashboard() {
 
                               <div style={{ borderTop: '1px solid var(--panel-border)', paddingTop: '16px', marginTop: '8px' }}>
                                 <a href={`/admin/editor/font/${drawerFontId}`} style={{ textDecoration: 'none' }}>
-                                  <hd-button data-width="100%" data-height="36px" data-thickness="1px">✏ Բացել WYSIWYG խմբագրիչը</hd-button>
+                                  <hd-button data-width="100%" data-height="36px" data-thickness="3px">✏ Բացել WYSIWYG խմբագրիչը</hd-button>
                                 </a>
                               </div>
                             </div>
@@ -2421,7 +2422,7 @@ export default function AdminDashboard() {
                               )}
 
                               <div style={{ marginTop: '10px' }}>
-                                <hd-button type="submit" data-width="100%" data-height="38px" data-thickness="2px">💾 Պահպանել</hd-button>
+                                <hd-button type="submit" data-width="100%" data-height="38px" data-thickness="3px">💾 Պահպանել</hd-button>
                               </div>
                             </form>
                           )}
@@ -2581,7 +2582,7 @@ export default function AdminDashboard() {
                           <hd-button 
                             data-width="150px"
                             data-height="40px"
-                            data-thickness="2px"
+                            data-thickness="3px"
                           >
                             Պատասխանել
                           </hd-button>
@@ -2607,7 +2608,7 @@ export default function AdminDashboard() {
                     onClick={() => setShowAddTrans(true)}
                     data-width="220px" 
                     data-height="42px"
-                    data-thickness="2px"
+                    data-thickness="3px"
                   >
                     Ավելացնել Թարգմանություն
                   </hd-button>
@@ -2903,7 +2904,7 @@ export default function AdminDashboard() {
                             type="submit"
                             data-width="150px"
                             data-height="42px"
-                            data-thickness="2px"
+                            data-thickness="3px"
                           >
                             Ավելացնել
                           </hd-button>
@@ -3150,7 +3151,7 @@ export default function AdminDashboard() {
                       type="submit"
                       data-width="220px"
                       data-height="46px"
-                      data-thickness="2px"
+                      data-thickness="3px"
                     >
                       Պահպանել API-ները
                     </hd-button>
@@ -3413,7 +3414,7 @@ export default function AdminDashboard() {
                               }
                             }}
                             data-height="40px"
-                            data-thickness="1px"
+                            data-thickness="3px"
                             data-font-size="0.8rem"
                           >
                             + Ավելացնել Գույն
@@ -3631,7 +3632,7 @@ export default function AdminDashboard() {
                           <hd-button 
                             data-width="50%"
                             data-height="42px"
-                            data-thickness="1px"
+                            data-thickness="3px"
                             style={{
                               cursor: 'var(--sandbox-pointer)',
                               fontSize: '0.8rem',
@@ -3659,7 +3660,7 @@ export default function AdminDashboard() {
                       type="submit"
                       data-width="260px"
                       data-height="46px"
-                      data-thickness="2px"
+                      data-thickness="3px"
                     >
                       Պահպանել Փոփոխությունները
                     </hd-button>
@@ -3725,7 +3726,7 @@ export default function AdminDashboard() {
                         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                           <hd-button 
                             type="submit" 
-                            data-thickness="2px"
+                            data-thickness="3px"
                             data-width="160px"
                             data-height="40px"
                             data-font-size="0.85rem"
@@ -3832,7 +3833,7 @@ export default function AdminDashboard() {
                         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                           <hd-button 
                             type="submit" 
-                            data-thickness="2px"
+                            data-thickness="3px"
                             data-width="180px"
                             data-height="40px"
                             data-font-size="0.85rem"
@@ -3918,7 +3919,7 @@ export default function AdminDashboard() {
                       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
                         <hd-button 
                           type="submit" 
-                          data-thickness="2px"
+                          data-thickness="3px"
                           data-width="180px"
                           data-height="40px"
                           data-font-size="0.85rem"
@@ -4163,7 +4164,7 @@ export default function AdminDashboard() {
                   type="submit"
                   data-width="120px"
                   data-height="38px"
-                  data-thickness="2px"
+                  data-thickness="3px"
                   data-font-size="0.82rem"
                 >
                   Հաստատել

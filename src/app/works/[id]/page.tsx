@@ -161,7 +161,7 @@ export default function BrandingDetailPage() {
       <main className="shell" style={{ marginTop: "160px", minHeight: "70vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "20px" }}>
         <h2 style={{ fontSize: "2rem", fontWeight: "800", color: "var(--text)" }}>Աշխատանքը չի գտնվել</h2>
         <Link href="/works" style={{ textDecoration: "none" }}>
-          <hd-button data-width="180px" data-height="48px" data-thickness="2px">
+          <hd-button data-width="180px" data-height="48px" data-thickness="3px">
             Վերադառնալ
           </hd-button>
         </Link>
@@ -388,7 +388,7 @@ export default function BrandingDetailPage() {
       {/* Back to works button */}
       <div style={{ display: "flex", justifyContent: "center" }}>
         <Link href="/works" style={{ textDecoration: "none" }}>
-          <hd-button data-width="220px" data-height="50px" data-thickness="2px">
+          <hd-button data-width="220px" data-height="50px" data-thickness="3px">
             ← Հետ դեպի ցուցակ
           </hd-button>
         </Link>

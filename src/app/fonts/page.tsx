@@ -192,7 +192,7 @@ export default function FontsListingPage() {
               onClick={() => setShowAdvanced(!showAdvanced)}
               data-width="200px"
               data-height="46px"
-              data-thickness="1px"
+              data-thickness="3px"
               style={{
                 background: showAdvanced ? "var(--btn-hover-bg)" : "transparent",
                 color: "var(--text)",

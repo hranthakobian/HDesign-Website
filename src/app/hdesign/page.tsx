@@ -28,12 +28,12 @@ export default function HDesignGeneralPage() {
           
           <div style={{ display: "flex", gap: "16px", marginTop: "12px" }}>
             <Link href="/hdesign/docs" style={{ textDecoration: "none" }}>
-              <hd-button data-width="200px" data-height="50px" data-thickness="2px">
+              <hd-button data-width="200px" data-height="50px" data-thickness="3px">
                 Կարդալ Փաստաթղթերը
               </hd-button>
             </Link>
             <Link href="/hdesign/samples" style={{ textDecoration: "none" }}>
-              <hd-button data-width="200px" data-height="50px" data-thickness="2px" style={{ color: "var(--text)", background: "transparent" }}>
+              <hd-button data-width="200px" data-height="50px" data-thickness="3px" style={{ color: "var(--text)", background: "transparent" }}>
                 Փորձարկել Սեմփլները
               </hd-button>
             </Link>
@@ -131,10 +131,6 @@ export default function HDesignGeneralPage() {
             <h3 style={{ fontSize: "1.3rem", fontWeight: "bold", margin: "0 0 20px 0" }}>Չափսային տոկեններ</h3>
             
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span>Եզրագծի հաստություն</span>
-                <span style={{ fontWeight: "bold" }}>var(--line-thickness, 3px)</span>
-              </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span>Կլորացման շառավիղ</span>
                 <span style={{ fontWeight: "bold" }}>var(--border-radius, 12px)</span>

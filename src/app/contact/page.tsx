@@ -68,15 +68,16 @@ export default function ContactPage() {
                 <span className="icon-Check" style={{ fontSize: "3rem", color: "#4a897c" }} />
                 <h3 style={{ fontSize: "1.4rem", fontWeight: "bold", margin: 0, color: "var(--text)" }}>Հաղորդագրությունը հաջողությամբ ուղարկվել է:</h3>
                 <p style={{ color: "var(--text)", opacity: 0.8, margin: 0 }}>Շնորհակալություն կապնվելու համար: Ես կպատասխանեմ ձեզ շուտով:</p>
-                <hd-button 
-                  onClick={() => setStatus("idle")} 
-                  data-width="180px" 
-                  data-height="46px" 
-                  data-thickness="2px"
-                  style={{ marginTop: "12px" }}
-                >
-                  Գրել նոր նամակ
-                </hd-button>
+                <div style={{ marginTop: "12px" }}>
+                  <hd-button 
+                    onClick={() => setStatus("idle")} 
+                    data-width="180px" 
+                    data-height="46px" 
+                    data-thickness="3px"
+                  >
+                    Գրել նոր նամակ
+                  </hd-button>
+                </div>
               </div>
             ) : (
               <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
@@ -89,7 +90,7 @@ export default function ContactPage() {
                       onInput={(e: any) => setFormData({ ...formData, name: e.target.value })}
                       data-width="100%"
                       data-height="48px"
-                      data-thickness="2px"
+                      data-thickness="3px"
                     />
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -100,7 +101,7 @@ export default function ContactPage() {
                       onInput={(e: any) => setFormData({ ...formData, email: e.target.value })}
                       data-width="100%"
                       data-height="48px"
-                      data-thickness="2px"
+                      data-thickness="3px"
                     />
                   </div>
                 </div>
@@ -113,7 +114,7 @@ export default function ContactPage() {
                     onInput={(e: any) => setFormData({ ...formData, subject: e.target.value })}
                     data-width="100%"
                     data-height="48px"
-                    data-thickness="2px"
+                    data-thickness="3px"
                   />
                 </div>
 
@@ -124,7 +125,6 @@ export default function ContactPage() {
                     value={formData.message}
                     onInput={(e: any) => setFormData({ ...formData, message: e.target.value })}
                     data-width="100%"
-                    style={{ minHeight: "150px" }}
                   />
                 </div>
 

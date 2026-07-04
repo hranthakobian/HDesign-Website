@@ -468,9 +468,338 @@ export default function Home() {
   const [showAllGallery, setShowAllGallery] = useState(false);
 
   // Playground states
-  const [playgroundHeight, setPlaygroundHeight] = useState(60);
-  const [playgroundThickness, setPlaygroundThickness] = useState(3);
-  const [playgroundHue, setPlaygroundHue] = useState(180);
+  const [playgroundActiveTab, setPlaygroundActiveTab] = useState<string>("hd-button");
+  const [playgroundWidth, setPlaygroundWidth] = useState<string>("240px");
+  const [playgroundHeight, setPlaygroundHeight] = useState<string>("50px");
+  const [playgroundThickness, setPlaygroundThickness] = useState<string>("3px");
+  const [playgroundColor, setPlaygroundColor] = useState<string>("#083f39");
+  const [playgroundTextColor, setPlaygroundTextColor] = useState<string>("#ffffff");
+  const [playgroundRadius, setPlaygroundRadius] = useState<string>("12px");
+  const [playgroundBtnText, setPlaygroundBtnText] = useState<string>("Սեղմել այստեղ");
+  const [playgroundIsDisabled, setPlaygroundIsDisabled] = useState<boolean>(false);
+  const [playgroundInputPlaceholder, setPlaygroundInputPlaceholder] = useState<string>("Մուտքագրեք տեքստ...");
+  const [playgroundInputValue, setPlaygroundInputValue] = useState<string>("");
+  const [playgroundInputType, setPlaygroundInputType] = useState<string>("text");
+  const [playgroundTextareaPlaceholder, setPlaygroundTextareaPlaceholder] = useState<string>("Ձեր հաղորդագրությունը...");
+  const [playgroundTextareaDisableResize, setPlaygroundTextareaDisableResize] = useState<boolean>(true);
+  const [playgroundSliderMin, setPlaygroundSliderMin] = useState<number>(0);
+  const [playgroundSliderMax, setPlaygroundSliderMax] = useState<number>(100);
+  const [playgroundSliderVal, setPlaygroundSliderVal] = useState<number>(50);
+  const [playgroundSliderStep, setPlaygroundSliderStep] = useState<number>(1);
+  const [playgroundCheckedState, setPlaygroundCheckedState] = useState<boolean>(true);
+  const [playgroundCheckboxSize, setPlaygroundCheckboxSize] = useState<string>("18px");
+  const [playgroundRadioState, setPlaygroundRadioState] = useState<boolean>(true);
+  const [playgroundRadioSize, setPlaygroundRadioSize] = useState<string>("18px");
+  const [playgroundSwitchState, setPlaygroundSwitchState] = useState<boolean>(true);
+  const [playgroundSwitchSize, setPlaygroundSwitchSize] = useState<string>("20px");
+  const [playgroundSelectPlaceholder, setPlaygroundSelectPlaceholder] = useState<string>("Ընտրել տարբերակ...");
+  const [playgroundSelectVal, setPlaygroundSelectVal] = useState<string>("option1");
+  const [playgroundSelectOptions, setPlaygroundSelectOptions] = useState<string>("Տարբերակ 1, Տարբերակ 2, Տարբերակ 3");
+  const [playgroundSegmentVal, setPlaygroundSegmentVal] = useState<string>("tab1");
+  const [playgroundSegmentOptions, setPlaygroundSegmentOptions] = useState<string>("Առաջին, Երկրորդ, Երրորդ");
+  const [playgroundColorPickerVal, setPlaygroundColorPickerVal] = useState<string>("#083f39");
+  const [playgroundColorPanelVal, setPlaygroundColorPanelVal] = useState<string>("#083f39");
+  const [playgroundScrollContentHeight, setPlaygroundScrollContentHeight] = useState<number>(300);
+  const [playgroundCopied, setPlaygroundCopied] = useState<boolean>(false);
+
+  const playgroundComponentsList = [
+    { id: "hd-button", name: "Button (Կոճակ)", desc: "Կոճակ անիմացիոն եզրագծերի էֆեկտներով" },
+    { id: "hd-input", name: "Input (Մուտքի դաշտ)", desc: "Տեքստի դաշտ caret-ի անիմացիայով" },
+    { id: "hd-textarea", name: "Textarea (Տեքստային տարածք)", desc: "Բազմատող տեքստի դաշտ" },
+    { id: "hd-slider", name: "Slider (Սահիկ)", desc: "Արժեքների ընտրության գծային սահիկ" },
+    { id: "hd-checkbox", name: "Checkbox (Հաստատման վանդակ)", desc: "Նշման վանդակ կլորացված անկյուններով" },
+    { id: "hd-radio", name: "Radio (Ռադիո կոճակ)", desc: "Մեկ տարբերակի ընտրություն խմբից" },
+    { id: "hd-switch", name: "Switch (Փոխանջատիչ)", desc: "Միացման-անջատման անիմացիոն տոգլ" },
+    { id: "hd-select", name: "Select (Ընտրացանկ)", desc: "Գծային դրոփդաուն ընտրացանկ" },
+    { id: "hd-segment", name: "Segment (Սեգմենտավորում)", desc: "Տաբերի սեգմենտավորված փոխանջատիչ" },
+    { id: "hd-color-picker", name: "Color Picker (Գույնի ընտրիչ)", desc: "Կոմպակտ գույնի ընտրության կոճակ" },
+    { id: "hd-color-panel", name: "Color Panel (Գունային վահանակ)", desc: "Ներդրված գունային ընտրության վահանակ" },
+    { id: "hd-scrollbar", name: "Scrollbar (Կոմպակտ սահնակ)", desc: "Մինիմալիստական սքրոլբարի տարա" }
+  ];
+
+  const playgroundComponentKey = `${playgroundActiveTab}-${playgroundWidth}-${playgroundHeight}-${playgroundThickness}-${playgroundColor}-${playgroundTextColor}-${playgroundRadius}-${playgroundBtnText}-${playgroundIsDisabled}-${playgroundInputPlaceholder}-${playgroundInputValue}-${playgroundInputType}-${playgroundTextareaPlaceholder}-${playgroundTextareaDisableResize}-${playgroundSliderMin}-${playgroundSliderMax}-${playgroundSliderVal}-${playgroundSliderStep}-${playgroundCheckedState}-${playgroundCheckboxSize}-${playgroundRadioState}-${playgroundRadioSize}-${playgroundSwitchState}-${playgroundSwitchSize}-${playgroundSelectPlaceholder}-${playgroundSelectVal}-${playgroundSelectOptions}-${playgroundSegmentVal}-${playgroundSegmentOptions}-${playgroundColorPickerVal}-${playgroundColorPanelVal}-${playgroundScrollContentHeight}`;
+
+  const generatePlaygroundCode = (): string => {
+    const thicknessAttr = playgroundThickness ? ` data-thickness="${playgroundThickness}"` : "";
+    const colorAttr = playgroundColor ? ` data-color="${playgroundColor}"` : "";
+    const textColorAttr = playgroundTextColor ? ` data-text-color="${playgroundTextColor}"` : "";
+    const radiusAttr = playgroundRadius ? ` data-radius="${playgroundRadius}"` : "";
+    const widthAttr = playgroundWidth && playgroundWidth !== "auto" ? ` data-width="${playgroundWidth}"` : "";
+    const heightAttr = playgroundHeight && playgroundHeight !== "auto" ? ` data-height="${playgroundHeight}"` : "";
+    
+    const commonData = `${widthAttr}${heightAttr}${thicknessAttr}${colorAttr}${textColorAttr}${radiusAttr}`;
+    
+    switch(playgroundActiveTab) {
+      case "hd-button":
+        return `<hd-button${playgroundIsDisabled ? " disabled" : ""}${commonData}>\n  ${playgroundBtnText}\n</hd-button>`;
+      case "hd-input":
+        return `<hd-input\n  type="${playgroundInputType}"\n  placeholder="${playgroundInputPlaceholder}"\n  value="${playgroundInputValue}"\n  ${playgroundIsDisabled ? "disabled " : ""}${commonData}\n/>`;
+      case "hd-textarea":
+        return `<hd-textarea\n  placeholder="${playgroundTextareaPlaceholder}"\n  value="${playgroundInputValue}"\n  data-disable-horizontal-resize="${playgroundTextareaDisableResize}"\n  ${commonData}\n/>`;
+      case "hd-slider":
+        return `<hd-slider\n  min="${playgroundSliderMin}"\n  max="${playgroundSliderMax}"\n  value="${playgroundSliderVal}"\n  step="${playgroundSliderStep}"\n  ${playgroundIsDisabled ? "disabled " : ""}${commonData}\n/>`;
+      case "hd-checkbox":
+        const checkSizeAttr = playgroundCheckboxSize ? ` data-size="${playgroundCheckboxSize}"` : "";
+        return `<hd-checkbox\n  ${playgroundCheckedState ? "checked " : ""}${playgroundIsDisabled ? "disabled " : ""}${checkSizeAttr}${colorAttr}${radiusAttr}\n/>`;
+      case "hd-radio":
+        const radSizeAttr = playgroundRadioSize ? ` data-size="${playgroundRadioSize}"` : "";
+        return `<hd-radio\n  name="group"\n  ${playgroundRadioState ? "checked " : ""}${playgroundIsDisabled ? "disabled " : ""}${radSizeAttr}${colorAttr}\n/>`;
+      case "hd-switch":
+        const swSizeAttr = playgroundSwitchSize ? ` data-size="${playgroundSwitchSize}"` : "";
+        return `<hd-switch\n  ${playgroundSwitchState ? "checked " : ""}${playgroundIsDisabled ? "disabled " : ""}${swSizeAttr}${colorAttr}\n/>`;
+      case "hd-select":
+        const selectSpans = playgroundSelectOptions.split(",").map((opt, i) => {
+          const val = `option${i+1}`;
+          const sel = val === playgroundSelectVal ? " selected" : "";
+          return `  <span value="${val}"${sel}>${opt.trim()}</span>`;
+        }).join("\n");
+        return `<hd-select\n  placeholder="${playgroundSelectPlaceholder}"\n  value="${playgroundSelectVal}"\n  ${commonData}\n>\n${selectSpans}\n</hd-select>`;
+      case "hd-segment":
+        const segmentSpans = playgroundSegmentOptions.split(",").map((opt, i) => {
+          const val = `tab${i+1}`;
+          const sel = val === playgroundSegmentVal ? " selected" : "";
+          return `  <span value="${val}"${sel}>${opt.trim()}</span>`;
+        }).join("\n");
+        return `<hd-segment\n  value="${playgroundSegmentVal}"\n  ${commonData}\n>\n${segmentSpans}\n</hd-segment>`;
+      case "hd-color-picker":
+        return `<hd-color-picker\n  data-color="${playgroundColorPickerVal}"\n  ${commonData}\n/>`;
+      case "hd-color-panel":
+        return `<hd-color-panel\n  value="${playgroundColorPanelVal}"\n  data-width="${playgroundWidth}"\n  data-height="${playgroundHeight}"\n/>`;
+      case "hd-scrollbar":
+        return `<hd-scrollbar style="width: ${playgroundWidth}; height: ${playgroundHeight}; overflow: auto;">\n  <div style="padding: 20px; height: ${playgroundScrollContentHeight}px;">\n    Երկար պարունակություն...\n  </div>\n</hd-scrollbar>`;
+      default:
+        return "";
+    }
+  };
+
+  const handlePlaygroundCopyCode = () => {
+    navigator.clipboard.writeText(generatePlaygroundCode());
+    setPlaygroundCopied(true);
+    setTimeout(() => setPlaygroundCopied(false), 2000);
+  };
+
+  const handlePlaygroundTabChange = (id: string) => {
+    setPlaygroundActiveTab(id);
+    if (id === "hd-checkbox" || id === "hd-radio" || id === "hd-switch" || id === "hd-color-picker") {
+      setPlaygroundWidth("auto");
+      setPlaygroundHeight("auto");
+    } else {
+      setPlaygroundWidth("240px");
+      setPlaygroundHeight(id === "hd-textarea" ? "120px" : id === "hd-scrollbar" ? "150px" : id === "hd-color-panel" ? "200px" : "50px");
+    }
+  };
+
+  const highlightPlaygroundHTML = (code: string): string => {
+    if (!code) return "";
+    let escaped = code
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    
+    const values: string[] = [];
+    const tags: string[] = [];
+    const gts: string[] = [];
+    const attrs: string[] = [];
+    const bools: string[] = [];
+
+    // 1. Strings/Values (in double quotes)
+    escaped = escaped.replace(/"([^"]*)"/g, (match, p1) => {
+      const idx = values.length;
+      values.push(`<span style="color: #ce9178;">"${p1}"</span>`);
+      return `__VAL__${idx}__`;
+    });
+
+    // 2. Tag names
+    escaped = escaped.replace(/&lt;(\/?[a-zA-Z0-9\-]+)/g, (match, p1) => {
+      const idx = tags.length;
+      tags.push(`<span style="color: #569cd6; font-weight: 600;">${p1}</span>`);
+      return `&lt;__TAG__${idx}__`;
+    });
+
+    // 3. Angle brackets
+    escaped = escaped.replace(/\/&gt;/g, () => {
+      const idx = gts.length;
+      gts.push(`<span style="color: #569cd6; font-weight: 600;">/&gt;</span>`);
+      return `__GT__${idx}__`;
+    });
+    escaped = escaped.replace(/&gt;/g, () => {
+      const idx = gts.length;
+      gts.push(`<span style="color: #569cd6; font-weight: 600;">&gt;</span>`);
+      return `__GT__${idx}__`;
+    });
+
+    // 4. Attributes
+    escaped = escaped.replace(/([a-zA-Z0-9\-]+)(?==)/g, (match, p1) => {
+      const idx = attrs.length;
+      attrs.push(`<span style="color: #9cdcfe;">${p1}</span>`);
+      return `__ATTR__${idx}__`;
+    });
+
+    // 5. Booleans
+    escaped = escaped.replace(/\b(checked|disabled)\b/g, (match, p1) => {
+      const idx = bools.length;
+      bools.push(`<span style="color: #9cdcfe;">${p1}</span>`);
+      return `__BOOL__${idx}__`;
+    });
+
+    // Restore tokens in safe order
+    escaped = escaped.replace(/__VAL__(\d+)__/g, (match, p1) => values[parseInt(p1, 10)]);
+    escaped = escaped.replace(/__TAG__(\d+)__/g, (match, p1) => tags[parseInt(p1, 10)]);
+    escaped = escaped.replace(/__ATTR__(\d+)__/g, (match, p1) => attrs[parseInt(p1, 10)]);
+    escaped = escaped.replace(/__BOOL__(\d+)__/g, (match, p1) => bools[parseInt(p1, 10)]);
+    escaped = escaped.replace(/__GT__(\d+)__/g, (match, p1) => gts[parseInt(p1, 10)]);
+
+    return escaped;
+  };
+
+  function renderPlaygroundActiveComponent() {
+    const commonProps = {
+      key: playgroundComponentKey,
+      "data-width": playgroundWidth,
+      "data-height": playgroundHeight,
+      "data-thickness": playgroundThickness,
+      "data-color": playgroundColor,
+      "data-text-color": playgroundTextColor,
+      "data-radius": playgroundRadius,
+    } as any;
+
+    switch(playgroundActiveTab) {
+      case "hd-button":
+        return (
+          <hd-button {...commonProps} disabled={playgroundIsDisabled} onClick={() => alert("Սեղմված է")}>
+            {playgroundBtnText}
+          </hd-button>
+        );
+      case "hd-input":
+        return (
+          <hd-input
+            {...commonProps}
+            type={playgroundInputType}
+            placeholder={playgroundInputPlaceholder}
+            value={playgroundInputValue}
+            disabled={playgroundIsDisabled}
+            onChange={(e: any) => setPlaygroundInputValue(e.target.value)}
+          />
+        );
+      case "hd-textarea":
+        return (
+          <hd-textarea
+            {...commonProps}
+            placeholder={playgroundTextareaPlaceholder}
+            value={playgroundInputValue}
+            data-disable-horizontal-resize={playgroundTextareaDisableResize ? "true" : undefined}
+            onChange={(e: any) => setPlaygroundInputValue(e.target.value)}
+          />
+        );
+      case "hd-slider":
+        return (
+          <hd-slider
+            {...commonProps}
+            min={playgroundSliderMin}
+            max={playgroundSliderMax}
+            value={playgroundSliderVal}
+            step={playgroundSliderStep}
+            disabled={playgroundIsDisabled}
+            onInput={(e: any) => setPlaygroundSliderVal(Number(e.target.value))}
+          />
+        );
+      case "hd-checkbox":
+        return (
+          <hd-checkbox
+            key={playgroundComponentKey}
+            checked={playgroundCheckedState}
+            disabled={playgroundIsDisabled}
+            data-size={playgroundCheckboxSize}
+            data-color={playgroundColor}
+            data-radius={playgroundRadius}
+            onChange={(e: any) => setPlaygroundCheckedState(e.target.checked)}
+          />
+        );
+      case "hd-radio":
+        return (
+          <hd-radio
+            key={playgroundComponentKey}
+            checked={playgroundRadioState}
+            disabled={playgroundIsDisabled}
+            data-size={playgroundRadioSize}
+            data-color={playgroundColor}
+            onChange={(e: any) => setPlaygroundRadioState(e.target.checked)}
+          />
+        );
+      case "hd-switch":
+        return (
+          <hd-switch
+            key={playgroundComponentKey}
+            checked={playgroundSwitchState}
+            disabled={playgroundIsDisabled}
+            data-size={playgroundSwitchSize}
+            data-color={playgroundColor}
+            onChange={(e: any) => setPlaygroundSwitchState(e.target.checked)}
+          />
+        );
+      case "hd-select":
+        return (
+          <hd-select
+            {...commonProps}
+            placeholder={playgroundSelectPlaceholder}
+            value={playgroundSelectVal}
+            onChange={(e: any) => setPlaygroundSelectVal(e.target.value)}
+          >
+            {playgroundSelectOptions.split(",").map((opt, i) => (
+              <span key={i} value={`option${i+1}`} {...(playgroundSelectVal === `option${i+1}` ? { selected: true } : {})}>
+                {opt.trim()}
+              </span>
+            ))}
+          </hd-select>
+        );
+      case "hd-segment":
+        return (
+          <hd-segment
+            {...commonProps}
+            value={playgroundSegmentVal}
+            onChange={(e: any) => setPlaygroundSegmentVal(e.target.value)}
+          >
+            {playgroundSegmentOptions.split(",").map((opt, i) => (
+              <span key={i} value={`tab${i+1}`} {...(playgroundSegmentVal === `tab${i+1}` ? { selected: true } : {})}>
+                {opt.trim()}
+              </span>
+            ))}
+          </hd-segment>
+        );
+      case "hd-color-picker":
+        return (
+          <hd-color-picker
+            {...commonProps}
+            data-color={playgroundColorPickerVal}
+            onChange={(e: any) => setPlaygroundColorPickerVal(e.target.value)}
+          />
+        );
+      case "hd-color-panel":
+        return (
+          <hd-color-panel
+            key={playgroundComponentKey}
+            value={playgroundColorPanelVal}
+            data-width={playgroundWidth}
+            data-height={playgroundHeight}
+            onChange={(e: any) => setPlaygroundColorPanelVal(e.target.value)}
+          />
+        );
+      case "hd-scrollbar":
+        return (
+          <hd-scrollbar key={playgroundComponentKey} style={{ width: playgroundWidth || "100%", height: playgroundHeight || "150px", overflow: "auto", border: "1px solid var(--panel-border)", borderRadius: "8px", background: "rgba(0,0,0,0.1)" }}>
+            <div style={{ padding: "16px", height: `${playgroundScrollContentHeight}px`, color: "inherit", boxSizing: "border-box" }}>
+              <p style={{ margin: "0 0 12px 0", fontSize: "0.9rem", fontWeight: "bold" }}>HDesign Կոմպակտ Սքրոլբար</p>
+              <p style={{ margin: "0 0 12px 0", fontSize: "0.8rem", opacity: 0.7, lineHeight: "1.4" }}>Սքրոլ արեք ներքև՝ շարունակությունը կարդալու համար:</p>
+              <div style={{ marginTop: "40px", border: "1px dashed var(--panel-border)", padding: "8px", borderRadius: "6px", textAlign: "center", fontSize: "0.75rem", opacity: 0.5 }}>
+                Վերջ (Բարձրություն՝ {playgroundScrollContentHeight}px)
+              </div>
+            </div>
+          </hd-scrollbar>
+        );
+      default:
+        return null;
+    }
+  }
 
 
   // Helper to retrieve custom SVG for hardcoded seed cases
@@ -495,7 +824,7 @@ export default function Home() {
         const res = await fetch("/api/cases");
         if (res.ok) {
           const data = await res.json();
-          if (data && data.length > 0) {
+          if (data) {
             setCasesList(data);
             return;
           }
@@ -778,35 +1107,59 @@ export default function Home() {
                   key={idx} 
                   href={getBrandingLink(card)}
                   className="marquee-card" 
-                  style={{ backgroundColor: card.bg || card.color, textDecoration: "none" }}
+                  style={{ textDecoration: "none" }}
                   title="Սեղմեք մանրամասների համար"
                 >
                   <img 
                     src={card.image_url || card.image} 
                     alt={card.title} 
                     className="card-bg-design" 
+                    crossOrigin="anonymous"
+                    onLoad={(e) => {
+                      const img = e.currentTarget;
+                      try {
+                        const canvas = document.createElement("canvas");
+                        canvas.width = 1;
+                        canvas.height = 1;
+                        const ctx = canvas.getContext("2d");
+                        if (ctx) {
+                          ctx.drawImage(img, 0, 0, 1, 1);
+                          const pixel = ctx.getImageData(0, 0, 1, 1).data;
+                          const r = pixel[0];
+                          const g = pixel[1];
+                          const b = pixel[2];
+                          
+                          const extracted = getColorsFromRgb(r, g, b);
+                          setHoverColors(prev => ({
+                            ...prev,
+                            [card.id]: { overlay: extracted.overlayBg, line: extracted.lineColor }
+                          }));
+                        }
+                      } catch (err) {
+                        console.warn("Color extraction failed for marquee card", card.id, err);
+                      }
+                    }}
                     style={{ 
                       width: "100%", 
                       height: "100%", 
                       objectFit: "cover", 
                       position: "absolute", 
                       inset: 0, 
-                      zIndex: 1,
-                      opacity: 0.85 
+                      zIndex: 1
                     }} 
                   />
                   
                   {/* Decorative Hover SVGs */}
                   <div className="card-hover-decor top-left">
                     <svg width="32" height="140" viewBox="0 0 32 140" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect className="svg-pill pill-1" x="0" y="0" width="12" height="90" rx="6" fill={getCasePastelColor({ title: card.title, bg: card.bg || card.color })}></rect>
-                      <rect className="svg-pill pill-2" x="20" y="40" width="12" height="90" rx="6" fill={getCasePastelColor({ title: card.title, bg: card.bg || card.color })}></rect>
+                      <rect className="svg-pill pill-1" x="0" y="0" width="12" height="90" rx="6" fill={hoverColors[card.id]?.line || getCasePastelColor({ title: card.title, bg: card.bg || card.color })}></rect>
+                      <rect className="svg-pill pill-2" x="20" y="40" width="12" height="90" rx="6" fill={hoverColors[card.id]?.line || getCasePastelColor({ title: card.title, bg: card.bg || card.color })}></rect>
                     </svg>
                   </div>
                   <div className="card-hover-decor bottom-right">
                     <svg width="32" height="140" viewBox="0 0 32 140" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect className="svg-pill pill-1" x="0" y="0" width="12" height="90" rx="6" fill={getCasePastelColor({ title: card.title, bg: card.bg || card.color })}></rect>
-                      <rect className="svg-pill pill-2" x="20" y="40" width="12" height="90" rx="6" fill={getCasePastelColor({ title: card.title, bg: card.bg || card.color })}></rect>
+                      <rect className="svg-pill pill-1" x="0" y="0" width="12" height="90" rx="6" fill={hoverColors[card.id]?.line || getCasePastelColor({ title: card.title, bg: card.bg || card.color })}></rect>
+                      <rect className="svg-pill pill-2" x="20" y="40" width="12" height="90" rx="6" fill={hoverColors[card.id]?.line || getCasePastelColor({ title: card.title, bg: card.bg || card.color })}></rect>
                     </svg>
                   </div>
 
@@ -924,68 +1277,506 @@ export default function Home() {
 
         {/* ══ SECTION 5: PLAYGROUND (Դիզայնի Համակարգը) ══ */}
         <section id="playground" style={{ padding: "80px 0" }}>
-          <h2 style={{ fontSize: "2.2rem", fontWeight: "900", textAlign: "center", color: "var(--text)", marginBottom: "40px" }}>
+          <style>{`
+            .homepage-playground-container {
+              display: grid;
+              grid-template-columns: 260px 1fr 300px;
+              gap: 24px;
+              max-width: 1400px;
+              margin: 0 auto;
+              width: 100%;
+              align-items: start;
+              background: transparent;
+              border: none;
+              border-radius: 0;
+              padding: 0;
+              box-shadow: none;
+              backdrop-filter: none;
+            }
+            .playground-sidebar-column {
+              display: flex;
+              flex-direction: column;
+              gap: 12px;
+              background: #ffffff;
+              border: 1px solid var(--panel-border);
+              border-radius: 20px;
+              padding: 20px;
+              box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+              max-height: 500px;
+              height: 500px;
+              overflow: hidden;
+              color: #1a1a1a;
+            }
+            .playground-preview-column {
+              display: flex;
+              flex-direction: column;
+              gap: 24px;
+              min-width: 0;
+              height: 500px;
+              max-height: 500px;
+            }
+            .playground-controls-column {
+              display: flex;
+              flex-direction: column;
+              gap: 12px;
+              background: #ffffff;
+              border: 1px solid var(--panel-border);
+              border-radius: 20px;
+              padding: 20px;
+              box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+              max-height: 500px;
+              height: 500px;
+              overflow: hidden;
+              color: #1a1a1a;
+            }
+            @media (max-width: 1100px) {
+              .homepage-playground-container {
+                grid-template-columns: 220px 1fr;
+              }
+              .playground-controls-column {
+                grid-column: span 2;
+                max-height: 400px;
+                height: 400px;
+              }
+            }
+            @media (max-width: 768px) {
+              .homepage-playground-container {
+                grid-template-columns: 1fr;
+              }
+              .playground-sidebar-column {
+                max-height: 300px;
+                height: 300px;
+              }
+              .playground-preview-column {
+                height: auto;
+                max-height: none;
+              }
+              .playground-controls-column {
+                grid-column: span 1;
+                max-height: 400px;
+                height: 400px;
+              }
+            }
+            .playground-copy-btn {
+              color: #ffffff;
+              transition: color 0.2s ease;
+            }
+            .playground-copy-btn:hover {
+              color: #b0b0b0 !important;
+            }
+          `}</style>
+          
+          <h2 style={{
+            fontSize: "2.2rem",
+            fontWeight: "900",
+            textAlign: "center",
+            color: "var(--text)",
+            marginBottom: "40px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px"
+          }}>
             Դիզայնի Համակարգը
+            <sup style={{ top: "-0.5em", display: "inline-flex" }}>
+              <svg width="60" height="20" viewBox="0 0 100 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="100" height="30" rx="15" fill="currentColor" fillOpacity="0.1"/>
+                <text x="50%" y="65%" dominantBaseline="middle" textAnchor="middle" fill="currentColor" fontSize="12" fontWeight="800" style={{ letterSpacing: "0.5px" }}>BETA</text>
+              </svg>
+            </sup>
           </h2>
           
-          <div className="playground-wrapper">
-            {/* Left Controls column */}
-            <div className="playground-controls">
-              <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: "bold", color: "var(--text)" }}>Կառավարում</h3>
-              
-              <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <span style={{ fontSize: "0.85rem", color: "var(--text)", opacity: 0.8 }}>Բարձրություն (Չափս): {playgroundHeight}px</span>
-                <hd-slider 
-                  min="40" 
-                  max="100" 
-                  value={playgroundHeight} 
-                  onInput={(e: any) => setPlaygroundHeight(Number(e.target.value))}
-                />
-              </label>
-
-              <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <span style={{ fontSize: "0.85rem", color: "var(--text)", opacity: 0.8 }}>Եզրագծի հաստություն: {playgroundThickness}px</span>
-                <hd-slider 
-                  min="1" 
-                  max="8" 
-                  value={playgroundThickness} 
-                  onInput={(e: any) => setPlaygroundThickness(Number(e.target.value))}
-                />
-              </label>
-
-              <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <span style={{ fontSize: "0.85rem", color: "var(--text)", opacity: 0.8 }}>Թեմայի Գույն (Hue): {playgroundHue}°</span>
-                <hd-slider 
-                  min="0" 
-                  max="360" 
-                  value={playgroundHue} 
-                  onInput={(e: any) => setPlaygroundHue(Number(e.target.value))}
-                />
-              </label>
+          <div className="homepage-playground-container">
+            {/* Sidebar List of 12 components */}
+            <div className="playground-sidebar-column">
+              <span style={{ fontSize: "0.75rem", fontWeight: "800", opacity: 0.5, letterSpacing: "1px", padding: "6px 8px 12px 8px" }}>
+                ԿՈՄՊՈՆԵՆՏՆԵՐ
+              </span>
+              <hd-scrollbar style={{ height: "420px", overflow: "auto", overscrollBehavior: "contain" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", paddingRight: "10px" }}>
+                  {playgroundComponentsList.map((comp) => {
+                    const isActive = playgroundActiveTab === comp.id;
+                    return (
+                      <button
+                        key={comp.id}
+                        onClick={() => handlePlaygroundTabChange(comp.id)}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-start",
+                          width: "100%",
+                          padding: "8px 12px",
+                          background: isActive ? "var(--btn-bg)" : "transparent",
+                          border: isActive ? "1px solid var(--panel-border)" : "1px solid transparent",
+                          borderRadius: "10px",
+                          color: "var(--text)",
+                          textAlign: "left",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease"
+                        }}
+                      >
+                        <span style={{ fontWeight: "bold", fontSize: "0.85rem" }}>{comp.name}</span>
+                        <span style={{ fontSize: "0.7rem", opacity: 0.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", width: "100%" }}>{comp.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </hd-scrollbar>
             </div>
 
-            {/* Right Live Components column */}
-            <div 
-              className="playground-preview"
-              style={{
-                "--wrapper-height": `${playgroundHeight}px`,
-                "--line-thickness": `${playgroundThickness}px`,
-                "--hue": playgroundHue
-              } as any}
-            >
-              <div style={{ width: "100%", maxWidth: "450px", display: "flex", flexDirection: "column", gap: "20px" }}>
-                <hd-slider min="0" max="100" value="40" data-width="100%" />
-
-                <div style={{ display: "flex", gap: "24px", alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", gap: "12px" }}>
-                    <hd-checkbox checked data-size="16px" />
-                    <hd-checkbox data-size="16px" />
-                  </div>
-                  <hd-input placeholder="placeholder..." data-width="260px" />
+            {/* Central Canvas Preview & Code */}
+            <div className="playground-preview-column">
+              {/* Checkered preview box */}
+              <div style={{
+                border: "1px solid var(--panel-border)",
+                borderRadius: "20px",
+                backgroundImage: "radial-gradient(rgba(0,0,0,0.15) 1.5px, transparent 0)",
+                backgroundSize: "20px 20px",
+                backgroundPosition: "center",
+                backgroundColor: "#f5f5f5",
+                color: "#1a1a1a",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "20px",
+                flex: 1,
+                boxShadow: "0 12px 30px rgba(0, 0, 0, 0.25)"
+              }}>
+                <div style={{ width: "100%", maxWidth: "320px", display: "flex", justifyContent: "center", color: "#1a1a1a" }}>
+                  {renderPlaygroundActiveComponent()}
                 </div>
-
-                <hd-button data-width="100%">Submit</hd-button>
               </div>
+
+              {/* Code viewer card */}
+              <div style={{
+                background: "rgba(0,0,0,0.25)",
+                border: "1px solid var(--panel-border)",
+                borderRadius: "20px",
+                overflow: "hidden",
+                boxShadow: "0 12px 30px rgba(0, 0, 0, 0.25)",
+                height: "180px",
+                display: "flex",
+                flexDirection: "column"
+              }}>
+                <div style={{
+                  padding: "8px 0px 8px 16px",
+                  borderBottom: "1px solid var(--panel-border)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  background: "#000000",
+                  color: "#ffffff",
+                  height: "38px"
+                }}>
+                  <span style={{ fontSize: "0.7rem", fontWeight: "bold", color: "#ffffff", opacity: 0.8 }}>ՍՏԱՑՎԱԾ ԿՈԴԸ</span>
+                  <button
+                    onClick={handlePlaygroundCopyCode}
+                    className="playground-copy-btn"
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: playgroundCopied ? "#27c93f" : "#ffffff",
+                      fontSize: "0.68rem",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                      paddingRight: "16px",
+                      outline: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      height: "24px"
+                    }}
+                  >
+                    <span className={playgroundCopied ? "icon-Check" : "icon-Attech"} style={{ marginRight: "6px", fontSize: "0.85rem" }} />
+                    <span>{playgroundCopied ? "ՊԱՏՃԵՆՎԱԾ Է!" : "ՊԱՏՃԵՆԵԼ"}</span>
+                  </button>
+                </div>
+                <hd-scrollbar style={{ flex: 1, overflow: "auto", overscrollBehavior: "contain", background: "#121817" }}>
+                  <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "2px" }}>
+                    {highlightPlaygroundHTML(generatePlaygroundCode()).split("\n").map((line, idx) => (
+                      <div key={idx} style={{ display: "flex", alignItems: "start", fontFamily: "Consolas, monospace", fontSize: "0.82rem", lineHeight: "1.5" }}>
+                        <span style={{
+                          width: "24px",
+                          textAlign: "right",
+                          marginRight: "16px",
+                          color: "rgba(255, 255, 255, 0.25)",
+                          userSelect: "none",
+                          flexShrink: 0
+                        }}>
+                          {idx + 1}
+                        </span>
+                        <code
+                          style={{
+                            flex: 1,
+                            minWidth: 0,
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                            fontFamily: "Consolas, monospace",
+                            color: "#e6edf3"
+                          }}
+                          dangerouslySetInnerHTML={{ __html: line || " " }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </hd-scrollbar>
+              </div>
+            </div>
+
+            {/* Right configuration controls */}
+            <div className="playground-controls-column">
+              <span style={{ fontSize: "0.75rem", fontWeight: "800", opacity: 0.5, letterSpacing: "1px", paddingBottom: "8px" }}>
+                ԿԱՐԳԱՎՈՐՈՒՄՆԵՐ
+              </span>
+              <hd-scrollbar style={{ height: "420px", overflow: "auto", overscrollBehavior: "contain" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px", paddingRight: "10px" }}>
+                  {/* Stylistic attributes */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    
+                    {playgroundWidth !== "auto" && (
+                      <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span style={{ fontSize: "0.8rem", opacity: 0.7 }}>Լայնություն (Width)</span>
+                        <hd-select value={playgroundWidth} onChange={(e: any) => setPlaygroundWidth(e.target.value)} data-height="34px" data-thickness="2px">
+                          <span value="100%">100%</span>
+                          <span value="240px">240px</span>
+                          <span value="180px">180px</span>
+                        </hd-select>
+                      </label>
+                    )}
+
+                    {playgroundHeight !== "auto" && playgroundActiveTab !== "hd-scrollbar" && (
+                      <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span style={{ fontSize: "0.8rem", opacity: 0.7 }}>Բարձրություն (Height)</span>
+                        <hd-select value={playgroundHeight} onChange={(e: any) => setPlaygroundHeight(e.target.value)} data-height="34px" data-thickness="2px">
+                          <span value="38px">38px</span>
+                          <span value="50px">50px</span>
+                          <span value="62px">62px</span>
+                          {playgroundActiveTab === "hd-textarea" || playgroundActiveTab === "hd-color-panel" ? (
+                            <>
+                              <span value="120px">120px</span>
+                              <span value="180px">180px</span>
+                            </>
+                          ) : null}
+                        </hd-select>
+                      </label>
+                    )}
+
+                    <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Եզրագիծ: {playgroundThickness}</span>
+                      <hd-slider min="1" max="5" value={playgroundThickness.replace("px", "")} onInput={(e: any) => setPlaygroundThickness(`${e.target.value}px`)} />
+                    </label>
+
+                    <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Կլորացում: {playgroundRadius}</span>
+                      <hd-slider min="0" max="24" value={playgroundRadius.replace("px", "")} onInput={(e: any) => setPlaygroundRadius(`${e.target.value}px`)} />
+                    </label>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Գույն (Theme Color)</span>
+                      <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                        {["#083f39", "#e74c3c", "#3498db"].map((c) => (
+                          <button
+                            key={c}
+                            onClick={() => setPlaygroundColor(c)}
+                            style={{
+                              width: "18px",
+                              height: "18px",
+                              borderRadius: "50%",
+                              background: c,
+                              border: playgroundColor === c ? "2px solid #fff" : "1px solid rgba(255,255,255,0.2)",
+                              cursor: "pointer",
+                              padding: 0
+                            }}
+                          />
+                        ))}
+                        <input
+                          type="color"
+                          value={playgroundColor.startsWith("#") ? playgroundColor : "#083f39"}
+                          onChange={(e) => setPlaygroundColor(e.target.value)}
+                          style={{ width: "22px", height: "22px", border: "none", background: "transparent", cursor: "pointer", padding: 0 }}
+                        />
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Component Specific Settings */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px", borderTop: "1px solid var(--panel-border)", paddingTop: "12px" }}>
+                    
+                    {playgroundActiveTab === "hd-button" && (
+                      <>
+                        <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Կոճակի տեքստը</span>
+                          <input
+                            type="text"
+                            value={playgroundBtnText}
+                            onChange={(e) => setPlaygroundBtnText(e.target.value)}
+                            style={{
+                              background: "rgba(0,0,0,0.2)",
+                              border: "1px solid var(--panel-border)",
+                              borderRadius: "6px",
+                              color: "var(--text)",
+                              padding: "6px 10px",
+                              fontSize: "0.8rem",
+                              fontFamily: "inherit"
+                            }}
+                          />
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                          <hd-checkbox checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          <span style={{ fontSize: "0.8rem" }}>Պասիվ (Disabled)</span>
+                        </label>
+                      </>
+                    )}
+
+                    {playgroundActiveTab === "hd-input" && (
+                      <>
+                        <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Placeholder</span>
+                          <input
+                            type="text"
+                            value={playgroundInputPlaceholder}
+                            onChange={(e) => setPlaygroundInputPlaceholder(e.target.value)}
+                            style={{
+                              background: "rgba(0,0,0,0.2)",
+                              border: "1px solid var(--panel-border)",
+                              borderRadius: "6px",
+                              color: "var(--text)",
+                              padding: "6px 10px",
+                              fontSize: "0.8rem",
+                              fontFamily: "inherit"
+                            }}
+                          />
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                          <hd-checkbox checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          <span style={{ fontSize: "0.8rem" }}>Պասիվ (Disabled)</span>
+                        </label>
+                      </>
+                    )}
+
+                    {playgroundActiveTab === "hd-textarea" && (
+                      <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                        <hd-checkbox checked={playgroundTextareaDisableResize} onChange={(e: any) => setPlaygroundTextareaDisableResize(e.target.checked)} />
+                        <span style={{ fontSize: "0.8rem" }}>Արգելել չափափոխումը</span>
+                      </label>
+                    )}
+
+                    {playgroundActiveTab === "hd-slider" && (
+                      <>
+                        <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                          <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Արժեք: {playgroundSliderVal}</span>
+                          <input
+                            type="range"
+                            min={playgroundSliderMin}
+                            max={playgroundSliderMax}
+                            value={playgroundSliderVal}
+                            onChange={(e) => setPlaygroundSliderVal(Number(e.target.value))}
+                            style={{ width: "100%", accentColor: "var(--accent)" }}
+                          />
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                          <hd-checkbox checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          <span style={{ fontSize: "0.8rem" }}>Պասիվ</span>
+                        </label>
+                      </>
+                    )}
+
+                    {playgroundActiveTab === "hd-checkbox" && (
+                      <>
+                        <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                          <hd-checkbox checked={playgroundCheckedState} onChange={(e: any) => setPlaygroundCheckedState(e.target.checked)} />
+                          <span style={{ fontSize: "0.8rem" }}>Ընտրված (Checked)</span>
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                          <hd-checkbox checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          <span style={{ fontSize: "0.8rem" }}>Պասիվ</span>
+                        </label>
+                      </>
+                    )}
+
+                    {playgroundActiveTab === "hd-radio" && (
+                      <>
+                        <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                          <hd-checkbox checked={playgroundRadioState} onChange={(e: any) => setPlaygroundRadioState(e.target.checked)} />
+                          <span style={{ fontSize: "0.8rem" }}>Ընտրված (Checked)</span>
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                          <hd-checkbox checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          <span style={{ fontSize: "0.8rem" }}>Պասիվ</span>
+                        </label>
+                      </>
+                    )}
+
+                    {playgroundActiveTab === "hd-switch" && (
+                      <>
+                        <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                          <hd-checkbox checked={playgroundSwitchState} onChange={(e: any) => setPlaygroundSwitchState(e.target.checked)} />
+                          <span style={{ fontSize: "0.8rem" }}>Միացված (Active)</span>
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                          <hd-checkbox checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          <span style={{ fontSize: "0.8rem" }}>Պասիվ</span>
+                        </label>
+                      </>
+                    )}
+
+                    {playgroundActiveTab === "hd-select" && (
+                      <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Արժեք</span>
+                        <hd-select value={playgroundSelectVal} onChange={(e: any) => setPlaygroundSelectVal(e.target.value)} data-height="34px" data-thickness="2px">
+                          {playgroundSelectOptions.split(",").map((opt, i) => (
+                            <span key={i} value={`option${i+1}`}>{opt.trim()}</span>
+                          ))}
+                        </hd-select>
+                      </label>
+                    )}
+
+                    {playgroundActiveTab === "hd-segment" && (
+                      <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Ակտիվ տաբ</span>
+                        <hd-select value={playgroundSegmentVal} onChange={(e: any) => setPlaygroundSegmentVal(e.target.value)} data-height="34px" data-thickness="2px">
+                          {playgroundSegmentOptions.split(",").map((opt, i) => (
+                            <span key={i} value={`tab${i+1}`}>{opt.trim()}</span>
+                          ))}
+                        </hd-select>
+                      </label>
+                    )}
+
+                    {playgroundActiveTab === "hd-color-picker" && (
+                      <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Գույնը (Hex)</span>
+                        <input
+                          type="color"
+                          value={playgroundColorPickerVal}
+                          onChange={(e) => setPlaygroundColorPickerVal(e.target.value)}
+                          style={{ width: "100%", height: "30px", border: "1px solid var(--panel-border)", borderRadius: "6px", background: "transparent", cursor: "pointer" }}
+                        />
+                      </label>
+                    )}
+
+                    {playgroundActiveTab === "hd-color-panel" && (
+                      <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Գույնը (Hex)</span>
+                        <input
+                          type="color"
+                          value={playgroundColorPanelVal}
+                          onChange={(e) => setPlaygroundColorPanelVal(e.target.value)}
+                          style={{ width: "100%", height: "30px", border: "1px solid var(--panel-border)", borderRadius: "6px", background: "transparent", cursor: "pointer" }}
+                        />
+                      </label>
+                    )}
+
+                    {playgroundActiveTab === "hd-scrollbar" && (
+                      <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Պարունակության բարձրություն: {playgroundScrollContentHeight}px</span>
+                        <hd-slider min="150" max="500" value={playgroundScrollContentHeight} onInput={(e: any) => setPlaygroundScrollContentHeight(Number(e.target.value))} />
+                      </label>
+                    )}
+
+                  </div>
+                </div>
+              </hd-scrollbar>
             </div>
           </div>
         </section>
@@ -1061,7 +1852,7 @@ export default function Home() {
                   onInput={(e: any) => setIconSearch(e.target.value)}
                   data-width="100%"
                   data-height="46px"
-                  data-thickness="2px"
+                  data-thickness="3px"
                 />
               </div>
 
@@ -1185,7 +1976,7 @@ export default function Home() {
                     onClick={() => downloadSvg(selectedIconDetail)}
                     data-width="50%"
                     data-height="40px"
-                    data-thickness="1px"
+                    data-thickness="3px"
                     data-color="transparent"
                     data-text-color="var(--text)"
                     title="Ներբեռնել SVG"
@@ -1198,7 +1989,7 @@ export default function Home() {
                     onClick={() => downloadPng(selectedIconDetail)}
                     data-width="50%"
                     data-height="40px"
-                    data-thickness="1px"
+                    data-thickness="3px"
                     data-color="var(--primary-color)"
                     data-text-color="#ffffff"
                     title="Ներբեռնել PNG"
@@ -1469,7 +2260,7 @@ export default function Home() {
 
                   <div style={{ marginTop: "auto", paddingTop: "12px", display: "flex", gap: "12px" }}>
                     <Link href={`/works/${selectedCase.id.includes('local-b-') ? ['pasta', 'eleven', 'posters', 'teal-lines', 'mobile-ui'][parseInt(selectedCase.id.replace('local-b-', '')) - 1] || selectedCase.id : selectedCase.id}`} style={{ textDecoration: "none" }}>
-                      <hd-button data-height="40px" data-thickness="1px" style={{ background: "var(--accent)", color: "#000", fontWeight: "bold" }}>
+                      <hd-button data-height="40px" data-thickness="3px" style={{ background: "var(--accent)", color: "#000", fontWeight: "bold" }}>
                         {locale === "en" ? "View Full Case Study" : "Տեսնել Ամբողջական Քեյսը"}
                       </hd-button>
                     </Link>

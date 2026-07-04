@@ -62,7 +62,7 @@ export default function AboutPage() {
                 </hd-button>
               </Link>
               <Link href="/works" style={{ textDecoration: "none" }}>
-                <hd-button data-width="180px" data-height="52px" data-thickness="3px" style={{ color: "var(--text)", background: "transparent" }}>
+                <hd-button data-width="180px" data-height="52px" data-thickness="3px">
                   Աշխատանքներ
                 </hd-button>
               </Link>

@@ -77,7 +77,7 @@ export default function HDesignDocsPage() {
         </p>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "40px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "40px", marginBottom: "80px" }}>
         
         {/* Button example */}
         <CodeExample 
@@ -97,22 +97,24 @@ export default function HDesignDocsPage() {
         {/* Input example */}
         <CodeExample 
           title="Մուտքագրման Դաշտ (<hd-input>)"
-          description="Գծային մուտքագրման դաշտ placeholder-ներով և վիճակների (focus/hover) ինքնաշխատ փոփոխություններով:"
+          description="Գծային մուտքագրման դաշտ placeholder-ներով և վիճակների (focus/hover) ինքնաշխատ փոփոխություններով ու caret-ի անիմացիայով:"
           code={`<hd-input 
   placeholder="Ներմուծեք ձեր էլ. հասցեն" 
   data-width="100%" 
   data-height="48px" 
-  data-thickness="2px"
+  data-thickness="3px"
 />`}
         />
 
         {/* Textarea example */}
         <CodeExample 
           title="Տեքստային Դաշտ (<hd-textarea>)"
-          description="Բազմատող տեքստային դաշտ, որն աջակցում է նաև հորիզոնական չափափոխման արգելափակում:"
+          description="Բազմատող տեքստային դաշտ, որն աջակցում է նաև հորիզոնական չափափոխման արգելափակում: Օգտակար է նամակների և երկար տեքստերի համար:"
           code={`<hd-textarea 
   placeholder="Ձեր հաղորդագրությունը..." 
   data-width="100%" 
+  data-height="120px" 
+  data-thickness="3px"
   data-disable-horizontal-resize="true"
 />`}
         />
@@ -125,7 +127,9 @@ export default function HDesignDocsPage() {
   min="0" 
   max="100" 
   value="50" 
+  step="1"
   data-width="250px"
+  data-thickness="3px"
 />`}
         />
 
@@ -137,6 +141,91 @@ export default function HDesignDocsPage() {
   checked 
   data-size="18px"
 />`}
+        />
+
+        {/* Radio example */}
+        <CodeExample 
+          title="Ռադիո Կոճակ (<hd-radio>)"
+          description="Ռադիո կոճակ տարբերակների խմբից մեկն ընտրելու համար: Կարելի է միավորել ընդհանուր name ատրիբուտով:"
+          code={`<hd-radio 
+  name="sample-group" 
+  checked 
+  data-size="18px"
+/>`}
+        />
+
+        {/* Switch example */}
+        <CodeExample 
+          title="Փոխանջատիչ (<hd-switch>)"
+          description="Գեղեցիկ անիմացիոն փոխանջատիչ (toggle) կարգավորումների արագ միացման կամ անջատման համար:"
+          code={`<hd-switch 
+  checked 
+  data-size="20px"
+/>`}
+        />
+
+        {/* Select example */}
+        <CodeExample 
+          title="Ընտրացանկ / Դրոփդաուն (<hd-select>)"
+          description="Մաքուր գծային դրոփդաուն ընտրացանկ: Տարբերակները տրվում են span տարրերի միջոցով՝ value և selected ատրիբուտներով:"
+          code={`<hd-select 
+  placeholder="Ընտրեք տարբերակը" 
+  data-width="200px" 
+  data-height="46px" 
+  data-thickness="3px"
+>
+  <span value="option1">Տարբերակ 1</span>
+  <span value="option2" selected>Տարբերակ 2</span>
+  <span value="option3">Տարբերակ 3</span>
+</hd-select>`}
+        />
+
+        {/* Segment example */}
+        <CodeExample 
+          title="Սեգմենտավորված Կառավարում (<hd-segment>)"
+          description="Տաբերի կամ սահմանափակ տարբերակների սեգմենտավորված փոխանջատիչ:"
+          code={`<hd-segment 
+  data-width="300px" 
+  data-height="46px" 
+  data-thickness="3px"
+>
+  <span value="tab1" selected>Առաջին</span>
+  <span value="tab2">Երկրորդ</span>
+  <span value="tab3">Երրորդ</span>
+</hd-segment>`}
+        />
+
+        {/* Color Picker example */}
+        <CodeExample 
+          title="Գույնի Ընտրիչ (<hd-color-picker>)"
+          description="Կոմպակտ կոճակ, որի վրա սեղմելիս բացվում է բրաուզերի գունային ներկապնակը և թարմացնում data-color-ը:"
+          code={`<hd-color-picker 
+  data-color="#083f39" 
+  data-width="44px" 
+  data-height="44px"
+/>`}
+        />
+
+        {/* Color Panel example */}
+        <CodeExample 
+          title="Գունային Վահանակ (<hd-color-panel>)"
+          description="Ինտեգրված գունային վահանակ, որը թույլ է տալիս ուղղակիորեն ընտրել գույներ HTML էջի վրա:"
+          code={`<hd-color-panel 
+  value="#083f39" 
+  data-width="100%" 
+  data-height="200px"
+/>`}
+        />
+
+        {/* Scrollbar example */}
+        <CodeExample 
+          title="Կոմպակտ Սահնակ / Սքրոլբար (<hd-scrollbar>)"
+          description="Հատուկ սահնակով (scrollbar) պատված տարան, որը փոխարինում է բրաուզերի ստանդարտ սքրոլբարին ավելի մինիմալիստական գծային տարբերակով:"
+          code={`<hd-scrollbar style={{ width: "100%", height: "150px", overflow: "auto" }}>
+  <div style={{ padding: "20px", height: "300px", color: "var(--text)" }}>
+    Երկար պարունակություն սքրոլ անելու համար...
+  </div>
+</hd-scrollbar>`}
         />
 
       </div>

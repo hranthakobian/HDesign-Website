@@ -183,22 +183,7 @@ function WorksContent() {
           year: c.year,
         }));
 
-        if (mappedDynamic.length > 0) {
-          setCases(mappedDynamic);
-        } else {
-          // Fallback to static seed data
-          setCases(staticCases.map(s => ({
-            id: s.id,
-            title: s.title,
-            subtitle: s.tagline,
-            bg: s.color,
-            image_url: s.image,
-            details: s.description,
-            category: s.id === "mobile-ui" || s.id === "posters" ? "Design" : "Branding",
-            client: (s as any).client || "HDesign Studio",
-            year: (s as any).year || "2026"
-          })));
-        }
+        setCases(mappedDynamic);
       } catch (err) {
         console.warn("Using static branding cases fallback:", err);
         setCases(staticCases.map(s => ({
