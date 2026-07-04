@@ -54,6 +54,12 @@ const iconsList = [
   "icon-Chat-Bubble", "icon-Two-Chat-Bubble", "icon-Earth", "icon-Cursor"
 ];
 
+// Character sets for HDesign glyph map
+const CHARS_AM = "ԱԲԳԴԵԶԷԸԹԺԻԼԽԾԿՀՁՂՃՄՅՆՇՈՉՊՋՌՍՎՏՐՑՈՒՓՔԵՎՕՖաբգդեզէըթժիլխծկհձղճմյնշոչպջռսվտրցուփքևօֆ".split("");
+const CHARS_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".split("");
+const CHARS_NUM = "0123456789".split("");
+const CHARS_SYM = "!@#$%^&*()_+-=[]{};:'\",./<>?".split("");
+
 // Branding Cases Data
 const brandingCases = [
   {
@@ -463,6 +469,8 @@ export default function Home() {
   const [selectedIconDetail, setSelectedIconDetail] = useState<string | null>("icon-QR-Code");
   const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
   const [iconWeight, setIconWeight] = useState<number>(400);
+  const [hdesignFontWeight, setHdesignFontWeight] = useState<number>(400);
+  const [copiedChar, setCopiedChar] = useState<string | null>(null);
 
   // Gallery states
   const [showAllGallery, setShowAllGallery] = useState(false);
@@ -654,7 +662,6 @@ export default function Home() {
 
   function renderPlaygroundActiveComponent() {
     const commonProps = {
-      key: playgroundComponentKey,
       "data-width": playgroundWidth,
       "data-height": playgroundHeight,
       "data-thickness": playgroundThickness,
@@ -666,13 +673,14 @@ export default function Home() {
     switch(playgroundActiveTab) {
       case "hd-button":
         return (
-          <hd-button {...commonProps} disabled={playgroundIsDisabled} onClick={() => alert("Սեղմված է")}>
+          <hd-button key={playgroundComponentKey} {...commonProps} disabled={playgroundIsDisabled} onClick={() => alert("Սեղմված է")}>
             {playgroundBtnText}
           </hd-button>
         );
       case "hd-input":
         return (
           <hd-input
+            key={playgroundComponentKey}
             {...commonProps}
             type={playgroundInputType}
             placeholder={playgroundInputPlaceholder}
@@ -684,6 +692,7 @@ export default function Home() {
       case "hd-textarea":
         return (
           <hd-textarea
+            key={playgroundComponentKey}
             {...commonProps}
             placeholder={playgroundTextareaPlaceholder}
             value={playgroundInputValue}
@@ -694,6 +703,7 @@ export default function Home() {
       case "hd-slider":
         return (
           <hd-slider
+            key={playgroundComponentKey}
             {...commonProps}
             min={playgroundSliderMin}
             max={playgroundSliderMax}
@@ -740,6 +750,7 @@ export default function Home() {
       case "hd-select":
         return (
           <hd-select
+            key={playgroundComponentKey}
             {...commonProps}
             placeholder={playgroundSelectPlaceholder}
             value={playgroundSelectVal}
@@ -755,6 +766,7 @@ export default function Home() {
       case "hd-segment":
         return (
           <hd-segment
+            key={playgroundComponentKey}
             {...commonProps}
             value={playgroundSegmentVal}
             onChange={(e: any) => setPlaygroundSegmentVal(e.target.value)}
@@ -769,6 +781,7 @@ export default function Home() {
       case "hd-color-picker":
         return (
           <hd-color-picker
+            key={playgroundComponentKey}
             {...commonProps}
             data-color={playgroundColorPickerVal}
             onChange={(e: any) => setPlaygroundColorPickerVal(e.target.value)}
@@ -1195,7 +1208,7 @@ export default function Home() {
             </svg>
           </div>
 
-          <div className="landing-about-grid" style={{ maxWidth: "1400px", margin: "0 auto", padding: "80px 0 40px", display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: "48px", alignItems: "center", position: "relative", zIndex: 5 }}>
+          <div className="landing-about-grid" style={{ maxWidth: "1500px", margin: "0 auto", padding: "80px 0 40px", display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: "48px", alignItems: "center", position: "relative", zIndex: 5 }}>
             {/* Profile Image container */}
             <div style={{ position: "relative", borderRadius: "20px", overflow: "hidden", aspectRatio: "1" }}>
               <img 
@@ -1276,13 +1289,13 @@ export default function Home() {
         </section>
 
         {/* ══ SECTION 5: PLAYGROUND (Դիզայնի Համակարգը) ══ */}
-        <section id="playground" style={{ padding: "80px 0" }}>
+        <section id="playground" style={{ padding: "40px 0" }}>
           <style>{`
             .homepage-playground-container {
               display: grid;
               grid-template-columns: 260px 1fr 300px;
               gap: 24px;
-              max-width: 1400px;
+              max-width: 1500px;
               margin: 0 auto;
               width: 100%;
               align-items: start;
@@ -1357,13 +1370,6 @@ export default function Home() {
                 height: 400px;
               }
             }
-            .playground-copy-btn {
-              color: #ffffff;
-              transition: color 0.2s ease;
-            }
-            .playground-copy-btn:hover {
-              color: #b0b0b0 !important;
-            }
           `}</style>
           
           <h2 style={{
@@ -1371,20 +1377,33 @@ export default function Home() {
             fontWeight: "900",
             textAlign: "center",
             color: "var(--text)",
-            marginBottom: "40px",
+            marginBottom: "24px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: "8px"
+            gap: "12px"
           }}>
             Դիզայնի Համակարգը
-            <sup style={{ top: "-0.5em", display: "inline-flex" }}>
-              <svg width="60" height="20" viewBox="0 0 100 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="100" height="30" rx="15" fill="currentColor" fillOpacity="0.1"/>
-                <text x="50%" y="65%" dominantBaseline="middle" textAnchor="middle" fill="currentColor" fontSize="12" fontWeight="800" style={{ letterSpacing: "0.5px" }}>BETA</text>
-              </svg>
-            </sup>
+            <svg 
+              viewBox="0 0 3976 1364" 
+              fill="none" 
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ height: "32px", width: "auto", flexShrink: 0 }}
+            >
+              <rect x="37.5" y="37.5" width="3901" height="1289" rx="336.5" stroke="currentColor" strokeWidth="75"/>
+              <path d="M798.759 957.395C798.759 969.896 793.979 980.926 784.42 990.485C775.596 999.309 764.934 1003.72 752.433 1003.72C739.932 1003.72 728.902 999.309 719.343 990.485C710.519 980.926 706.107 969.896 706.107 957.395H798.759ZM798.759 773.194H1184.81C1198.05 773.194 1209.08 777.238 1217.9 785.327C1226.72 793.416 1231.14 803.71 1231.14 816.211C1231.14 828.712 1226.72 839.374 1217.9 848.198C1209.08 856.287 1198.05 860.331 1184.81 860.331H798.759V957.395H706.107V606.641C706.107 563.256 711.99 524.651 723.755 490.826C736.256 456.265 753.536 427.22 775.596 403.689C797.656 380.158 824.128 362.143 855.012 349.642C885.896 336.406 920.089 329.788 957.591 329.788C1042.89 329.788 1107.97 354.422 1152.82 403.689C1197.68 452.221 1220.11 519.872 1220.11 606.641V633.113H1127.45V618.774C1127.45 554.065 1114.95 504.43 1089.95 469.869C1065.69 434.573 1024.87 416.925 967.518 416.925C910.162 416.925 867.513 434.573 839.57 469.869C812.363 504.43 798.759 554.065 798.759 618.774V773.194ZM1220.11 633.113C1220.11 645.614 1215.33 656.644 1205.77 666.203C1196.94 675.027 1186.28 679.439 1173.78 679.439C1161.28 679.439 1150.25 675.027 1140.69 666.203C1131.87 656.644 1127.45 645.614 1127.45 633.113H1220.11ZM1358.5 372.805C1358.5 360.304 1362.91 349.642 1371.73 340.818C1381.29 331.259 1392.32 326.479 1404.82 326.479C1417.32 326.479 1427.99 331.259 1436.81 340.818C1446.37 349.642 1451.15 360.304 1451.15 372.805V505.165H1830.58C1843.82 505.165 1854.85 509.577 1863.67 518.401C1872.5 526.49 1876.91 536.784 1876.91 549.285C1876.91 561.786 1872.5 572.08 1863.67 580.169C1854.85 588.258 1843.82 592.302 1830.58 592.302H1451.15V711.426C1451.15 776.135 1464.75 826.138 1491.96 861.434C1519.9 895.995 1562.55 913.275 1619.91 913.275C1677.26 913.275 1718.08 895.995 1742.34 861.434C1767.34 826.138 1779.84 776.135 1779.84 711.426V697.087C1779.84 684.586 1784.26 673.924 1793.08 665.1C1802.64 655.541 1813.67 650.761 1826.17 650.761C1838.67 650.761 1849.33 655.541 1858.16 665.1C1867.72 673.924 1872.5 684.586 1872.5 697.087V723.559C1872.5 810.328 1850.07 878.347 1805.21 927.614C1760.36 976.146 1695.28 1000.41 1609.98 1000.41C1572.48 1000.41 1538.29 994.162 1507.4 981.661C1476.52 968.425 1450.05 950.042 1427.99 926.511C1405.93 902.98 1388.65 873.935 1376.15 839.374C1364.38 804.813 1358.5 766.208 1358.5 723.559V372.805ZM2002.79 810.696C2002.79 798.195 2007.2 787.533 2016.02 778.709C2025.58 769.15 2036.98 764.37 2050.22 764.37C2062.72 764.37 2073.38 769.15 2082.2 778.709C2091.76 787.533 2096.54 798.195 2096.54 810.696H2097.64C2097.64 842.315 2110.88 869.155 2137.35 891.215C2163.82 912.54 2198.39 923.202 2241.03 923.202C2268.24 923.202 2291.04 919.525 2309.42 912.172C2328.54 904.819 2343.98 895.627 2355.75 884.597C2368.25 873.567 2377.07 861.434 2382.22 848.198C2388.1 834.962 2391.04 822.461 2391.04 810.696C2391.04 791.577 2386.63 775.4 2377.81 762.164C2368.98 748.928 2356.85 737.898 2341.41 729.074C2326.7 720.25 2309.42 712.897 2289.57 707.014C2270.45 700.396 2249.86 694.146 2227.8 688.263C2203.53 681.645 2179.63 674.659 2156.1 667.306C2132.57 659.953 2111.25 649.658 2092.13 636.422C2073.75 623.186 2058.67 606.641 2046.91 586.787C2035.88 566.198 2030.36 540.093 2030.36 508.474C2030.36 482.002 2035.51 457.736 2045.8 435.676C2056.83 412.881 2071.91 393.762 2091.03 378.32C2110.15 362.143 2132.57 349.642 2158.31 340.818C2184.05 331.994 2211.62 327.582 2241.03 327.582C2275.6 327.582 2306.11 332.729 2332.58 343.024C2359.79 352.583 2382.59 365.819 2400.97 382.732C2420.09 398.909 2434.43 417.66 2443.99 438.985C2454.28 460.31 2459.43 482.002 2459.43 504.062H2460.53C2460.53 516.563 2455.75 527.593 2446.19 537.152C2437.37 545.976 2426.71 550.388 2414.21 550.388C2400.97 550.388 2389.57 545.976 2380.01 537.152C2371.19 527.593 2366.78 516.563 2366.78 504.062H2367.88C2367.88 490.091 2364.2 477.222 2356.85 465.457C2350.23 453.692 2341.04 443.765 2329.27 435.676C2318.24 426.852 2305.01 420.234 2289.57 415.822C2274.12 410.675 2257.95 408.101 2241.03 408.101C2221.92 408.101 2204.64 411.042 2189.19 416.925C2174.49 422.808 2161.62 430.529 2150.59 440.088C2140.29 448.912 2132.21 459.207 2126.32 470.972C2120.44 482.737 2117.5 494.503 2117.5 506.268C2117.5 523.181 2121.18 537.152 2128.53 548.182C2136.62 559.212 2147.28 568.771 2160.52 576.86C2173.75 584.213 2189.19 590.831 2206.84 596.714C2224.49 601.861 2243.24 607.376 2263.09 613.259C2288.83 620.612 2314.57 628.333 2340.3 636.422C2366.04 643.775 2389.2 654.438 2409.79 668.409C2430.38 682.38 2446.93 700.396 2459.43 722.456C2472.66 743.781 2479.28 771.723 2479.28 806.284C2479.28 834.962 2473.4 861.802 2461.63 886.803C2450.6 911.069 2434.8 932.026 2414.21 949.674C2393.62 967.322 2368.62 981.293 2339.2 991.588C2309.79 1001.15 2277.07 1005.93 2241.03 1005.93C2202.8 1005.93 2168.6 1000.78 2138.46 990.485C2109.04 980.19 2084.04 966.219 2063.45 948.571C2043.6 930.188 2028.52 909.231 2018.23 885.7C2007.93 862.169 2002.79 837.168 2002.79 810.696ZM3041.52 383.835C3041.52 371.334 3045.93 360.672 3054.76 351.848C3064.32 342.289 3075.35 337.509 3087.85 337.509C3100.35 337.509 3111.01 342.289 3119.83 351.848C3129.39 360.672 3134.17 371.334 3134.17 383.835V726.868C3134.17 760.693 3131.6 791.945 3126.45 820.623C3121.3 848.566 3112.11 872.464 3098.88 892.318L3215.79 971.734C3226.09 977.617 3232.34 986.073 3234.54 997.103C3237.49 1008.13 3236.02 1018.8 3230.13 1029.09C3222.04 1043.06 3209.91 1050.05 3193.73 1050.05C3186.38 1050.05 3179.39 1047.84 3172.78 1043.43L3039.31 948.571C3021.67 966.219 2997.4 979.823 2966.52 989.382C2936.37 998.941 2904.75 1003.72 2871.66 1003.72C2834.16 1003.72 2799.96 997.838 2769.08 986.073C2738.19 974.308 2711.72 957.027 2689.66 934.232C2667.6 910.701 2650.32 882.391 2637.82 849.301C2626.06 815.476 2620.17 777.238 2620.17 734.589V383.835C2620.17 371.334 2624.59 360.672 2633.41 351.848C2642.97 342.289 2654 337.509 2666.5 337.509C2679 337.509 2689.66 342.289 2698.49 351.848C2708.05 360.672 2712.83 383.835V722.456C2712.83 787.165 2726.43 837.168 2753.64 872.464C2781.58 907.025 2824.23 924.305 2881.58 924.305C2937.47 924.305 2980.12 907.025 3009.53 872.464C3038.95 837.168 3049.61 789.004 3041.52 727.971V383.835Z" fill="currentColor"/>
+            </svg>
           </h2>
+          <h3 style={{
+            fontSize: "1.2rem",
+            fontWeight: "600",
+            color: "var(--muted)",
+            textAlign: "center",
+            marginTop: "-30px",
+            marginBottom: "40px"
+          }}>
+            Բաղադրիչներ
+          </h3>
           
           <div className="homepage-playground-container">
             {/* Sidebar List of 12 components */}
@@ -1471,23 +1490,24 @@ export default function Home() {
                   <span style={{ fontSize: "0.7rem", fontWeight: "bold", color: "#ffffff", opacity: 0.8 }}>ՍՏԱՑՎԱԾ ԿՈԴԸ</span>
                   <button
                     onClick={handlePlaygroundCopyCode}
-                    className="playground-copy-btn"
                     style={{
                       background: "transparent",
                       border: "none",
-                      color: playgroundCopied ? "#27c93f" : "#ffffff",
+                      color: "#ffffff",
                       fontSize: "0.68rem",
                       fontWeight: "bold",
                       cursor: "pointer",
-                      paddingRight: "16px",
+                      padding: "0 16px 0 0",
                       outline: "none",
                       display: "inline-flex",
                       alignItems: "center",
-                      justifyContent: "center",
-                      height: "24px"
+                      gap: "6px",
+                      transition: "color 0.2s ease"
                     }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "#b0b0b0")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "#ffffff")}
                   >
-                    <span className={playgroundCopied ? "icon-Check" : "icon-Attech"} style={{ marginRight: "6px", fontSize: "0.85rem" }} />
+                    <span className="icon-Attech" style={{ fontSize: "0.85rem" }} />
                     <span>{playgroundCopied ? "ՊԱՏՃԵՆՎԱԾ Է!" : "ՊԱՏՃԵՆԵԼ"}</span>
                   </button>
                 </div>
@@ -1782,20 +1802,23 @@ export default function Home() {
         </section>
 
         {/* ══ SECTION 6: ICONS (Պատկերակներ) ══ */}
-        <section ref={sectionRef}>
+        <section>
           <h2 style={{ fontSize: "1.4rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "20px", textAlign: "center", color: "var(--text)" }}>
             Պատկերներ
           </h2>
 
           {/* Two-column layout: Left (Grid) & Right (Details) */}
-          <div style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "32px",
-            width: "100%",
-            alignItems: "flex-start",
-            marginTop: "24px"
-          }}>
+          <div 
+            ref={sectionRef}
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "32px",
+              width: "100%",
+              alignItems: "flex-start",
+              marginTop: "24px"
+            }}
+          >
             {/* Left Column: Icons Grid */}
             <div style={{ flex: "1 1 500px", minWidth: "0" }}>
               <div className="icon-explorer-grid" style={{ marginTop: 0 }}>
@@ -2124,6 +2147,191 @@ export default function Home() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* HDesign Font Glyphs Map & Variability Slider */}
+        <h2 style={{ fontSize: "1.4rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginTop: "60px", marginBottom: "20px", textAlign: "center", color: "var(--text)" }}>
+          Տառատեսակ
+        </h2>
+        <div style={{
+          background: "var(--panel)",
+          border: "1px solid var(--panel-border)",
+          borderRadius: "24px",
+          padding: "32px",
+          boxShadow: "var(--shadow)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "28px"
+        }}>
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
+            <div>
+              <h3 style={{ fontSize: "1.25rem", fontWeight: "800", color: "var(--text)", margin: "0 0 6px 0" }}>
+                HDesign Տառատեսակի Գլիֆներ
+              </h3>
+              <p style={{ fontSize: "0.85rem", color: "var(--muted)", margin: 0, minHeight: "20px" }}>
+                {copiedChar ? (
+                  <span style={{ color: "var(--primary-color)", fontWeight: "bold" }}>
+                    «{copiedChar}» նիշը պատճենվեց:
+                  </span>
+                ) : (
+                  "Կտտացրեք նիշի վրա՝ այն պատճենելու համար"
+                )}
+              </p>
+            </div>
+
+            {/* Variability Slider Card */}
+            <div style={{
+              background: "rgba(255, 255, 255, 0.02)",
+              border: "1px solid var(--panel-border)",
+              borderRadius: "16px",
+              padding: "16px 20px",
+              minWidth: "280px",
+              flex: "0 1 360px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: "0.8rem", fontWeight: "600", color: "var(--muted)" }}>
+                  Հաստություն (Font Weight)
+                </span>
+                <span style={{ fontSize: "0.85rem", fontWeight: "700", color: "var(--primary-color)" }}>
+                  {hdesignFontWeight}
+                </span>
+              </div>
+              <hd-slider 
+                min="100" 
+                max="900" 
+                step="10" 
+                value={hdesignFontWeight}
+                onInput={(e: any) => setHdesignFontWeight(Number(e.target.value))}
+                data-width="100%"
+              />
+            </div>
+          </div>
+
+          {/* Glyph Grids */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            {/* Armenian Character Grid */}
+            <div>
+              <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Հայերեն (Armenian)</span>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))", gap: "8px" }}>
+                {CHARS_AM.map((c, i) => (
+                  <div
+                    key={i}
+                    onClick={() => {
+                      navigator.clipboard.writeText(c);
+                      setCopiedChar(c);
+                      setTimeout(() => setCopiedChar(null), 1500);
+                    }}
+                    className="character-cell"
+                    style={{
+                      fontFamily: "'HDesign', sans-serif",
+                      fontWeight: hdesignFontWeight,
+                      fontVariationSettings: `'wght' ${hdesignFontWeight}`,
+                      height: "40px",
+                      background: "rgba(255, 255, 255, 0.02)",
+                      border: "1px solid var(--panel-border)",
+                      borderRadius: "8px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "1.3rem",
+                      cursor: "pointer",
+                      userSelect: "none",
+                      transition: "all 0.15s ease",
+                    }}
+                    title={`Պատճենել ${c}`}
+                  >
+                    {c}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* English Character Grid */}
+            <div>
+              <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Անգլերեն (English)</span>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))", gap: "8px" }}>
+                {CHARS_EN.map((c, i) => (
+                  <div
+                    key={i}
+                    onClick={() => {
+                      navigator.clipboard.writeText(c);
+                      setCopiedChar(c);
+                      setTimeout(() => setCopiedChar(null), 1500);
+                    }}
+                    className="character-cell"
+                    style={{
+                      fontFamily: "'HDesign', sans-serif",
+                      fontWeight: hdesignFontWeight,
+                      fontVariationSettings: `'wght' ${hdesignFontWeight}`,
+                      height: "40px",
+                      background: "rgba(255, 255, 255, 0.02)",
+                      border: "1px solid var(--panel-border)",
+                      borderRadius: "8px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "1.3rem",
+                      cursor: "pointer",
+                      userSelect: "none",
+                      transition: "all 0.15s ease",
+                    }}
+                    title={`Պատճենել ${c}`}
+                  >
+                    {c}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Numbers & Symbols Grid */}
+            <div>
+              <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Թվեր և Նշաններ (Numbers & Symbols)</span>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))", gap: "8px" }}>
+                {[...CHARS_NUM, ...CHARS_SYM].map((c, i) => (
+                  <div
+                    key={i}
+                    onClick={() => {
+                      navigator.clipboard.writeText(c);
+                      setCopiedChar(c);
+                      setTimeout(() => setCopiedChar(null), 1500);
+                    }}
+                    className="character-cell"
+                    style={{
+                      fontFamily: "'HDesign', sans-serif",
+                      fontWeight: hdesignFontWeight,
+                      fontVariationSettings: `'wght' ${hdesignFontWeight}`,
+                      height: "40px",
+                      background: "rgba(255, 255, 255, 0.02)",
+                      border: "1px solid var(--panel-border)",
+                      borderRadius: "8px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "1.3rem",
+                      cursor: "pointer",
+                      userSelect: "none",
+                      transition: "all 0.15s ease",
+                    }}
+                    title={`Պատճենել ${c}`}
+                  >
+                    {c}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <style>{`
+            .character-cell:hover {
+              background: var(--btn-hover-bg) !important;
+              border-color: var(--primary-color) !important;
+              transform: translateY(-2px);
+              color: var(--primary-color);
+            }
+          `}</style>
         </div>
       </section>
         {/* Close shell container */}

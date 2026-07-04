@@ -11,7 +11,7 @@ export default function ContactPage() {
   });
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.message) {
       setStatus("error");
@@ -19,11 +19,28 @@ export default function ContactPage() {
     }
     
     setStatus("sending");
-    // Simulate API request
-    setTimeout(() => {
-      setStatus("success");
-      setFormData({ name: "", email: "", subject: "", message: "" });
-    }, 1800);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          message: formData.message
+        })
+      });
+      
+      if (res.ok) {
+        setStatus("success");
+        setFormData({ name: "", email: "", subject: "", message: "" });
+      } else {
+        setStatus("error");
+      }
+    } catch (err) {
+      setStatus("error");
+    }
   };
 
   return (
@@ -173,7 +190,7 @@ export default function ContactPage() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>Էլ. հասցե</span>
-                  <a href="mailto:info@hakobian.am" style={{ color: "var(--text)", textDecoration: "none", fontWeight: "600" }}>info@hakobian.am</a>
+                  <a href="mailto:hrant@hakobian.am" style={{ color: "var(--text)", textDecoration: "none", fontWeight: "600" }}>hrant@hakobian.am</a>
                 </div>
               </div>
 

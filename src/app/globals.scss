@@ -240,6 +240,21 @@ html[data-theme="green"] {
   --font-size: 9pt;
 }
 
+input, textarea {
+  font-size: 14pt !important;
+}
+
+hd-input, hd-textarea {
+  --font-size: 14pt !important;
+  font-size: 14pt !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]):not([type="range"]):not([type="image"]):not([type="submit"]):not([type="button"]),
+hd-input {
+  --wrapper-height: 48px !important;
+  height: 48px !important;
+}
+
 html,
 body {
   margin: 0;
@@ -269,7 +284,7 @@ body {
 }
 
 .shell {
-  max-width: 1400px;
+  max-width: 1500px;
   width: 100%;
   margin: 0 auto;
   padding: 24px 24px 0;

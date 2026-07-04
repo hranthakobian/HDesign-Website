@@ -216,7 +216,6 @@ export default function HDesignSamplesPage() {
   // Render current component preview
   function renderActiveComponent() {
     const commonProps = {
-      key: componentKey,
       "data-width": width,
       "data-height": height,
       "data-thickness": thickness,
@@ -228,13 +227,14 @@ export default function HDesignSamplesPage() {
     switch(activeTab) {
       case "hd-button":
         return (
-          <hd-button {...commonProps} disabled={isDisabled} onClick={() => alert("Կոճակը սեղմված է")}>
+          <hd-button key={componentKey} {...commonProps} disabled={isDisabled} onClick={() => alert("Կոճակը սեղմված է")}>
             {btnText}
           </hd-button>
         );
       case "hd-input":
         return (
           <hd-input
+            key={componentKey}
             {...commonProps}
             type={inputType}
             placeholder={inputPlaceholder}
@@ -246,6 +246,7 @@ export default function HDesignSamplesPage() {
       case "hd-textarea":
         return (
           <hd-textarea
+            key={componentKey}
             {...commonProps}
             placeholder={textareaPlaceholder}
             value={inputValue}
@@ -256,6 +257,7 @@ export default function HDesignSamplesPage() {
       case "hd-slider":
         return (
           <hd-slider
+            key={componentKey}
             {...commonProps}
             min={sliderMin}
             max={sliderMax}
@@ -302,6 +304,7 @@ export default function HDesignSamplesPage() {
       case "hd-select":
         return (
           <hd-select
+            key={componentKey}
             {...commonProps}
             placeholder={selectPlaceholder}
             value={selectVal}
@@ -317,6 +320,7 @@ export default function HDesignSamplesPage() {
       case "hd-segment":
         return (
           <hd-segment
+            key={componentKey}
             {...commonProps}
             value={segmentVal}
             onChange={(e: any) => setSegmentVal(e.target.value)}
@@ -331,6 +335,7 @@ export default function HDesignSamplesPage() {
       case "hd-color-picker":
         return (
           <hd-color-picker
+            key={componentKey}
             {...commonProps}
             data-color={colorPickerVal}
             onChange={(e: any) => setColorPickerVal(e.target.value)}
@@ -385,7 +390,7 @@ export default function HDesignSamplesPage() {
           display: grid;
           grid-template-columns: 280px 1fr 340px;
           gap: 24px;
-          max-width: 1400px;
+          max-width: 1500px;
           margin: 0 auto;
           width: 100%;
           align-items: start;
@@ -456,13 +461,6 @@ export default function HDesignSamplesPage() {
             max-height: 400px;
             height: 400px;
           }
-        }
-        .playground-copy-btn {
-          color: #ffffff;
-          transition: color 0.2s ease;
-        }
-        .playground-copy-btn:hover {
-          color: #b0b0b0 !important;
         }
       `}</style>
 
@@ -588,7 +586,6 @@ export default function HDesignSamplesPage() {
               <span style={{ fontSize: "0.72rem", fontWeight: "bold", color: "#ffffff", opacity: 0.8 }}>ՍՏԱՑՎԱԾ ԿՈԴԸ</span>
               <button
                 onClick={handleCopyCode}
-                className="portfolio-nav-item"
                 style={{
                   background: "transparent",
                   border: "none",
@@ -596,35 +593,18 @@ export default function HDesignSamplesPage() {
                   fontSize: "0.68rem",
                   fontWeight: "bold",
                   cursor: "pointer",
-                  padding: "0",
+                  padding: "0 20px 0 0",
                   outline: "none",
                   display: "inline-flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  "--hover-color": "#ffffff"
-                } as any}
+                  gap: "6px",
+                  transition: "color 0.2s ease"
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#b0b0b0")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "#ffffff")}
               >
-                <span className="nav-item-text-wrapper" style={{ paddingLeft: "20px", paddingRight: "20px", height: "24px" }}>
-                  <div className="nav-double-lines left-side" style={{ height: "20px", display: "flex", gap: "2px" }}>
-                    <svg className="nav-line line-top" width="2" height="20" viewBox="0 0 3 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M1.5 1.5V25.7963" stroke="#ffffff" strokeWidth="3" strokeLinecap="round"/>
-                    </svg>
-                    <svg className="nav-line line-bottom" width="2" height="20" viewBox="0 0 3 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M1.5 1.5V25.7963" stroke="#ffffff" strokeWidth="3" strokeLinecap="round"/>
-                    </svg>
-                  </div>
-                  
-                  <span className="nav-item-text">{copied ? "ՊԱՏՃԵՆՎԱԾ Է!" : "ՊԱՏՃԵՆԵԼ"}</span>
-                  
-                  <div className="nav-double-lines right-side" style={{ height: "20px", display: "flex", gap: "2px" }}>
-                    <svg className="nav-line line-top" width="2" height="20" viewBox="0 0 3 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M1.5 1.5V25.7963" stroke="#ffffff" strokeWidth="3" strokeLinecap="round"/>
-                    </svg>
-                    <svg className="nav-line line-bottom" width="2" height="20" viewBox="0 0 3 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M1.5 1.5V25.7963" stroke="#ffffff" strokeWidth="3" strokeLinecap="round"/>
-                    </svg>
-                  </div>
-                </span>
+                <span className="icon-Attech" style={{ fontSize: "0.85rem" }} />
+                <span>{copied ? "ՊԱՏՃԵՆՎԱԾ Է!" : "ՊԱՏՃԵՆԵԼ"}</span>
               </button>
             </div>
             <hd-scrollbar style={{ flex: 1, overflow: "auto", overscrollBehavior: "contain", background: "#121817" }}>

@@ -301,9 +301,6 @@ export default function Header() {
             <Link href="/fonts" className={`portfolio-nav-item ${activeNav === "fonts" ? "active" : ""}`}>
               {renderNavLinkText("fonts", "Տառատեսակներ")}
             </Link>
-            <Link href="/contact" className={`portfolio-nav-item ${activeNav === "contact" ? "active" : ""}`}>
-              {renderNavLinkText("contact", "Կապ")}
-            </Link>
 
             {/* HDesign Dropdown as a regular link with dropdown list */}
             <div className="header-dropdown-container">
@@ -323,6 +320,10 @@ export default function Header() {
                 </Link>
               </div>
             </div>
+
+            <Link href="/contact" className={`portfolio-nav-item ${activeNav === "contact" ? "active" : ""}`}>
+              {renderNavLinkText("contact", "Կապ")}
+            </Link>
           </nav>
 
           {/* 4-Line Hamburger Button */}
@@ -397,10 +398,6 @@ export default function Header() {
             <Link href="/fonts" className={`mobile-nav-item ${activeNav === "fonts" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
               Տառատեսակներ
             </Link>
-            <Link href="/contact" className={`mobile-nav-item ${activeNav === "contact" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
-              Կապ
-            </Link>
-            
             <div className="mobile-nav-divider" />
             
             <span className="mobile-nav-section-title">HDesign</span>
@@ -412,6 +409,12 @@ export default function Header() {
             </Link>
              <Link href="/hdesign/samples" className={`mobile-nav-subitem ${pathname === "/hdesign/samples" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
               Փորձանմուշներ
+            </Link>
+
+            <div className="mobile-nav-divider" />
+
+            <Link href="/contact" className={`mobile-nav-item ${activeNav === "contact" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
+              Կապ
             </Link>
 
             <div className="mobile-nav-divider" />

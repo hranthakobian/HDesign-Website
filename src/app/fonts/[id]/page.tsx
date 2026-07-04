@@ -181,7 +181,7 @@ export default function FontDetailPage() {
       {/* Main Grid: Sandbox Playground (Left) vs Controls Sidebar (Right) */}
       <div 
         style={{ 
-          maxWidth: "1400px", 
+          maxWidth: "1500px", 
           width: "100%", 
           margin: "0 auto", 
           display: "grid", 
@@ -875,7 +875,7 @@ export default function FontDetailPage() {
 
       {/* Behance-Style Font Specimen Presentation Blocks */}
       {font.description_am && font.description_am.startsWith('[') && (
-        <div style={{ maxWidth: "1400px", margin: "60px auto 0 auto", display: "flex", flexDirection: "column", gap: "50px", borderTop: "1px solid var(--panel-border)", paddingTop: "60px" }}>
+        <div style={{ maxWidth: "1500px", margin: "60px auto 0 auto", display: "flex", flexDirection: "column", gap: "50px", borderTop: "1px solid var(--panel-border)", paddingTop: "60px" }}>
           <h3 style={{ fontSize: "1.6rem", fontWeight: "900", color: "var(--text)", margin: 0 }}>
             {locale === "hy" ? "Տառատեսակի Շնորհանդես (Font Specimen Showcase)" : "Font Specimen Showcase"}
           </h3>

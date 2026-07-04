@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCases, saveCase } from '@/lib/db';
 import { verifyAuth } from '@/lib/auth';
+import { notifySubscribers } from '@/lib/notifications';
 
 export async function GET() {
   try {
@@ -51,6 +52,10 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    // Trigger subscriber notifications automatically
+    const isGallery = id.startsWith('port-');
+    await notifySubscribers(isGallery ? 'gallery' : 'case', title);
 
     return NextResponse.json({ success: true, case: saved });
   } catch (error: any) {

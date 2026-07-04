@@ -20,6 +20,7 @@ const MESSAGES_FILE = isServer ? path.join(DATA_DIR, 'messages.json') : '';
 const VISITS_FILE = isServer ? path.join(DATA_DIR, 'visits.json') : '';
 const SETTINGS_FILE = isServer ? path.join(DATA_DIR, 'settings.json') : '';
 const FONTS_FILE = isServer ? path.join(DATA_DIR, 'fonts.json') : '';
+const SUBSCRIBERS_FILE = isServer ? path.join(DATA_DIR, 'subscribers.json') : '';
 
 // Ensure database directory and files exist
 async function ensureLocalDbFiles() {
@@ -61,6 +62,13 @@ async function ensureLocalDbFiles() {
       await fs.access(FONTS_FILE);
     } catch {
       await fs.writeFile(FONTS_FILE, JSON.stringify([], null, 2), 'utf-8');
+    }
+
+    // Check and create subscribers.json if missing
+    try {
+      await fs.access(SUBSCRIBERS_FILE);
+    } catch {
+      await fs.writeFile(SUBSCRIBERS_FILE, JSON.stringify([], null, 2), 'utf-8');
     }
   } catch (err) {
     console.error('Error initializing local JSON database files:', err);
@@ -872,3 +880,153 @@ export async function deleteFont(id: string): Promise<boolean> {
   
   throw new Error(errorParts.join(' | ') || 'Failed to delete font.');
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SUBSCRIBERS (Newsletter subscriptions)
+// ══════════════════════════════════════════════════════════════════════════════
+
+export type Subscriber = {
+  id?: string;
+  email: string;
+  created_at?: string;
+};
+
+export async function getSubscribers(): Promise<Subscriber[]> {
+  await ensureLocalDbFiles();
+
+  const readClient = supabaseAdmin || supabase;
+  if (readClient) {
+    try {
+      const { data, error } = await readClient
+        .from('subscribers')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) return data;
+    } catch (err) {
+      console.warn('Supabase getSubscribers failed, using local storage:', err);
+    }
+  }
+
+  // Fallback to local JSON database
+  if (isServer) {
+    const fs = getFs();
+    try {
+      const content = await fs.readFile(SUBSCRIBERS_FILE, 'utf-8');
+      return JSON.parse(content) as Subscriber[];
+    } catch (err) {
+      console.error('Error reading local subscribers:', err);
+    }
+  }
+
+  return [];
+}
+
+export async function saveSubscriber(s: Subscriber): Promise<{ success: boolean; data?: Subscriber; error?: string }> {
+  await ensureLocalDbFiles();
+  const newSubscriber = {
+    id: s.id || Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
+    ...s,
+    created_at: s.created_at || new Date().toISOString()
+  };
+
+  let supabaseErrorMsg = '';
+
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
+    try {
+      // Check if email already exists in Supabase
+      const { data: existing } = await adminClient
+        .from('subscribers')
+        .select('id')
+        .eq('email', s.email)
+        .maybeSingle();
+
+      if (existing) {
+        return { success: false, error: 'Email already subscribed.' };
+      }
+
+      const { data, error } = await adminClient
+        .from('subscribers')
+        .insert([{ email: s.email }])
+        .select()
+        .single();
+      
+      if (!error && data) return { success: true, data };
+      if (error) {
+        supabaseErrorMsg = error.message;
+        console.warn('Supabase saveSubscriber query error:', error.message);
+      }
+    } catch (err: any) {
+      supabaseErrorMsg = err.message || String(err);
+      console.warn('Supabase saveSubscriber failed, using local storage:', err);
+    }
+  }
+
+  // Fallback to local JSON database
+  if (isServer) {
+    const fs = getFs();
+    try {
+      const content = await fs.readFile(SUBSCRIBERS_FILE, 'utf-8');
+      const subscribers = JSON.parse(content) as Subscriber[];
+      
+      if (subscribers.some(x => x.email.toLowerCase() === s.email.toLowerCase())) {
+        return { success: false, error: 'Email already subscribed.' };
+      }
+
+      subscribers.unshift(newSubscriber);
+      await fs.writeFile(SUBSCRIBERS_FILE, JSON.stringify(subscribers, null, 2), 'utf-8');
+      return { success: true, data: newSubscriber };
+    } catch (err: any) {
+      console.error('Error saving subscriber locally:', err);
+      return { success: false, error: `Supabase error: ${supabaseErrorMsg}. Local storage fallback error: ${err.message}` };
+    }
+  }
+
+  return { success: false, error: supabaseErrorMsg || 'No server/database connection' };
+}
+
+export async function deleteSubscriber(id: string): Promise<boolean> {
+  await ensureLocalDbFiles();
+
+  let supabaseErrorMsg = '';
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
+    try {
+      const { error } = await adminClient
+        .from('subscribers')
+        .delete()
+        .eq('id', id);
+      
+      if (!error) return true;
+      supabaseErrorMsg = error.message;
+      console.warn('Supabase deleteSubscriber query error:', error.message);
+    } catch (err: any) {
+      supabaseErrorMsg = err.message || String(err);
+      console.warn('Supabase deleteSubscriber failed, using local storage:', err);
+    }
+  }
+
+  // Fallback to local JSON database
+  let localErrorMsg = '';
+  if (isServer) {
+    const fs = getFs();
+    try {
+      const content = await fs.readFile(SUBSCRIBERS_FILE, 'utf-8');
+      const subscribers = JSON.parse(content) as Subscriber[];
+      const filtered = subscribers.filter(x => x.id !== id);
+      await fs.writeFile(SUBSCRIBERS_FILE, JSON.stringify(filtered, null, 2), 'utf-8');
+      return true;
+    } catch (err: any) {
+      localErrorMsg = err.message || String(err);
+      console.error('Error deleting subscriber locally:', err);
+    }
+  }
+
+  const errorParts = [];
+  if (supabaseErrorMsg) errorParts.push(`Supabase error: ${supabaseErrorMsg}`);
+  if (localErrorMsg) errorParts.push(`Local storage fallback error: ${localErrorMsg}`);
+  
+  throw new Error(errorParts.join(' | ') || 'Failed to delete subscriber.');
+}
+

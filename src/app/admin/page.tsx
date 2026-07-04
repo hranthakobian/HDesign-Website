@@ -49,6 +49,12 @@ type Message = {
   created_at: string;
 };
 
+type Subscriber = {
+  id: string;
+  email: string;
+  created_at: string;
+};
+
 type Visit = {
   id: string;
   session_id: string;
@@ -186,7 +192,7 @@ export default function AdminDashboard() {
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   // Dashboard state
-  const [activeTab, setActiveTab] = useState<'analytics' | 'cases' | 'fonts' | 'messages' | 'translations' | 'apis' | 'personalization' | 'settings'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'cases' | 'fonts' | 'messages' | 'translations' | 'apis' | 'personalization' | 'settings' | 'subscribers'>('analytics');
   const [personalization, setPersonalization] = useState<PersonalizationSettings>({
     site_title_hy: 'HDesign',
     site_title_en: 'HDesign',
@@ -403,6 +409,13 @@ export default function AdminDashboard() {
   });
   const [messages, setMessages] = useState<Message[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
+  const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailMessage, setEmailMessage] = useState("");
+  const [emailCc, setEmailCc] = useState("");
+  const [emailBcc, setEmailBcc] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<{ type: "success" | "error" | null; text: string }>({ type: null, text: "" });
   const [loadingData, setLoadingData] = useState(false);
   const [dataError, setDataError] = useState<string | null>(null);
 
@@ -443,7 +456,7 @@ export default function AdminDashboard() {
   const [changingPassword, setChangingPassword] = useState(false);
 
   // Transition States
-  const [prevTab, setPrevTab] = useState<'analytics' | 'cases' | 'fonts' | 'messages' | 'translations' | 'apis' | 'personalization' | 'settings'>('analytics');
+  const [prevTab, setPrevTab] = useState<'analytics' | 'cases' | 'fonts' | 'messages' | 'translations' | 'apis' | 'personalization' | 'settings' | 'subscribers'>('analytics');
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
 
   const tabIndices = useMemo(() => ({
@@ -454,7 +467,8 @@ export default function AdminDashboard() {
     translations: 4,
     apis: 5,
     personalization: 6,
-    settings: 7
+    settings: 7,
+    subscribers: 8
   }), []);
 
   useEffect(() => {
@@ -611,11 +625,17 @@ export default function AdminDashboard() {
         if (!fontsRes.ok) throw new Error('Failed to fetch fonts');
         const fontsData = await fontsRes.json();
 
+        // 9. Fetch Subscribers
+        const subscribersRes = await fetch('/api/subscribers', { headers });
+        if (!subscribersRes.ok) throw new Error('Failed to fetch subscribers');
+        const subscribersData = await subscribersRes.json();
+
         // Seed list with loaded values, filter out seed items from dynamic listing if desired
         setCases(casesData || []);
         setFonts(fontsData || []);
         setMessages(msgData || []);
         setVisits(visitsData || []);
+        setSubscribers(subscribersData || []);
         setApiSettings(apiSettingsData ? {
           ...apiSettingsData,
           tildo_widget_id: extractTidioWidgetId(apiSettingsData.tildo_widget_id || '')
@@ -952,6 +972,76 @@ export default function AdminDashboard() {
       }
     } catch (err: any) {
       alert('Չհաջողվեց ջնջել նամակը:');
+    }
+  };
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // SUBSCRIBERS OPERATIONS
+  // ══════════════════════════════════════════════════════════════════════════════
+
+  const handleDeleteSubscriber = async (id: string) => {
+    if (!confirm('Վստա՞հ եք, որ ցանկանում եք ջնջել այս բաժանորդին:')) return;
+    if (!token) return;
+
+    try {
+      const res = await fetch(`/api/subscribers/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': token || '' }
+      });
+      if (res.ok) {
+        setSubscribers(prev => prev.filter(x => x.id !== id));
+        alert('Բաժանորդը հաջողությամբ ջնջվեց:');
+      } else {
+        const data = await res.json();
+        alert('Սխալ՝ ' + data.error);
+      }
+    } catch (err: any) {
+      alert('Չհաջողվեց ջնջել բաժանորդին:');
+    }
+  };
+
+  const handleSendEmailCampaign = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailSubject || !emailMessage) {
+      setEmailStatus({ type: 'error', text: 'Վերնագիրը և նամակը պարտադիր են։' });
+      return;
+    }
+
+    setSendingEmail(true);
+    setEmailStatus({ type: null, text: '' });
+
+    try {
+      const res = await fetch('/api/subscribers/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token || ''
+        },
+        body: JSON.stringify({
+          subject: emailSubject,
+          message: emailMessage,
+          cc: emailCc,
+          bcc: emailBcc
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setEmailStatus({
+          type: 'success',
+          text: `Նամակը հաջողությամբ ուղարկվեց ${data.recipients_count} բաժանորդի։`
+        });
+        setEmailSubject('');
+        setEmailMessage('');
+        setEmailCc('');
+        setEmailBcc('');
+      } else {
+        setEmailStatus({ type: 'error', text: data.error || 'Սխալ տեղի ունեցավ:' });
+      }
+    } catch (err: any) {
+      setEmailStatus({ type: 'error', text: 'Կապի սխալ։ Խնդրում ենք փորձել կրկին։' });
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -1645,7 +1735,7 @@ export default function AdminDashboard() {
       </header>
 
       {/* Main Content Area */}
-      <div className="admin-main-container" style={{ maxWidth: '1400px', margin: '40px auto 0', padding: '0 40px' }}>
+      <div className="admin-main-container" style={{ maxWidth: '1500px', margin: '40px auto 0', padding: '0 40px' }}>
         {loadingData ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
             <LoadingAnimation fullPage={false} message="Բեռնվում է..." />
@@ -3933,6 +4023,249 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
+
+            {activeTab === 'subscribers' && (
+              <div className={getTabClass('subscribers')} style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                  <div>
+                    <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0 }}>Բաժանորդներ</h2>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: '4px' }}>Կառավարեք էլ. հասցեների բաժանորդագրությունները և ուղարկեք նամակներ։</p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button 
+                      onClick={() => {
+                        const headers = ["ID", "Email", "Subscription Date"];
+                        const rows = subscribers.map(sub => [sub.id, sub.email, new Date(sub.created_at).toLocaleString()]);
+                        const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+                          + [headers.join(","), ...rows.map(e => e.map(val => `"${val.replace(/"/g, '""')}"`).join(","))].join("\n");
+                        const encodedUri = encodeURI(csvContent);
+                        const link = document.createElement("a");
+                        link.setAttribute("href", encodedUri);
+                        link.setAttribute("download", `subscribers_${new Date().toISOString().slice(0,10)}.csv`);
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                      style={{
+                        background: 'linear-gradient(135deg, #00C49F 0%, #0088FE 100%)',
+                        color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '12px',
+                        fontWeight: '600', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+                        boxShadow: '0 4px 14px rgba(0, 196, 159, 0.3)'
+                      }}
+                    >
+                      <span className="icon-Notifications" style={{ fontSize: '1rem' }} />
+                      Ներբեռնել CSV
+                    </button>
+                    <button 
+                      onClick={() => {
+                        let xmlContent = '<?xml version="1.0" encoding="UTF-8"?>\n<subscribers>\n';
+                        subscribers.forEach(sub => {
+                          xmlContent += `  <subscriber>\n`;
+                          xmlContent += `    <id>${sub.id}</id>\n`;
+                          xmlContent += `    <email>${sub.email}</email>\n`;
+                          xmlContent += `    <created_at>${sub.created_at}</created_at>\n`;
+                          xmlContent += `  </subscriber>\n`;
+                        });
+                        xmlContent += '</subscribers>';
+                        const blob = new Blob([xmlContent], { type: "text/xml;charset=utf-8" });
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement("a");
+                        link.setAttribute("href", url);
+                        link.setAttribute("download", `subscribers_${new Date().toISOString().slice(0,10)}.xml`);
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                      }}
+                      style={{
+                        background: 'linear-gradient(135deg, #FFBB28 0%, #FF8042 100%)',
+                        color: '#fff', border: 'none', padding: '10px 18px', borderRadius: '12px',
+                        fontWeight: '600', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+                        boxShadow: '0 4px 14px rgba(255, 187, 40, 0.3)'
+                      }}
+                    >
+                      <span className="icon-Earth" style={{ fontSize: '1rem' }} />
+                      Ներբեռնել XML
+                    </button>
+                  </div>
+                </div>
+
+                <div className="personalization-form-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '30px', alignItems: 'start' }}>
+                  {/* Left Column: Subscribers List */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {subscribers.map(sub => (
+                      <div 
+                        key={sub.id}
+                        style={{
+                          background: 'var(--panel)',
+                          border: '1px solid var(--panel-border)',
+                          borderRadius: '16px',
+                          padding: '18px 24px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          gap: '20px',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '1.05rem', color: '#fff', marginBottom: '4px' }}>
+                            {sub.email}
+                          </div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
+                            Գրանցված է՝ {new Date(sub.created_at).toLocaleString()}
+                          </div>
+                        </div>
+
+                        <div
+                          onClick={() => handleDeleteSubscriber(sub.id)}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: 'rgba(255,107,107,0.1)', border: '1px solid rgba(255,107,107,0.2)', borderRadius: '10px',
+                            color: '#ff6b6b', width: '38px', height: '38px', fontSize: '1rem', cursor: 'pointer', transition: 'background 0.2s'
+                          }}
+                          title="Ջնջել բաժանորդին"
+                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,107,107,0.2)'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,107,107,0.1)'}
+                        >
+                          <span className="icon-Trash" />
+                        </div>
+                      </div>
+                    ))}
+
+                    {subscribers.length === 0 && (
+                      <div style={{ textAlign: 'center', padding: '60px', color: 'var(--muted)', border: '1px dashed var(--panel-border)', borderRadius: '16px' }}>
+                        Բաժանորդների ցուցակը դատարկ է
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right Column: Compose Email Form (Colorful White Style) */}
+                  <div style={{
+                    background: '#ffffff',
+                    border: '1px solid rgba(0, 0, 0, 0.08)',
+                    borderRadius: '24px',
+                    padding: '30px',
+                    boxShadow: '0 12px 40px rgba(0, 0, 0, 0.08)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '20px',
+                    color: '#2d3748'
+                  }}>
+                    <h3 style={{ 
+                      fontSize: '1.2rem', 
+                      fontWeight: 800, 
+                      margin: 0, 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '10px',
+                      background: 'linear-gradient(135deg, #ab47bc 0%, #ec407a 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent'
+                    }}>
+                      Ուղարկել Էլ. Նամակ
+                    </h3>
+
+                    <p style={{ fontSize: '0.82rem', color: '#718096', margin: 0, lineHeight: 1.5 }}>
+                      Գրեք նոր նամակ ձեր բոլոր բաժանորդներին: Կարող եք ավելացնել CC և BCC հասցեներ:
+                    </p>
+
+                    <form onSubmit={handleSendEmailCampaign} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#4a5568' }}>Վերնագիր (Subject) *</label>
+                        <hd-input 
+                          placeholder="Նամակի վերնագիրը..."
+                          value={emailSubject}
+                          onInput={(e: any) => setEmailSubject(e.target.value)}
+                          data-width="100%"
+                          data-height="40px"
+                          data-thickness="2px"
+                          data-color="#ab47bc"
+                          style={{ '--text-color': '#1a202c', '--primary-color': '#ab47bc' } as any}
+                        />
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#4a5568' }}>CC (Պատճեն)</label>
+                          <hd-input 
+                            placeholder="cc@example.com"
+                            value={emailCc}
+                            onInput={(e: any) => setEmailCc(e.target.value)}
+                            data-width="100%"
+                            data-height="40px"
+                            data-thickness="2px"
+                            data-color="#0088FE"
+                            style={{ '--text-color': '#1a202c', '--primary-color': '#0088FE' } as any}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#4a5568' }}>BCC (Գաղտնի պատճեն)</label>
+                          <hd-input 
+                            placeholder="bcc@example.com"
+                            value={emailBcc}
+                            onInput={(e: any) => setEmailBcc(e.target.value)}
+                            data-width="100%"
+                            data-height="40px"
+                            data-thickness="2px"
+                            data-color="#FFBB28"
+                            style={{ '--text-color': '#1a202c', '--primary-color': '#FFBB28' } as any}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#4a5568' }}>Նամակի Բովանդակություն *</label>
+                        <hd-textarea 
+                          placeholder="Մուտքագրեք ձեր հաղորդագրությունը այստեղ..."
+                          value={emailMessage}
+                          onInput={(e: any) => setEmailMessage(e.target.value)}
+                          data-width="100%"
+                          data-disable-horizontal-resize="true"
+                          data-thickness="2px"
+                          data-color="#ec407a"
+                          style={{ minHeight: '120px', '--text-color': '#1a202c', '--primary-color': '#ec407a' } as any}
+                        />
+                      </div>
+
+                      {emailStatus.text && (
+                        <div style={{
+                          fontSize: '0.82rem', 
+                          color: emailStatus.type === 'success' ? '#2f855a' : '#c53030', 
+                          background: emailStatus.type === 'success' ? 'rgba(72, 187, 120, 0.1)' : 'rgba(245, 101, 101, 0.1)',
+                          padding: '10px 14px', 
+                          borderRadius: '10px', 
+                          border: emailStatus.type === 'success' ? '1px solid rgba(72, 187, 120, 0.2)' : '1px solid rgba(245, 101, 101, 0.2)',
+                          fontWeight: '600'
+                        }}>
+                          {emailStatus.text}
+                        </div>
+                      )}
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                        <hd-button 
+                          type="submit" 
+                          data-thickness="3px"
+                          data-width="100%"
+                          data-height="44px"
+                          data-font-size="0.9rem"
+                          disabled={sendingEmail}
+                          style={{
+                            background: 'linear-gradient(135deg, #ab47bc 0%, #ec407a 100%)',
+                            color: '#fff',
+                            border: 'none',
+                            fontWeight: 'bold',
+                            boxShadow: '0 4px 15px rgba(236, 64, 122, 0.35)'
+                          }}
+                        >
+                          {sendingEmail ? 'Ուղարկվում է...' : 'Ուղարկել Նամակը'}
+                        </hd-button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -4019,6 +4352,26 @@ export default function AdminDashboard() {
         >
           <span className="icon-Mail" style={{ fontSize: '1.4rem' }} />
           <div className="nav-tooltip">Նամակներ</div>
+        </div>
+
+        <div 
+          onClick={() => setActiveTab('subscribers')}
+          className="nav-btn"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: activeTab === 'subscribers' ? 'var(--switcher-capsule-bg)' : 'transparent',
+            color: activeTab === 'subscribers' ? '#fff' : 'var(--muted)',
+            borderRadius: '16px',
+            width: '50px',
+            height: '50px',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          <span className="icon-Notifications" style={{ fontSize: '1.4rem' }} />
+          <div className="nav-tooltip">Բաժանորդներ</div>
         </div>
 
         <div 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getFonts, saveFont } from '@/lib/db';
 import { verifyAuth } from '@/lib/auth';
+import { notifySubscribers } from '@/lib/notifications';
 
 export async function GET() {
   try {
@@ -71,6 +72,9 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    // Trigger subscriber notifications automatically
+    await notifySubscribers('font', name_am);
 
     return NextResponse.json({ success: true, font: saved });
   } catch (error: any) {

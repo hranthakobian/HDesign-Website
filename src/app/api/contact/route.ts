@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { saveMessage, getMessages } from '@/lib/db';
 import { verifyAuth } from '@/lib/auth';
+import { sendContactEmails } from '@/lib/notifications';
 
 export async function GET(request: Request) {
   try {
@@ -45,6 +46,9 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    // Send emails: Notification to admin and confirmation to user
+    await sendContactEmails({ name, email, message });
 
     return NextResponse.json({ success: true, message: result.data });
   } catch (error: any) {

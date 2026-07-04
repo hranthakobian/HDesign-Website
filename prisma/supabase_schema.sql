@@ -82,3 +82,11 @@ CREATE TABLE IF NOT EXISTS fonts (
 ALTER TABLE fonts DISABLE ROW LEVEL SECURITY;
 
 
+-- 6. Subscribers (Newsletter subscription list)
+CREATE TABLE IF NOT EXISTS subscribers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL UNIQUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE subscribers DISABLE ROW LEVEL SECURITY;
