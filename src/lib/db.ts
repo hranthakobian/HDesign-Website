@@ -374,7 +374,11 @@ export async function saveMessage(m: Message): Promise<{ success: boolean; data?
     try {
       const { data, error } = await adminClient
         .from('messages')
-        .insert([newMessage])
+        .insert([{
+          name: m.name,
+          email: m.email,
+          message: m.message
+        }])
         .select()
         .single();
       

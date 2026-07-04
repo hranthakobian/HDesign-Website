@@ -48,7 +48,11 @@ export async function POST(request: Request) {
     }
 
     // Send emails: Notification to admin and confirmation to user
-    await sendContactEmails({ name, email, message });
+    try {
+      await sendContactEmails({ name, email, message });
+    } catch (emailError) {
+      console.error('[CONTACT EMAIL ERROR] Failed to send contact emails:', emailError);
+    }
 
     return NextResponse.json({ success: true, message: result.data });
   } catch (error: any) {
