@@ -487,13 +487,22 @@ export async function saveVisit(v: VisitSession): Promise<VisitSession | null> {
   const adminClient = supabaseAdmin || supabase;
   if (adminClient) {
     try {
+      // Exclude string-based 'id' from the Supabase payload to let the database generate a UUID primary key,
+      // unless a valid UUID was explicitly passed in.
+      const { id, ...supabasePayload } = newVisit;
+      const isUuid = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+      const payload = v.id && isUuid(v.id) ? newVisit : supabasePayload;
+
       const { data, error } = await adminClient
         .from('site_visits')
-        .insert([newVisit])
+        .insert([payload])
         .select()
         .single();
       
       if (!error && data) return data;
+      if (error) {
+        console.warn('Supabase saveVisit query error:', error.message);
+      }
     } catch (err) {
       console.warn('Supabase saveVisit failed, using local storage:', err);
     }

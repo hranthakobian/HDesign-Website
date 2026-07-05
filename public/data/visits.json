@@ -1,5 +1,20 @@
 [
   {
+    "id": "2ft5vjnwypy",
+    "session_id": "session_gk3b7xln9orzcreul4gb",
+    "ip_address": "::ffff:127.0.0.1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0",
+    "browser": "Firefox",
+    "os": "Windows",
+    "device": "desktop",
+    "country": "Unknown",
+    "city": "Unknown",
+    "referrer": "Direct",
+    "landing_page": "/admin",
+    "created_at": "2026-07-05T09:39:32.324Z",
+    "updated_at": "2026-07-05T09:39:32.324Z"
+  },
+  {
     "id": "kwe1lwc2x4m",
     "session_id": "session_1elf2uh2erm5h5zay3dy0a",
     "ip_address": "::ffff:127.0.0.1",

@@ -428,7 +428,13 @@ export default function AdminDashboard() {
     custom_head_script: '',
     custom_footer_script: '',
     supabase_url: '',
-    supabase_key: ''
+    supabase_key: '',
+    smtp_host: '',
+    smtp_port: '',
+    smtp_secure: false,
+    smtp_user: '',
+    smtp_pass: '',
+    smtp_from: ''
   });
 
   // Dynamic Translations State
@@ -647,7 +653,13 @@ export default function AdminDashboard() {
           custom_head_script: '',
           custom_footer_script: '',
           supabase_url: '',
-          supabase_key: ''
+          supabase_key: '',
+          smtp_host: '',
+          smtp_port: '',
+          smtp_secure: false,
+          smtp_user: '',
+          smtp_pass: '',
+          smtp_from: ''
         });
         setDynamicTranslations(translationsData || { hy: {}, en: {} });
         setPersonalization(personalizationData || {
@@ -3062,6 +3074,7 @@ export default function AdminDashboard() {
                       <div>
                         <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Supabase URL*</label>
                         <hd-input 
+                          key={isApiUnlocked ? "unlocked" : "locked"}
                           type={isApiUnlocked ? "text" : "password"}
                           placeholder="https://your-project.supabase.co"
                           value={apiSettings.supabase_url}
@@ -3073,6 +3086,7 @@ export default function AdminDashboard() {
                       <div>
                         <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Anon Key / Publishable Key*</label>
                         <hd-input 
+                          key={isApiUnlocked ? "unlocked" : "locked"}
                           type={isApiUnlocked ? "text" : "password"}
                           placeholder="sb_publishable_..."
                           value={apiSettings.supabase_key}
@@ -3080,6 +3094,106 @@ export default function AdminDashboard() {
                           data-width="100%"
                           data-height="40px"
                         data-font-size="14pt" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SMTP Connection */}
+                  <div style={{
+                    background: 'var(--panel)',
+                    border: '1px solid var(--panel-border)',
+                    borderRadius: '16px',
+                    padding: '24px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '20px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span className="icon-Mail" style={{ fontSize: '1.5rem', color: '#ab47bc' }} />
+                      <div>
+                        <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>SMTP Email Connection</h3>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Կապեք ձեր կայքը SMTP սերվերի հետ՝ նամակներ ուղարկելու համար</span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>SMTP Host</label>
+                        <hd-input 
+                          key={isApiUnlocked ? "unlocked" : "locked"}
+                          type={isApiUnlocked ? "text" : "password"}
+                          placeholder="smtp.example.com"
+                          value={apiSettings.smtp_host || ''}
+                          onInput={(e: any) => setApiSettings(prev => ({ ...prev, smtp_host: e.target.value }))}
+                          autocomplete="off"
+                          data-width="100%"
+                          data-height="40px"
+                          data-font-size="14pt" />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>SMTP Port</label>
+                        <hd-input 
+                          key={isApiUnlocked ? "unlocked" : "locked"}
+                          type={isApiUnlocked ? "text" : "password"}
+                          placeholder="465"
+                          value={apiSettings.smtp_port || ''}
+                          onInput={(e: any) => setApiSettings(prev => ({ ...prev, smtp_port: e.target.value }))}
+                          autocomplete="off"
+                          data-width="100%"
+                          data-height="40px"
+                          data-font-size="14pt" />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>SMTP User (Username/Email)</label>
+                        <hd-input 
+                          key={isApiUnlocked ? "unlocked" : "locked"}
+                          type={isApiUnlocked ? "text" : "password"}
+                          placeholder="noreply@yourdomain.com"
+                          value={apiSettings.smtp_user || ''}
+                          onInput={(e: any) => setApiSettings(prev => ({ ...prev, smtp_user: e.target.value }))}
+                          autocomplete="off"
+                          data-width="100%"
+                          data-height="40px"
+                          data-font-size="14pt" />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>SMTP Password</label>
+                        <hd-input 
+                          key={isApiUnlocked ? "unlocked" : "locked"}
+                          type={isApiUnlocked ? "text" : "password"}
+                          placeholder="SMTP Password"
+                          value={apiSettings.smtp_pass || ''}
+                          onInput={(e: any) => setApiSettings(prev => ({ ...prev, smtp_pass: e.target.value }))}
+                          autocomplete="off"
+                          data-width="100%"
+                          data-height="40px"
+                          data-font-size="14pt" />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>SMTP Sender (From Email/Name)</label>
+                        <hd-input 
+                          key={isApiUnlocked ? "unlocked" : "locked"}
+                          type={isApiUnlocked ? "text" : "password"}
+                          placeholder="noreply@yourdomain.com"
+                          value={apiSettings.smtp_from || ''}
+                          onInput={(e: any) => setApiSettings(prev => ({ ...prev, smtp_from: e.target.value }))}
+                          autocomplete="off"
+                          data-width="100%"
+                          data-height="40px"
+                          data-font-size="14pt" />
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '28px' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Secure Connection (SSL/TLS)</span>
+                        <hd-switch 
+                          checked={apiSettings.smtp_secure} 
+                          onChange={(e: any) => setApiSettings(prev => ({ ...prev, smtp_secure: e.target.checked }))} 
+                        />
                       </div>
                     </div>
                   </div>
@@ -3113,6 +3227,7 @@ export default function AdminDashboard() {
                       <div style={{ animation: 'fadeIn 0.2s ease' }}>
                         <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Tidio Widget ID / Project Key*</label>
                         <hd-input 
+                          key={isApiUnlocked ? "unlocked" : "locked"}
                           type={isApiUnlocked ? "text" : "password"}
                           placeholder="Ներմուծեք Tidio Widget ID-ն (օրինակ՝ abcd1234efgh5678)..."
                           value={apiSettings.tildo_widget_id}
@@ -3156,6 +3271,7 @@ export default function AdminDashboard() {
                       <div style={{ animation: 'fadeIn 0.2s ease' }}>
                         <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Measurement ID (G-ID)*</label>
                         <hd-input 
+                          key={isApiUnlocked ? "unlocked" : "locked"}
                           type={isApiUnlocked ? "text" : "password"}
                           placeholder="Ներմուծեք Measurement ID-ն (օրինակ՝ G-XXXXXXXXXX)..."
                           value={apiSettings.google_analytics_id}

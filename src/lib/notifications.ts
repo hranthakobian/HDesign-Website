@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { getSubscribers } from './db';
 import path from 'path';
+import fsSync from 'fs';
 import fs from 'fs/promises';
 
 const SENT_EMAILS_FILE = path.join(process.cwd(), 'public', 'data', 'sent_emails.json');
@@ -11,30 +12,58 @@ function getBaseUrl() {
   return process.env.NEXT_PUBLIC_SITE_URL || (isProd ? 'https://hakobian.am' : 'http://localhost:3000');
 }
 
+function getSmtpConfig() {
+  let host = process.env.SMTP_HOST;
+  let port = parseInt(process.env.SMTP_PORT || '587', 10);
+  let secure = process.env.SMTP_SECURE === 'true';
+  let user = process.env.SMTP_USER;
+  let pass = process.env.SMTP_PASS;
+  let from = process.env.SMTP_FROM || `"HDesign" <noreply@hakobian.am>`;
+
+  try {
+    const settingsPath = path.join(process.cwd(), 'public', 'data', 'settings.json');
+    if (fsSync.existsSync(settingsPath)) {
+      const content = fsSync.readFileSync(settingsPath, 'utf-8');
+      const settings = JSON.parse(content);
+      if (settings.api_settings) {
+        if (settings.api_settings.smtp_host) host = settings.api_settings.smtp_host;
+        if (settings.api_settings.smtp_port) port = parseInt(settings.api_settings.smtp_port, 10);
+        if (settings.api_settings.smtp_secure !== undefined) {
+          secure = settings.api_settings.smtp_secure === true || settings.api_settings.smtp_secure === 'true';
+        }
+        if (settings.api_settings.smtp_user) user = settings.api_settings.smtp_user;
+        if (settings.api_settings.smtp_pass) pass = settings.api_settings.smtp_pass;
+        if (settings.api_settings.smtp_from) from = settings.api_settings.smtp_from;
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to load SMTP configuration from settings.json:', err);
+  }
+
+  return { host, port, secure, user, pass, from };
+}
+
 // Helper to get SMTP transporter
 function getTransporter() {
-  const host = process.env.SMTP_HOST;
-  const port = parseInt(process.env.SMTP_PORT || '587', 10);
-  const secure = process.env.SMTP_SECURE === 'true';
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
+  const config = getSmtpConfig();
 
-  if (!host || !user || !pass) {
+  if (!config.host || !config.user || !config.pass) {
     return null;
   }
 
   return nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth: { user, pass }
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    auth: { user: config.user, pass: config.pass }
   });
 }
 
 // Universal email sender
-async function dispatchEmail(recipients: string[], subject: string, message: string) {
+async function dispatchEmail(recipients: string[], subject: string, message: string, replyTo?: string) {
   const transporter = getTransporter();
-  const fromEmail = process.env.SMTP_FROM || `"HDesign" <noreply@hakobian.am>`;
+  const config = getSmtpConfig();
+  const fromEmail = config.from;
   const baseUrl = getBaseUrl();
   
   const emailRecord = {
@@ -66,6 +95,7 @@ async function dispatchEmail(recipients: string[], subject: string, message: str
       await transporter.sendMail({
         from: fromEmail,
         to: recipients.join(', '),
+        replyTo: replyTo,
         subject,
         text: message,
         html: htmlContent
@@ -154,7 +184,8 @@ export async function sendCampaignEmail({
   }
 
   const transporter = getTransporter();
-  const fromEmail = process.env.SMTP_FROM || `"HDesign" <noreply@hakobian.am>`;
+  const config = getSmtpConfig();
+  const fromEmail = config.from;
 
   const emailRecord = {
     id: Math.random().toString(36).substring(2, 15),
@@ -248,6 +279,6 @@ export async function sendContactEmails({
   const userMessage = `Ողջույն ${name},\n\nՇնորհակալություն HDesign-ին հաղորդագրություն ուղարկելու համար: Ձեր նամակը հաջողությամբ ստացվել է, և մենք շուտով կպատասխանենք ձեզ:\n\nՁեր ուղարկած հաղորդագրության պատճենը՝\n---\n${message}`;
 
   // Dispatch both emails (via SMTP or Mock fallback)
-  await dispatchEmail([adminEmail], adminSubject, adminMessage);
+  await dispatchEmail([adminEmail], adminSubject, adminMessage, email);
   await dispatchEmail([email], userSubject, userMessage);
 }

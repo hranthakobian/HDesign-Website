@@ -60,11 +60,23 @@ export async function GET() {
       custom_head_script: '',
       custom_footer_script: '',
       supabase_url: process.env.SUPABASE_URL || '',
-      supabase_key: process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || ''
+      supabase_key: process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || '',
+      smtp_host: process.env.SMTP_HOST || '',
+      smtp_port: process.env.SMTP_PORT || '587',
+      smtp_secure: process.env.SMTP_SECURE === 'true',
+      smtp_user: process.env.SMTP_USER || '',
+      smtp_pass: process.env.SMTP_PASS || '',
+      smtp_from: process.env.SMTP_FROM || ''
     };
     const settings = await getSiteSetting('api_settings', defaultSettings);
     if (!settings.supabase_url) settings.supabase_url = process.env.SUPABASE_URL || '';
     if (!settings.supabase_key) settings.supabase_key = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || '';
+    if (settings.smtp_host === undefined) settings.smtp_host = process.env.SMTP_HOST || '';
+    if (settings.smtp_port === undefined) settings.smtp_port = process.env.SMTP_PORT || '587';
+    if (settings.smtp_secure === undefined) settings.smtp_secure = process.env.SMTP_SECURE === 'true';
+    if (settings.smtp_user === undefined) settings.smtp_user = process.env.SMTP_USER || '';
+    if (settings.smtp_pass === undefined) settings.smtp_pass = process.env.SMTP_PASS || '';
+    if (settings.smtp_from === undefined) settings.smtp_from = process.env.SMTP_FROM || '';
     return NextResponse.json(settings);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
