@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { getSubscribers } from './db';
+import { getSubscribers, getSiteSetting } from './db';
 import path from 'path';
 import fsSync from 'fs';
 import fs from 'fs/promises';
@@ -12,7 +12,7 @@ function getBaseUrl() {
   return process.env.NEXT_PUBLIC_SITE_URL || (isProd ? 'https://hakobian.am' : 'http://localhost:3000');
 }
 
-function getSmtpConfig() {
+async function getSmtpConfig() {
   let host = process.env.SMTP_HOST;
   let port = parseInt(process.env.SMTP_PORT || '587', 10);
   let secure = process.env.SMTP_SECURE === 'true';
@@ -21,31 +21,50 @@ function getSmtpConfig() {
   let from = process.env.SMTP_FROM || `"HDesign" <noreply@hakobian.am>`;
 
   try {
-    const settingsPath = path.join(process.cwd(), 'public', 'data', 'settings.json');
-    if (fsSync.existsSync(settingsPath)) {
-      const content = fsSync.readFileSync(settingsPath, 'utf-8');
-      const settings = JSON.parse(content);
-      if (settings.api_settings) {
-        if (settings.api_settings.smtp_host) host = settings.api_settings.smtp_host;
-        if (settings.api_settings.smtp_port) port = parseInt(settings.api_settings.smtp_port, 10);
-        if (settings.api_settings.smtp_secure !== undefined) {
-          secure = settings.api_settings.smtp_secure === true || settings.api_settings.smtp_secure === 'true';
-        }
-        if (settings.api_settings.smtp_user) user = settings.api_settings.smtp_user;
-        if (settings.api_settings.smtp_pass) pass = settings.api_settings.smtp_pass;
-        if (settings.api_settings.smtp_from) from = settings.api_settings.smtp_from;
+    const apiSettings = await getSiteSetting('api_settings');
+    if (apiSettings) {
+      if (apiSettings.smtp_host) host = apiSettings.smtp_host;
+      if (apiSettings.smtp_port) port = parseInt(apiSettings.smtp_port, 10);
+      if (apiSettings.smtp_secure !== undefined) {
+        secure = apiSettings.smtp_secure === true || apiSettings.smtp_secure === 'true';
       }
+      if (apiSettings.smtp_user) user = apiSettings.smtp_user;
+      if (apiSettings.smtp_pass) pass = apiSettings.smtp_pass;
+      if (apiSettings.smtp_from) from = apiSettings.smtp_from;
     }
   } catch (err) {
-    console.warn('Failed to load SMTP configuration from settings.json:', err);
+    console.warn('Failed to load SMTP configuration from database site settings:', err);
+  }
+
+  // Fallback to local settings.json if any key is missing and env doesn't have it
+  if (!host || !user || !pass) {
+    try {
+      const settingsPath = path.join(process.cwd(), 'public', 'data', 'settings.json');
+      if (fsSync.existsSync(settingsPath)) {
+        const content = fsSync.readFileSync(settingsPath, 'utf-8');
+        const settings = JSON.parse(content);
+        if (settings.api_settings) {
+          if (settings.api_settings.smtp_host) host = settings.api_settings.smtp_host;
+          if (settings.api_settings.smtp_port) port = parseInt(settings.api_settings.smtp_port, 10);
+          if (settings.api_settings.smtp_secure !== undefined) {
+            secure = settings.api_settings.smtp_secure === true || settings.api_settings.smtp_secure === 'true';
+          }
+          if (settings.api_settings.smtp_user) user = settings.api_settings.smtp_user;
+          if (settings.api_settings.smtp_pass) pass = settings.api_settings.smtp_pass;
+          if (settings.api_settings.smtp_from) from = settings.api_settings.smtp_from;
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load SMTP configuration from settings.json:', err);
+    }
   }
 
   return { host, port, secure, user, pass, from };
 }
 
 // Helper to get SMTP transporter
-function getTransporter() {
-  const config = getSmtpConfig();
+async function getTransporter() {
+  const config = await getSmtpConfig();
 
   if (!config.host || !config.user || !config.pass) {
     return null;
@@ -61,8 +80,8 @@ function getTransporter() {
 
 // Universal email sender
 async function dispatchEmail(recipients: string[], subject: string, message: string, replyTo?: string) {
-  const transporter = getTransporter();
-  const config = getSmtpConfig();
+  const transporter = await getTransporter();
+  const config = await getSmtpConfig();
   const fromEmail = config.from;
   const baseUrl = getBaseUrl();
   
@@ -183,8 +202,8 @@ export async function sendCampaignEmail({
     throw new Error('No subscribers found.');
   }
 
-  const transporter = getTransporter();
-  const config = getSmtpConfig();
+  const transporter = await getTransporter();
+  const config = await getSmtpConfig();
   const fromEmail = config.from;
 
   const emailRecord = {
