@@ -170,7 +170,7 @@ export default function HDesignSamplesPage() {
       case "hd-input":
         return `<hd-input\n  type="${inputType}"\n  placeholder="${inputPlaceholder}"\n  value="${inputValue}"\n  ${isDisabled ? "disabled " : ""}${commonData}\n data-font-size="14pt" />`;
       case "hd-textarea":
-        return `<hd-textarea\n  placeholder="${textareaPlaceholder}"\n  value="${inputValue}"\n  data-disable-horizontal-resize="${textareaDisableResize}"\n  ${commonData}\n data-font-size="14pt" />`;
+        return `<hd-textarea\n  placeholder="${textareaPlaceholder}"\n  value="${inputValue}"\n  data-disable-horizontal-resize="${textareaDisableResize}"\n  ${commonData}\n data-font-size="14pt" data-height="200pt" />`;
       case "hd-slider":
         return `<hd-slider\n  min="${sliderMin}"\n  max="${sliderMax}"\n  value="${sliderVal}"\n  step="${sliderStep}"\n  ${isDisabled ? "disabled " : ""}${commonData}\n/>`;
       case "hd-checkbox":
@@ -252,7 +252,7 @@ export default function HDesignSamplesPage() {
             value={inputValue}
             data-disable-horizontal-resize={textareaDisableResize ? "true" : undefined}
             onChange={(e: any) => setInputValue(e.target.value)}
-          data-font-size="14pt" />
+          data-font-size="14pt" data-height="200pt" />
         );
       case "hd-slider":
         return (

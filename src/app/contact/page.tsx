@@ -148,7 +148,7 @@ export default function ContactPage() {
                     value={formData.message}
                     onInput={(e: any) => setFormData({ ...formData, message: e.target.value })}
                     data-width="100%"
-                  data-font-size="14pt" />
+                  data-font-size="14pt" data-height="200pt" />
                 </div>
 
                 {status === "error" && (

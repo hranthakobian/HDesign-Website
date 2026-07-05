@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 type CursorDef = {
   svg: string;
@@ -95,12 +96,17 @@ const getCursorValue = (svgContent: string, hotspotX: number, hotspotY: number, 
 };
 
 export default function CustomCursor() {
+  const pathname = usePathname();
+  const isAdmin = pathname?.startsWith("/admin");
+
   const [colors, setColors] = useState<string[]>(DEFAULT_COLORS);
   const [cursors, setCursors] = useState<{ default: CursorDef; pointer: CursorDef; text: CursorDef }>(DEFAULT_CURSORS);
   const [currentColor, setCurrentColor] = useState(DEFAULT_COLORS[0]);
 
   // Load configuration from database api
   useEffect(() => {
+    if (!isAdmin) return;
+
     fetch("/api/personalization")
       .then((res) => res.json())
       .then((data: PersonalizationSettings) => {
@@ -117,14 +123,23 @@ export default function CustomCursor() {
         }
       })
       .catch((err) => console.error("Failed to load personalization settings for cursors:", err));
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
+    if (!isAdmin) {
+      document.documentElement.removeAttribute("data-custom-cursor");
+      document.documentElement.style.removeProperty("--custom-cursor");
+      document.documentElement.style.removeProperty("--custom-cursor-pointer");
+      document.documentElement.style.removeProperty("--custom-cursor-text");
+      return;
+    }
+
     const applyCursor = (color: string) => {
       const defaultCursor = getCursorValue(cursors.default.svg, cursors.default.hotspot_x, cursors.default.hotspot_y, color, "auto");
       const pointerCursor = getCursorValue(cursors.pointer.svg, cursors.pointer.hotspot_x, cursors.pointer.hotspot_y, color, "pointer");
       const textCursor = getCursorValue(cursors.text.svg, cursors.text.hotspot_x, cursors.text.hotspot_y, color, "text");
       
+      document.documentElement.setAttribute("data-custom-cursor", "true");
       document.documentElement.style.setProperty("--custom-cursor", defaultCursor);
       document.documentElement.style.setProperty("--custom-cursor-pointer", pointerCursor);
       document.documentElement.style.setProperty("--custom-cursor-text", textCursor);
@@ -148,7 +163,7 @@ export default function CustomCursor() {
     return () => {
       window.removeEventListener("mousedown", handleMouseDown);
     };
-  }, [currentColor, colors, cursors]);
+  }, [currentColor, colors, cursors, isAdmin]);
 
   return null;
 }

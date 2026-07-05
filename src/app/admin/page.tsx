@@ -2831,7 +2831,7 @@ export default function AdminDashboard() {
                               data-width="100%"
                               data-disable-horizontal-resize="true"
                               style={{ minHeight: '60px' }}
-                            data-font-size="14pt" />
+                            data-font-size="14pt" data-height="200pt" />
                           </div>
                           <div>
                             <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Անգլերեն (English)</label>
@@ -2841,7 +2841,7 @@ export default function AdminDashboard() {
                               data-width="100%"
                               data-disable-horizontal-resize="true"
                               style={{ minHeight: '60px' }}
-                            data-font-size="14pt" />
+                            data-font-size="14pt" data-height="200pt" />
                           </div>
                         </div>
 
@@ -2977,7 +2977,7 @@ export default function AdminDashboard() {
                             data-width="100%"
                             data-disable-horizontal-resize="true"
                             style={{ minHeight: '60px' }}
-                          data-font-size="14pt" />
+                          data-font-size="14pt" data-height="200pt" />
                         </div>
 
                         <div>
@@ -2989,7 +2989,7 @@ export default function AdminDashboard() {
                             data-width="100%"
                             data-disable-horizontal-resize="true"
                             style={{ minHeight: '60px' }}
-                          data-font-size="14pt" />
+                          data-font-size="14pt" data-height="200pt" />
                         </div>
 
                         <div className="admin-modal-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
@@ -3812,7 +3812,7 @@ export default function AdminDashboard() {
                                 fontFamily: 'monospace',
                                 fontSize: '0.75rem',
                               }}
-                            data-font-size="14pt" />
+                            data-font-size="14pt" data-height="200pt" />
                           </div>
                         </div>
                       </div>
@@ -3997,7 +3997,7 @@ export default function AdminDashboard() {
                               data-width="100%"
                               data-disable-horizontal-resize="true"
                               style={{ minHeight: '60px' }}
-                            data-font-size="14pt" />
+                            data-font-size="14pt" data-height="200pt" />
                           </div>
 
                           <div>
@@ -4009,7 +4009,7 @@ export default function AdminDashboard() {
                               data-width="100%"
                               data-disable-horizontal-resize="true"
                               style={{ minHeight: '60px' }}
-                            data-font-size="14pt" />
+                            data-font-size="14pt" data-height="200pt" />
                           </div>
 
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -4341,7 +4341,7 @@ export default function AdminDashboard() {
                           data-thickness="2px"
                           data-color="#ec407a"
                           style={{ minHeight: '120px', '--text-color': '#1a202c', '--primary-color': '#ec407a' } as any}
-                        data-font-size="14pt" />
+                        data-font-size="14pt" data-height="200pt" />
                       </div>
 
                       {emailStatus.text && (

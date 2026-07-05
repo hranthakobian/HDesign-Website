@@ -6,8 +6,10 @@
   font-display: swap;
 }
 
-html, body {
-  cursor: var(--custom-cursor);
+html[data-custom-cursor="true"] {
+  &, body {
+    cursor: var(--custom-cursor);
+  }
 }
 
 ::selection {
@@ -20,22 +22,24 @@ html, body {
   color: #ffffff;
 }
 
-[style*="cursor: default"], [style*="cursor:default"], .cursor-default {
-  cursor: var(--custom-cursor) !important;
-}
+html[data-custom-cursor="true"] {
+  [style*="cursor: default"], [style*="cursor:default"], .cursor-default {
+    cursor: var(--custom-cursor) !important;
+  }
 
-[style*="cursor: pointer"], [style*="cursor:pointer"], .cursor-pointer,
-a, button, select, summary, [role="button"], input[type="submit"], input[type="button"] {
-  cursor: var(--custom-cursor-pointer) !important;
-}
+  [style*="cursor: pointer"], [style*="cursor:pointer"], .cursor-pointer,
+  a, button, select, summary, [role="button"], input[type="submit"], input[type="button"] {
+    cursor: var(--custom-cursor-pointer) !important;
+  }
 
-[style*="cursor: text"], [style*="cursor:text"], .cursor-text,
-input[type="text"], input[type="email"], input[type="search"], input[type="tel"], input[type="url"], input[type="password"], input[type="number"], textarea, [contenteditable="true"] {
-  cursor: var(--custom-cursor-text) !important;
-}
+  [style*="cursor: text"], [style*="cursor:text"], .cursor-text,
+  input[type="text"], input[type="email"], input[type="search"], input[type="tel"], input[type="url"], input[type="password"], input[type="number"], textarea, [contenteditable="true"] {
+    cursor: var(--custom-cursor-text) !important;
+  }
 
-p, h1, h2, h3, h4, h5, h6, li, label, figcaption, blockquote {
-  cursor: var(--custom-cursor-text);
+  p, h1, h2, h3, h4, h5, h6, li, label, figcaption, blockquote {
+    cursor: var(--custom-cursor-text);
+  }
 }
 
 :root {

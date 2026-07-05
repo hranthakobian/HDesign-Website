@@ -543,7 +543,7 @@ export default function Home() {
       case "hd-input":
         return `<hd-input\n  type="${playgroundInputType}"\n  placeholder="${playgroundInputPlaceholder}"\n  value="${playgroundInputValue}"\n  ${playgroundIsDisabled ? "disabled " : ""}${commonData}\n data-font-size="14pt" />`;
       case "hd-textarea":
-        return `<hd-textarea\n  placeholder="${playgroundTextareaPlaceholder}"\n  value="${playgroundInputValue}"\n  data-disable-horizontal-resize="${playgroundTextareaDisableResize}"\n  ${commonData}\n data-font-size="14pt" />`;
+        return `<hd-textarea\n  placeholder="${playgroundTextareaPlaceholder}"\n  value="${playgroundInputValue}"\n  data-disable-horizontal-resize="${playgroundTextareaDisableResize}"\n  ${commonData}\n data-font-size="14pt" data-height="200pt" />`;
       case "hd-slider":
         return `<hd-slider\n  min="${playgroundSliderMin}"\n  max="${playgroundSliderMax}"\n  value="${playgroundSliderVal}"\n  step="${playgroundSliderStep}"\n  ${playgroundIsDisabled ? "disabled " : ""}${commonData}\n/>`;
       case "hd-checkbox":
@@ -698,7 +698,7 @@ export default function Home() {
             value={playgroundInputValue}
             data-disable-horizontal-resize={playgroundTextareaDisableResize ? "true" : undefined}
             onChange={(e: any) => setPlaygroundInputValue(e.target.value)}
-          data-font-size="14pt" />
+          data-font-size="14pt" data-height="200pt" />
         );
       case "hd-slider":
         return (
