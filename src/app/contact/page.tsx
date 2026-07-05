@@ -10,15 +10,18 @@ export default function ContactPage() {
     message: ""
   });
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.message) {
       setStatus("error");
+      setErrorMessage("Խնդրում ենք լրացնել բոլոր պարտադիր դաշտերը:");
       return;
     }
     
     setStatus("sending");
+    setErrorMessage("");
     try {
       const res = await fetch("/api/contact", {
         method: "POST",
@@ -36,10 +39,13 @@ export default function ContactPage() {
         setStatus("success");
         setFormData({ name: "", email: "", subject: "", message: "" });
       } else {
+        const errorData = await res.json().catch(() => ({}));
         setStatus("error");
+        setErrorMessage(errorData.error || "Տեղի ունեցավ սխալ: Խնդրում ենք փորձել մի փոքր ուշ:");
       }
     } catch (err) {
       setStatus("error");
+      setErrorMessage("Ցանցային սխալ: Խնդրում ենք ստուգել կապը և փորձել կրկին:");
     }
   };
 
@@ -147,7 +153,7 @@ export default function ContactPage() {
 
                 {status === "error" && (
                   <p style={{ color: "#ff6b6b", fontSize: "0.9rem", margin: 0 }}>
-                    * Խնդրում ենք լրացնել բոլոր պարտադիր դաշտերը:
+                    * {errorMessage || "Խնդրում ենք լրացնել բոլոր պարտադիր դաշտերը:"}
                   </p>
                 )}
 
