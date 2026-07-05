@@ -120,7 +120,7 @@ function UnsubscribeContent() {
                 data-width="100%"
                 data-height="44px"
                 data-thickness="3px"
-              />
+              data-font-size="14pt" />
               {errorMessage && (
                 <div style={{ fontSize: "0.8rem", color: "#ff6b6b" }}>
                   {errorMessage}

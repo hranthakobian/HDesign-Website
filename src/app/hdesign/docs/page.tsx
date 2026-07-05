@@ -103,7 +103,7 @@ export default function HDesignDocsPage() {
   data-width="100%" 
   data-height="48px" 
   data-thickness="3px"
-/>`}
+data-font-size="14pt" />`}
         />
 
         {/* Textarea example */}
@@ -116,7 +116,7 @@ export default function HDesignDocsPage() {
   data-height="120px" 
   data-thickness="3px"
   data-disable-horizontal-resize="true"
-/>`}
+data-font-size="14pt" />`}
         />
 
         {/* Slider example */}

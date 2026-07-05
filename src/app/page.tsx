@@ -541,9 +541,9 @@ export default function Home() {
       case "hd-button":
         return `<hd-button${playgroundIsDisabled ? " disabled" : ""}${commonData}>\n  ${playgroundBtnText}\n</hd-button>`;
       case "hd-input":
-        return `<hd-input\n  type="${playgroundInputType}"\n  placeholder="${playgroundInputPlaceholder}"\n  value="${playgroundInputValue}"\n  ${playgroundIsDisabled ? "disabled " : ""}${commonData}\n/>`;
+        return `<hd-input\n  type="${playgroundInputType}"\n  placeholder="${playgroundInputPlaceholder}"\n  value="${playgroundInputValue}"\n  ${playgroundIsDisabled ? "disabled " : ""}${commonData}\n data-font-size="14pt" />`;
       case "hd-textarea":
-        return `<hd-textarea\n  placeholder="${playgroundTextareaPlaceholder}"\n  value="${playgroundInputValue}"\n  data-disable-horizontal-resize="${playgroundTextareaDisableResize}"\n  ${commonData}\n/>`;
+        return `<hd-textarea\n  placeholder="${playgroundTextareaPlaceholder}"\n  value="${playgroundInputValue}"\n  data-disable-horizontal-resize="${playgroundTextareaDisableResize}"\n  ${commonData}\n data-font-size="14pt" />`;
       case "hd-slider":
         return `<hd-slider\n  min="${playgroundSliderMin}"\n  max="${playgroundSliderMax}"\n  value="${playgroundSliderVal}"\n  step="${playgroundSliderStep}"\n  ${playgroundIsDisabled ? "disabled " : ""}${commonData}\n/>`;
       case "hd-checkbox":
@@ -687,7 +687,7 @@ export default function Home() {
             value={playgroundInputValue}
             disabled={playgroundIsDisabled}
             onChange={(e: any) => setPlaygroundInputValue(e.target.value)}
-          />
+          data-font-size="14pt" />
         );
       case "hd-textarea":
         return (
@@ -698,7 +698,7 @@ export default function Home() {
             value={playgroundInputValue}
             data-disable-horizontal-resize={playgroundTextareaDisableResize ? "true" : undefined}
             onChange={(e: any) => setPlaygroundInputValue(e.target.value)}
-          />
+          data-font-size="14pt" />
         );
       case "hd-slider":
         return (
@@ -1876,7 +1876,7 @@ export default function Home() {
                   data-width="100%"
                   data-height="46px"
                   data-thickness="3px"
-                />
+                data-font-size="14pt" />
               </div>
 
               {/* Sticky Thickness Slider Card inside Sidebar */}

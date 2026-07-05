@@ -108,7 +108,7 @@ export default function ContactPage() {
                       data-width="100%"
                       data-height="48px"
                       data-thickness="3px"
-                    />
+                    data-font-size="14pt" />
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                     <span style={{ fontSize: "0.85rem", opacity: 0.8 }}>Էլ. հասցե *</span>
@@ -119,7 +119,7 @@ export default function ContactPage() {
                       data-width="100%"
                       data-height="48px"
                       data-thickness="3px"
-                    />
+                    data-font-size="14pt" />
                   </div>
                 </div>
 
@@ -132,7 +132,7 @@ export default function ContactPage() {
                     data-width="100%"
                     data-height="48px"
                     data-thickness="3px"
-                  />
+                  data-font-size="14pt" />
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -142,7 +142,7 @@ export default function ContactPage() {
                     value={formData.message}
                     onInput={(e: any) => setFormData({ ...formData, message: e.target.value })}
                     data-width="100%"
-                  />
+                  data-font-size="14pt" />
                 </div>
 
                 {status === "error" && (

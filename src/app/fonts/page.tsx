@@ -184,7 +184,7 @@ export default function FontsListingPage() {
               onInput={(e: any) => setSearchQuery(e.target.value)}
               data-width="100%"
               data-height="46px"
-            />
+            data-font-size="14pt" />
           </div>
 
           <div style={{ display: "flex", gap: "12px" }}>
@@ -314,7 +314,7 @@ export default function FontsListingPage() {
             onInput={(e: any) => setCustomText(e.target.value)}
             data-width="100%"
             data-height="44px"
-          />
+          data-font-size="14pt" />
         </div>
       </div>
 

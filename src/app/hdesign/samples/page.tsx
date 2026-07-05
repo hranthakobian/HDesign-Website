@@ -168,9 +168,9 @@ export default function HDesignSamplesPage() {
       case "hd-button":
         return `<hd-button${isDisabled ? " disabled" : ""}${commonData}>\n  ${btnText}\n</hd-button>`;
       case "hd-input":
-        return `<hd-input\n  type="${inputType}"\n  placeholder="${inputPlaceholder}"\n  value="${inputValue}"\n  ${isDisabled ? "disabled " : ""}${commonData}\n/>`;
+        return `<hd-input\n  type="${inputType}"\n  placeholder="${inputPlaceholder}"\n  value="${inputValue}"\n  ${isDisabled ? "disabled " : ""}${commonData}\n data-font-size="14pt" />`;
       case "hd-textarea":
-        return `<hd-textarea\n  placeholder="${textareaPlaceholder}"\n  value="${inputValue}"\n  data-disable-horizontal-resize="${textareaDisableResize}"\n  ${commonData}\n/>`;
+        return `<hd-textarea\n  placeholder="${textareaPlaceholder}"\n  value="${inputValue}"\n  data-disable-horizontal-resize="${textareaDisableResize}"\n  ${commonData}\n data-font-size="14pt" />`;
       case "hd-slider":
         return `<hd-slider\n  min="${sliderMin}"\n  max="${sliderMax}"\n  value="${sliderVal}"\n  step="${sliderStep}"\n  ${isDisabled ? "disabled " : ""}${commonData}\n/>`;
       case "hd-checkbox":
@@ -241,7 +241,7 @@ export default function HDesignSamplesPage() {
             value={inputValue}
             disabled={isDisabled}
             onChange={(e: any) => setInputValue(e.target.value)}
-          />
+          data-font-size="14pt" />
         );
       case "hd-textarea":
         return (
@@ -252,7 +252,7 @@ export default function HDesignSamplesPage() {
             value={inputValue}
             data-disable-horizontal-resize={textareaDisableResize ? "true" : undefined}
             onChange={(e: any) => setInputValue(e.target.value)}
-          />
+          data-font-size="14pt" />
         );
       case "hd-slider":
         return (
@@ -1188,8 +1188,8 @@ export default function HDesignSamplesPage() {
             </div>
             
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <hd-input placeholder="Էլ. հասցե կամ օգտանուն" data-width="100%" data-height="46px" data-thickness="3px" />
-              <hd-input type="password" placeholder="Գաղտնաբառ" data-width="100%" data-height="46px" data-thickness="3px" />
+              <hd-input placeholder="Էլ. հասցե կամ օգտանուն" data-width="100%" data-height="46px" data-thickness="3px" data-font-size="14pt" />
+              <hd-input type="password" placeholder="Գաղտնաբառ" data-width="100%" data-height="46px" data-thickness="3px" data-font-size="14pt" />
               
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "0.85rem" }}>

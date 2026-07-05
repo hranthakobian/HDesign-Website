@@ -1526,7 +1526,7 @@ export default function AdminDashboard() {
               data-width="100%"
               data-height="46px"
               data-thickness="3px"
-            />
+            data-font-size="14pt" />
 
             {authError && (
               <div style={{ 
@@ -2166,33 +2166,33 @@ export default function AdminDashboard() {
                             <form onSubmit={handleSaveCaseDrawer} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                               <div>
                                 <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Վերնագիր*</label>
-                                <hd-input value={drawerCaseTitle} onInput={(e: any) => setDrawerCaseTitle(e.target.value)} data-width="100%" data-height="36px" />
+                                <hd-input value={drawerCaseTitle} onInput={(e: any) => setDrawerCaseTitle(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
                               </div>
                               <div>
                                 <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Ենթավերնագիր*</label>
-                                <hd-input value={drawerCaseSubtitle} onInput={(e: any) => setDrawerCaseSubtitle(e.target.value)} data-width="100%" data-height="36px" />
+                                <hd-input value={drawerCaseSubtitle} onInput={(e: any) => setDrawerCaseSubtitle(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
                               </div>
                               <div>
                                 <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Հաճախորդ</label>
-                                <hd-input value={drawerCaseClient} onInput={(e: any) => setDrawerCaseClient(e.target.value)} data-width="100%" data-height="36px" />
+                                <hd-input value={drawerCaseClient} onInput={(e: any) => setDrawerCaseClient(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
                               </div>
                               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                 <div>
                                   <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Տարի</label>
-                                  <hd-input value={drawerCaseYear} onInput={(e: any) => setDrawerCaseYear(e.target.value)} data-width="100%" data-height="36px" />
+                                  <hd-input value={drawerCaseYear} onInput={(e: any) => setDrawerCaseYear(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
                                 </div>
                                 <div>
                                   <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Կատեգորիա</label>
-                                  <hd-input value={drawerCaseCategory} onInput={(e: any) => setDrawerCaseCategory(e.target.value)} data-width="100%" data-height="36px" />
+                                  <hd-input value={drawerCaseCategory} onInput={(e: any) => setDrawerCaseCategory(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
                                 </div>
                               </div>
                               <div>
                                 <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Ֆոնի CSS</label>
-                                <hd-input value={drawerCaseBg} onInput={(e: any) => setDrawerCaseBg(e.target.value)} data-width="100%" data-height="36px" />
+                                <hd-input value={drawerCaseBg} onInput={(e: any) => setDrawerCaseBg(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
                               </div>
                               <div>
                                 <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Cover URL</label>
-                                <hd-input value={drawerCaseImageUrl} onInput={(e: any) => setDrawerCaseImageUrl(e.target.value)} data-width="100%" data-height="36px" />
+                                <hd-input value={drawerCaseImageUrl} onInput={(e: any) => setDrawerCaseImageUrl(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
                               </div>
                               <div style={{ marginTop: '10px' }}>
                                 <hd-button type="submit" data-width="100%" data-height="38px" data-thickness="3px">💾 Պահպանել</hd-button>
@@ -2444,11 +2444,11 @@ export default function AdminDashboard() {
                             <form onSubmit={handleSaveFontDrawer} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                               <div>
                                 <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Անուն (Հայերեն)*</label>
-                                <hd-input value={drawerFontNameAm} onInput={(e: any) => setDrawerFontNameAm(e.target.value)} data-width="100%" data-height="36px" />
+                                <hd-input value={drawerFontNameAm} onInput={(e: any) => setDrawerFontNameAm(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
                               </div>
                               <div>
                                 <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Name (English)*</label>
-                                <hd-input value={drawerFontNameEn} onInput={(e: any) => setDrawerFontNameEn(e.target.value)} data-width="100%" data-height="36px" />
+                                <hd-input value={drawerFontNameEn} onInput={(e: any) => setDrawerFontNameEn(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
                               </div>
                               <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '10px' }}>
                                 <div>
@@ -2467,16 +2467,16 @@ export default function AdminDashboard() {
                                 </div>
                                 <div>
                                   <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Տարեթիվ</label>
-                                  <hd-input value={drawerFontYear} onInput={(e: any) => setDrawerFontYear(e.target.value)} data-width="100%" data-height="36px" />
+                                  <hd-input value={drawerFontYear} onInput={(e: any) => setDrawerFontYear(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
                                 </div>
                               </div>
                               <div>
                                 <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Հեղինակ</label>
-                                <hd-input value={drawerFontCreator} onInput={(e: any) => setDrawerFontCreator(e.target.value)} data-width="100%" data-height="36px" />
+                                <hd-input value={drawerFontCreator} onInput={(e: any) => setDrawerFontCreator(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
                               </div>
                               <div>
                                 <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Ֆայլի հղում</label>
-                                <hd-input value={drawerFontFileUrl} onInput={(e: any) => setDrawerFontFileUrl(e.target.value)} data-width="100%" data-height="36px" />
+                                <hd-input value={drawerFontFileUrl} onInput={(e: any) => setDrawerFontFileUrl(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
                               </div>
 
                               <div style={{ background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--panel-border)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -2502,11 +2502,11 @@ export default function AdminDashboard() {
                                 <div style={{ display: 'grid', gridTemplateColumns: '0.8fr 1.2fr', gap: '10px' }}>
                                   <div>
                                     <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Գին</label>
-                                    <hd-input value={drawerFontPrice} onInput={(e: any) => setDrawerFontPrice(e.target.value)} data-width="100%" data-height="36px" />
+                                    <hd-input value={drawerFontPrice} onInput={(e: any) => setDrawerFontPrice(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
                                   </div>
                                   <div>
                                     <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Գնման հղում</label>
-                                    <hd-input value={drawerFontPurchaseUrl} onInput={(e: any) => setDrawerFontPurchaseUrl(e.target.value)} data-width="100%" data-height="36px" />
+                                    <hd-input value={drawerFontPurchaseUrl} onInput={(e: any) => setDrawerFontPurchaseUrl(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
                                   </div>
                                 </div>
                               )}
@@ -2723,7 +2723,7 @@ export default function AdminDashboard() {
                       onInput={(e: any) => { setTransSearch(e.target.value); setVisibleTransCount(50); }}
                       data-width="100%"
                       data-height="40px"
-                    />
+                    data-font-size="14pt" />
                   </div>
 
                   <div style={{ width: '200px' }}>
@@ -2819,7 +2819,7 @@ export default function AdminDashboard() {
                               data-width="100%"
                               data-disable-horizontal-resize="true"
                               style={{ minHeight: '60px' }}
-                            />
+                            data-font-size="14pt" />
                           </div>
                           <div>
                             <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Անգլերեն (English)</label>
@@ -2829,7 +2829,7 @@ export default function AdminDashboard() {
                               data-width="100%"
                               data-disable-horizontal-resize="true"
                               style={{ minHeight: '60px' }}
-                            />
+                            data-font-size="14pt" />
                           </div>
                         </div>
 
@@ -2940,7 +2940,7 @@ export default function AdminDashboard() {
                                 onInput={(e: any) => setNewTransCustomSection(e.target.value)}
                                 data-width="60%"
                                 data-height="40px"
-                              />
+                              data-font-size="14pt" />
                             )}
                           </div>
                         </div>
@@ -2953,7 +2953,7 @@ export default function AdminDashboard() {
                             onInput={(e: any) => setNewTransKey(e.target.value)}
                             data-width="100%"
                             data-height="40px"
-                          />
+                          data-font-size="14pt" />
                         </div>
 
                         <div>
@@ -2965,7 +2965,7 @@ export default function AdminDashboard() {
                             data-width="100%"
                             data-disable-horizontal-resize="true"
                             style={{ minHeight: '60px' }}
-                          />
+                          data-font-size="14pt" />
                         </div>
 
                         <div>
@@ -2977,7 +2977,7 @@ export default function AdminDashboard() {
                             data-width="100%"
                             data-disable-horizontal-resize="true"
                             style={{ minHeight: '60px' }}
-                          />
+                          data-font-size="14pt" />
                         </div>
 
                         <div className="admin-modal-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
@@ -3068,7 +3068,7 @@ export default function AdminDashboard() {
                           onInput={(e: any) => setApiSettings(prev => ({ ...prev, supabase_url: e.target.value }))}
                           data-width="100%"
                           data-height="40px"
-                        />
+                        data-font-size="14pt" />
                       </div>
                       <div>
                         <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Anon Key / Publishable Key*</label>
@@ -3079,7 +3079,7 @@ export default function AdminDashboard() {
                           onInput={(e: any) => setApiSettings(prev => ({ ...prev, supabase_key: e.target.value }))}
                           data-width="100%"
                           data-height="40px"
-                        />
+                        data-font-size="14pt" />
                       </div>
                     </div>
                   </div>
@@ -3119,7 +3119,7 @@ export default function AdminDashboard() {
                           onInput={(e: any) => setApiSettings(prev => ({ ...prev, tildo_widget_id: e.target.value }))}
                           data-width="100%"
                           data-height="40px"
-                        />
+                        data-font-size="14pt" />
                         <span style={{ fontSize: '0.75rem', color: 'var(--muted)', display: 'block', marginTop: '6px' }}>
                           Այս բանալին սովորաբար գտնվում է Tidio-ի կոդի մեջ՝ <code>//code.tidio.co/{"{widget_id}"}.js</code>
                         </span>
@@ -3162,7 +3162,7 @@ export default function AdminDashboard() {
                           onInput={(e: any) => setApiSettings(prev => ({ ...prev, google_analytics_id: e.target.value }))}
                           data-width="100%"
                           data-height="40px"
-                        />
+                        data-font-size="14pt" />
                       </div>
                     )}
                   </div>
@@ -3287,7 +3287,7 @@ export default function AdminDashboard() {
                             onInput={(e: any) => setPersonalization(prev => ({ ...prev, site_title_hy: e.target.value }))}
                             data-width="100%"
                             data-height="40px"
-                          />
+                          data-font-size="14pt" />
                         </div>
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Site Title (English)</label>
@@ -3298,7 +3298,7 @@ export default function AdminDashboard() {
                             onInput={(e: any) => setPersonalization(prev => ({ ...prev, site_title_en: e.target.value }))}
                             data-width="100%"
                             data-height="40px"
-                          />
+                          data-font-size="14pt" />
                         </div>
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Կայքի Նկարագրություն (Հայերեն)</label>
@@ -3645,7 +3645,7 @@ export default function AdminDashboard() {
                                 }}
                                 data-width="100%"
                                 data-height="36px"
-                              />
+                              data-font-size="14pt" />
                             </div>
                             <div style={{ flex: 1 }}>
                               <label style={{ fontSize: '0.75rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Hotspot Y (0-32)</label>
@@ -3667,7 +3667,7 @@ export default function AdminDashboard() {
                                 }}
                                 data-width="100%"
                                 data-height="36px"
-                              />
+                              data-font-size="14pt" />
                             </div>
                           </div>
 
@@ -3696,7 +3696,7 @@ export default function AdminDashboard() {
                                 fontFamily: 'monospace',
                                 fontSize: '0.75rem',
                               }}
-                            />
+                            data-font-size="14pt" />
                           </div>
                         </div>
                       </div>
@@ -3738,7 +3738,7 @@ export default function AdminDashboard() {
                               cursor: 'var(--sandbox-text)',
                               fontSize: '0.8rem',
                             }}
-                          />
+                          data-font-size="14pt" />
                         </div>
                       </div>
                     </div>
@@ -3858,7 +3858,7 @@ export default function AdminDashboard() {
                                 onInput={(e: any) => setUpcomingTitleHy(e.target.value)}
                                 data-width="100%"
                                 data-height="36px"
-                              />
+                              data-font-size="14pt" />
                             </div>
                             <div>
                               <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Վերնագիր (English)</label>
@@ -3868,7 +3868,7 @@ export default function AdminDashboard() {
                                 onInput={(e: any) => setUpcomingTitleEn(e.target.value)}
                                 data-width="100%"
                                 data-height="36px"
-                              />
+                              data-font-size="14pt" />
                             </div>
                           </div>
 
@@ -3881,7 +3881,7 @@ export default function AdminDashboard() {
                               data-width="100%"
                               data-disable-horizontal-resize="true"
                               style={{ minHeight: '60px' }}
-                            />
+                            data-font-size="14pt" />
                           </div>
 
                           <div>
@@ -3893,7 +3893,7 @@ export default function AdminDashboard() {
                               data-width="100%"
                               data-disable-horizontal-resize="true"
                               style={{ minHeight: '60px' }}
-                            />
+                            data-font-size="14pt" />
                           </div>
 
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -3905,7 +3905,7 @@ export default function AdminDashboard() {
                                 onInput={(e: any) => setUpcomingEmail(e.target.value)}
                                 data-width="100%"
                                 data-height="36px"
-                              />
+                              data-font-size="14pt" />
                             </div>
                             <div>
                               <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Հեռախոս (Phone)</label>
@@ -3915,7 +3915,7 @@ export default function AdminDashboard() {
                                 onInput={(e: any) => setUpcomingTel(e.target.value)}
                                 data-width="100%"
                                 data-height="36px"
-                              />
+                              data-font-size="14pt" />
                             </div>
                           </div>
                         </div>
@@ -3961,7 +3961,7 @@ export default function AdminDashboard() {
                           onInput={(e: any) => setCurrentPasscode(e.target.value)}
                           data-width="100%"
                           data-height="40px"
-                        />
+                        data-font-size="14pt" />
                       </div>
 
                       <div>
@@ -3973,7 +3973,7 @@ export default function AdminDashboard() {
                           onInput={(e: any) => setNewPasscode(e.target.value)}
                           data-width="100%"
                           data-height="40px"
-                        />
+                        data-font-size="14pt" />
                       </div>
 
                       <div>
@@ -3985,7 +3985,7 @@ export default function AdminDashboard() {
                           onInput={(e: any) => setConfirmPasscode(e.target.value)}
                           data-width="100%"
                           data-height="40px"
-                        />
+                        data-font-size="14pt" />
                       </div>
 
                       {passwordError && (
@@ -4182,7 +4182,7 @@ export default function AdminDashboard() {
                           data-thickness="2px"
                           data-color="#ab47bc"
                           style={{ '--text-color': '#1a202c', '--primary-color': '#ab47bc' } as any}
-                        />
+                        data-font-size="14pt" />
                       </div>
 
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -4197,7 +4197,7 @@ export default function AdminDashboard() {
                             data-thickness="2px"
                             data-color="#0088FE"
                             style={{ '--text-color': '#1a202c', '--primary-color': '#0088FE' } as any}
-                          />
+                          data-font-size="14pt" />
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                           <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#4a5568' }}>BCC (Գաղտնի պատճեն)</label>
@@ -4210,7 +4210,7 @@ export default function AdminDashboard() {
                             data-thickness="2px"
                             data-color="#FFBB28"
                             style={{ '--text-color': '#1a202c', '--primary-color': '#FFBB28' } as any}
-                          />
+                          data-font-size="14pt" />
                         </div>
                       </div>
 
@@ -4225,7 +4225,7 @@ export default function AdminDashboard() {
                           data-thickness="2px"
                           data-color="#ec407a"
                           style={{ minHeight: '120px', '--text-color': '#1a202c', '--primary-color': '#ec407a' } as any}
-                        />
+                        data-font-size="14pt" />
                       </div>
 
                       {emailStatus.text && (
@@ -4487,7 +4487,7 @@ export default function AdminDashboard() {
                 onInput={(e: any) => setUnlockPasscode(e.target.value)}
                 data-width="100%"
                 data-height="40px"
-              />
+              data-font-size="14pt" />
 
               {unlockError && (
                 <div style={{ 

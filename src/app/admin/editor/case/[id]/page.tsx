@@ -1220,7 +1220,7 @@ function Field({ label, value, onChange }: { label: string; value: string; onCha
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       {label && <span style={{ fontSize: "0.72rem", color: "var(--muted)" }}>{label}</span>}
-      <hd-input value={value} onInput={(e: any) => onChange(e.target.value)} data-width="100%" data-height="34px" />
+      <hd-input value={value} onInput={(e: any) => onChange(e.target.value)} data-width="100%" data-height="34px" data-font-size="14pt" />
     </div>
   );
 }
@@ -1230,7 +1230,7 @@ function FieldArea({ label, value, onChange }: { label: string; value: string; o
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       {label && <span style={{ fontSize: "0.72rem", color: "var(--muted)" }}>{label}</span>}
       <div style={{ minHeight: "100px", display: "flex", flexDirection: "column" }}>
-        <hd-textarea value={value} onInput={(e: any) => onChange(e.target.value)} data-width="100%" />
+        <hd-textarea value={value} onInput={(e: any) => onChange(e.target.value)} data-width="100%" data-font-size="14pt" />
       </div>
     </div>
   );

@@ -138,7 +138,7 @@ export default function Footer() {
                   data-thickness="3px"
                   data-color="#6A3E73"
                   style={{ '--text-color': '#1a202c', '--primary-color': '#6A3E73' } as any}
-                />
+                data-font-size="14pt" />
               </div>
 
               {subscribeStatus.text && (
