@@ -127,7 +127,7 @@ export default function FontsListingPage() {
                 ? "woff2"
                 : "truetype"
             }');
-                font-weight: normal;
+                font-weight: 100 900;
                 font-style: normal;
                 font-display: swap;
               }
@@ -163,6 +163,7 @@ export default function FontsListingPage() {
 
       {/* Control Sandbox / Search & Filters */}
       <div
+        className="font-sandbox-card"
         style={{
           background: "var(--panel)",
           border: "1px solid var(--panel-border)",
@@ -187,12 +188,13 @@ export default function FontsListingPage() {
             data-font-size="14pt" />
           </div>
 
-          <div style={{ display: "flex", gap: "12px" }}>
+          <div style={{ display: "flex", gap: "12px" }} className="font-search-btn-wrapper">
             <hd-button
               onClick={() => setShowAdvanced(!showAdvanced)}
               data-width="200px"
               data-height="46px"
               data-thickness="3px"
+              className="font-search-btn"
               style={{
                 background: showAdvanced ? "var(--btn-hover-bg)" : "transparent",
                 color: "var(--text)",
@@ -405,6 +407,7 @@ export default function FontsListingPage() {
                 {/* Right Card: Interactive Preview display */}
                 <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }} className="font-card-preview-side">
                   <div
+                    className="preview-font-container"
                     style={{
                       fontFamily: `preview-font-${font.id}, sans-serif`,
                       fontSize: "2.4rem",
@@ -434,12 +437,25 @@ export default function FontsListingPage() {
           .font-item-card {
             grid-template-columns: 1fr !important;
             gap: 20px !important;
+            padding: 20px !important;
           }
           .font-card-info-side {
             border-right: none !important;
             padding-right: 0 !important;
             border-bottom: 1px solid var(--panel-border) !important;
             padding-bottom: 20px !important;
+          }
+          .font-sandbox-card {
+            padding: 16px !important;
+          }
+        }
+        @media (max-width: 550px) {
+          .font-search-btn-wrapper {
+            width: 100% !important;
+          }
+          .font-search-btn {
+            --width: 100% !important;
+            width: 100% !important;
           }
         }
       `}</style>

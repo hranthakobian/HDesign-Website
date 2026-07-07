@@ -50,7 +50,7 @@ function UnsubscribeContent() {
 
   return (
     <main className="shell" style={{ marginTop: "140px", minHeight: "60vh", display: "flex", justifyContent: "center", alignItems: "center", position: "relative" }}>
-      <div style={{
+      <div className="unsubscribe-card" style={{
         background: "rgba(255, 255, 255, 0.05)",
         backdropFilter: "blur(20px)",
         border: "1px solid rgba(255, 255, 255, 0.1)",

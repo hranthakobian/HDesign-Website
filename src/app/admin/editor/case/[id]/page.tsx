@@ -9,11 +9,16 @@ import LoadingAnimation from "@/components/LoadingAnimation";
 /* ─── Types ─────────────────────────────────────────── */
 type BlockType = "text" | "image" | "embed" | "color_palette" | "typography_showcase";
 
-interface TextBlock       { type: "text";                title_am: string; title_en: string; content_am: string; content_en: string; }
-interface ImageBlock      { type: "image";               image_url: string; caption_am: string; caption_en: string; fullWidth: boolean; }
-interface EmbedBlock      { type: "embed";               embed_url: string; }
-interface PaletteBlock    { type: "color_palette";       colors: string[]; }
-interface TypoBlock       { type: "typography_showcase"; fonts: string[]; previewText: string; }
+interface BaseBlock {
+  marginTop?: number;
+  marginBottom?: number;
+}
+
+interface TextBlock extends BaseBlock       { type: "text";                title_am: string; title_en: string; content_am: string; content_en: string; }
+interface ImageBlock extends BaseBlock      { type: "image";               image_url: string; caption_am: string; caption_en: string; fullWidth: boolean; }
+interface EmbedBlock extends BaseBlock      { type: "embed";               embed_url: string; }
+interface PaletteBlock extends BaseBlock    { type: "color_palette";       colors: string[]; }
+interface TypoBlock extends BaseBlock       { type: "typography_showcase"; fonts: string[]; previewText: string; }
 
 type CaseBlock = TextBlock | ImageBlock | EmbedBlock | PaletteBlock | TypoBlock;
 
@@ -63,11 +68,12 @@ function makeBlock(type: BlockType): CaseBlock {
 
 /* ─── Editable Text Component ────────────────────────── */
 function Editable({
-  value, onChange, tag = "p", style = {}
+  value, onChange, tag = "p", style = {}, disabled = false
 }: {
   value: string; onChange: (v: string) => void;
   tag?: "h1" | "h2" | "h3" | "h4" | "p" | "span";
   style?: React.CSSProperties;
+  disabled?: boolean;
 }) {
   const ref = useRef<HTMLElement>(null);
   const [editing, setEditing] = useState(false);
@@ -77,19 +83,24 @@ function Editable({
   return (
     <Tag
       ref={ref}
-      contentEditable={editing}
+      contentEditable={!disabled && editing}
       suppressContentEditableWarning
-      onClick={() => { setEditing(true); ref.current?.focus(); }}
+      onClick={() => {
+        if (!disabled) {
+          setEditing(true);
+          ref.current?.focus();
+        }
+      }}
       onBlur={() => {
         setEditing(false);
         onChange(ref.current?.innerText ?? "");
       }}
       style={{
         ...style,
-        outline: editing ? "2px solid rgba(0,255,204,0.6)" : "2px solid transparent",
+        outline: !disabled && editing ? "2px solid rgba(0,255,204,0.6)" : "2px solid transparent",
         borderRadius: "6px",
         padding: editing ? "4px 6px" : "0",
-        cursor: editing ? "text" : "pointer",
+        cursor: disabled ? "inherit" : editing ? "text" : "pointer",
         transition: "outline 0.2s",
         minWidth: "30px",
       }}
@@ -100,13 +111,16 @@ function Editable({
 }
 
 function RichEditable({
-  value, onChange, style = {}
+  value, onChange, style = {}, onUpload, disabled = false
 }: {
   value: string; onChange: (v: string) => void;
   style?: React.CSSProperties;
+  onUpload?: (file: File, current: number, total: number) => Promise<string | null>;
+  disabled?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [editing, setEditing] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   useEffect(() => {
     if (ref.current && ref.current.innerHTML !== value) {
@@ -125,9 +139,32 @@ function RichEditable({
     handleInput();
   };
 
+  const setCaretFromPoint = (e: React.DragEvent) => {
+    if (document.caretRangeFromPoint) {
+      const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+      const sel = window.getSelection();
+      if (sel && range) {
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+    } else if ((document as any).caretPositionFromPoint) {
+      const position = (document as any).caretPositionFromPoint(e.clientX, e.clientY);
+      const range = document.createRange();
+      if (position) {
+        range.setStart(position.offsetNode, position.offset);
+        range.collapse(true);
+        const sel = window.getSelection();
+        if (sel) {
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      }
+    }
+  };
+
   return (
     <div style={{ position: "relative", width: "100%" }}>
-      {editing && (
+      {!disabled && editing && (
         <div
           style={{
             position: "absolute",
@@ -143,29 +180,25 @@ function RichEditable({
             zIndex: 100,
             boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
           }}
-          onMouseDown={e => e.preventDefault()} // prevent focus loss
+          onMouseDown={e => e.preventDefault()}
         >
-          {/* Headings */}
           <button onClick={() => exec("formatBlock", "<h2>")} style={toolbarBtnStyle} title="Heading 2">H2</button>
           <button onClick={() => exec("formatBlock", "<h3>")} style={toolbarBtnStyle} title="Heading 3">H3</button>
           <button onClick={() => exec("formatBlock", "<p>")} style={toolbarBtnStyle} title="Paragraph">P</button>
           <div style={{ width: 1, background: "var(--panel-border)", margin: "0 2px" }} />
 
-          {/* Inline Styles */}
           <button onClick={() => exec("bold")} style={toolbarBtnStyle} title="Թավ (Bold)"><b>B</b></button>
           <button onClick={() => exec("italic")} style={toolbarBtnStyle} title="Շեղ (Italic)"><i>I</i></button>
           <button onClick={() => exec("underline")} style={toolbarBtnStyle} title="Ընդգծված (Underline)"><u>U</u></button>
           <button onClick={() => exec("strikeThrough")} style={toolbarBtnStyle} title="Ջնջված (Strikethrough)"><s>S</s></button>
           <div style={{ width: 1, background: "var(--panel-border)", margin: "0 2px" }} />
 
-          {/* Alignment */}
           <button onClick={() => exec("justifyLeft")} style={toolbarBtnStyle} title="Ձախից">←</button>
           <button onClick={() => exec("justifyCenter")} style={toolbarBtnStyle} title="Կենտրոնից">↔</button>
           <button onClick={() => exec("justifyRight")} style={toolbarBtnStyle} title="Աջից">→</button>
           <button onClick={() => exec("justifyFull")} style={toolbarBtnStyle} title="Հավասարեցնել">═</button>
           <div style={{ width: 1, background: "var(--panel-border)", margin: "0 2px" }} />
 
-          {/* Lists & Links */}
           <button onClick={() => exec("insertUnorderedList")} style={toolbarBtnStyle} title="Բուլետներ (Bullet List)">• List</button>
           <button onClick={() => {
             const url = prompt("Մուտքագրեք հղումը (URL):", "https://");
@@ -173,7 +206,6 @@ function RichEditable({
           }} style={toolbarBtnStyle} title="Ավելացնել հղում">🔗</button>
           <div style={{ width: 1, background: "var(--panel-border)", margin: "0 2px" }} />
 
-          {/* ForeColor Preset Presets */}
           <input 
             type="color" 
             onChange={e => exec("foreColor", e.target.value)} 
@@ -188,18 +220,57 @@ function RichEditable({
 
       <div
         ref={ref}
-        contentEditable
+        contentEditable={!disabled}
         suppressContentEditableWarning
-        onFocus={() => setEditing(true)}
+        onFocus={() => { if (!disabled) setEditing(true); }}
         onBlur={() => setEditing(false)}
         onInput={handleInput}
+        onDragEnter={(e) => {
+          if (!disabled && e.dataTransfer.types.includes("Files")) {
+            e.preventDefault();
+            setIsDragOver(true);
+          }
+        }}
+        onDragOver={(e) => {
+          if (!disabled && e.dataTransfer.types.includes("Files")) {
+            e.preventDefault();
+            setIsDragOver(true);
+          }
+        }}
+        onDragLeave={() => {
+          setIsDragOver(false);
+        }}
+        onDrop={async (e) => {
+          setIsDragOver(false);
+          if (!disabled && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+            e.preventDefault();
+            setCaretFromPoint(e);
+            const imageFiles = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith("image/"));
+            const total = imageFiles.length;
+            for (let i = 0; i < total; i++) {
+              const file = imageFiles[i];
+              if (onUpload) {
+                const url = await onUpload(file, i + 1, total);
+                if (url) {
+                  exec("insertHTML", `<img src="${url}" style="max-width: 100%; border-radius: 8px; margin: 10px 0; display: block;" alt="" />`);
+                }
+              }
+            }
+          }
+        }}
         style={{
           ...style,
-          outline: editing ? "2px solid rgba(0,255,204,0.6)" : "2px solid transparent",
+          outline: isDragOver 
+            ? "2px dashed rgba(0,255,204,0.8)" 
+            : !disabled && editing 
+              ? "2px solid rgba(0,255,204,0.6)" 
+              : "2px solid transparent",
+          backgroundColor: isDragOver ? "rgba(0,255,204,0.05)" : "transparent",
           borderRadius: "6px",
           padding: "6px",
           minHeight: "40px",
           whiteSpace: "normal",
+          transition: "outline 0.2s, background-color 0.2s",
         }}
       />
     </div>
@@ -247,8 +318,14 @@ export default function CaseEditor() {
   const [loading,  setLoading]  = useState(true);
   const [saving,   setSaving]   = useState(false);
   const [uploading,setUploading]= useState(false);
-  const [selected, setSelected] = useState<number | null>(null); // selected block index
-  const [editorLang, setEditorLang] = useState<'am' | 'en'>('am'); // editing language switcher
+  const [selected, setSelected] = useState<number | null>(null); 
+  const [editorLang, setEditorLang] = useState<'am' | 'en'>('am'); 
+  const [heroDragOver, setHeroDragOver] = useState(false);
+  const [fileDragOverBlockIdx, setFileDragOverBlockIdx] = useState<number | null>(null);
+  const [canvasDragOver, setCanvasDragOver] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
+  const [reorderMode, setReorderMode] = useState(false);
+  const [dynamicScale, setDynamicScale] = useState(1);
 
   const [form, setForm] = useState<Case>({
     id, title: "", subtitle: "", bg: GRADIENT_PRESETS[0].value,
@@ -256,12 +333,10 @@ export default function CaseEditor() {
   });
   const [blocks, setBlocks] = useState<CaseBlock[]>([]);
 
-  /* ─ Drag & Drop ─ */
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const [dragOverPosition, setDragOverPosition] = useState<'above' | 'below' | null>(null);
 
-  /* ─ Collapsible Sidebar & Floating Windows ─ */
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showLayersPanel, setShowLayersPanel] = useState(true);
 
@@ -273,20 +348,16 @@ export default function CaseEditor() {
   const [draggingLayers, setDraggingLayers] = useState(false);
   const layersStart = useRef({ x: 0, y: 0 });
 
-  // Load from localStorage on mount
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedCollapsed = localStorage.getItem("case-editor-sidebar-collapsed");
       if (savedCollapsed) setSidebarCollapsed(savedCollapsed === "true");
-
       const savedShowLayers = localStorage.getItem("case-editor-show-layers");
       if (savedShowLayers) setShowLayersPanel(savedShowLayers === "true");
-
       const savedPropPos = localStorage.getItem("case-editor-prop-pos");
       if (savedPropPos) {
         try { setPropPos(JSON.parse(savedPropPos)); } catch {}
       }
-
       const savedLayersPos = localStorage.getItem("case-editor-layers-pos");
       if (savedLayersPos) {
         try { setLayersPos(JSON.parse(savedLayersPos)); } catch {}
@@ -294,7 +365,6 @@ export default function CaseEditor() {
     }
   }, []);
 
-  // Save to localStorage on changes
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("case-editor-sidebar-collapsed", String(sidebarCollapsed));
@@ -361,7 +431,6 @@ export default function CaseEditor() {
     const rect = e.currentTarget.getBoundingClientRect();
     const relativeY = e.clientY - rect.top;
     const threshold = rect.height / 2;
-    if (relativeY < relativeY) {} // check boundary
     if (relativeY < threshold) {
       setDragOverIdx(index);
       setDragOverPosition("above");
@@ -402,7 +471,6 @@ export default function CaseEditor() {
     setDragOverPosition(null);
   };
 
-  /* ─ Auth ─ */
   useEffect(() => {
     const t = typeof window !== "undefined" ? localStorage.getItem("hdesign_admin_token") : null;
     if (!t) { router.push("/admin"); return; }
@@ -410,7 +478,6 @@ export default function CaseEditor() {
     load(t);
   }, [id]);
 
-  /* ─ Theme ─ */
   useEffect(() => {
     const savedTheme = localStorage.getItem('hdesign-theme');
     if (savedTheme) {
@@ -426,7 +493,35 @@ export default function CaseEditor() {
     }
   }, []);
 
-  /* ─ Load ─ */
+  const recalculateScale = () => {
+    if (!reorderMode) {
+      setDynamicScale(1);
+      return;
+    }
+    const container = document.getElementById("live-preview-container");
+    const inner = document.getElementById("live-preview-inner-wrapper");
+    if (container && inner) {
+      const containerHeight = container.clientHeight - 40;
+      const innerHeight = inner.scrollHeight;
+      if (innerHeight > 0) {
+        const scale = Math.max(0.15, Math.min(0.9, containerHeight / innerHeight));
+        setDynamicScale(scale);
+      }
+    }
+  };
+
+  useEffect(() => {
+    recalculateScale();
+    if (reorderMode) {
+      window.addEventListener("resize", recalculateScale);
+      const timer = setTimeout(recalculateScale, 150);
+      return () => {
+        window.removeEventListener("resize", recalculateScale);
+        clearTimeout(timer);
+      };
+    }
+  }, [reorderMode, blocks]);
+
   async function load(tok: string) {
     try {
       const data: any[] = await fetch("/api/cases").then(r => r.json());
@@ -457,7 +552,6 @@ export default function CaseEditor() {
     setBlocks([{ type: "text", title_am: "Նախագծի Մասին", title_en: "About", content_am: s, content_en: s }]);
   }
 
-  /* ─ Block CRUD ─ */
   const upd = (i: number, b: CaseBlock) => setBlocks(p => p.map((x, j) => j === i ? b : x));
   const del = (i: number) => { setBlocks(p => p.filter((_, j) => j !== i)); if (selected === i) setSelected(null); };
   const mov = (i: number, d: "up" | "down") => setBlocks(p => {
@@ -467,18 +561,20 @@ export default function CaseEditor() {
   });
   const add = (type: BlockType) => { setBlocks(p => [...p, makeBlock(type)]); setSelected(blocks.length); };
 
-  /* ─ Upload ─ */
-  async function upload(file: File): Promise<string | null> {
+  async function upload(file: File, current: number = 1, total: number = 1): Promise<string | null> {
     if (!token) return null;
     setUploading(true);
+    setUploadProgress({ current, total });
     const fd = new FormData(); fd.append("file", file);
     try {
       const r = await fetch("/api/upload", { method: "POST", headers: { Authorization: token }, body: fd });
       const d = await r.json(); return r.ok ? d.url : null;
-    } finally { setUploading(false); }
+    } finally {
+      setUploading(false);
+      setUploadProgress(null);
+    }
   }
 
-  /* ─ Save ─ */
   async function save() {
     if (!token || !form.title || !form.subtitle) {
       alert("Խնդրում ենք լրացնել վերնագիրը և ենթավերնագիրը:");
@@ -519,11 +615,64 @@ export default function CaseEditor() {
     <LoadingAnimation message="Բեռնվում է WYSIWYG խմբագրիչը..." />
   );
 
-  /* ─── RENDER ─────────────────────────────────────────── */
   return (
     <div style={{ background: "var(--bg)", color: "var(--text)", height: "100vh", display: "flex", flexDirection: "column", fontFamily: "HDesign, sans-serif" }}>
+      {uploadProgress && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          background: "rgba(0, 0, 0, 0.75)",
+          backdropFilter: "blur(6px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999,
+        }}>
+          <div style={{
+            background: "var(--panel)",
+            border: "1px solid var(--panel-border)",
+            borderRadius: 20,
+            padding: "32px 40px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 20,
+            boxShadow: "0 24px 48px rgba(0,0,0,0.6)",
+            maxWidth: 380,
+            width: "90%",
+            textAlign: "center"
+          }}>
+            <div style={{ fontSize: "2.5rem" }}>📤</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <span style={{ fontWeight: 800, fontSize: "1.1rem", color: "var(--text)" }}>
+                {editorLang === "am" ? "Պատկերների վերբեռնում" : "Uploading Images"}
+              </span>
+              <span style={{ fontSize: "0.88rem", color: "var(--muted)" }}>
+                {editorLang === "am" 
+                  ? `Բեռնվում է ${uploadProgress.current}-ը ${uploadProgress.total} պատկերից`
+                  : `Uploading ${uploadProgress.current} of ${uploadProgress.total} images`}
+              </span>
+            </div>
+            
+            <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
+              <div style={{ width: "100%", height: 8, background: "var(--input-bg)", border: "1px solid var(--panel-border)", borderRadius: 4, overflow: "hidden" }}>
+                <div style={{
+                  width: `${(uploadProgress.current / uploadProgress.total) * 100}%`,
+                  height: "100%",
+                  background: "var(--accent)",
+                  boxShadow: "0 0 8px var(--accent)",
+                  borderRadius: 4,
+                  transition: "width 0.3s ease-out"
+                }} />
+              </div>
+              <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--accent)" }}>
+                {Math.round((uploadProgress.current / uploadProgress.total) * 100)}%
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {/* ── Topbar ── */}
       <div style={{ height: 58, background: "var(--panel)", borderBottom: "1px solid var(--panel-border)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 20px", position: "sticky", top: 0, zIndex: 200 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <Link href="/admin?tab=cases" style={{ textDecoration: "none" }}>
@@ -540,7 +689,6 @@ export default function CaseEditor() {
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          {/* Language Switcher */}
           <div style={{ display: "flex", background: "var(--input-bg)", border: "1px solid var(--input-border)", borderRadius: 8, padding: 2, gap: 2 }}>
             <button
               onClick={() => setEditorLang("am")}
@@ -583,25 +731,206 @@ export default function CaseEditor() {
               </hd-button>
             </div>
           </Link>
+          <button
+            onClick={() => {
+              setReorderMode(!reorderMode);
+              if (!reorderMode) {
+                setShowLayersPanel(true);
+              }
+            }}
+            style={{
+              padding: "6px 14px",
+              background: reorderMode ? "var(--accent)" : "var(--btn-bg)",
+              border: "1px solid var(--panel-border)",
+              borderRadius: 8,
+              color: reorderMode ? "var(--bg)" : "var(--text)",
+              cursor: "pointer",
+              fontSize: "0.82rem",
+              fontWeight: 700,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              transition: "all 0.2s"
+            }}
+          >
+            🔄 {reorderMode ? (editorLang === "en" ? "Exit Reorder" : "Ավարտել դասավորումը") : (editorLang === "en" ? "Reorder Blocks" : "Վերադասավորել")}
+          </button>
           <hd-button onClick={save} disabled={saving} data-width="120px" data-height="34px" data-thickness="3px">
             {saving ? "Պահպանվում..." : "Պահպանել"}
           </hd-button>
         </div>
       </div>
 
-      {/* ── Split Editor ── */}
       <div style={{ display: "grid", gridTemplateColumns: "3fr 1fr", flex: 1, minHeight: "calc(100vh - 58px)", overflow: "hidden" }}>
 
-        {/* ════════════════════════════════════════
-            LEFT: LIVE PREVIEW  (3/4 width)
-        ═══════════════════════════════════════ */}
-        <div style={{ overflowY: "auto", maxHeight: "calc(100vh - 58px)", background: "var(--bg)" }}>
+        <div 
+          onDragOver={e => {
+            if (!reorderMode && draggedIdx === null && e.dataTransfer.types.includes("Files")) {
+              e.preventDefault();
+              setCanvasDragOver(true);
+            }
+          }}
+          onDragLeave={() => setCanvasDragOver(false)}
+          onDrop={async e => {
+            setCanvasDragOver(false);
+            if (!reorderMode && draggedIdx === null && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+              e.preventDefault();
+              const imageFiles = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith("image/"));
+              const total = imageFiles.length;
+              for (let i = 0; i < total; i++) {
+                const file = imageFiles[i];
+                const url = await upload(file, i + 1, total);
+                if (url) {
+                  setBlocks(p => {
+                    const newBlock: CaseBlock = { type: "image", image_url: url, caption_am: "", caption_en: "", fullWidth: true };
+                    if (selected !== null && selected >= 0 && selected < p.length) {
+                      const list = [...p];
+                      list.splice(selected + 1, 0, newBlock);
+                      return list;
+                    } else {
+                      return [...p, newBlock];
+                    }
+                  });
+                  setSelected(prev => (prev !== null ? prev + 1 : blocks.length));
+                }
+              }
+            }
+          }}
+          id="live-preview-container"
+          style={{
+            overflowY: reorderMode ? "hidden" : "auto",
+            maxHeight: "calc(100vh - 58px)",
+            background: "var(--bg)",
+            position: "relative",
+            display: reorderMode ? "flex" : "block",
+            alignItems: reorderMode ? "center" : "normal",
+            justifyContent: reorderMode ? "center" : "normal",
+            padding: reorderMode ? "20px" : "0",
+            boxSizing: "border-box"
+          }}
+        >
+          {canvasDragOver && (
+            <div style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0, 255, 204, 0.08)",
+              backdropFilter: "blur(4px)",
+              border: "3px dashed var(--accent)",
+              borderRadius: 8,
+              margin: 16,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 1000,
+              pointerEvents: "none"
+            }}>
+              <div style={{
+                background: "var(--panel)",
+                border: "1px solid var(--panel-border)",
+                padding: "20px 40px",
+                borderRadius: 16,
+                boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+                color: "var(--accent)",
+                fontSize: "1.2rem",
+                fontWeight: "bold",
+                textAlign: "center"
+              }}>
+                📥 Բաց թողեք նկարները նոր բլոկներ ստեղծելու համար
+                <span style={{ display: "block", fontSize: "0.85rem", color: "var(--muted)", marginTop: 8 }}>
+                  (Drop images to create new image blocks)
+                </span>
+              </div>
+            </div>
+          )}
 
-          {/* Hero */}
+          <div 
+            id="live-preview-inner-wrapper"
+            style={{
+              transform: reorderMode ? `scale(${dynamicScale})` : "none",
+              transformOrigin: "center center",
+              width: "100%",
+              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              boxShadow: reorderMode ? "0 20px 50px rgba(0,0,0,0.5)" : "none",
+              borderRadius: reorderMode ? "20px" : "0",
+              border: reorderMode ? "8px solid #1e293b" : "none",
+              outline: reorderMode ? "2px solid var(--accent)" : "none",
+              overflow: reorderMode ? "hidden" : "visible",
+              background: "var(--bg)",
+              flexShrink: 0
+            }}
+          >
+            {reorderMode && (
+              <div style={{
+                height: 28,
+                background: "#1e293b",
+                borderBottom: "1px solid var(--panel-border)",
+                display: "flex",
+                alignItems: "center",
+                padding: "0 12px",
+                gap: 6,
+                userSelect: "none"
+              }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ff5f56" }} />
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ffbd2e" }} />
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#27c93f" }} />
+                <div style={{
+                  flex: 1,
+                  margin: "0 20px",
+                  height: 18,
+                  background: "rgba(255,255,255,0.05)",
+                  borderRadius: 4,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "0.65rem",
+                  color: "var(--muted)",
+                  fontFamily: "monospace"
+                }}>
+                  hdesign.com/works/{id}
+                </div>
+              </div>
+            )}
+
           {(() => {
             const hero = parseBg(form.bg);
             return (
-              <div style={{ position: "relative", width: "100%", height: `${hero.height}vh`, background: hero.bg, overflow: "hidden", display: "flex", alignItems: "flex-end" }}>
+              <div 
+                onDragOver={e => {
+                  if (!reorderMode && e.dataTransfer.types.includes("Files")) {
+                    e.preventDefault();
+                    setHeroDragOver(true);
+                  }
+                }}
+                onDragLeave={() => setHeroDragOver(false)}
+                onDrop={async e => {
+                  setHeroDragOver(false);
+                  if (!reorderMode && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    e.preventDefault();
+                    const url = await upload(e.dataTransfer.files![0]);
+                    if (url) setForm(p => ({ ...p, image_url: url }));
+                  }
+                }}
+                style={{ position: "relative", width: "100%", height: `${hero.height}vh`, background: hero.bg, overflow: "hidden", display: "flex", alignItems: "flex-end" }}
+              >
+                {heroDragOver && (
+                  <div style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: "rgba(0, 255, 204, 0.15)",
+                    backdropFilter: "blur(6px)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: "3px dashed var(--accent)",
+                    zIndex: 100,
+                    color: "#ffffff",
+                    fontSize: "1.2rem",
+                    fontWeight: "bold",
+                    textShadow: "0 2px 4px rgba(0,0,0,0.5)"
+                  }}>
+                    📥 Բաց թողեք շապիկի նկարը վերբեռնելու համար (Drop to upload cover)
+                  </div>
+                )}
                 {form.image_url && <img src={form.image_url} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: `50% ${hero.positionY}%`, opacity: 0.75, pointerEvents: "none" }} />}
                 {hero.overlay && (
                   <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.15) 70%)", pointerEvents: "none" }} />
@@ -620,18 +949,17 @@ export default function CaseEditor() {
                     textAlign: "left"
                   }}
                 >
-                  <Editable tag="span" value={parseLangText(form.category, editorLang) || (editorLang === "en" ? "Branding" : "Բրենդավորում")} onChange={v => setForm(p => ({ ...p, category: updateLangText(form.category, v, editorLang) }))}
+                  <Editable tag="span" disabled={reorderMode} value={parseLangText(form.category, editorLang) || (editorLang === "en" ? "Branding" : "Բրենդավորում")} onChange={v => setForm(p => ({ ...p, category: updateLangText(form.category, v, editorLang) }))}
                     style={{ fontSize: "0.9rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "3px", color: "#ffffff", opacity: 0.8 }} />
-                  <Editable tag="h1" value={parseLangText(form.title, editorLang) || (editorLang === "en" ? "Title" : "Վերնագիր")} onChange={v => setForm(p => ({ ...p, title: updateLangText(form.title, v, editorLang) }))}
+                  <Editable tag="h1" disabled={reorderMode} value={parseLangText(form.title, editorLang) || (editorLang === "en" ? "Title" : "Վերնագիր")} onChange={v => setForm(p => ({ ...p, title: updateLangText(form.title, v, editorLang) }))}
                     style={{ fontSize: "clamp(2.5rem, 6vw, 4rem)", fontWeight: 900, color: "#ffffff", margin: 0, lineHeight: "1.1", width: "100%" }} />
-                  <Editable tag="p" value={parseLangText(form.subtitle, editorLang) || (editorLang === "en" ? "Subtitle" : "Ենթավերնագիր")} onChange={v => setForm(p => ({ ...p, subtitle: updateLangText(form.subtitle, v, editorLang) }))}
+                  <Editable tag="p" disabled={reorderMode} value={parseLangText(form.subtitle, editorLang) || (editorLang === "en" ? "Subtitle" : "Ենթավերնագիր")} onChange={v => setForm(p => ({ ...p, subtitle: updateLangText(form.subtitle, v, editorLang) }))}
                     style={{ fontSize: "clamp(1rem, 2vw, 1.25rem)", color: "#ffffff", opacity: 0.9, margin: 0, maxWidth: "700px", width: "100%" }} />
                 </div>
               </div>
             );
           })()}
 
-          {/* Horizontal Metadata Bar (Preview Mode) */}
           <div style={{ borderBottom: "1px solid var(--panel-border)", background: "var(--panel)", padding: "24px 0" }}>
             <div className="shell" style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-around", gap: "24px", textAlign: "center" }}>
               <div style={{ display: "flex", flexDirection: "column" }}>
@@ -653,13 +981,11 @@ export default function CaseEditor() {
             </div>
           </div>
 
-          {/* Click-to-edit hint banner */}
           <div style={{ background: "rgba(0,255,204,0.04)", borderBottom: "1px solid rgba(0,255,204,0.08)", padding: "8px 48px", display: "flex", gap: 12, alignItems: "center" }}>
             <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#00ffcc", flexShrink: 0 }} />
             <span style={{ fontSize: "0.75rem", color: "#66ddb5" }}>Սեղմեք ցանկացած տեքստի վրա՝ խմբագրելու համար: Քաշեք և գցեք բլոկները (Drag & Drop)՝ դասավորությունը փոխելու համար:</span>
           </div>
 
-          {/* Single-Column Blocks Preview */}
           <div style={{ width: "100%", padding: "40px 0", display: "flex", flexDirection: "column" }}>
             
             {blocks.length === 0 && (
@@ -680,25 +1006,34 @@ export default function CaseEditor() {
                 return (
                   <div key={idx} style={{ display: "flex", flexDirection: "column", width: "100%" }}>
                     
-                    {/* Drag and Drop Horizontal Indicator Above */}
                     {showIndicatorAbove && (
                       <div style={{ height: "4px", background: "var(--accent)", borderRadius: "2px", margin: "12px 24px" }} />
                     )}
 
                     <div
+                      draggable={reorderMode}
+                      onDragStart={reorderMode ? e => handleDragStart(e, idx) : undefined}
+                      onDragEnd={reorderMode ? handleDragEnd : undefined}
                       onDragOver={e => handleDragOver(e, idx)}
                       onDrop={e => handleDrop(e, idx)}
-                      onClick={() => setSelected(idx)}
+                      onClick={() => !reorderMode && setSelected(idx)}
                       style={{
                         position: "relative",
-                        outline: isSel ? "2px solid rgba(0,255,204,0.5)" : "2px solid transparent",
-                        transition: "outline 0.15s",
-                        width: "100%",
-                        padding: isSel ? "12px 0" : "0",
+                        outline: isSel && !reorderMode ? "2px solid rgba(0,255,204,0.5)" : "2px solid transparent",
+                        border: reorderMode ? "2px dashed rgba(0,255,204,0.3)" : "2px solid transparent",
+                        backgroundColor: reorderMode ? (isSel ? "rgba(0,255,204,0.04)" : "rgba(255,255,255,0.02)") : "transparent",
+                        borderRadius: reorderMode ? "12px" : "0",
+                        marginTop: reorderMode ? "8px" : `${(block as any).marginTop ?? 0}px`,
+                        marginBottom: reorderMode ? "8px" : `${(block as any).marginBottom ?? 0}px`,
+                        marginLeft: reorderMode ? "24px" : "0",
+                        marginRight: reorderMode ? "24px" : "0",
+                        transition: "all 0.2s ease",
+                        width: reorderMode ? "calc(100% - 48px)" : "100%",
+                        padding: reorderMode ? "12px" : "0",
+                        cursor: reorderMode ? "grab" : "default",
                       }}
                     >
-                      {/* Block toolbar (appears when selected) */}
-                      {isSel && (
+                      {isSel && !reorderMode && (
                         <div style={{ position: "absolute", top: 12, right: 24, display: "flex", gap: 4, background: "var(--panel)", border: "1px solid var(--panel-border)", borderRadius: 8, padding: "4px 6px", zIndex: 100 }}>
                           <span
                             draggable={true}
@@ -717,21 +1052,64 @@ export default function CaseEditor() {
                         </div>
                       )}
 
-                      {/* ── TEXT block ── */}
                       {block.type === "text" && (
-                        <div style={{ maxWidth: 800, width: "100%", margin: "0 auto", padding: "40px 24px", boxSizing: "border-box" }}>
+                        <div style={{ maxWidth: 800, width: "100%", margin: "0 auto", padding: reorderMode ? "12px 24px" : "0 24px", boxSizing: "border-box" }}>
                           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                            <Editable tag="h2" value={editorLang === "am" ? block.title_am : block.title_en} onChange={v => upd(idx, { ...block, [editorLang === "am" ? "title_am" : "title_en"]: v })}
+                            <Editable tag="h2" disabled={reorderMode} value={editorLang === "am" ? block.title_am : block.title_en} onChange={v => upd(idx, { ...block, [editorLang === "am" ? "title_am" : "title_en"]: v })}
                               style={{ fontSize: "1.8rem", fontWeight: 800, color: "var(--text)", margin: 0 }} />
-                            <RichEditable value={editorLang === "am" ? block.content_am : block.content_en} onChange={v => upd(idx, { ...block, [editorLang === "am" ? "content_am" : "content_en"]: v })}
+                            <RichEditable disabled={reorderMode} value={editorLang === "am" ? block.content_am : block.content_en} onChange={v => upd(idx, { ...block, [editorLang === "am" ? "content_am" : "content_en"]: v })}
+                              onUpload={upload}
                               style={{ fontSize: "1.1rem", lineHeight: 1.8, color: "var(--text)", opacity: 0.85, margin: 0 }} />
                           </div>
                         </div>
                       )}
 
-                      {/* ── IMAGE block ── */}
                       {block.type === "image" && (
-                        <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", margin: "20px 0" }}>
+                        <div 
+                          onDragOver={e => {
+                            if (!reorderMode && e.dataTransfer.types.includes("Files")) {
+                              e.preventDefault();
+                              setFileDragOverBlockIdx(idx);
+                            }
+                          }}
+                          onDragLeave={() => setFileDragOverBlockIdx(null)}
+                          onDrop={async e => {
+                            setFileDragOverBlockIdx(null);
+                            if (!reorderMode && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                              e.preventDefault();
+                              const url = await upload(e.dataTransfer.files![0]);
+                              if (url) upd(idx, { ...block, image_url: url });
+                            }
+                          }}
+                          style={{ 
+                            width: "100%", 
+                            display: "flex", 
+                            flexDirection: "column", 
+                            alignItems: "center", 
+                            margin: "0",
+                            position: "relative",
+                            minHeight: reorderMode ? 60 : 100
+                          }}
+                        >
+                          {fileDragOverBlockIdx === idx && (
+                            <div style={{
+                              position: "absolute",
+                              inset: 0,
+                              background: "rgba(0, 255, 204, 0.12)",
+                              backdropFilter: "blur(3px)",
+                              border: "2px dashed var(--accent)",
+                              borderRadius: 12,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              zIndex: 10,
+                              color: "var(--accent)",
+                              fontWeight: "bold",
+                              fontSize: "1rem"
+                            }}>
+                              📥 Բաց թողեք նկարը այստեղ տեղադրելու համար (Drop image here)
+                            </div>
+                          )}
                           {block.image_url ? (
                             <div style={{ width: "100%", overflow: "hidden" }}>
                               <img src={block.image_url} alt="" style={{ width: "100%", display: "block" }} />
@@ -751,18 +1129,17 @@ export default function CaseEditor() {
                           )}
                           {((editorLang === "am" ? block.caption_am : block.caption_en) || isSel) && (
                             <div style={{ maxWidth: 800, width: "100%", margin: "12px auto 0", padding: "0 24px", boxSizing: "border-box", textAlign: "center" }}>
-                              <Editable tag="span" value={(editorLang === "am" ? block.caption_am : block.caption_en) || "Ավելացնել նկարագրություն..."} onChange={v => upd(idx, { ...block, [editorLang === "am" ? "caption_am" : "caption_en"]: v })}
+                              <Editable tag="span" disabled={reorderMode} value={(editorLang === "am" ? block.caption_am : block.caption_en) || "Ավելացնել նկարագրություն..."} onChange={v => upd(idx, { ...block, [editorLang === "am" ? "caption_am" : "caption_en"]: v })}
                                 style={{ fontSize: "0.85rem", color: "var(--muted)", fontStyle: "italic" }} />
                             </div>
                           )}
                         </div>
                       )}
 
-                      {/* ── EMBED block ── */}
                       {block.type === "embed" && (
-                        <div style={{ width: "100%", margin: "20px 0" }}>
+                        <div style={{ width: "100%", margin: "0" }}>
                           {block.embed_url ? (
-                            <div style={{ width: "100%", aspectRatio: "16/9", overflow: "hidden" }}>
+                            <div style={{ width: "100%", aspectRatio: reorderMode ? "21/5" : "16/9", overflow: "hidden" }}>
                               <iframe src={block.embed_url.includes("youtu") ? `https://www.youtube.com/embed/${block.embed_url.split("v=")[1]?.split("&")[0] || block.embed_url.split("youtu.be/")[1]}` : block.embed_url}
                                 style={{ width: "100%", height: "100%", border: "none" }} allowFullScreen />
                             </div>
@@ -776,9 +1153,8 @@ export default function CaseEditor() {
                         </div>
                       )}
 
-                      {/* ── COLOR PALETTE block ── */}
                       {block.type === "color_palette" && (
-                        <div style={{ maxWidth: 800, width: "100%", margin: "0 auto", padding: "40px 24px", boxSizing: "border-box" }}>
+                        <div style={{ maxWidth: 800, width: "100%", margin: "0 auto", padding: reorderMode ? "12px 24px" : "0 24px", boxSizing: "border-box" }}>
                           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                             <h4 style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--text)", margin: 0 }}>Բրենդի Գունապնակ</h4>
                             <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
@@ -793,9 +1169,8 @@ export default function CaseEditor() {
                         </div>
                       )}
 
-                      {/* ── TYPOGRAPHY SHOWCASE block ── */}
                       {block.type === "typography_showcase" && (
-                        <div style={{ maxWidth: 800, width: "100%", margin: "0 auto", padding: "40px 24px", boxSizing: "border-box" }}>
+                        <div style={{ maxWidth: 800, width: "100%", margin: "0 auto", padding: reorderMode ? "12px 24px" : "0 24px", boxSizing: "border-box" }}>
                           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                             <h4 style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--text)", margin: 0 }}>Տառատեսակներ</h4>
                             {block.fonts.map((f, fi) => (
@@ -819,6 +1194,7 @@ export default function CaseEditor() {
                 );
               })}
             </div>
+          </div>
           </div>
         </div>
 
@@ -1069,6 +1445,45 @@ export default function CaseEditor() {
                 <Field label="Տառատեսակ (Outfit, Inter)" value={block.fonts.join(", ")} onChange={v => upd(selected, { ...block, fonts: v.split(",").map(s => s.trim()) })} />
                 <Field label="Ցուցադրման Տեքստ" value={block.previewText} onChange={v => upd(selected, { ...block, previewText: v })} />
               </>)}
+
+              {/* Spacing Settings */}
+              <div style={{ borderTop: "1px solid var(--panel-border)", paddingTop: 12, marginTop: 4, display: "flex", flexDirection: "column", gap: 10 }}>
+                <span style={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  {editorLang === "am" ? "Տարածություններ (Margins)" : "Spacing (Margins)"}
+                </span>
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "0.72rem", color: "var(--muted)" }}>
+                      {editorLang === "am" ? "Վերևի տարածություն (Margin Top)" : "Margin Top"}
+                    </span>
+                    <span style={{ fontSize: "0.72rem", fontWeight: "bold", color: "var(--text)" }}>{(block as any).marginTop ?? 0}px</span>
+                  </div>
+                  <hd-slider 
+                    min="0" 
+                    max="200" 
+                    value={((block as any).marginTop ?? 0).toString()} 
+                    onInput={(e: any) => upd(selected, { ...block, marginTop: parseInt(e.target.value) || 0 })} 
+                    data-width="100%" 
+                  />
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "0.72rem", color: "var(--muted)" }}>
+                      {editorLang === "am" ? "Ներքևի տարածություն (Margin Bottom)" : "Margin Bottom"}
+                    </span>
+                    <span style={{ fontSize: "0.72rem", fontWeight: "bold", color: "var(--text)" }}>{(block as any).marginBottom ?? 0}px</span>
+                  </div>
+                  <hd-slider 
+                    min="0" 
+                    max="200" 
+                    value={((block as any).marginBottom ?? 0).toString()} 
+                    onInput={(e: any) => upd(selected, { ...block, marginBottom: parseInt(e.target.value) || 0 })} 
+                    data-width="100%" 
+                  />
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -1240,7 +1655,7 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
       <span style={{ fontSize: "0.78rem", color: "var(--muted)" }}>{label}</span>
-      <hd-switch checked={checked} onChange={(e: any) => onChange(e.target.checked)} />
+      <hd-switch checked={checked} data-thickness="4px" onChange={(e: any) => onChange(e.target.checked)} />
     </div>
   );
 }

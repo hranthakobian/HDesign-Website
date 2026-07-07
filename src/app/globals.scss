@@ -4,7 +4,14 @@
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
+  unicode-range: U+0000-001F, U+0021-009F, U+00A1-10FFFF; /* Excludes space (U+0020) and non-breaking space (U+00A0) */
 }
+
+.preview-font-container, .preview-font-container * {
+  font-family: inherit !important;
+  word-spacing: -7 !important;
+}
+
 
 html[data-custom-cursor="true"] {
   &, body {
@@ -264,7 +271,7 @@ p {
 
 body, h1, h2, h3, h4, h5, h6, p, a, span, li, label, input, button, select, textarea,
 hd-input, hd-textarea, hd-button, hd-select {
-  font-family: 'HDesign', sans-serif !important;
+  font-family: 'HDesign', sans-serif;
   text-rendering: optimizeLegibility;
   font-kerning: normal;
 }
@@ -1980,12 +1987,15 @@ body {
    MOBILE RESPONSIVENESS & HAMBURGER SYSTEM
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* Hamburger Button with 4 lines */
-.hamburger-btn {
+/* Hamburger Wrapper & Button with 4 lines */
+.hamburger-wrapper {
   display: none;
+}
+
+.hamburger-btn {
   position: relative;
-  width: 32px;
-  height: 24px;
+  width: 24px;
+  height: 26px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -1996,40 +2006,57 @@ body {
   span {
     display: block;
     position: absolute;
-    height: 2px;
-    width: 100%;
+    height: 3px;
     background: var(--text);
     border-radius: 2px;
     opacity: 1;
-    left: 0;
-    transform: rotate(0deg);
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     
-    &:nth-child(1) { top: 0px; }
-    &:nth-child(2) { top: 7px; }
-    &:nth-child(3) { top: 14px; }
-    &:nth-child(4) { top: 21px; }
+    &:nth-child(1) {
+      top: 1px;
+      left: 3px;
+      width: 100%;
+    }
+    &:nth-child(2) {
+      top: 7px;
+      left: -1px;
+      width: 100%;
+    }
+    &:nth-child(3) {
+      top: 16px;
+      left: 6px;
+      width: 100%;
+    }
+    &:nth-child(4) {
+      top: 22px;
+      left: 3px;
+      width: 100%;
+    }
   }
   
   &.open span {
     &:nth-child(1) {
-      top: 10px;
+      top: 11px;
       width: 0%;
       left: 50%;
       opacity: 0;
     }
     &:nth-child(2) {
-      top: 10px;
+      top: 11px;
+      left: 0;
+      width: 100%;
       transform: rotate(45deg);
       background: var(--accent, #00C49F);
     }
     &:nth-child(3) {
-      top: 10px;
+      top: 11px;
+      left: 0;
+      width: 100%;
       transform: rotate(-45deg);
       background: var(--accent, #00C49F);
     }
     &:nth-child(4) {
-      top: 10px;
+      top: 11px;
       width: 0%;
       left: 50%;
       opacity: 0;
@@ -2198,56 +2225,248 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     }
   }
 }
+@media (max-width: 1500px) {
+  body {
+    padding-top: 76px !important;
+    padding-bottom: 76px !important; /* give extra space for floating bottom docks */
+  }
 
-/* Media Query Adaptations for Public Pages */
+  .portfolio-header-wrapper {
+    position: fixed !important;
+    bottom: 20px !important;
+    top: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 auto !important;
+    transform: none !important;
+    z-index: 1000 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 12px !important;
+    width: fit-content !important;
+    max-width: calc(100% - 32px) !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* Completely disable all desktop/scrolled pseudo-element layers to force capsule transparency and blur */
+  .portfolio-logo-panel::before,
+  .portfolio-header::before,
+  .portfolio-header-controls::before,
+  .portfolio-header-wrapper.scrolled .portfolio-logo-panel::before,
+  .portfolio-header-wrapper.scrolled .portfolio-header::before,
+  .portfolio-header-wrapper.scrolled .portfolio-header-controls::before {
+    display: none !important;
+    content: none !important;
+  }
+
+  /* Floating Bottom center capsules */
+  .portfolio-logo-panel {
+    position: static !important;
+    transform: none !important;
+    pointer-events: auto !important;
+    height: 64px !important;
+    padding: 0 30px !important;
+    border-radius: 32px !important;
+    border: 1px solid var(--panel-border) !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    z-index: 1000 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15) !important;
+    text-decoration: none !important;
+    color: var(--text) !important;
+    transition: all 0.3s ease !important;
+
+    &::before {
+      display: none !important;
+    }
+  }
+
+  .portfolio-header-controls {
+    position: static !important;
+    transform: none !important;
+    pointer-events: auto !important;
+    height: 64px !important;
+    padding: 0 30px !important;
+    border-radius: 32px !important;
+    border: 1px solid var(--panel-border) !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    z-index: 1000 !important;
+    display: flex !important;
+    align-items: center !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15) !important;
+    transition: all 0.3s ease !important;
+
+    &::before {
+      display: none !important;
+    }
+
+    #langSelectorDesktop {
+      --width: 90px !important;
+      width: 90px !important;
+      height: 30px !important;
+    }
+
+    .desktop-theme-select-wrapper {
+      display: block !important;
+      width: 90px !important;
+      
+      hd-select {
+        --width: 90px !important;
+        width: 90px !important;
+        height: 30px !important;
+      }
+    }
+  }
+
+  /* Fixed Navigation Header at the top center */
+  .portfolio-header {
+    position: fixed !important;
+    top: 20px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    pointer-events: auto !important;
+    height: 64px !important;
+    width: auto !important;
+    max-width: fit-content !important;
+    padding: 0 42px !important;
+    border-radius: 32px !important;
+    border: 1px solid var(--panel-border) !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    z-index: 1000 !important;
+    display: flex !important;
+    align-items: center !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1) !important;
+    
+    &::before {
+      display: none !important;
+    }
+  }
+
+  .portfolio-nav {
+    gap: 12px !important;
+    background: transparent !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+  }
+  
+  .portfolio-nav-item {
+    padding: 4px 6px !important;
+  }
+
+  /* Theme overrides for floating bottom docks to look extra premium */
+  html[data-theme="dark"] & {
+    .portfolio-logo-panel, .portfolio-header-controls, .portfolio-header {
+      background: rgba(15, 23, 42, 0.65) !important;
+    }
+  }
+  html[data-theme="green"] & {
+    .portfolio-logo-panel, .portfolio-header-controls, .portfolio-header {
+      background: rgba(11, 74, 65, 0.65) !important;
+    }
+  }
+  html[data-theme="custom"] & {
+    .portfolio-logo-panel, .portfolio-header-controls, .portfolio-header {
+      background: var(--dropdown-bg) !important;
+      opacity: 0.85 !important;
+    }
+  }
+}
+
+/* Media Query Adaptations for Mobile/Phone Pages */
 @media (max-width: 768px) {
+  .hamburger-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    cursor: pointer !important;
+    z-index: 1005 !important;
+  }
+
+  .hamburger-text {
+    display: inline-block !important;
+    font-size: 0.95rem !important;
+    font-weight: 500 !important;
+    color: var(--text) !important;
+    user-select: none !important;
+  }
+
   .hamburger-btn {
-    display: block; /* Show hamburger menu on mobile */
+    display: block !important; /* Show hamburger menu on mobile */
   }
 
   .portfolio-nav {
     display: none !important; /* Hide standard desktop navigation links */
   }
-  
-  .portfolio-logo-panel {
-    height: 70px !important;
-    padding: 0 18px 0 30px !important;
-  }
 
+  /* Floating top-right hamburger pill capsule on mobile phone */
   .portfolio-header {
-    height: 70px !important;
-    padding: 0 30px 0 18px !important;
-    flex: 0 1 auto;
-    width: auto;
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    left: auto !important;
+    transform: none !important;
+    pointer-events: auto !important;
+    width: auto !important;
+    height: 64px !important;
+    padding: 0 20px !important;
+    border-radius: 32px !important;
+    border: 1px solid var(--panel-border) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15) !important;
   }
 
-  .portfolio-header-wrapper.scrolled {
-    padding: 10px 12px !important;
-    gap: 8px;
+  .portfolio-logo-panel {
+    padding: 0 16px !important;
+    transform: none !important;
+    left: auto !important;
+    right: auto !important;
+    position: static !important;
     
-    .portfolio-logo-panel {
-      height: 60px !important;
-      padding: 0 24px !important;
-      border-radius: 20px !important;
-      box-shadow: 0 10px 40px rgba(8, 63, 57, 0.08);
-
-      &::before {
-        border-radius: 20px !important;
-      }
-    }
-
-    .portfolio-header {
-      height: 60px !important;
-      padding: 0 24px !important;
-      border-radius: 20px !important;
-      box-shadow: 0 10px 40px rgba(8, 63, 57, 0.08);
-
-      &::before {
-        border-radius: 20px !important;
-      }
+    .logo-text {
+      display: none !important; /* show only icon mark to fit */
     }
   }
 
+  /* Mobile Drawer settings hide redundant lang select since it's already in the bottom controls capsule */
+  #langSelectorMobile {
+    display: none !important;
+  }
+
+  /* Normal top-down slide mobile drawer */
+  .mobile-menu-drawer {
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100vh !important;
+    transform: translateY(-20px) !important;
+    padding: 100px 32px 40px !important;
+    border-bottom: 1px solid rgba(8, 63, 57, 0.08) !important;
+    
+    &.open {
+      transform: translateY(0) !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+  }
+}
+
+@media (max-width: 768px) {
   /* Legacy fixed panel on mobile (for /pattern etc.) */
   .legacy-header-panel {
     position: static !important;
@@ -2560,6 +2779,165 @@ html.preloader-active body {
     opacity: 1;
   }
 }
+
+/* Globally scale down custom toggle switches and checkboxes about 1.7 times */
+hd-switch, hd-checkbox {
+  zoom: 0.588 !important;
+}
+
+/* Global Responsive Overrides */
+@media (max-width: 768px) {
+  .about-section-shell-width {
+    padding: 30px 16px !important;
+  }
+  .unsubscribe-card {
+    padding: 24px 16px !important;
+  }
+  .branding-card-overlay {
+    padding: 20px !important;
+  }
+  .branding-card-overlay .icon-Chevrolt-Arrow-Left {
+    top: 20px !important;
+    right: 20px !important;
+    padding: 8px !important;
+    font-size: 1rem !important;
+  }
+  .lightbox-root {
+    padding: 16px 12px 12px 12px !important;
+  }
+  .lightbox-top-bar {
+    flex-direction: column !important;
+    height: auto !important;
+    gap: 8px !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+  .lightbox-top-actions {
+    gap: 8px !important;
+  }
+  .lightbox-viewport {
+    max-width: 92% !important;
+    max-height: calc(100vh - 280px) !important;
+    padding: 12px !important;
+  }
+  .lightbox-viewport img {
+    max-height: calc(100vh - 320px) !important;
+  }
+  .lightbox-arrow {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 0.95rem !important;
+    z-index: 30 !important;
+  }
+  .prev-arrow {
+    left: 8px !important;
+  }
+  .next-arrow {
+    right: 8px !important;
+  }
+  .lightbox-bottom-panel p {
+    font-size: 0.78rem !important;
+    max-width: 90% !important;
+    padding: 0 10px !important;
+  }
+  .lightbox-thumbnails {
+    gap: 6px !important;
+  }
+  .lightbox-thumbnails > div {
+    width: 50px !important;
+    height: 38px !important;
+  }
+  .works-detail-hero-header {
+    height: auto !important;
+    min-height: 380px !important;
+    padding-top: 80px !important;
+  }
+  .works-detail-hero-title-container {
+    padding-bottom: 24px !important;
+    align-items: flex-start !important;
+  }
+}
+
+/* Adaptive Responsive Header */
+.show-on-tablet-only {
+  display: none !important;
+}
+
+@media (min-width: 768.1px) and (max-width: 1150px) {
+  .hide-on-tablet {
+    display: none !important;
+  }
+  .show-on-tablet-only {
+    display: flex !important;
+  }
+}
+
+/* More Dropdown menu customized styling */
+.more-dropdown-menu {
+  min-width: 210px !important;
+  padding: 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  text-align: left;
+}
+
+.more-dropdown-sub-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.more-dropdown-sub-group-title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+  padding-left: 8px;
+  display: block;
+}
+
+.more-dropdown-divider {
+  height: 1px;
+  background: var(--panel-border);
+  margin: 6px 8px;
+  width: auto;
+}
+
+/* Mobile Settings Stick-to-Bottom Override */
+.mobile-nav-links {
+  min-height: calc(100vh - 140px);
+}
+
+.mobile-settings-container {
+  margin-top: auto !important;
+  padding-top: 24px;
+  border-top: 1px solid var(--panel-border);
+}
+
+/* Tablet Specific Header Compact Overrides (768px to 1150px) */
+@media (min-width: 768.1px) and (max-width: 1150px) {
+  .portfolio-logo-panel {
+    padding: 0 16px 0 24px !important;
+  }
+  .portfolio-header-controls {
+    padding: 0 24px 0 16px !important;
+    gap: 8px !important;
+  }
+  .desktop-theme-select-wrapper {
+    display: none !important;
+  }
+  .portfolio-nav {
+    gap: 12px !important;
+  }
+  .portfolio-nav-item {
+    padding: 4px 6px !important;
+  }
+}
+
 
 
 

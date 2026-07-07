@@ -795,7 +795,7 @@ function applySwitchAttributes(wrapper) {
   const inactiveColor = wrapper.getAttribute('data-inactive-color');
   setVar('--inactive-color', inactiveColor);
 
-  const thickness = wrapper.getAttribute('data-thickness') || wrapper.getAttribute('data-line-thickness');
+  const thickness = wrapper.getAttribute('data-thickness') || wrapper.getAttribute('data-line-thickness') || '4px';
   setVar('--line-thickness', thickness);
 
   const width = wrapper.getAttribute('data-width') || wrapper.getAttribute('data-switch-width');
@@ -1275,6 +1275,10 @@ class HdSwitch extends HTMLElement {
     const labelText = this.innerHTML;
 
     this.classList.add('custom-switch-wrapper');
+
+    if (!this.hasAttribute('data-thickness') && !this.hasAttribute('data-line-thickness')) {
+      this.setAttribute('data-thickness', '4px');
+    }
 
     const textOn = this.getAttribute('data-text-on') || '';
     const textOff = this.getAttribute('data-text-off') || '';

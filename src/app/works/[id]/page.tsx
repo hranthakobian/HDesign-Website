@@ -176,6 +176,7 @@ export default function BrandingDetailPage() {
 
       {/* Huge Case Hero Header */}
       <div 
+        className="works-detail-hero-header"
         style={{
           width: "100%",
           height: `${hero.height}vh`,
@@ -214,7 +215,7 @@ export default function BrandingDetailPage() {
 
         {/* Hero Title Container */}
         <div 
-          className="shell" 
+          className="shell works-detail-hero-title-container" 
           style={{ 
             position: "relative", 
             zIndex: 10, 
@@ -289,9 +290,12 @@ export default function BrandingDetailPage() {
       {/* Single-Column stack (Images/Videos occupy 100% width, other specs centered) */}
       <div style={{ width: "100%", padding: "40px 0", display: "flex", flexDirection: "column" }}>
         {blocks.map((block, idx) => {
+          const mt = (block as any).marginTop ?? 0;
+          const mb = (block as any).marginBottom ?? 0;
+
           if (block.type === "text") {
             return (
-              <div key={idx} style={{ width: "100%", padding: "48px 24px", boxSizing: "border-box" }}>
+              <div key={idx} style={{ width: "100%", marginTop: mt, marginBottom: mb, padding: "0 24px", boxSizing: "border-box" }}>
                 <div style={{ maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "16px" }}>
                   {(lang === 'en' ? block.title_en : block.title_am) && (
                     <h2 style={{ fontSize: "2rem", fontWeight: "900", color: "var(--text)", margin: 0 }}>
@@ -309,7 +313,7 @@ export default function BrandingDetailPage() {
 
           if (block.type === "image" && block.image_url) {
             return (
-              <div key={idx} style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", margin: "20px 0" }}>
+              <div key={idx} style={{ width: "100%", marginTop: mt, marginBottom: mb, display: "flex", flexDirection: "column", alignItems: "center" }}>
                 <div style={{ width: "100%", overflow: "hidden" }}>
                   <img src={block.image_url} alt="Project spec" style={{ width: "100%", height: "auto", display: "block" }} />
                 </div>
@@ -332,7 +336,7 @@ export default function BrandingDetailPage() {
               src = `https://www.youtube.com/embed/${src.split("youtu.be/")[1]}`;
             }
             return (
-              <div key={idx} style={{ width: "100%", aspectRatio: "16/9", overflow: "hidden", margin: "20px 0" }}>
+              <div key={idx} style={{ width: "100%", marginTop: mt, marginBottom: mb, aspectRatio: "16/9", overflow: "hidden" }}>
                 <iframe src={src} style={{ width: "100%", height: "100%", border: "none" }} allowFullScreen />
               </div>
             );
@@ -340,7 +344,7 @@ export default function BrandingDetailPage() {
 
           if (block.type === "color_palette" && block.colors) {
             return (
-              <div key={idx} style={{ width: "100%", padding: "48px 24px", boxSizing: "border-box" }}>
+              <div key={idx} style={{ width: "100%", marginTop: mt, marginBottom: mb, padding: "0 24px", boxSizing: "border-box" }}>
                 <div style={{ maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "24px" }}>
                   <h3 style={{ fontSize: "1.3rem", fontWeight: "800", color: "var(--text)", margin: 0 }}>Բրենդի Գունապնակ</h3>
                   <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
@@ -358,7 +362,7 @@ export default function BrandingDetailPage() {
 
           if (block.type === "typography_showcase" && block.fonts) {
             return (
-              <div key={idx} style={{ width: "100%", padding: "48px 24px", boxSizing: "border-box" }}>
+              <div key={idx} style={{ width: "100%", marginTop: mt, marginBottom: mb, padding: "0 24px", boxSizing: "border-box" }}>
                 <div style={{ maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "24px" }}>
                   <h3 style={{ fontSize: "1.3rem", fontWeight: "800", color: "var(--text)", margin: 0 }}>Տառատեսակներ</h3>
                   <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>

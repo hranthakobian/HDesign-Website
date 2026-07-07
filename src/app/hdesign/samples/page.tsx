@@ -181,7 +181,7 @@ export default function HDesignSamplesPage() {
         return `<hd-radio\n  name="group"\n  ${radioState ? "checked " : ""}${isDisabled ? "disabled " : ""}${radSizeAttr}${colorAttr}\n/>`;
       case "hd-switch":
         const swSizeAttr = switchSize ? ` data-size="${switchSize}"` : "";
-        return `<hd-switch\n  ${switchState ? "checked " : ""}${isDisabled ? "disabled " : ""}${swSizeAttr}${colorAttr}\n/>`;
+        return `<hd-switch\n  ${switchState ? "checked " : ""}${isDisabled ? "disabled " : ""}${swSizeAttr}${colorAttr} data-thickness="4px"\n/>`;
       case "hd-select":
         const selectSpans = selectOptions.split(",").map((opt, i) => {
           const val = `option${i+1}`;
@@ -610,7 +610,7 @@ export default function HDesignSamplesPage() {
             <hd-scrollbar style={{ flex: 1, overflow: "auto", overscrollBehavior: "contain", background: "#121817" }}>
               <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "2px" }}>
                 {highlightSamplesHTML(generateCode()).split("\n").map((line, idx) => (
-                  <div key={idx} style={{ display: "flex", alignItems: "start", fontFamily: "Consolas, monospace", fontSize: "0.82rem", lineHeight: "1.5" }}>
+                  <div key={idx} style={{ display: "flex", alignItems: "start", fontFamily: "Consolas, monospace !important", fontSize: "0.82rem", lineHeight: "1.5" }}>
                     <span style={{
                       width: "24px",
                       textAlign: "right",
@@ -627,7 +627,7 @@ export default function HDesignSamplesPage() {
                         minWidth: 0,
                         whiteSpace: "pre-wrap",
                         wordBreak: "break-word",
-                        fontFamily: "Consolas, monospace",
+                        fontFamily: "Consolas, monospace !important",
                         color: "#e6edf3"
                       }}
                       dangerouslySetInnerHTML={{ __html: line || " " }}
@@ -637,7 +637,6 @@ export default function HDesignSamplesPage() {
               </div>
             </hd-scrollbar>
           </div>
-
         </div>
 
         {/* Column 3: Component Customizer Sidebar */}
@@ -1230,7 +1229,7 @@ export default function HDesignSamplesPage() {
                   <span style={{ fontWeight: "600", fontSize: "0.95rem" }}>Ծանուցումներ</span>
                   <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>Ստանալ ծանուցումներ էլ. փոստով</span>
                 </div>
-                <hd-switch checked data-size="18px" />
+                <hd-switch checked data-size="18px" data-thickness="4px" />
               </div>
               
               <hr style={{ border: "none", borderTop: "1px solid var(--panel-border)", margin: 0 }} />

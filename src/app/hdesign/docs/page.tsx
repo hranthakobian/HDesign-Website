@@ -161,6 +161,7 @@ data-font-size="14pt" />`}
           code={`<hd-switch 
   checked 
   data-size="20px"
+  data-thickness="4px"
 />`}
         />
 

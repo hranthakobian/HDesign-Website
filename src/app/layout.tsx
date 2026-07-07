@@ -49,6 +49,8 @@ function extractTidioWidgetId(input: string): string {
   return trimmed;
 }
 
+import { headers } from "next/headers";
+
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   const personalization = await getSiteSetting('personalization_settings', {});
   const themeHue = personalization.theme_hue || "172";
@@ -62,8 +64,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     custom_footer_script: ''
   });
 
+  const headersList = await headers();
+  const host = headersList.get('host') || '';
+  const isLocalhost = host.startsWith('localhost') || host.startsWith('127.0.0.1') || host.endsWith('.local');
+
   const generalSettings = await getSiteSetting('general_settings', { upcoming_mode: false });
-  const upcomingMode = !!generalSettings?.upcoming_mode;
+  const upcomingMode = isLocalhost ? false : !!generalSettings?.upcoming_mode;
 
   return (
     <html lang="en" data-theme="light" data-color="#083f39" style={{ "--hue": themeHue } as any}>

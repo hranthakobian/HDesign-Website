@@ -438,6 +438,7 @@ function WorksContent() {
       {/* ══ DYNAMIC GALLERY LIGHTBOX SLIDER ══ */}
       {selectedGalleryIndex !== null && typeof window !== "undefined" && createPortal(
         <div 
+          className="lightbox-root"
           onClick={() => { setSelectedGalleryIndex(null); setIsSlideshowPlaying(false); }}
           style={{
             position: "fixed",
@@ -455,6 +456,7 @@ function WorksContent() {
         >
           {/* Top Bar / Header */}
           <div 
+            className="lightbox-top-bar"
             onClick={(e) => e.stopPropagation()} 
             style={{
               display: "flex",
@@ -476,7 +478,7 @@ function WorksContent() {
             </div>
 
             {/* Actions */}
-            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <div className="lightbox-top-actions" style={{ display: "flex", alignItems: "center", gap: "16px" }}>
               {/* Slideshow Button */}
               <button
                 onClick={() => setIsSlideshowPlaying(prev => !prev)}
@@ -537,6 +539,7 @@ function WorksContent() {
           >
             {/* Prev Arrow */}
             <div 
+              className="lightbox-arrow prev-arrow"
               onClick={(e) => { 
                 e.stopPropagation(); 
                 setSelectedGalleryIndex(prev => (prev !== null ? (prev - 1 + filteredCases.length) % filteredCases.length : null)); 
@@ -566,6 +569,7 @@ function WorksContent() {
 
             {/* Central Viewport */}
             <div 
+              className="lightbox-viewport"
               onClick={(e) => e.stopPropagation()} 
               style={{ 
                 maxWidth: "80%", 
@@ -601,6 +605,7 @@ function WorksContent() {
 
             {/* Next Arrow */}
             <div 
+              className="lightbox-arrow next-arrow"
               onClick={(e) => { 
                 e.stopPropagation(); 
                 setSelectedGalleryIndex(prev => (prev !== null ? (prev + 1) % filteredCases.length : null)); 
@@ -631,6 +636,7 @@ function WorksContent() {
 
           {/* Bottom Panel (Thumbnail strip & info) */}
           <div 
+            className="lightbox-bottom-panel"
             onClick={(e) => e.stopPropagation()} 
             style={{
               display: "flex",
@@ -648,6 +654,7 @@ function WorksContent() {
 
             {/* Thumbnails strip */}
             <div 
+              className="lightbox-thumbnails"
               style={{
                 display: "flex",
                 gap: "10px",

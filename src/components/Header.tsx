@@ -303,7 +303,7 @@ export default function Header() {
             </Link>
 
             {/* HDesign Dropdown as a regular link with dropdown list */}
-            <div className="header-dropdown-container">
+            <div className="header-dropdown-container hide-on-tablet">
                <Link href="/hdesign" className={`portfolio-nav-item header-dropdown-trigger ${activeNav === "hdesign" ? "active" : ""}`} style={{ cursor: "pointer", userSelect: "none" }}>
                  {renderNavLinkText("hdesign", "HDesign", true)}
                </Link>
@@ -321,22 +321,58 @@ export default function Header() {
               </div>
             </div>
 
-            <Link href="/contact" className={`portfolio-nav-item ${activeNav === "contact" ? "active" : ""}`}>
+            <Link href="/contact" className={`portfolio-nav-item hide-on-tablet ${activeNav === "contact" ? "active" : ""}`}>
               {renderNavLinkText("contact", "Կապ")}
             </Link>
+
+            {/* Ավելին Dropdown (Visible on Tablet/Medium viewports only) */}
+            <div className="header-dropdown-container show-on-tablet-only">
+               <span className="portfolio-nav-item header-dropdown-trigger" style={{ cursor: "pointer", userSelect: "none" }}>
+                 {renderNavLinkText("more", locale === "en" ? "More" : "Ավելին", true)}
+               </span>
+               <div className="header-dropdown-menu more-dropdown-menu">
+                 <div className="dropdown-menu-bg" />
+                 
+                 {/* HDesign sub-group */}
+                 <div className="more-dropdown-sub-group">
+                   <span className="more-dropdown-sub-group-title">HDesign</span>
+                   <Link href="/hdesign" className={`header-dropdown-item ${pathname === "/hdesign" ? "active" : ""}`}>
+                     {renderNavLinkText("hdesign-general-more", locale === "en" ? "General" : "Ընդհանուր")}
+                   </Link>
+                   <Link href="/hdesign/docs" className={`header-dropdown-item ${pathname === "/hdesign/docs" ? "active" : ""}`}>
+                     {renderNavLinkText("hdesign-docs-more", locale === "en" ? "Docs" : "Փաստաթղթեր")}
+                   </Link>
+                   <Link href="/hdesign/samples" className={`header-dropdown-item ${pathname === "/hdesign/samples" ? "active" : ""}`}>
+                     {renderNavLinkText("hdesign-samples-more", locale === "en" ? "Samples" : "Փորձանմուշներ")}
+                   </Link>
+                 </div>
+                 
+                 <div className="more-dropdown-divider" />
+                 
+                 {/* Contact link */}
+                 <Link href="/contact" className={`header-dropdown-item ${pathname === "/contact" ? "active" : ""}`}>
+                   {renderNavLinkText("contact-more", locale === "en" ? "Contact" : "Կապ")}
+                 </Link>
+               </div>
+            </div>
           </nav>
 
-          {/* 4-Line Hamburger Button */}
+          {/* 4-Line Hamburger Button & Label */}
           <div 
-            className={`hamburger-btn ${isMobileMenuOpen ? "open" : ""}`} 
+            className="hamburger-wrapper"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label="Toggle navigation menu"
             style={{ cursor: 'pointer' }}
           >
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
+            <span className="hamburger-text">Ցանկ</span>
+            <div 
+              className={`hamburger-btn ${isMobileMenuOpen ? "open" : ""}`} 
+              aria-label="Toggle navigation menu"
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
           </div>
         </header>
 
@@ -354,7 +390,7 @@ export default function Header() {
             <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
           </hd-segment>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="desktop-theme-select-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <hd-select
               id="themeSelectorDesktop"
               value={theme}

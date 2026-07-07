@@ -55,10 +55,166 @@ const iconsList = [
 ];
 
 // Character sets for HDesign glyph map
-const CHARS_AM = "ԱԲԳԴԵԶԷԸԹԺԻԼԽԾԿՀՁՂՃՄՅՆՇՈՉՊՋՌՍՎՏՐՑՈՒՓՔԵՎՕՖաբգդեզէըթժիլխծկհձղճմյնշոչպջռսվտրցուփքևօֆ".split("");
+const CHARS_AM = "ԱաԲբԳգԴդԵեԶզԷէԸըԹթԺժԻիԼլԽխԾծԿկՀհՁձՂղՃճՄմՅյՆնՇշՈոՉչՊպՋջՌռՍսՎվՏտՐրՑցՒւՓփՔքՕօՖֆև՛՜՝՞։֊՚՟ՙ֍֎֏ՠֈﬓﬔﬕﬖﬗ".split("");
 const CHARS_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".split("");
 const CHARS_NUM = "0123456789".split("");
 const CHARS_SYM = "!@#$%^&*()_+-=[]{};:'\",./<>?".split("");
+
+function getCharacterName(c: string): string {
+  const code = c.charCodeAt(0);
+  
+  // English letters
+  if (code >= 65 && code <= 90) return `Latin Capital Letter ${c}`;
+  if (code >= 97 && code <= 122) return `Latin Small Letter ${c}`;
+  
+  // Numbers
+  if (code >= 48 && code <= 57) return `Digit ${c}`;
+  
+  // Armenian letters
+  const armenianNames: Record<number, string> = {
+    0x0531: "Armenian Capital Letter Ayb (Ա)",
+    0x0561: "Armenian Small Letter Ayb (ա)",
+    0x0532: "Armenian Capital Letter Ben (Բ)",
+    0x0562: "Armenian Small Letter Ben (բ)",
+    0x0533: "Armenian Capital Letter Gim (Գ)",
+    0x0563: "Armenian Small Letter Gim (գ)",
+    0x0534: "Armenian Capital Letter Da (Դ)",
+    0x0564: "Armenian Small Letter Da (դ)",
+    0x0535: "Armenian Capital Letter Ech (Ե)",
+    0x0565: "Armenian Small Letter Ech (ե)",
+    0x0536: "Armenian Capital Letter Za (Զ)",
+    0x0566: "Armenian Small Letter Za (զ)",
+    0x0537: "Armenian Capital Letter Eh (Է)",
+    0x0567: "Armenian Small Letter Eh (է)",
+    0x0538: "Armenian Capital Letter Et (Ը)",
+    0x0568: "Armenian Small Letter Et (ը)",
+    0x0539: "Armenian Capital Letter To (Թ)",
+    0x0569: "Armenian Small Letter To (թ)",
+    0x053A: "Armenian Capital Letter Zhe (Ժ)",
+    0x056A: "Armenian Small Letter Zhe (ժ)",
+    0x053B: "Armenian Capital Letter Ini (Ի)",
+    0x056B: "Armenian Small Letter Ini (ի)",
+    0x053C: "Armenian Capital Letter Liun (Լ)",
+    0x056C: "Armenian Small Letter Liun (լ)",
+    0x053D: "Armenian Capital Letter Khe (Խ)",
+    0x056D: "Armenian Small Letter Khe (խ)",
+    0x053E: "Armenian Capital Letter Tsa (Ծ)",
+    0x056E: "Armenian Small Letter Tsa (ծ)",
+    0x053F: "Armenian Capital Letter Ken (Կ)",
+    0x056F: "Armenian Small Letter Ken (կ)",
+    0x0540: "Armenian Capital Letter Ho (Հ)",
+    0x0570: "Armenian Small Letter Ho (հ)",
+    0x0541: "Armenian Capital Letter Dzha (Ձ)",
+    0x0571: "Armenian Small Letter Dzha (ձ)",
+    0x0542: "Armenian Capital Letter Ghad (Ղ)",
+    0x0572: "Armenian Small Letter Ghad (ղ)",
+    0x0543: "Armenian Capital Letter Tche (Ճ)",
+    0x0573: "Armenian Small Letter Tche (ճ)",
+    0x0544: "Armenian Capital Letter Men (Մ)",
+    0x0574: "Armenian Small Letter Men (մ)",
+    0x0545: "Armenian Capital Letter Yi (Յ)",
+    0x0575: "Armenian Small Letter Yi (յ)",
+    0x0546: "Armenian Capital Letter Nu (Ն)",
+    0x0576: "Armenian Small Letter Nu (ն)",
+    0x0547: "Armenian Capital Letter Sha (Շ)",
+    0x0577: "Armenian Small Letter Sha (շ)",
+    0x0548: "Armenian Capital Letter Vo (Ո)",
+    0x0578: "Armenian Small Letter Vo (ո)",
+    0x0549: "Armenian Capital Letter Cha (Չ)",
+    0x0579: "Armenian Small Letter Cha (չ)",
+    0x054A: "Armenian Capital Letter Pe (Պ)",
+    0x057A: "Armenian Small Letter Pe (պ)",
+    0x054B: "Armenian Capital Letter Dzhe (Ջ)",
+    0x057B: "Armenian Small Letter Dzhe (ջ)",
+    0x054C: "Armenian Capital Letter Ra (Ռ)",
+    0x057C: "Armenian Small Letter Ra (ռ)",
+    0x054D: "Armenian Capital Letter Se (Ս)",
+    0x057D: "Armenian Small Letter Se (ս)",
+    0x054E: "Armenian Capital Letter Vev (Վ)",
+    0x057E: "Armenian Small Letter Vev (վ)",
+    0x054F: "Armenian Capital Letter Tiun (Տ)",
+    0x057F: "Armenian Small Letter Tiun (տ)",
+    0x0550: "Armenian Capital Letter Re (Ր)",
+    0x0580: "Armenian Small Letter Re (ր)",
+    0x0551: "Armenian Capital Letter Tso (Ց)",
+    0x0581: "Armenian Small Letter Tso (ց)",
+    0x0552: "Armenian Capital Letter Yiun (Ւ)",
+    0x0582: "Armenian Small Letter Yiun (ւ)",
+    0x0553: "Armenian Capital Letter Piur (Փ)",
+    0x0583: "Armenian Small Letter Piur (փ)",
+    0x0554: "Armenian Capital Letter Ke (Ք)",
+    0x0584: "Armenian Small Letter Ke (ք)",
+    0x0555: "Armenian Capital Letter Oh (Օ)",
+    0x0585: "Armenian Small Letter Oh (օ)",
+    0x0556: "Armenian Capital Letter Fe (Ֆ)",
+    0x0586: "Armenian Small Letter Fe (ֆ)",
+    0x0587: "Armenian Small Letter Ew (և)",
+    0x0559: "Armenian Modifier (ՙ)",
+    0x055A: "Armenian Apostrophe (՚)",
+    0x055B: "Armenian Emphasis Mark (՛)",
+    0x055C: "Armenian Exclamation Mark (՜)",
+    0x055D: "Armenian Shesht (՝)",
+    0x055E: "Armenian Question Mark (՞)",
+    0x055F: "Armenian Abbreviation Mark (՟)",
+    0x0589: "Armenian Full Stop (։)",
+    0x058A: "Armenian Hyphen (֊)",
+    0x058F: "Armenian Dram Sign (֏)",
+    0x058D: "Armenian Right-Facing Eternity Sign (֍)",
+    0x058E: "Armenian Left-Facing Eternity Sign (֎)",
+    0x0530: "Armenian Modifier",
+    0x0588: "Armenian Yiun Modifier",
+    0x058C: "Armenian Semicolon",
+  };
+  
+  if (armenianNames[code]) return armenianNames[code];
+
+  // Ligatures
+  if (c === "ﬓ") return "Armenian Ligature Men-Now (ﬓ)";
+  if (c === "ﬔ") return "Armenian Ligature Men-Ech (ﬔ)";
+  if (c === "ﬕ") return "Armenian Ligature Men-Ini (ﬕ)";
+  if (c === "ﬖ") return "Armenian Ligature Men-Vev (ﬖ)";
+  if (c === "ﬗ") return "Armenian Ligature Men-Tiun (ﬗ)";
+
+  // Common symbols
+  const symbolNames: Record<string, string> = {
+    "!": "Exclamation Mark",
+    "@": "At Sign",
+    "#": "Number Sign / Hashtag",
+    "$": "Dollar Sign",
+    "%": "Percent Sign",
+    "^": "Caret / Circumflex",
+    "&": "Ampersand",
+    "*": "Asterisk",
+    "(": "Left Parenthesis",
+    ")": "Right Parenthesis",
+    "_": "Low Line / Underscore",
+    "+": "Plus Sign",
+    "-": "Hyphen-Minus",
+    "=": "Equals Sign",
+    "[": "Left Square Bracket",
+    "]": "Right Square Bracket",
+    "{": "Left Curly Bracket",
+    "}": "Right Curly Bracket",
+    ";": "Semicolon",
+    ":": "Colon",
+    "'": "Apostrophe / Single Quote",
+    "\"": "Quotation Mark / Double Quote",
+    ",": "Comma",
+    ".": "Full Stop / Period",
+    "/": "Solidus / Slash",
+    "<": "Less-Than Sign",
+    ">": "Greater-Than Sign",
+    "?": "Question Mark",
+    "~": "Tilde",
+    "`": "Grave Accent",
+    "|": "Vertical Line / Pipe",
+    "\\": "Reverse Solidus / Backslash",
+  };
+
+  if (symbolNames[c]) return symbolNames[c];
+
+  return `Unicode Character`;
+}
 
 // Branding Cases Data
 const brandingCases = [
@@ -554,7 +710,7 @@ export default function Home() {
         return `<hd-radio\n  name="group"\n  ${playgroundRadioState ? "checked " : ""}${playgroundIsDisabled ? "disabled " : ""}${radSizeAttr}${colorAttr}\n/>`;
       case "hd-switch":
         const swSizeAttr = playgroundSwitchSize ? ` data-size="${playgroundSwitchSize}"` : "";
-        return `<hd-switch\n  ${playgroundSwitchState ? "checked " : ""}${playgroundIsDisabled ? "disabled " : ""}${swSizeAttr}${colorAttr}\n/>`;
+        return `<hd-switch\n  ${playgroundSwitchState ? "checked " : ""}${playgroundIsDisabled ? "disabled " : ""}${swSizeAttr}${colorAttr} data-thickness="4px"\n/>`;
       case "hd-select":
         const selectSpans = playgroundSelectOptions.split(",").map((opt, i) => {
           const val = `option${i+1}`;
@@ -744,6 +900,7 @@ export default function Home() {
             disabled={playgroundIsDisabled}
             data-size={playgroundSwitchSize}
             data-color={playgroundColor}
+            data-thickness="4px"
             onChange={(e: any) => setPlaygroundSwitchState(e.target.checked)}
           />
         );
@@ -1514,7 +1671,7 @@ export default function Home() {
                 <hd-scrollbar style={{ flex: 1, overflow: "auto", overscrollBehavior: "contain", background: "#121817" }}>
                   <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "2px" }}>
                     {highlightPlaygroundHTML(generatePlaygroundCode()).split("\n").map((line, idx) => (
-                      <div key={idx} style={{ display: "flex", alignItems: "start", fontFamily: "Consolas, monospace", fontSize: "0.82rem", lineHeight: "1.5" }}>
+                      <div key={idx} style={{ display: "flex", alignItems: "start", fontFamily: "Consolas, monospace !important", fontSize: "0.82rem", lineHeight: "1.5" }}>
                         <span style={{
                           width: "24px",
                           textAlign: "right",
@@ -1531,7 +1688,7 @@ export default function Home() {
                             minWidth: 0,
                             whiteSpace: "pre-wrap",
                             wordBreak: "break-word",
-                            fontFamily: "Consolas, monospace",
+                            fontFamily: "Consolas, monospace !important",
                             color: "#e6edf3"
                           }}
                           dangerouslySetInnerHTML={{ __html: line || " " }}
@@ -2241,9 +2398,26 @@ export default function Home() {
                       userSelect: "none",
                       transition: "all 0.15s ease",
                     }}
-                    title={`Պատճենել ${c}`}
                   >
                     {c}
+                    <div className="character-tooltip">
+                      <div 
+                        className="tooltip-large-char"
+                        style={{
+                          fontFamily: "'HDesign', sans-serif",
+                          fontWeight: hdesignFontWeight,
+                          fontVariationSettings: `'wght' ${hdesignFontWeight}`
+                        }}
+                      >
+                        {c}
+                      </div>
+                      <div className="tooltip-name">
+                        {getCharacterName(c)}
+                      </div>
+                      <div className="tooltip-code">
+                        U+{c.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -2278,9 +2452,26 @@ export default function Home() {
                       userSelect: "none",
                       transition: "all 0.15s ease",
                     }}
-                    title={`Պատճենել ${c}`}
                   >
                     {c}
+                    <div className="character-tooltip">
+                      <div 
+                        className="tooltip-large-char"
+                        style={{
+                          fontFamily: "'HDesign', sans-serif",
+                          fontWeight: hdesignFontWeight,
+                          fontVariationSettings: `'wght' ${hdesignFontWeight}`
+                        }}
+                      >
+                        {c}
+                      </div>
+                      <div className="tooltip-name">
+                        {getCharacterName(c)}
+                      </div>
+                      <div className="tooltip-code">
+                        U+{c.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -2315,9 +2506,26 @@ export default function Home() {
                       userSelect: "none",
                       transition: "all 0.15s ease",
                     }}
-                    title={`Պատճենել ${c}`}
                   >
                     {c}
+                    <div className="character-tooltip">
+                      <div 
+                        className="tooltip-large-char"
+                        style={{
+                          fontFamily: "'HDesign', sans-serif",
+                          fontWeight: hdesignFontWeight,
+                          fontVariationSettings: `'wght' ${hdesignFontWeight}`
+                        }}
+                      >
+                        {c}
+                      </div>
+                      <div className="tooltip-name">
+                        {getCharacterName(c)}
+                      </div>
+                      <div className="tooltip-code">
+                        U+{c.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -2325,11 +2533,73 @@ export default function Home() {
           </div>
 
           <style>{`
+            .character-cell {
+              position: relative;
+            }
             .character-cell:hover {
-              background: var(--btn-hover-bg) !important;
+              background: rgba(8, 63, 57, 0.1) !important;
               border-color: var(--primary-color) !important;
-              transform: translateY(-2px);
-              color: var(--primary-color);
+              transform: scale(1.3) !important;
+              box-shadow: 0 8px 24px rgba(8, 63, 57, 0.25);
+              z-index: 50;
+            }
+            
+            .character-tooltip {
+              position: absolute;
+              bottom: 130%;
+              left: 50%;
+              transform: translateX(-50%) scale(0.7);
+              transform-origin: bottom center;
+              background: #083f39;
+              color: #ffffff;
+              border: 1px solid rgba(255, 255, 255, 0.15);
+              border-radius: 12px;
+              padding: 12px;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 4px;
+              min-width: 140px;
+              box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+              opacity: 0;
+              visibility: hidden;
+              pointer-events: none;
+              transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+              z-index: 100;
+            }
+            
+            .character-cell:hover .character-tooltip {
+              opacity: 1;
+              visibility: visible;
+              transform: translateX(-50%) scale(1);
+            }
+
+            .tooltip-large-char {
+              font-size: 2.8rem;
+              line-height: 1.1;
+              color: #ffffff;
+              margin-bottom: 2px;
+            }
+
+            .tooltip-name {
+              font-size: 0.68rem;
+              font-weight: 500;
+              color: #89b59a;
+              text-align: center;
+              word-break: break-word;
+              max-width: 130px;
+              line-height: 1.3;
+              font-family: 'HDesign', sans-serif !important;
+            }
+
+            .tooltip-code {
+              font-size: 0.65rem;
+              font-family: monospace !important;
+              color: rgba(255, 255, 255, 0.6);
+              background: rgba(0, 0, 0, 0.2);
+              padding: 2px 6px;
+              border-radius: 4px;
+              margin-top: 2px;
             }
           `}</style>
         </div>

@@ -293,7 +293,7 @@ export default function FontWysiwygEditor() {
           @font-face {
             font-family: 'wysiwyg-preview-font-${fontForm.id}';
             src: url('${fontForm.font_file_url}') format('truetype');
-            font-weight: normal;
+            font-weight: 100 900;
             font-style: normal;
           }
         ` }} />
@@ -380,7 +380,7 @@ export default function FontWysiwygEditor() {
                     return (
                       <div key={idx} style={{ padding: '36px', background: 'var(--panel)', borderRadius: '16px', border: '1px solid var(--panel-border)', overflow: 'hidden' }}>
                         <span style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase', marginBottom: '12px', display: 'block' }}>Specimen Banner ({block.size || 54}px)</span>
-                        <div style={{ 
+                        <div className="preview-font-container" style={{ 
                           fontFamily: fontForm.font_file_url ? `wysiwyg-preview-font-${fontForm.id}` : 'sans-serif', 
                           fontSize: `${block.size || 54}px`, 
                           color: 'var(--text)', 
@@ -402,7 +402,7 @@ export default function FontWysiwygEditor() {
                           {weightList.map((w, wIdx) => (
                             <div key={wIdx} style={{ display: 'flex', gap: '16px', alignItems: 'baseline', borderBottom: '1px solid var(--panel-border)', paddingBottom: '10px' }}>
                               <span style={{ fontSize: '0.75rem', color: 'var(--muted)', width: '80px' }}>Weight {w}</span>
-                              <div style={{ 
+                              <div className="preview-font-container" style={{ 
                                 fontFamily: fontForm.font_file_url ? `wysiwyg-preview-font-${fontForm.id}` : 'sans-serif', 
                                 fontSize: '1.8rem', 
                                 color: 'var(--text)', 
@@ -426,7 +426,7 @@ export default function FontWysiwygEditor() {
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: '12px' }}>
                           {lettersList.map((letter, lIdx) => (
                             <div key={lIdx} style={{ height: '110px', background: 'var(--panel)', border: '1px solid var(--panel-border)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <div style={{ 
+                              <div className="preview-font-container" style={{ 
                                 fontFamily: fontForm.font_file_url ? `wysiwyg-preview-font-${fontForm.id}` : 'sans-serif', 
                                 fontSize: '3rem', 
                                 color: 'var(--text)', 

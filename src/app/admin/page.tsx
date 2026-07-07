@@ -2294,7 +2294,7 @@ export default function AdminDashboard() {
                                   @font-face {
                                     font-family: 'admin-preview-${f.id}';
                                     src: url('${f.font_file_url}') format('${f.font_file_url.endsWith('.otf') ? 'opentype' : f.font_file_url.endsWith('.woff') ? 'woff' : f.font_file_url.endsWith('.woff2') ? 'woff2' : 'truetype'}');
-                                    font-weight: normal;
+                                    font-weight: 100 900;
                                     font-style: normal;
                                   }
                                 `}} />
@@ -2393,7 +2393,7 @@ export default function AdminDashboard() {
                             @font-face {
                               font-family: 'drawer-preview-${drawerFontId}';
                               src: url('${drawerFontFileUrl}') format('truetype');
-                              font-weight: normal;
+                              font-weight: 100 900;
                               font-style: normal;
                             }
                           ` }} />
@@ -2418,6 +2418,7 @@ export default function AdminDashboard() {
                                 <textarea 
                                   value={drawerFontSandboxText}
                                   onChange={e => setDrawerFontSandboxText(e.target.value)}
+                                  className="preview-font-container"
                                   style={{
                                     width: '100%', minHeight: '60px', background: 'transparent', border: 'none', outline: 'none',
                                     color: '#fff', fontFamily: `drawer-preview-${drawerFontId}, sans-serif`,
@@ -2437,7 +2438,7 @@ export default function AdminDashboard() {
                               {/* Waterfall */}
                               <div>
                                 <span style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase', marginBottom: '6px', display: 'block' }}>Waterfall Test</span>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontFamily: `drawer-preview-${drawerFontId}, sans-serif` }}>
+                                <div className="preview-font-container" style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontFamily: `drawer-preview-${drawerFontId}, sans-serif` }}>
                                   <div style={{ fontSize: '12px', opacity: 0.6 }}>12px: Quick brown fox jumps over.</div>
                                   <div style={{ fontSize: '18px', opacity: 0.8 }}>18px: Quick brown fox jumps.</div>
                                   <div style={{ fontSize: '24px' }}>24px: Quick brown fox.</div>
@@ -3192,6 +3193,7 @@ export default function AdminDashboard() {
                         <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Secure Connection (SSL/TLS)</span>
                         <hd-switch 
                           checked={apiSettings.smtp_secure} 
+                          data-thickness="4px"
                           onChange={(e: any) => setApiSettings(prev => ({ ...prev, smtp_secure: e.target.checked }))} 
                         />
                       </div>
@@ -3219,6 +3221,7 @@ export default function AdminDashboard() {
 
                       <hd-switch 
                         checked={apiSettings.tildo_enabled} 
+                        data-thickness="4px"
                         onChange={(e: any) => setApiSettings(prev => ({ ...prev, tildo_enabled: e.target.checked }))} 
                       />
                     </div>
@@ -3263,6 +3266,7 @@ export default function AdminDashboard() {
 
                       <hd-switch 
                         checked={apiSettings.google_analytics_enabled} 
+                        data-thickness="4px"
                         onChange={(e: any) => setApiSettings(prev => ({ ...prev, google_analytics_enabled: e.target.checked }))} 
                       />
                     </div>
@@ -3925,6 +3929,7 @@ export default function AdminDashboard() {
                           
                           <hd-switch 
                             checked={upcomingMode} 
+                            data-thickness="4px"
                             onChange={(e: any) => setUpcomingMode(e.target.checked)} 
                           />
                         </div>

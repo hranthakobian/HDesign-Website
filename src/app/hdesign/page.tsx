@@ -26,7 +26,7 @@ export default function HDesignGeneralPage() {
             HDesign-ը երկրաչափական, գծային և մինիմալիստական դիզայն-համակարգ է, որը ստեղծված է ճարտարապետական ճշգրտության և վեբ-ինտերֆեյսների ներդաշնակության սկզբունքներով։
           </p>
           
-          <div style={{ display: "flex", gap: "16px", marginTop: "12px" }}>
+          <div style={{ display: "flex", gap: "16px", marginTop: "12px", flexWrap: "wrap" }}>
             <Link href="/hdesign/docs" style={{ textDecoration: "none" }}>
               <hd-button data-width="200px" data-height="50px" data-thickness="3px">
                 Կարդալ Փաստաթղթերը

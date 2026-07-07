@@ -29,11 +29,30 @@ export default function UpcomingCheck({ initialUpcomingMode, initialSettings, ch
   const [upcomingEmail, setUpcomingEmail] = useState(initialSettings?.upcoming_email || 'info@hdesign.am');
   const [upcomingTel, setUpcomingTel] = useState(initialSettings?.upcoming_tel || '+374 99 00 00 00');
 
-  // Check if current path starts with admin or api (which bypasses upcoming block)
-  const isBypassed = pathname.startsWith('/admin') || pathname.startsWith('/api');
+  const [isLocalhost, setIsLocalhost] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.local')) {
+        setIsLocalhost(true);
+      }
+    }
+  }, []);
+
+  // Check if current path starts with admin or api, or if we are on localhost (which bypasses upcoming block)
+  const isBypassed = pathname.startsWith('/admin') || pathname.startsWith('/api') || isLocalhost;
 
   useEffect(() => {
     if (isBypassed) return;
+
+    // Prevent fetching on localhost client-side
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.endsWith('.local')) {
+        return;
+      }
+    }
 
     // Fetch latest general settings to verify if upcoming mode has been toggled
     async function checkUpcoming() {

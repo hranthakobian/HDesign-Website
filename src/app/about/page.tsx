@@ -55,7 +55,7 @@ export default function AboutPage() {
               </p>
             </div>
             
-            <div style={{ display: "flex", gap: "16px", marginTop: "12px" }}>
+            <div style={{ display: "flex", gap: "16px", marginTop: "12px", flexWrap: "wrap" }}>
               <Link href="/contact" style={{ textDecoration: "none" }}>
                 <hd-button data-width="160px" data-height="52px" data-thickness="3px">
                   Կապնվել

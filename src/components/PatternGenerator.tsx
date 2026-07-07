@@ -411,12 +411,57 @@ export default function PatternGenerator() {
 
   return (
     <div style={{ color: '#f5f5f5', display: 'flex', flexDirection: 'column', gap: 0, height: '100%' }}>
+      <style>{`
+        .pattern-generator-grid {
+          display: grid;
+          grid-template-columns: 180px minmax(300px, 560px) 280px 280px;
+        }
+        @media (max-width: 1300px) {
+          .pattern-generator-grid {
+            grid-template-columns: 180px minmax(300px, 1fr) 280px;
+          }
+          .pattern-generator-layers-col {
+            grid-column: span 3;
+          }
+        }
+        @media (max-width: 1024px) {
+          .pattern-generator-grid {
+            grid-template-columns: 180px 1fr;
+          }
+          .pattern-generator-presets-col {
+            grid-column: 1;
+          }
+          .pattern-generator-canvas-col {
+            grid-column: 2;
+          }
+          .pattern-generator-properties-col {
+            grid-column: span 2;
+          }
+          .pattern-generator-layers-col {
+            grid-column: span 2;
+          }
+        }
+        @media (max-width: 768px) {
+          .pattern-generator-grid {
+            grid-template-columns: 1fr;
+          }
+          .pattern-generator-presets-col,
+          .pattern-generator-canvas-col,
+          .pattern-generator-properties-col,
+          .pattern-generator-layers-col {
+            grid-column: span 1;
+          }
+          .pattern-generator-sticky-col {
+            position: static !important;
+          }
+        }
+      `}</style>
 
       {/* ── 4-COLUMN GRID ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '180px minmax(300px, 560px) 280px 280px', gap: 14, alignItems: 'start' }}>
+      <div className="pattern-generator-grid" style={{ gap: 14, alignItems: 'start' }}>
 
         {/* ══ LEFT: PRESETS ══ */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'sticky', top: 100 }}>
+        <div className="pattern-generator-presets-col pattern-generator-sticky-col" style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'sticky', top: 100 }}>
           <div style={{ background: 'var(--panel)', borderRadius: 16, border: '1px solid var(--panel-border)', padding: 16, minHeight: 'fit-content', display: 'flex', flexDirection: 'column' }}>
             <h3 style={{ margin: '0 0 12px', fontSize: '0.9rem', color: 'var(--primary-color)', textTransform: 'uppercase' }}>
               Պրեսեթներ
@@ -484,7 +529,7 @@ export default function PatternGenerator() {
         </div>
 
         {/* ══ CENTER: CANVAS ══ */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="pattern-generator-canvas-col" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* Canvas size inputs */}
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.82rem', color: 'var(--muted)' }}>
@@ -533,7 +578,7 @@ export default function PatternGenerator() {
         </div>
 
         {/* ══ COLUMN 3: PROPERTIES & RANDOMIZER ══ */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'sticky', top: 100 }}>
+        <div className="pattern-generator-properties-col pattern-generator-sticky-col" style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'sticky', top: 100 }}>
           
           {/* RANDOMIZER */}
           <div style={{ background: 'var(--panel)', padding: 16, borderRadius: 16, border: '1px solid var(--panel-border)', minHeight: 'fit-content', display: 'flex', flexDirection: 'column' }}>
@@ -754,7 +799,7 @@ export default function PatternGenerator() {
         </div>
 
         {/* ══ COLUMN 4: LAYERS (VERY RIGHT) ══ */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'sticky', top: 100 }}>
+        <div className="pattern-generator-layers-col pattern-generator-sticky-col" style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'sticky', top: 100 }}>
           
           {/* LAYERS */}
           <div style={{ background: 'var(--panel)', padding: 16, borderRadius: 16, border: '1px solid var(--panel-border)', minHeight: '450px', display: 'flex', flexDirection: 'column' }}>
