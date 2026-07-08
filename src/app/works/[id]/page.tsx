@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { brandingCases as staticCases } from "@/lib/brandingData";
@@ -25,13 +25,13 @@ function parseBg(bgString: string) {
   const bg = parts[0] || "linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%)";
   let overlay = true;
   let positionY = 50;
-  let height = 55; // default height for public view page
+  let height = 75; // default height for public view page is now 75vh
 
   for (let i = 1; i < parts.length; i++) {
     const [k, v] = parts[i].split("=");
     if (k === "overlay") overlay = v === "true";
     if (k === "position_y") positionY = parseInt(v) || 50;
-    if (k === "height") height = parseInt(v) || 55;
+    if (k === "height") height = parseInt(v) || 75;
   }
 
   return { bg, overlay, positionY, height };
@@ -46,6 +46,64 @@ function parseLangText(text: string, lang: 'hy' | 'en') {
   return text;
 }
 
+function getAverageColor(bgString: string): string {
+  if (!bgString) return "rgba(10, 10, 15, 0.5)";
+
+  const hexRegex = /#[0-9a-fA-F]{3,8}\b/g;
+  const rgbRegex = /rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)/g;
+  const rgbaRegex = /rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*[\d\.]+\s*\)/g;
+
+  const hexMatches = bgString.match(hexRegex) || [];
+  const rgbMatches = bgString.match(rgbRegex) || [];
+  const rgbaMatches = bgString.match(rgbaRegex) || [];
+
+  const colors: { r: number; g: number; b: number; a: number }[] = [];
+
+  hexMatches.forEach(hex => {
+    let h = hex.slice(1);
+    if (h.length === 3) {
+      h = h.split('').map(char => char + char).join('');
+    }
+    if (h.length === 6) {
+      const r = parseInt(h.substring(0, 2), 16);
+      const g = parseInt(h.substring(2, 4), 16);
+      const b = parseInt(h.substring(4, 6), 16);
+      colors.push({ r, g, b, a: 1 });
+    } else if (h.length === 8) {
+      const r = parseInt(h.substring(0, 2), 16);
+      const g = parseInt(h.substring(2, 4), 16);
+      const b = parseInt(h.substring(4, 6), 16);
+      const a = parseInt(h.substring(6, 8), 16) / 255;
+      colors.push({ r, g, b, a });
+    }
+  });
+
+  rgbMatches.forEach(rgb => {
+    const parts = rgb.match(/\d+/g);
+    if (parts && parts.length >= 3) {
+      colors.push({ r: parseInt(parts[0]), g: parseInt(parts[1]), b: parseInt(parts[2]), a: 1 });
+    }
+  });
+
+  rgbaMatches.forEach(rgba => {
+    const nums = rgba.match(/[\d\.]+/g);
+    if (nums && nums.length >= 4) {
+      colors.push({ r: parseInt(nums[0]), g: parseInt(nums[1]), b: parseInt(nums[2]), a: parseFloat(nums[3]) });
+    }
+  });
+
+  if (colors.length === 0) {
+    return "rgba(10, 10, 15, 0.5)";
+  }
+
+  const total = colors.length;
+  const avgR = Math.round(colors.reduce((sum, c) => sum + c.r, 0) / total);
+  const avgG = Math.round(colors.reduce((sum, c) => sum + c.g, 0) / total);
+  const avgB = Math.round(colors.reduce((sum, c) => sum + c.b, 0) / total);
+
+  return `rgba(${avgR}, ${avgG}, ${avgB}, 0.65)`;
+}
+
 export default function BrandingDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -53,8 +111,41 @@ export default function BrandingDetailPage() {
 
   const [work, setWork] = useState<Case | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState("");
   const [blocks, setBlocks] = useState<any[]>([]);
   const [lang, setLang] = useState<'hy' | 'en'>('hy');
+  const [wideMedia, setWideMedia] = useState(false);
+  const heroImageRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (heroImageRef.current) {
+        const scrolled = window.scrollY;
+        if (scrolled < window.innerHeight * 1.5) {
+          heroImageRef.current.style.transform = `translate3d(0, ${scrolled * 0.35}px, 0)`;
+        }
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || (activeEl as any).isContentEditable)) {
+        return;
+      }
+      if (e.key === "~" || e.key === "`" || e.code === "Backquote") {
+        setWideMedia(prev => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -64,7 +155,27 @@ export default function BrandingDetailPage() {
   }, []);
 
   useEffect(() => {
+    function parseProjectBlocks(detailsString: string) {
+      if (detailsString.startsWith("[")) {
+        try {
+          return JSON.parse(detailsString);
+        } catch (e) {
+          // fallback below
+        }
+      }
+      // Standard string fallback
+      return [
+        { type: "text", title_am: "Նախագծի Մասին", title_en: "About the Project", content_am: detailsString, content_en: detailsString }
+      ];
+    }
+
     async function loadWork() {
+      const currentLang = (typeof window !== "undefined" && localStorage.getItem('hdesign_locale') === 'en') ? 'en' : 'hy';
+      setLoadingMessage(currentLang === "en" ? "Loading case details..." : "Բեռնվում են տվյալները...");
+
+      let foundWork: Case | null = null;
+      let parsedBlocks: any[] = [];
+
       try {
         const res = await fetch("/api/cases");
         if (!res.ok) throw new Error("Failed to fetch cases");
@@ -72,13 +183,13 @@ export default function BrandingDetailPage() {
         const found = (data || []).find((c: any) => c.id === id);
         
         if (found) {
-          setWork(found);
-          parseProjectBlocks(found.details || "");
+          foundWork = found;
+          parsedBlocks = parseProjectBlocks(found.details || "");
         } else {
           // Check static data fallback
           const staticFound = staticCases.find((item) => item.id === id);
           if (staticFound) {
-            const mappedStatic: Case = {
+            foundWork = {
               id: staticFound.id,
               title: staticFound.title,
               subtitle: staticFound.tagline,
@@ -89,24 +200,21 @@ export default function BrandingDetailPage() {
               client: (staticFound as any).client || "HDesign Studio",
               year: (staticFound as any).year || "2026"
             };
-            setWork(mappedStatic);
             
             // Generate standard block list from static concept/typography
-            setBlocks([
+            parsedBlocks = [
               { type: "text", title_am: "Նախագծի Մասին", title_en: "About the Project", content_am: staticFound.description, content_en: staticFound.description },
               { type: "text", title_am: "Կոնցեպտուալ Լուծում", title_en: "Conceptual Solution", content_am: staticFound.concept, content_en: staticFound.concept },
               { type: "color_palette", colors: staticFound.colors || ["#d32f2f", "#f8fafc", "#0f172a"] },
               { type: "typography_showcase", fonts: [staticFound.typography || "Outfit"], previewText: "Հրանտ Հակոբյան Դիզայն Ստուդիա 2026" }
-            ]);
-          } else {
-            setWork(null);
+            ];
           }
         }
       } catch (err) {
         console.warn("Using static branding cases fallback details:", err);
         const staticFound = staticCases.find((item) => item.id === id);
         if (staticFound) {
-          const mappedStatic: Case = {
+          foundWork = {
             id: staticFound.id,
             title: staticFound.title,
             subtitle: staticFound.tagline,
@@ -117,32 +225,73 @@ export default function BrandingDetailPage() {
             client: (staticFound as any).client || "HDesign Studio",
             year: (staticFound as any).year || "2026"
           };
-          setWork(mappedStatic);
-          setBlocks([
+          parsedBlocks = [
             { type: "text", title_am: "Նախագծի Մասին", title_en: "About the Project", content_am: staticFound.description, content_en: staticFound.description },
             { type: "text", title_am: "Կոնցեպտուալ Լուծում", title_en: "Conceptual Solution", content_am: staticFound.concept, content_en: staticFound.concept },
             { type: "color_palette", colors: staticFound.colors || ["#d32f2f", "#f8fafc", "#0f172a"] },
             { type: "typography_showcase", fonts: [staticFound.typography || "Outfit"], previewText: "Հրանտ Հակոբյան Դիզայն Ստուդիա 2026" }
-          ]);
+          ];
         }
-      } finally {
+      }
+
+      if (foundWork) {
+        setWork(foundWork);
+        setBlocks(parsedBlocks);
+
+        // Extract image URLs to preload
+        const imageUrls: string[] = [];
+        if (foundWork.image_url) {
+          imageUrls.push(foundWork.image_url);
+        }
+        parsedBlocks.forEach((block: any) => {
+          if (block.type === "image" && block.image_url) {
+            imageUrls.push(block.image_url);
+          }
+        });
+
+        if (imageUrls.length === 0) {
+          setLoading(false);
+        } else {
+          let loadedCount = 0;
+          const totalImages = imageUrls.length;
+          
+          setLoadingMessage(
+            currentLang === "en"
+              ? `Loading images (0/${totalImages})...`
+              : `Բեռնվում են պատկերները (0/${totalImages})...`
+          );
+
+          const checkAllLoaded = () => {
+            loadedCount++;
+            setLoadingMessage(
+              currentLang === "en"
+                ? `Loading images (${loadedCount}/${totalImages})...`
+                : `Բեռնվում են պատկերները (${loadedCount}/${totalImages})...`
+            );
+            if (loadedCount >= totalImages) {
+              setLoading(false);
+            }
+          };
+
+          // safety timeout (5 seconds) so we don't hang the page if an image is down
+          const timeoutId = setTimeout(() => {
+            setLoading(false);
+          }, 5000);
+
+          imageUrls.forEach((url) => {
+            const img = new Image();
+            img.src = url;
+            img.onload = () => {
+              checkAllLoaded();
+            };
+            img.onerror = () => {
+              checkAllLoaded(); // count error as loaded to not block user
+            };
+          });
+        }
+      } else {
         setLoading(false);
       }
-    }
-
-    function parseProjectBlocks(detailsString: string) {
-      if (detailsString.startsWith("[")) {
-        try {
-          setBlocks(JSON.parse(detailsString));
-          return;
-        } catch (e) {
-          // fallback below
-        }
-      }
-      // Standard string fallback
-      setBlocks([
-        { type: "text", title_am: "Նախագծի Մասին", title_en: "About the Project", content_am: detailsString, content_en: detailsString }
-      ]);
     }
 
     loadWork();
@@ -151,7 +300,7 @@ export default function BrandingDetailPage() {
   if (loading) {
     return (
       <main className="shell" style={{ marginTop: "160px", minHeight: "75vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <LoadingAnimation fullPage={false} message={lang === "en" ? "Loading details..." : "Բեռնվում է..."} />
+        <LoadingAnimation fullPage={false} message={loadingMessage || (lang === "en" ? "Loading details..." : "Բեռնվում է...")} />
       </main>
     );
   }
@@ -170,6 +319,14 @@ export default function BrandingDetailPage() {
   }
 
   const hero = parseBg(work.bg);
+  const avgBgColor = getAverageColor(hero.bg);
+
+  // Find indices of first and last image blocks
+  const imageBlockIndices = blocks
+    .map((b, i) => (b.type === "image" && b.image_url ? i : -1))
+    .filter(index => index !== -1);
+  const firstImageIdx = imageBlockIndices.length > 0 ? imageBlockIndices[0] : -1;
+  const lastImageIdx = imageBlockIndices.length > 0 ? imageBlockIndices[imageBlockIndices.length - 1] : -1;
 
   return (
     <main style={{ marginTop: "80px", minHeight: "100vh" }}>
@@ -189,16 +346,20 @@ export default function BrandingDetailPage() {
       >
         {work.image_url && (
           <img 
+            ref={heroImageRef}
             src={work.image_url} 
             alt={work.title} 
             style={{ 
               position: "absolute", 
-              inset: 0, 
+              top: "-15%", 
+              left: 0,
               width: "100%", 
-              height: "100%", 
+              height: "130%", 
               objectFit: "cover", 
               objectPosition: `50% ${hero.positionY}%`,
-              opacity: 0.8 
+              opacity: 0.8,
+              willChange: "transform",
+              transform: "translate3d(0, 0, 0)"
             }} 
           />
         )}
@@ -208,7 +369,7 @@ export default function BrandingDetailPage() {
           <div style={{
             position: "absolute",
             inset: 0,
-            background: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 60%, rgba(0,0,0,0) 100%)",
+            background: "linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0) 100%)",
             zIndex: 1
           }} />
         )}
@@ -260,7 +421,7 @@ export default function BrandingDetailPage() {
             </p>
           </div>
           <div style={{ flexShrink: 0, paddingBottom: 8 }}>
-            <RatingSystem id={work.id} locale={lang === 'en' ? 'en' : 'hy'} />
+            <RatingSystem id={work.id} locale={lang === 'en' ? 'en' : 'hy'} bgColor={avgBgColor} noShadow={true} />
           </div>
         </div>
       </div>
@@ -284,6 +445,33 @@ export default function BrandingDetailPage() {
               <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{work.year}</span>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Keyboard Shortcut Hint directly under the info bar */}
+      <div style={{ display: "flex", justifyContent: "center", marginTop: "16px", marginBottom: "-16px" }}>
+        <div style={{ 
+          fontSize: "0.78rem", 
+          fontWeight: 700, 
+          color: "var(--muted)", 
+          padding: "4px 12px", 
+          background: "var(--panel)", 
+          border: "1px solid var(--panel-border)", 
+          borderRadius: "20px",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px"
+        }}>
+          <span style={{ 
+            fontFamily: "monospace", 
+            fontSize: "0.9rem", 
+            background: "var(--input-bg)", 
+            padding: "1px 5px", 
+            borderRadius: "4px", 
+            color: "var(--accent)", 
+            border: "1px solid var(--input-border)" 
+          }}>~</span>
+          <span>{lang === 'en' ? "Press to toggle focus mode" : "Սեղմեք տիլդան՝ մեդիան կենտրոնացնելու համար"}</span>
         </div>
       </div>
 
@@ -312,9 +500,22 @@ export default function BrandingDetailPage() {
           }
 
           if (block.type === "image" && block.image_url) {
+            const isFirstImage = idx === firstImageIdx;
+            const isLastImage = idx === lastImageIdx;
+
             return (
               <div key={idx} style={{ width: "100%", marginTop: mt, marginBottom: mb, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <div style={{ width: "100%", overflow: "hidden" }}>
+                <div style={{ 
+                  width: "100%", 
+                  maxWidth: wideMedia ? "1500px" : "100%", 
+                  overflow: "hidden",
+                  transition: "max-width 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
+                  margin: "0 auto",
+                  borderTopLeftRadius: (wideMedia && isFirstImage) ? "32px" : "0px",
+                  borderTopRightRadius: (wideMedia && isFirstImage) ? "32px" : "0px",
+                  borderBottomLeftRadius: (wideMedia && isLastImage) ? "32px" : "0px",
+                  borderBottomRightRadius: (wideMedia && isLastImage) ? "32px" : "0px",
+                }}>
                   <img src={block.image_url} alt="Project spec" style={{ width: "100%", height: "auto", display: "block" }} />
                 </div>
                 {(lang === 'en' ? block.caption_en : block.caption_am) && (
@@ -336,7 +537,16 @@ export default function BrandingDetailPage() {
               src = `https://www.youtube.com/embed/${src.split("youtu.be/")[1]}`;
             }
             return (
-              <div key={idx} style={{ width: "100%", marginTop: mt, marginBottom: mb, aspectRatio: "16/9", overflow: "hidden" }}>
+              <div key={idx} style={{ 
+                width: "100%", 
+                maxWidth: wideMedia ? "1500px" : "100%", 
+                margin: "0 auto", 
+                marginTop: mt, 
+                marginBottom: mb, 
+                aspectRatio: "16/9", 
+                overflow: "hidden",
+                transition: "max-width 0.6s cubic-bezier(0.16, 1, 0.3, 1)"
+              }}>
                 <iframe src={src} style={{ width: "100%", height: "100%", border: "none" }} allowFullScreen />
               </div>
             );
@@ -386,14 +596,14 @@ export default function BrandingDetailPage() {
 
       {/* Footer Rating System section */}
       <div className="shell" style={{ display: "flex", justifyContent: "center" }}>
-        <RatingSystem id={work.id} locale={lang === 'en' ? 'en' : 'hy'} />
+        <RatingSystem id={work.id} locale={lang === 'en' ? 'en' : 'hy'} bgColor={avgBgColor} noShadow={true} />
       </div>
 
       {/* Back to works button */}
-      <div style={{ display: "flex", justifyContent: "center" }}>
+      <div style={{ display: "flex", justifyContent: "center", marginTop: "75px" }}>
         <Link href="/works" style={{ textDecoration: "none" }}>
           <hd-button data-width="220px" data-height="50px" data-thickness="3px">
-            ← Հետ դեպի ցուցակ
+            {lang === 'en' ? "← Other Works" : "← Դեպի Այլ Աշխատանքներ"}
           </hd-button>
         </Link>
       </div>

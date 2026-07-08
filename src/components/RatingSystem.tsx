@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 interface RatingSystemProps {
   id: string;
   locale: "hy" | "en";
+  bgColor?: string;
+  noShadow?: boolean;
 }
 
 const STAR_PATH_GROUPS = [
@@ -68,7 +70,7 @@ const STAR_PATH_GROUPS = [
   }
 ];
 
-export default function RatingSystem({ id, locale }: RatingSystemProps) {
+export default function RatingSystem({ id, locale, bgColor, noShadow }: RatingSystemProps) {
   const [sum, setSum] = useState(0);
   const [count, setCount] = useState(0);
   const [hasRated, setHasRated] = useState(false);
@@ -165,12 +167,12 @@ export default function RatingSystem({ id, locale }: RatingSystemProps) {
         flexDirection: "column",
         gap: 8,
         padding: "16px 20px",
-        background: "rgba(10, 10, 15, 0.5)",
+        background: bgColor || "rgba(10, 10, 15, 0.5)",
         backdropFilter: "blur(8px)",
         border: "1px solid var(--panel-border)",
         borderRadius: 16,
         maxWidth: 340,
-        boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+        boxShadow: noShadow ? "none" : "0 10px 30px rgba(0,0,0,0.15)",
         fontFamily: "HDesign, sans-serif",
       }}
     >

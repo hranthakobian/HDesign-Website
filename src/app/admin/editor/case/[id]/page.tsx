@@ -565,7 +565,16 @@ export default function CaseEditor() {
     if (!token) return null;
     setUploading(true);
     setUploadProgress({ current, total });
-    const fd = new FormData(); fd.append("file", file);
+
+    let fileToUpload = file;
+    try {
+      const { compressImage } = await import("@/lib/imageCompression");
+      fileToUpload = await compressImage(file);
+    } catch (compressErr) {
+      console.warn("Failed to compress image, uploading original:", compressErr);
+    }
+
+    const fd = new FormData(); fd.append("file", fileToUpload);
     try {
       const r = await fetch("/api/upload", { method: "POST", headers: { Authorization: token }, body: fd });
       const d = await r.json(); return r.ok ? d.url : null;
