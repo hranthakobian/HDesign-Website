@@ -207,7 +207,7 @@ export default function FontDetailPage() {
   const [textCase, setTextCase] = useState<"none" | "uppercase" | "lowercase">("none");
   const [textColor, setTextColor] = useState("#ffffff");
   const [bgColor, setBgColor] = useState("#0b4a41"); // Matches default panel color
-  const activePreviewText = locale === "hy" ? "Հրանտ Հակոբյան Դիզայն 2026" : "Hrant Hakobyan Design 2026";
+  const activePreviewText = t("fonts", "preview_text_default", "Հրանտ Հակոբյան Դիզայն 2026");
 
   // Variability & OpenType States
   const [wght, setWght] = useState(400);
@@ -230,11 +230,7 @@ export default function FontDetailPage() {
         if (!found) throw new Error("Font not found");
         setFont(found);
         
-        setText(
-          locale === "hy"
-            ? "Հրանտ Հակոբյան Դիզայն Ստուդիա: Այստեղ կարող եք գրել ցանկացած տեքստ տառատեսակը փորձարկելու համար:"
-            : "Hrant Hakobyan Design Studio: You can write any text here to test and play with this font configuration."
-        );
+        setText(t("fonts", "sandbox_default_text", "Հրանտ Հակոբյան Դիզայն Ստուդիա: Այստեղ կարող եք գրել ցանկացած տեքստ տառատեսակը փորձարկելու համար:"));
       } catch (err: any) {
         setError(err.message || "Failed to load font details");
       } finally {
@@ -281,7 +277,7 @@ export default function FontDetailPage() {
   if (loading) {
     return (
       <main className="shell" style={{ marginTop: "160px", minHeight: "75vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <LoadingAnimation fullPage={false} message={locale === "hy" ? "Տվյալները բեռնվում են..." : "Loading playground details..."} />
+        <LoadingAnimation fullPage={false} message={t("fonts", "loading_details", "Տվյալները բեռնվում են...")} />
       </main>
     );
   }
@@ -291,11 +287,11 @@ export default function FontDetailPage() {
     return (
       <main className="shell" style={{ marginTop: "160px", minHeight: "70vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "20px" }}>
         <h2 style={{ fontSize: "2rem", fontWeight: "800", color: "var(--text)" }}>
-          {locale === "hy" ? "Տառատեսակը չի գտնվել" : "Font Not Found"}
+          {t("fonts", "font_not_found", "Տառատեսակը չի գտնվել")}
         </h2>
         <Link href="/fonts" style={{ textDecoration: "none" }}>
           <hd-button data-width="180px" data-height="48px" data-thickness="3px">
-            {locale === "hy" ? "Հետ դեպի ցուցակ" : "Back to Listing"}
+            {t("fonts", "back_to_list", "Հետ դեպի ցուցակ")}
           </hd-button>
         </Link>
       </main>
@@ -331,7 +327,7 @@ export default function FontDetailPage() {
       <div style={{ marginBottom: "24px" }}>
         <Link href="/fonts" style={{ display: "inline-flex", alignItems: "center", gap: "8px", textDecoration: "none", color: "var(--accent)", fontSize: "0.95rem", fontWeight: "bold" }}>
           <span className="icon-Chevrolt-Arrow-Left" />
-          {locale === "hy" ? "Հետ դեպի տառատեսակներ" : "Back to Fonts"}
+          {t("fonts", "back_to_fonts", "Հետ դեպի տառատեսակներ")}
         </Link>
       </div>
 
@@ -470,7 +466,7 @@ export default function FontDetailPage() {
               {t("fonts", "character_map", "Նիշերի քարտեզ")}
             </h3>
             <p style={{ fontSize: "0.82rem", color: "var(--muted)", margin: "0 0 24px 0" }}>
-              {locale === "hy" ? "Կտտացրեք նիշի վրա՝ այն տեքստային դաշտում ավելացնելու համար" : "Click on a character to insert it into your sandbox text"}
+              {t("fonts", "click_character", "Կտտացրեք նիշի վրա՝ այն տեքստային դաշտում ավելացնելու համար")}
             </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -795,13 +791,13 @@ export default function FontDetailPage() {
             {/* Variability & OpenType Axes Section */}
             <div style={{ borderTop: "1px solid var(--panel-border)", paddingTop: "20px", display: "flex", flexDirection: "column", gap: "16px" }}>
               <span style={{ fontSize: "0.9rem", fontWeight: 700, display: "block" }}>
-                {locale === "hy" ? "Փոփոխականություն և Ոճեր (Variability & OpenType)" : "Variability & OpenType Axes"}
+                {t("fonts", "variability_axes", "Փոփոխականություն և Ոճեր (Variability & OpenType)")}
               </span>
 
               {/* Axis: Weight (wght) */}
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px", fontSize: "0.82rem" }}>
-                  <span>{locale === "hy" ? "Հաստություն (Weight)" : "Font Weight (wght)"}</span>
+                  <span>{t("fonts", "weight", "Հաստություն (Weight)")}</span>
                   <span style={{ fontWeight: "bold" }}>{wght}</span>
                 </div>
                 <hd-slider
@@ -817,7 +813,7 @@ export default function FontDetailPage() {
               {/* Axis: Slant (slnt) */}
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px", fontSize: "0.82rem" }}>
-                  <span>{locale === "hy" ? "Թեքություն (Slant)" : "Slant Axis (slnt)"}</span>
+                  <span>{t("fonts", "slant", "Թեքություն (Slant)")}</span>
                   <span style={{ fontWeight: "bold" }}>{slnt}°</span>
                 </div>
                 <hd-slider
@@ -833,7 +829,7 @@ export default function FontDetailPage() {
               {/* Axis: Width (wdth) */}
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px", fontSize: "0.82rem" }}>
-                  <span>{locale === "hy" ? "Լայնություն (Width)" : "Width Axis (wdth)"}</span>
+                  <span>{t("fonts", "width", "Լայնություն (Width)")}</span>
                   <span style={{ fontWeight: "bold" }}>{wdth}%</span>
                 </div>
                 <hd-slider
@@ -849,7 +845,7 @@ export default function FontDetailPage() {
               {/* Axis: Italic (ital) */}
               <div>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px", fontSize: "0.82rem" }}>
-                  <span>{locale === "hy" ? "Շղագիր (Italic Axis)" : "Italic Axis (ital)"}</span>
+                  <span>{t("fonts", "italic", "Շղագիր (Italic Axis)")}</span>
                   <span style={{ fontWeight: "bold" }}>{ital}</span>
                 </div>
                 <hd-slider
@@ -867,7 +863,7 @@ export default function FontDetailPage() {
                 
                 {/* Ligatures */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "0.8rem" }}>{locale === "hy" ? "Կապագիր (Ligatures)" : "Common Ligatures"}</span>
+                  <span style={{ fontSize: "0.8rem" }}>{t("fonts", "ligatures", "Կապագիր (Ligatures)")}</span>
                   <hd-switch 
                     checked={ligatures} 
                     data-thickness="4px"
@@ -877,7 +873,7 @@ export default function FontDetailPage() {
 
                 {/* Kerning */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "0.8rem" }}>{locale === "hy" ? "Միջտառային տարածություն (Kerning)" : "Font Kerning"}</span>
+                  <span style={{ fontSize: "0.8rem" }}>{t("fonts", "kerning", "Միջտառային տարածություն (Kerning)")}</span>
                   <hd-switch 
                     checked={kerning} 
                     data-thickness="4px"
@@ -887,7 +883,7 @@ export default function FontDetailPage() {
 
                 {/* Small Caps */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "0.8rem" }}>{locale === "hy" ? "Փոքրատառ գլխատառեր (Small Caps)" : "Small Caps"}</span>
+                  <span style={{ fontSize: "0.8rem" }}>{t("fonts", "small_caps", "Փոքրատառ գլխատառեր (Small Caps)")}</span>
                   <hd-switch 
                     checked={smallCaps} 
                     data-thickness="4px"
@@ -897,7 +893,7 @@ export default function FontDetailPage() {
 
                 {/* Oldstyle Figures */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "0.8rem" }}>{locale === "hy" ? "Հին ոճի թվեր (Oldstyle Figures)" : "Oldstyle Figures"}</span>
+                  <span style={{ fontSize: "0.8rem" }}>{t("fonts", "oldstyle_figures", "Հին ոճի թվեր (Oldstyle Figures)")}</span>
                   <hd-switch 
                     checked={oldstyleNums} 
                     data-thickness="4px"
@@ -1098,7 +1094,7 @@ export default function FontDetailPage() {
       {font.description_am && font.description_am.startsWith('[') && (
         <div style={{ maxWidth: "1500px", margin: "60px auto 0 auto", display: "flex", flexDirection: "column", gap: "50px", borderTop: "1px solid var(--panel-border)", paddingTop: "60px" }}>
           <h3 style={{ fontSize: "1.6rem", fontWeight: "900", color: "var(--text)", margin: 0 }}>
-            {locale === "hy" ? "Տառատեսակի Շնորհանդես (Font Specimen Showcase)" : "Font Specimen Showcase"}
+            {t("fonts", "specimen_showcase", "Տառատեսակի Շնորհանդես (Font Specimen Showcase)")}
           </h3>
           
           <div style={{ display: "flex", flexDirection: "column", gap: "40px" }}>
@@ -1136,7 +1132,12 @@ export default function FontDetailPage() {
                     const weightList = block.weights || [300, 400, 700];
                     return (
                       <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                        <h4 style={{ fontSize: "1.1rem", fontWeight: "700", margin: 0 }}>{locale === "hy" ? (block.title_am || "Հաստության ցուցադրում") : (block.title_en || "Weights Comparison")}</h4>
+                        <h4 style={{ fontSize: "1.1rem", fontWeight: "700", margin: 0 }}>
+                          {locale === "hy" 
+                            ? (block.title_am || t("fonts", "weights_showcase", "Հաստության ցուցադրում")) 
+                            : (block.title_en || t("fonts", "weights_showcase", "Weights Comparison"))
+                          }
+                        </h4>
                         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                           {weightList.map((w: number, wIdx: number) => (
                             <div key={wIdx} style={{ display: "flex", gap: "20px", alignItems: "baseline", borderBottom: "1px solid var(--panel-border)", paddingBottom: "12px" }}>
@@ -1155,7 +1156,12 @@ export default function FontDetailPage() {
                     const lettersList = block.letters.split(" ").filter((s: string) => s.length > 0);
                     return (
                       <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                        <h4 style={{ fontSize: "1.1rem", fontWeight: "700", margin: 0 }}>{locale === "hy" ? (block.title_am || "Գլիֆների ցուցադրում") : (block.title_en || "Key Glyphs Detail")}</h4>
+                        <h4 style={{ fontSize: "1.1rem", fontWeight: "700", margin: 0 }}>
+                          {locale === "hy" 
+                            ? (block.title_am || t("fonts", "glyphs_showcase", "Գլիֆների ցուցադրում")) 
+                            : (block.title_en || t("fonts", "glyphs_showcase", "Key Glyphs Detail"))
+                          }
+                        </h4>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: "16px" }}>
                           {lettersList.map((letter: string, lIdx: number) => (
                             <div key={lIdx} style={{ height: "140px", background: "var(--panel)", border: "1px solid var(--panel-border)", borderRadius: "16px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative" }}>

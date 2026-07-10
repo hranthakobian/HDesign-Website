@@ -62,8 +62,9 @@ const getColorsFromRgb = (r: number, g: number, b: number) => {
 
   return { overlayBg, lineColor };
 };
+
 function WorksContent() {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
   const [ratings, setRatings] = useState<Record<string, { sum: number; count: number }>>({});
@@ -208,16 +209,16 @@ function WorksContent() {
     <main className="shell" style={{ marginTop: "140px", minHeight: "80vh" }}>
       <div style={{ textAlign: "center", marginBottom: "48px" }}>
         <h1 style={{ fontSize: "2.8rem", fontWeight: "900", color: "var(--text)", margin: "0 0 12px 0" }}>
-          Աշխատանքներ
+          {t('works_page', 'title', 'Աշխատանքներ')}
         </h1>
         <p style={{ color: "var(--text)", opacity: 0.8, fontSize: "1.1rem", maxWidth: "600px", margin: "0 auto" }}>
-          Յուրաքանչյուր նախագիծ յուրահատուկ պատմություն է՝ ստեղծված մաթեմատիկական ճշգրտությամբ և գեղարվեստական կրքով։
+          {t('works_page', 'subtitle', 'Յուրաքանչյուր նախագիծ յուրահատուկ պատմություն է՝ ստեղծված մաթեմատիկական ճշգրտությամբ և գեղարվեստական կրքով։')}
         </p>
       </div>
 
       {loading && (
         <div style={{ display: "flex", justifyContent: "center", padding: "60px 0" }}>
-          <LoadingAnimation fullPage={false} message={locale === "en" ? "Loading works..." : "Բեռնվում է..."} />
+          <LoadingAnimation fullPage={false} message={t('works_page', 'loading', 'Բեռնվում է...')} />
         </div>
       )}
 
@@ -243,7 +244,7 @@ function WorksContent() {
                     flexBasis: `${aspectRatio * 150}px`,
                     height: "220px"
                   }}
-                  title="Դիտել պատկերասրահը"
+                  title={t('works_page', 'view_gallery', 'Դիտել պատկերասրահը')}
                 >
                   <div className="gallery-img-container" style={{ background: work.bg, width: "100%", height: "100%" }}>
                     {work.image_url && (
@@ -413,7 +414,7 @@ function WorksContent() {
                             color: "#ffffff", 
                             opacity: 0.7 
                           }}>
-                            {parseLangText(work.category || "", locale === 'en' ? 'en' : 'hy') || (locale === 'en' ? "Branding" : "Բրենդավորում")}
+                            {parseLangText(work.category || "", locale === 'en' ? 'en' : 'hy') || t('works_page', 'cat_branding', 'Բրենդավորում')}
                           </span>
                           {renderCardRating(work.id)}
                         </div>
@@ -470,7 +471,7 @@ function WorksContent() {
           >
             <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
               <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>
-                {locale === "en" ? "Gallery Preview" : "Պատկերասրահ"} ({selectedGalleryIndex + 1} / {filteredCases.length})
+                {t('works_page', 'gallery_preview', 'Պատկերասրահ')} ({selectedGalleryIndex + 1} / {filteredCases.length})
               </span>
               <span style={{ fontSize: "1.1rem", fontWeight: 700 }}>
                 {filteredCases[selectedGalleryIndex]?.title}
@@ -499,7 +500,7 @@ function WorksContent() {
                 onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)"}
               >
                 <span>{isSlideshowPlaying ? "⏸" : "▶"}</span>
-                <span>{isSlideshowPlaying ? (locale === "en" ? "Pause" : "Դադար") : (locale === "en" ? "Autoplay" : "Ավտոմատ")}</span>
+                <span>{isSlideshowPlaying ? t('works_page', 'pause', 'Դադար') : t('works_page', 'autoplay', 'Ավտոմատ')}</span>
               </button>
 
               {/* Close Button */}

@@ -278,28 +278,28 @@ export default function Header() {
           {/* Navigation Links */}
           <nav className="portfolio-nav">
             <Link href="/" className={`portfolio-nav-item ${activeNav === "home" ? "active" : ""}`}>
-              {renderNavLinkText("home", "Տուն")}
+              {renderNavLinkText("home", t('nav', 'home', 'Տուն'))}
             </Link>
             <Link href="/about" className={`portfolio-nav-item ${activeNav === "about" ? "active" : ""}`}>
-              {renderNavLinkText("about", "Մասին")}
+              {renderNavLinkText("about", t('nav', 'about', 'Մասին'))}
             </Link>
              {/* Աշխատանքներ Dropdown */}
              <div className="header-dropdown-container">
                <Link href="/works" className={`portfolio-nav-item header-dropdown-trigger ${activeNav === "works" ? "active" : ""}`} style={{ cursor: "pointer", userSelect: "none" }}>
-                 {renderNavLinkText("works", "Աշխատանքներ", true)}
+                 {renderNavLinkText("works", t('nav', 'works', 'Աշխատանքներ'), true)}
                </Link>
                <div className="header-dropdown-menu">
                  <div className="dropdown-menu-bg" />
                  <Link href="/works?category=branding" className={`header-dropdown-item ${pathname === "/works" && currentCategory === "branding" ? "active" : ""}`}>
-                   {renderNavLinkText("works-branding", "Բրենդինգներ")}
+                   {renderNavLinkText("works-branding", t('nav', 'works_branding', 'Բրենդինգներ'))}
                  </Link>
                  <Link href="/works?category=design" className={`header-dropdown-item ${pathname === "/works" && currentCategory === "design" ? "active" : ""}`}>
-                   {renderNavLinkText("works-design", "Դիզայն")}
+                   {renderNavLinkText("works-design", t('nav', 'works_design', 'Դիզայն'))}
                  </Link>
                </div>
              </div>
             <Link href="/fonts" className={`portfolio-nav-item ${activeNav === "fonts" ? "active" : ""}`}>
-              {renderNavLinkText("fonts", "Տառատեսակներ")}
+              {renderNavLinkText("fonts", t('nav', 'fonts', 'Տառատեսակներ'))}
             </Link>
 
             {/* HDesign Dropdown as a regular link with dropdown list */}
@@ -310,25 +310,25 @@ export default function Header() {
                <div className="header-dropdown-menu">
                 <div className="dropdown-menu-bg" />
                 <Link href="/hdesign" className={`header-dropdown-item ${pathname === "/hdesign" ? "active" : ""}`}>
-                  {renderNavLinkText("hdesign-general", "Ընդհանուր")}
+                  {renderNavLinkText("hdesign-general", t('nav', 'general', 'Ընդհանուր'))}
                 </Link>
                 <Link href="/hdesign/docs" className={`header-dropdown-item ${pathname === "/hdesign/docs" ? "active" : ""}`}>
-                  {renderNavLinkText("hdesign-docs", "Փաստաթղթեր")}
+                  {renderNavLinkText("hdesign-docs", t('nav', 'docs', 'Փաստաթղթեր'))}
                 </Link>
                 <Link href="/hdesign/samples" className={`header-dropdown-item ${pathname === "/hdesign/samples" ? "active" : ""}`}>
-                  {renderNavLinkText("hdesign-samples", "Փորձանմուշներ")}
+                  {renderNavLinkText("hdesign-samples", t('nav', 'samples', 'Փորձանմուշներ'))}
                 </Link>
               </div>
             </div>
 
             <Link href="/contact" className={`portfolio-nav-item hide-on-tablet ${activeNav === "contact" ? "active" : ""}`}>
-              {renderNavLinkText("contact", "Կապ")}
+              {renderNavLinkText("contact", t('nav', 'contact', 'Կապ'))}
             </Link>
 
             {/* Ավելին Dropdown (Visible on Tablet/Medium viewports only) */}
             <div className="header-dropdown-container show-on-tablet-only">
                <span className="portfolio-nav-item header-dropdown-trigger" style={{ cursor: "pointer", userSelect: "none" }}>
-                 {renderNavLinkText("more", locale === "en" ? "More" : "Ավելին", true)}
+                 {renderNavLinkText("more", t('nav', 'more', 'Ավելին'), true)}
                </span>
                <div className="header-dropdown-menu more-dropdown-menu">
                  <div className="dropdown-menu-bg" />
@@ -337,13 +337,13 @@ export default function Header() {
                  <div className="more-dropdown-sub-group">
                    <span className="more-dropdown-sub-group-title">HDesign</span>
                    <Link href="/hdesign" className={`header-dropdown-item ${pathname === "/hdesign" ? "active" : ""}`}>
-                     {renderNavLinkText("hdesign-general-more", locale === "en" ? "General" : "Ընդհանուր")}
+                     {renderNavLinkText("hdesign-general-more", t('nav', 'general', 'Ընդհանուր'))}
                    </Link>
                    <Link href="/hdesign/docs" className={`header-dropdown-item ${pathname === "/hdesign/docs" ? "active" : ""}`}>
-                     {renderNavLinkText("hdesign-docs-more", locale === "en" ? "Docs" : "Փաստաթղթեր")}
+                     {renderNavLinkText("hdesign-docs-more", t('nav', 'docs', 'Փաստաթղթեր'))}
                    </Link>
                    <Link href="/hdesign/samples" className={`header-dropdown-item ${pathname === "/hdesign/samples" ? "active" : ""}`}>
-                     {renderNavLinkText("hdesign-samples-more", locale === "en" ? "Samples" : "Փորձանմուշներ")}
+                     {renderNavLinkText("hdesign-samples-more", t('nav', 'samples', 'Փորձանմուշներ'))}
                    </Link>
                  </div>
                  
@@ -351,7 +351,7 @@ export default function Header() {
                  
                  {/* Contact link */}
                  <Link href="/contact" className={`header-dropdown-item ${pathname === "/contact" ? "active" : ""}`}>
-                   {renderNavLinkText("contact-more", locale === "en" ? "Contact" : "Կապ")}
+                   {renderNavLinkText("contact-more", t('nav', 'contact', 'Կապ'))}
                  </Link>
                </div>
             </div>
@@ -363,7 +363,7 @@ export default function Header() {
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             style={{ cursor: 'pointer' }}
           >
-            <span className="hamburger-text">Ցանկ</span>
+            <span className="hamburger-text">{t('nav', 'menu', 'Ցանկ')}</span>
             <div 
               className={`hamburger-btn ${isMobileMenuOpen ? "open" : ""}`} 
               aria-label="Toggle navigation menu"
@@ -398,12 +398,12 @@ export default function Header() {
               data-width="120px"
               data-height="34px"
               data-thickness="3px"
-              placeholder="Թեմա"
+              placeholder={t('nav', 'theme', 'Թեմա')}
             >
-              <span value="light" {...(theme === 'light' ? { selected: true } : {})}>Բաց</span>
-              <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>Մութ</span>
-              <span value="green" {...(theme === 'green' ? { selected: true } : {})}>Կանաչ</span>
-              <span value="custom" {...(theme === 'custom' ? { selected: true } : {})}>Գույն</span>
+              <span value="light" {...(theme === 'light' ? { selected: true } : {})}>{t('nav', 'theme_light', 'Բաց')}</span>
+              <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>{t('nav', 'theme_dark', 'Մութ')}</span>
+              <span value="green" {...(theme === 'green' ? { selected: true } : {})}>{t('nav', 'theme_green', 'Կանաչ')}</span>
+              <span value="custom" {...(theme === 'custom' ? { selected: true } : {})}>{t('nav', 'theme_custom', 'Գույն')}</span>
             </hd-select>
             
             {theme === 'custom' && (
@@ -423,46 +423,46 @@ export default function Header() {
         <div className={`mobile-menu-drawer ${isMobileMenuOpen ? "open" : ""}`}>
           <nav className="mobile-nav-links">
             <Link href="/" className={`mobile-nav-item ${activeNav === "home" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
-              Տուն
+              {t('nav', 'home', 'Տուն')}
             </Link>
             <Link href="/about" className={`mobile-nav-item ${activeNav === "about" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
-              Մասին
+              {t('nav', 'about', 'Մասին')}
             </Link>
              <Link href="/works" className={`mobile-nav-item ${activeNav === "works" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
-              Աշխատանքներ
+              {t('nav', 'works', 'Աշխատանքներ')}
             </Link>
             <Link href="/fonts" className={`mobile-nav-item ${activeNav === "fonts" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
-              Տառատեսակներ
+              {t('nav', 'fonts', 'Տառատեսակներ')}
             </Link>
             <div className="mobile-nav-divider" />
             
             <span className="mobile-nav-section-title">HDesign</span>
             <Link href="/hdesign" className={`mobile-nav-subitem ${pathname === "/hdesign" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
-              Ընդհանուր
+              {t('nav', 'general', 'Ընդհանուր')}
             </Link>
             <Link href="/hdesign/docs" className={`mobile-nav-subitem ${pathname === "/hdesign/docs" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
-              Փաստաթղթեր
+              {t('nav', 'docs', 'Փաստաթղթեր')}
             </Link>
              <Link href="/hdesign/samples" className={`mobile-nav-subitem ${pathname === "/hdesign/samples" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
-              Փորձանմուշներ
+              {t('nav', 'samples', 'Փորձանմուշներ')}
             </Link>
 
             <div className="mobile-nav-divider" />
 
             <Link href="/contact" className={`mobile-nav-item ${activeNav === "contact" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
-              Կապ
+              {t('nav', 'contact', 'Կապ')}
             </Link>
 
             <div className="mobile-nav-divider" />
 
             {/* Mobile Settings Row (Language & Theme switchers) */}
             <div className="mobile-settings-container" style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '20px', width: '100%' }}>
-              <span className="mobile-nav-section-title">Կարգավորումներ</span>
+              <span className="mobile-nav-section-title">{t('nav', 'settings', 'Կարգավորումներ')}</span>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
                 {/* Language Toggle */}
                 <div style={{ width: '100%' }}>
-                  <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block", marginBottom: "6px" }}>Լեզու</span>
+                  <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block", marginBottom: "6px" }}>{t('nav', 'language', 'Լեզու')}</span>
                   <hd-segment
                     id="langSelectorMobile"
                     value={locale}
@@ -478,7 +478,7 @@ export default function Header() {
 
                 {/* Theme Switcher Toggle */}
                 <div style={{ width: '100%' }}>
-                  <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block", marginBottom: "6px" }}>Թեմա</span>
+                  <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block", marginBottom: "6px" }}>{t('nav', 'theme', 'Թեմա')}</span>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
                     <hd-select
                       id="themeSelectorMobile"
@@ -487,12 +487,12 @@ export default function Header() {
                       data-width="100%"
                       data-height="36px"
                       data-thickness="3px"
-                      placeholder="Թեմա"
+                      placeholder={t('nav', 'theme', 'Թեմա')}
                     >
-                      <span value="light" {...(theme === 'light' ? { selected: true } : {})}>Բաց</span>
-                      <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>Մութ</span>
-                      <span value="green" {...(theme === 'green' ? { selected: true } : {})}>Կանաչ</span>
-                      <span value="custom" {...(theme === 'custom' ? { selected: true } : {})}>Գույն</span>
+                      <span value="light" {...(theme === 'light' ? { selected: true } : {})}>{t('nav', 'theme_light', 'Բաց')}</span>
+                      <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>{t('nav', 'theme_dark', 'Մութ')}</span>
+                      <span value="green" {...(theme === 'green' ? { selected: true } : {})}>{t('nav', 'theme_green', 'Կանաչ')}</span>
+                      <span value="custom" {...(theme === 'custom' ? { selected: true } : {})}>{t('nav', 'theme_custom', 'Գույն')}</span>
                     </hd-select>
                     
                     {theme === 'custom' && (
@@ -564,12 +564,12 @@ export default function Header() {
             data-width="120px"
             data-height="36px"
             data-thickness="3px"
-            placeholder="Թեմա"
+            placeholder={t('nav', 'theme', 'Թեմա')}
           >
-            <span value="light" {...(theme === 'light' ? { selected: true } : {})}>Բաց</span>
-            <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>Մութ</span>
-            <span value="green" {...(theme === 'green' ? { selected: true } : {})}>Կանաչ</span>
-            <span value="custom" {...(theme === 'custom' ? { selected: true } : {})}>Գույն</span>
+            <span value="light" {...(theme === 'light' ? { selected: true } : {})}>{t('nav', 'theme_light', 'Բաց')}</span>
+            <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>{t('nav', 'theme_dark', 'Մութ')}</span>
+            <span value="green" {...(theme === 'green' ? { selected: true } : {})}>{t('nav', 'theme_green', 'Կանաչ')}</span>
+            <span value="custom" {...(theme === 'custom' ? { selected: true } : {})}>{t('nav', 'theme_custom', 'Գույն')}</span>
           </hd-select>
           
           {theme === 'custom' && (

@@ -106,7 +106,24 @@ export default function FontsListingPage() {
     );
   };
 
-  const activePreviewText = customText || (locale === "hy" ? "Հրանտ Հակոբյան Դիզայն 2026" : "Hrant Hakobyan Design 2026");
+  const getFontDescription = (f: Font) => {
+    const desc = locale === "hy" ? f.description_am : f.description_en;
+    if (!desc) return "";
+    if (desc.startsWith("[")) {
+      try {
+        const blocks = JSON.parse(desc);
+        const textBlock = blocks.find((b: any) => b.type === "text");
+        if (textBlock) {
+          return locale === "hy" ? textBlock.content_am : textBlock.content_en;
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    return desc;
+  };
+
+  const activePreviewText = customText || t("fonts", "preview_text_default", "Հրանտ Հակոբյան Դիզայն 2026");
 
   return (
     <main className="shell" style={{ marginTop: "140px", minHeight: "85vh", paddingBottom: "80px" }}>
@@ -298,7 +315,7 @@ export default function FontsListingPage() {
                     onChange={() => setSelectedDownloadable("no")}
                     style={{ accentColor: "var(--accent)" }}
                   />
-                  {locale === "hy" ? "Ոչ ներբեռնելի" : "View Only"}
+                  {t("fonts", "view_only", "Ոչ ներբեռնելի")}
                 </label>
               </div>
             </div>
@@ -323,7 +340,7 @@ export default function FontsListingPage() {
       {/* Loading state */}
       {loading && (
         <div style={{ display: "flex", justifyContent: "center", padding: "60px 0" }}>
-          <LoadingAnimation fullPage={false} message={locale === "hy" ? "Տառատեսակները բեռնվում են..." : "Loading fonts..."} />
+          <LoadingAnimation fullPage={false} message={t("fonts", "loading_fonts", "Տառատեսակները բեռնվում են...")} />
         </div>
       )}
 
@@ -391,7 +408,7 @@ export default function FontsListingPage() {
                   </div>
 
                   <p style={{ margin: 0, fontSize: "0.9rem", opacity: 0.75, lineHeight: "1.5", display: "-webkit-box", WebkitLineClamp: "3", WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                    {locale === "hy" ? font.description_am : font.description_en}
+                    {getFontDescription(font)}
                   </p>
 
                   <div style={{ marginTop: "auto", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.8rem", color: "var(--muted)" }}>

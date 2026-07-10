@@ -722,16 +722,30 @@ export default function FontWysiwygEditor() {
 
                       {block.type === 'text' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <input 
-                            type="text" placeholder="Title (Armenian)" value={block.title_am} 
-                            onChange={e => updateBlock(index, { ...block, title_am: e.target.value })}
-                            style={{ width: '100%', height: '28px', background: 'var(--panel)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '0 6px', color: 'var(--text)', fontSize: '0.75rem' }}
-                          />
-                          <textarea 
-                            placeholder="Content (Armenian)" value={block.content_am} 
-                            onChange={e => updateBlock(index, { ...block, content_am: e.target.value })}
-                            style={{ width: '100%', minHeight: '40px', background: 'var(--panel)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '6px', color: 'var(--text)', fontSize: '0.75rem', resize: 'vertical' }}
-                          />
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                            <input 
+                              type="text" placeholder="Title (Armenian)" value={block.title_am} 
+                              onChange={e => updateBlock(index, { ...block, title_am: e.target.value })}
+                              style={{ width: '100%', height: '28px', background: 'var(--panel)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '0 6px', color: 'var(--text)', fontSize: '0.75rem' }}
+                            />
+                            <input 
+                              type="text" placeholder="Title (English)" value={block.title_en || ''} 
+                              onChange={e => updateBlock(index, { ...block, title_en: e.target.value })}
+                              style={{ width: '100%', height: '28px', background: 'var(--panel)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '0 6px', color: 'var(--text)', fontSize: '0.75rem' }}
+                            />
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                            <textarea 
+                              placeholder="Content (Armenian)" value={block.content_am} 
+                              onChange={e => updateBlock(index, { ...block, content_am: e.target.value })}
+                              style={{ width: '100%', minHeight: '40px', background: 'var(--panel)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '6px', color: 'var(--text)', fontSize: '0.75rem', resize: 'vertical' }}
+                            />
+                            <textarea 
+                              placeholder="Content (English)" value={block.content_en || ''} 
+                              onChange={e => updateBlock(index, { ...block, content_en: e.target.value })}
+                              style={{ width: '100%', minHeight: '40px', background: 'var(--panel)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '6px', color: 'var(--text)', fontSize: '0.75rem', resize: 'vertical' }}
+                            />
+                          </div>
                         </div>
                       )}
 
@@ -755,11 +769,18 @@ export default function FontWysiwygEditor() {
 
                       {block.type === 'weights_comparison' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <input 
-                            type="text" placeholder="Title (Armenian)" value={block.title_am} 
-                            onChange={e => updateBlock(index, { ...block, title_am: e.target.value })}
-                            style={{ width: '100%', height: '28px', background: 'var(--panel)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '0 6px', color: 'var(--text)', fontSize: '0.75rem' }}
-                          />
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                            <input 
+                              type="text" placeholder="Title (Armenian)" value={block.title_am} 
+                              onChange={e => updateBlock(index, { ...block, title_am: e.target.value })}
+                              style={{ width: '100%', height: '28px', background: 'var(--panel)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '0 6px', color: 'var(--text)', fontSize: '0.75rem' }}
+                            />
+                            <input 
+                              type="text" placeholder="Title (English)" value={block.title_en || ''} 
+                              onChange={e => updateBlock(index, { ...block, title_en: e.target.value })}
+                              style={{ width: '100%', height: '28px', background: 'var(--panel)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '0 6px', color: 'var(--text)', fontSize: '0.75rem' }}
+                            />
+                          </div>
                           <input 
                             type="text" placeholder="Sample pangram..." value={block.previewText} 
                             onChange={e => updateBlock(index, { ...block, previewText: e.target.value })}
@@ -770,11 +791,18 @@ export default function FontWysiwygEditor() {
 
                       {block.type === 'glyph_showcase' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <input 
-                            type="text" placeholder="Title (Armenian)" value={block.title_am} 
-                            onChange={e => updateBlock(index, { ...block, title_am: e.target.value })}
-                            style={{ width: '100%', height: '28px', background: 'var(--panel)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '0 6px', color: 'var(--text)', fontSize: '0.75rem' }}
-                          />
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                            <input 
+                              type="text" placeholder="Title (Armenian)" value={block.title_am} 
+                              onChange={e => updateBlock(index, { ...block, title_am: e.target.value })}
+                              style={{ width: '100%', height: '28px', background: 'var(--panel)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '0 6px', color: 'var(--text)', fontSize: '0.75rem' }}
+                            />
+                            <input 
+                              type="text" placeholder="Title (English)" value={block.title_en || ''} 
+                              onChange={e => updateBlock(index, { ...block, title_en: e.target.value })}
+                              style={{ width: '100%', height: '28px', background: 'var(--panel)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '0 6px', color: 'var(--text)', fontSize: '0.75rem' }}
+                            />
+                          </div>
                           <input 
                             type="text" placeholder="Characters (split with space)" value={block.letters} 
                             onChange={e => updateBlock(index, { ...block, letters: e.target.value })}

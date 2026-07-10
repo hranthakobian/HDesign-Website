@@ -79,7 +79,7 @@ async function getTransporter() {
 }
 
 // Universal email sender
-async function dispatchEmail(recipients: string[], subject: string, message: string, replyTo?: string) {
+async function dispatchEmail(recipients: string[], subject: string, message: string, replyTo?: string, isHtml?: boolean) {
   const transporter = await getTransporter();
   const config = await getSmtpConfig();
   const fromEmail = config.from;
@@ -101,7 +101,7 @@ async function dispatchEmail(recipients: string[], subject: string, message: str
       const htmlContent = `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffff; color: #2d3748;">
           <h2 style="color: #6A3E73; border-bottom: 2px solid #6A3E73; padding-bottom: 12px; margin-top: 0;">HDesign</h2>
-          <div style="font-size: 16px; line-height: 1.6; color: #2d3748; white-space: pre-line;">
+          <div style="font-size: 16px; line-height: 1.6; color: #2d3748; ${isHtml ? '' : 'white-space: pre-line;'}">
             ${message.replace(new RegExp(`(${baseUrl}/unsubscribe\\?email=[^\\s]+)`, 'g'), '<a href="$1" style="color: #ab47bc; font-weight: bold; text-decoration: underline;">Ապաբաժանորդագրվել</a>')}
           </div>
           <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 25px 0;" />
@@ -116,7 +116,7 @@ async function dispatchEmail(recipients: string[], subject: string, message: str
         to: recipients.join(', '),
         replyTo: replyTo,
         subject,
-        text: message,
+        text: isHtml ? message.replace(/<[^>]*>/g, '') : message, // strip HTML tags for plain text fallback
         html: htmlContent
       });
 
@@ -292,12 +292,24 @@ export async function sendContactEmails({
   // 1. Email to admin (hrant@hakobian.am)
   const adminSubject = `Նոր հաղորդագրություն կապի ձևից - ${name}`;
   const adminMessage = `Դուք ստացել եք նոր հաղորդագրություն HDesign կայքի կապի ձևից:\n\nԱնուն: ${name}\nԷլ. հասցե: ${email}\nՀաղորդագրություն:\n${message}`;
-
+ 
   // 2. Email to the user (confirmation)
   const userSubject = 'Ձեր հաղորդագրությունը ստացվել է | HDesign';
   const userMessage = `Ողջույն ${name},\n\nՇնորհակալություն HDesign-ին հաղորդագրություն ուղարկելու համար: Ձեր նամակը հաջողությամբ ստացվել է, և մենք շուտով կպատասխանենք ձեզ:\n\nՁեր ուղարկած հաղորդագրության պատճենը՝\n---\n${message}`;
-
+ 
   // Dispatch both emails (via SMTP or Mock fallback)
   await dispatchEmail([adminEmail], adminSubject, adminMessage, email);
   await dispatchEmail([email], userSubject, userMessage);
+}
+
+export async function sendReplyEmail({
+  to,
+  subject,
+  message
+}: {
+  to: string;
+  subject: string;
+  message: string;
+}) {
+  await dispatchEmail([to], subject, message, undefined, true);
 }

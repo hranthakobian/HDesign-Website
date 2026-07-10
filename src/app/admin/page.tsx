@@ -41,12 +41,26 @@ type Font = {
   created_at?: string;
 };
 
-type Message = {
+type MessageReply = {
   id: string;
+  messageId: string;
+  subject: string;
+  message: string;
+  sent_at: string;
+};
+
+type Message = {
+  id?: string;
   name: string;
   email: string;
   message: string;
-  created_at: string;
+  created_at?: string;
+  read?: boolean;
+  starred?: boolean;
+  spam?: boolean;
+  trash?: boolean;
+  replied?: boolean;
+  replies?: MessageReply[];
 };
 
 type Subscriber = {
@@ -408,6 +422,17 @@ export default function AdminDashboard() {
     purchase_url: ''
   });
   const [messages, setMessages] = useState<Message[]>([]);
+  const [selectedMailFolder, setSelectedMailFolder] = useState<'inbox' | 'starred' | 'sent' | 'spam' | 'trash'>('inbox');
+  const [mailSearchQuery, setMailSearchQuery] = useState('');
+  const [replySubject, setReplySubject] = useState('');
+  const [replyBody, setReplyBody] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
+  const [replyStatus, setReplyStatus] = useState<{ type: 'success' | 'error' | null; text: string }>({ type: null, text: '' });
+  const [selectedMailIds, setSelectedMailIds] = useState<string[]>([]);
+  const [signature, setSignature] = useState('');
+  const [isEditingSignature, setIsEditingSignature] = useState(false);
+  const [savingSignature, setSavingSignature] = useState(false);
+  const [hoveredMailId, setHoveredMailId] = useState<string | null>(null);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [emailSubject, setEmailSubject] = useState("");
@@ -555,6 +580,14 @@ export default function AdminDashboard() {
   const [transSearch, setTransSearch] = useState('');
   const [transSectionFilter, setTransSectionFilter] = useState('all');
   const [visibleTransCount, setVisibleTransCount] = useState(50);
+  const [transFilterStatus, setTransFilterStatus] = useState<'all' | 'missing' | 'custom'>('all');
+  const [transViewMode, setTransViewMode] = useState<'grid' | 'table'>('grid');
+  const [translatingKeys, setTranslatingKeys] = useState<Record<string, boolean>>({});
+  const [isTranslatingBulk, setIsTranslatingBulk] = useState(false);
+  const [isSavingAllTrans, setIsSavingAllTrans] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importJsonText, setImportJsonText] = useState('');
+  const [importMode, setImportMode] = useState<'merge' | 'replace'>('merge');
 
   // Cases Management
   const [editingCase, setEditingCase] = useState<Case | null>(null);
@@ -636,12 +669,25 @@ export default function AdminDashboard() {
         if (!subscribersRes.ok) throw new Error('Failed to fetch subscribers');
         const subscribersData = await subscribersRes.json();
 
+        // 10. Fetch Mail Signature
+        let signatureData = '';
+        try {
+          const sigRes = await fetch('/api/contact/signature', { headers });
+          if (sigRes.ok) {
+            const sigJson = await sigRes.json();
+            signatureData = sigJson.signature || '';
+          }
+        } catch (sigErr) {
+          console.warn('Failed to fetch mail signature:', sigErr);
+        }
+
         // Seed list with loaded values, filter out seed items from dynamic listing if desired
         setCases(casesData || []);
         setFonts(fontsData || []);
         setMessages(msgData || []);
         setVisits(visitsData || []);
         setSubscribers(subscribersData || []);
+        setSignature(signatureData);
         setApiSettings(apiSettingsData ? {
           ...apiSettingsData,
           tildo_widget_id: extractTidioWidgetId(apiSettingsData.tildo_widget_id || '')
@@ -987,6 +1033,343 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleSelectMessage = async (msg: Message) => {
+    setSelectedMessage(msg);
+    setReplySubject(`Re: ${msg.name}-ի հաղորդագրությունը HDesign-ին`);
+    setReplyStatus({ type: null, text: '' });
+
+    const sigHtml = signature ? `<br><br><div style="color: #666; font-size: 0.9rem;">--<br>${signature.replace(/\n/g, '<br>')}</div>` : '<br><br>';
+    setReplyBody(sigHtml);
+
+    if (!msg.read && msg.id) {
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, read: true } : m));
+      try {
+        await fetch(`/api/contact/${msg.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token || ''
+          },
+          body: JSON.stringify({ read: true })
+        });
+      } catch (err) {
+        console.error('Failed to mark message as read:', err);
+      }
+    }
+  };
+
+  const handleToggleStar = async (msg: Message, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!msg.id) return;
+    const newStarred = !msg.starred;
+
+    setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, starred: newStarred } : m));
+    if (selectedMessage?.id === msg.id) {
+      setSelectedMessage(prev => prev ? { ...prev, starred: newStarred } : null);
+    }
+
+    try {
+      const res = await fetch(`/api/contact/${msg.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token || ''
+        },
+        body: JSON.stringify({ starred: newStarred })
+      });
+      if (!res.ok) throw new Error('API failed');
+    } catch (err) {
+      console.error('Failed to toggle star:', err);
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, starred: !newStarred } : m));
+      if (selectedMessage?.id === msg.id) {
+        setSelectedMessage(prev => prev ? { ...prev, starred: !newStarred } : null);
+      }
+    }
+  };
+
+  const handleToggleSpam = async (msg: Message, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!msg.id) return;
+    const newSpam = !msg.spam;
+
+    setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, spam: newSpam } : m));
+    if (selectedMessage?.id === msg.id) {
+      setSelectedMessage(prev => prev ? { ...prev, spam: newSpam } : null);
+    }
+
+    try {
+      const res = await fetch(`/api/contact/${msg.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token || ''
+        },
+        body: JSON.stringify({ spam: newSpam })
+      });
+      if (!res.ok) throw new Error('API failed');
+    } catch (err) {
+      console.error('Failed to toggle spam:', err);
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, spam: !newSpam } : m));
+      if (selectedMessage?.id === msg.id) {
+        setSelectedMessage(prev => prev ? { ...prev, spam: !newSpam } : null);
+      }
+    }
+  };
+
+  const handleToggleTrash = async (msg: Message, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!msg.id) return;
+    const newTrash = !msg.trash;
+
+    setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, trash: newTrash } : m));
+    if (selectedMessage?.id === msg.id) {
+      setSelectedMessage(prev => prev ? { ...prev, trash: newTrash } : null);
+    }
+
+    try {
+      const res = await fetch(`/api/contact/${msg.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token || ''
+        },
+        body: JSON.stringify({ trash: newTrash })
+      });
+      if (!res.ok) throw new Error('API failed');
+    } catch (err) {
+      console.error('Failed to toggle trash:', err);
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, trash: !newTrash } : m));
+      if (selectedMessage?.id === msg.id) {
+        setSelectedMessage(prev => prev ? { ...prev, trash: !newTrash } : null);
+      }
+    }
+  };
+
+  const handleSendReply = async (msg: Message) => {
+    if (!msg.id) return;
+    if (!replySubject.trim() || !replyBody.trim()) {
+      setReplyStatus({ type: 'error', text: 'Խնդրում ենք լրացնել վերնագիրը և հաղորդագրությունը:' });
+      return;
+    }
+
+    setSendingReply(true);
+    setReplyStatus({ type: null, text: '' });
+
+    try {
+      const res = await fetch(`/api/contact/${msg.id}/reply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token || ''
+        },
+        body: JSON.stringify({
+          subject: replySubject,
+          message: replyBody
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setReplyStatus({ type: 'success', text: 'Պատասխանն ուղարկվեց հաջողությամբ:' });
+        setReplyBody('');
+
+        const newReply = data.reply;
+        setMessages(prev => prev.map(m => {
+          if (m.id === msg.id) {
+            const currentReplies = m.replies || [];
+            return {
+              ...m,
+              replied: true,
+              read: true,
+              replies: [newReply, ...currentReplies]
+            };
+          }
+          return m;
+        }));
+
+        setSelectedMessage(prev => {
+          if (prev && prev.id === msg.id) {
+            const currentReplies = prev.replies || [];
+            return {
+              ...prev,
+              replied: true,
+              read: true,
+              replies: [newReply, ...currentReplies]
+            };
+          }
+          return prev;
+        });
+      } else {
+        setReplyStatus({ type: 'error', text: data.error || 'Չհաջողվեց ուղարկել պատասխանը:' });
+      }
+    } catch (err: any) {
+      setReplyStatus({ type: 'error', text: err.message || 'Չհաջողվեց ուղարկել պատասխանը:' });
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
+  const handleBulkMarkRead = async () => {
+    const unreadInbox = messages.filter(m => !m.read && !m.spam && !m.trash);
+    if (unreadInbox.length === 0) return;
+
+    setMessages(prev => prev.map(m => (!m.read && !m.spam && !m.trash) ? { ...m, read: true } : m));
+
+    try {
+      await Promise.all(unreadInbox.map(m => 
+        fetch(`/api/contact/${m.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token || ''
+          },
+          body: JSON.stringify({ read: true })
+        })
+      ));
+    } catch (err) {
+      console.error('Failed to mark all as read:', err);
+    }
+  };
+
+  const handleBulkEmptyTrash = async () => {
+    const trashMessages = messages.filter(m => m.trash);
+    if (trashMessages.length === 0) return;
+
+    if (!confirm('Վստա՞հ եք, որ ցանկանում եք ընդմիշտ ջնջել աղբամանի բոլոր նամակները:')) return;
+
+    setMessages(prev => prev.filter(m => !m.trash));
+    if (selectedMessage && selectedMessage.trash) {
+      setSelectedMessage(null);
+    }
+
+    try {
+      await Promise.all(trashMessages.map(m => 
+        fetch(`/api/contact/${m.id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': token || '' }
+        })
+      ));
+      alert('Աղբամանը հաջողությամբ դատարկվեց:');
+    } catch (err) {
+      console.error('Failed to empty trash:', err);
+    }
+  };
+
+  const handleSaveSignature = async () => {
+    if (!token) return;
+    setSavingSignature(true);
+    try {
+      const res = await fetch('/api/contact/signature', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token || ''
+        },
+        body: JSON.stringify({ signature })
+      });
+      if (res.ok) {
+        setIsEditingSignature(false);
+        alert('Ստորագրությունը հաջողությամբ պահպանվեց:');
+      } else {
+        const data = await res.json();
+        alert('Սխալ՝ ' + data.error);
+      }
+    } catch (err) {
+      alert('Չհաջողվեց պահպանել ստորագրությունը:');
+    } finally {
+      setSavingSignature(false);
+    }
+  };
+
+  const insertTagIntoSignature = (tag: 'b' | 'i') => {
+    const textarea = document.getElementById('signature-textarea') as HTMLTextAreaElement;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selectedText = text.substring(start, end);
+    const replacement = `<${tag}>${selectedText}</${tag}>`;
+    
+    const newValue = text.substring(0, start) + replacement + text.substring(end);
+    setSignature(newValue);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + tag.length + 2, start + tag.length + 2 + selectedText.length);
+    }, 0);
+  };
+
+  const handleBulkAction = async (action: 'read' | 'unread' | 'star' | 'unstar' | 'trash' | 'restore' | 'delete') => {
+    if (selectedMailIds.length === 0) return;
+    if (!token) return;
+
+    if (action === 'delete') {
+      if (!confirm(`Վստա՞հ եք, որ ցանկանում եք ընդմիշտ ջնջել ընտրված ${selectedMailIds.length} նամակները:`)) return;
+    }
+
+    setMessages(prev => {
+      if (action === 'delete') {
+        return prev.filter(m => !selectedMailIds.includes(m.id!));
+      }
+      return prev.map(m => {
+        if (selectedMailIds.includes(m.id!)) {
+          const u: any = {};
+          if (action === 'read') u.read = true;
+          if (action === 'unread') u.read = false;
+          if (action === 'star') u.starred = true;
+          if (action === 'unstar') u.starred = false;
+          if (action === 'trash') u.trash = true;
+          if (action === 'restore') u.trash = false;
+          return { ...m, ...u };
+        }
+        return m;
+      });
+    });
+
+    if (selectedMessage && selectedMailIds.includes(selectedMessage.id!)) {
+      if (action === 'delete') {
+        setSelectedMessage(null);
+      } else {
+        setSelectedMessage(prev => {
+          if (!prev) return null;
+          const u: any = {};
+          if (action === 'read') u.read = true;
+          if (action === 'unread') u.read = false;
+          if (action === 'star') u.starred = true;
+          if (action === 'unstar') u.starred = false;
+          if (action === 'trash') u.trash = true;
+          if (action === 'restore') u.trash = false;
+          return { ...prev, ...u };
+        });
+      }
+    }
+
+    const idsToProcess = [...selectedMailIds];
+    setSelectedMailIds([]);
+
+    try {
+      const res = await fetch('/api/contact/bulk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token || ''
+        },
+        body: JSON.stringify({ ids: idsToProcess, action })
+      });
+      if (!res.ok) throw new Error('Bulk API failed');
+    } catch (err) {
+      console.error('Failed to perform bulk action:', err);
+      alert('Չհաջողվեց կատարել խմբային գործողությունը:');
+      const headers = { 'Authorization': token || '' };
+      const msgRes = await fetch('/api/contact', { headers });
+      if (msgRes.ok) {
+        const msgData = await msgRes.json();
+        setMessages(msgData || []);
+      }
+    }
+  };
+
   // ══════════════════════════════════════════════════════════════════════════════
   // SUBSCRIBERS OPERATIONS
   // ══════════════════════════════════════════════════════════════════════════════
@@ -1110,9 +1493,57 @@ export default function AdminDashboard() {
         item.key.toLowerCase().includes(transSearch.toLowerCase()) ||
         item.hy.toLowerCase().includes(transSearch.toLowerCase()) ||
         item.en.toLowerCase().includes(transSearch.toLowerCase());
-      return matchesSection && matchesSearch;
+      
+      let matchesStatus = true;
+      if (transFilterStatus === 'missing') {
+        const rowKey = `${item.section}::${item.key}`;
+        const hyVal = editingTrans[rowKey]?.hy ?? item.hy;
+        const enVal = editingTrans[rowKey]?.en ?? item.en;
+        matchesStatus = !hyVal.trim() || !enVal.trim();
+      } else if (transFilterStatus === 'custom') {
+        matchesStatus = item.isCustom;
+      }
+      
+      return matchesSection && matchesSearch && matchesStatus;
     });
-  }, [allTranslationsList, transSectionFilter, transSearch]);
+  }, [allTranslationsList, transSectionFilter, transSearch, transFilterStatus, editingTrans]);
+
+  const translationStats = useMemo(() => {
+    let totalKeys = allTranslationsList.length;
+    let filledHy = 0;
+    let filledEn = 0;
+    let missingBoth = 0;
+    let missingAny = 0;
+    let totalCustom = 0;
+
+    allTranslationsList.forEach(item => {
+      const rowKey = `${item.section}::${item.key}`;
+      const hyVal = editingTrans[rowKey]?.hy ?? item.hy;
+      const enVal = editingTrans[rowKey]?.en ?? item.en;
+      
+      const hasHy = !!hyVal.trim();
+      const hasEn = !!enVal.trim();
+      if (hasHy) filledHy++;
+      if (hasEn) filledEn++;
+      if (!hasHy && !hasEn) missingBoth++;
+      if (!hasHy || !hasEn) missingAny++;
+      if (item.isCustom) totalCustom++;
+    });
+
+    const percentHy = totalKeys > 0 ? Math.round((filledHy / totalKeys) * 100) : 0;
+    const percentEn = totalKeys > 0 ? Math.round((filledEn / totalKeys) * 100) : 0;
+
+    return {
+      totalKeys,
+      filledHy,
+      filledEn,
+      missingBoth,
+      missingAny,
+      percentHy,
+      percentEn,
+      totalCustom
+    };
+  }, [allTranslationsList, editingTrans]);
 
   const transSections = useMemo(() => {
     return Array.from(new Set(allTranslationsList.map(item => item.section)));
@@ -1244,6 +1675,258 @@ export default function AdminDashboard() {
     setNewTransEn('');
     setNewTransCustomSection('');
     setShowAddTrans(false);
+  };
+
+  // AI and bulk translation helpers
+  const translateText = async (text: string, sourceLang: 'hy' | 'en', targetLang: 'hy' | 'en'): Promise<string> => {
+    if (!text.trim()) return '';
+    try {
+      const sl = sourceLang === 'hy' ? 'hy' : 'en';
+      const tl = targetLang === 'hy' ? 'hy' : 'en';
+      const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=${sl}&tl=${tl}&dt=t&q=${encodeURIComponent(text)}`);
+      if (!res.ok) throw new Error('API failed');
+      const data = await res.json();
+      if (data && data[0]) {
+        return data[0].map((x: any) => x[0]).join('');
+      }
+      return '';
+    } catch (err) {
+      console.error('Translation error:', err);
+      throw err;
+    }
+  };
+
+  const handleAutoTranslateRow = async (section: string, key: string, fromLang: 'hy' | 'en', toLang: 'hy' | 'en') => {
+    const rowKey = `${section}::${key}`;
+    const item = allTranslationsList.find(x => x.section === section && x.key === key);
+    if (!item) return;
+
+    // Get current value of source language
+    const currentSrcVal = editingTrans[rowKey]?.[fromLang] ?? item[fromLang];
+    if (!currentSrcVal.trim()) {
+      alert('Սկզբնաղբյուր տեքստը դատարկ է:');
+      return;
+    }
+
+    setTranslatingKeys(prev => ({ ...prev, [rowKey]: true }));
+    try {
+      const translated = await translateText(currentSrcVal, fromLang, toLang);
+      if (translated) {
+        setEditingTrans(prev => ({
+          ...prev,
+          [rowKey]: {
+            hy: prev[rowKey]?.hy ?? item.hy,
+            en: prev[rowKey]?.en ?? item.en,
+            [toLang]: translated
+          }
+        }));
+      }
+    } catch (err) {
+      alert('Թարգմանությունը ձախողվեց: Խնդրում ենք փորձել կրկին կամ մուտքագրել ձեռքով:');
+    } finally {
+      setTranslatingKeys(prev => ({ ...prev, [rowKey]: false }));
+    }
+  };
+
+  const handleBulkTranslateMissing = async () => {
+    const targets = filteredTranslations.filter(item => {
+      const rowKey = `${item.section}::${item.key}`;
+      const hyVal = editingTrans[rowKey]?.hy ?? item.hy;
+      const enVal = editingTrans[rowKey]?.en ?? item.en;
+      return (!!hyVal.trim() && !enVal.trim()) || (!hyVal.trim() && !!enVal.trim());
+    });
+
+    if (targets.length === 0) {
+      alert('Ավտոմատ թարգմանության ենթակա (միայն մեկ լեզվով լրացված) տողեր չգտնվեցին:');
+      return;
+    }
+
+    const confirmMsg = `Գտնվել է ${targets.length} տող, որոնք ունեն թերի թարգմանություն: Ցանկանո՞ւմ եք ավտոմատ թարգմանել բոլորը (օգտագործելով Google Translate):`;
+    if (!confirm(confirmMsg)) return;
+
+    setIsTranslatingBulk(true);
+    let successCount = 0;
+    
+    for (const item of targets) {
+      const rowKey = `${item.section}::${item.key}`;
+      const hyVal = editingTrans[rowKey]?.hy ?? item.hy;
+      const enVal = editingTrans[rowKey]?.en ?? item.en;
+
+      try {
+        if (hyVal.trim() && !enVal.trim()) {
+          const translated = await translateText(hyVal, 'hy', 'en');
+          if (translated) {
+            setEditingTrans(prev => ({
+              ...prev,
+              [rowKey]: {
+                hy: prev[rowKey]?.hy ?? item.hy,
+                en: translated
+              }
+            }));
+            successCount++;
+          }
+        } else if (!hyVal.trim() && enVal.trim()) {
+          const translated = await translateText(enVal, 'en', 'hy');
+          if (translated) {
+            setEditingTrans(prev => ({
+              ...prev,
+              [rowKey]: {
+                hy: translated,
+                en: prev[rowKey]?.en ?? item.en
+              }
+            }));
+            successCount++;
+          }
+        }
+      } catch (e) {
+        console.error(`Failed to translate row ${rowKey}:`, e);
+      }
+      
+      await new Promise(r => setTimeout(r, 80));
+    }
+
+    setIsTranslatingBulk(false);
+    alert(`Հաջողությամբ թարգմանվեց ${successCount} / ${targets.length} դաշտ: Մի մոռացեք պահպանել փոփոխությունները:`);
+  };
+
+  const handleSaveAllTranslations = async () => {
+    if (!token) return;
+
+    const changedKeys = Object.keys(editingTrans);
+    if (changedKeys.length === 0) {
+      alert('Փոփոխված թարգմանություններ չկան:');
+      return;
+    }
+
+    const confirmMsg = `Ցանկանո՞ւմ եք պահպանել բոլոր ${changedKeys.length} փոփոխությունները միանգամից:`;
+    if (!confirm(confirmMsg)) return;
+
+    setIsSavingAllTrans(true);
+
+    const updated = {
+      hy: { ...dynamicTranslations.hy },
+      en: { ...dynamicTranslations.en }
+    };
+
+    for (const rowKey of changedKeys) {
+      const [section, key] = rowKey.split('::');
+      const edits = editingTrans[rowKey];
+      if (!updated.hy[section]) updated.hy[section] = {};
+      if (!updated.en[section]) updated.en[section] = {};
+
+      updated.hy[section][key] = edits.hy;
+      updated.en[section][key] = edits.en;
+    }
+
+    try {
+      const res = await fetch('/api/translations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token || ''
+        },
+        body: JSON.stringify(updated)
+      });
+
+      if (res.ok) {
+        setDynamicTranslations(updated);
+        setEditingTrans({});
+        alert('Բոլոր փոփոխությունները հաջողությամբ պահպանվեցին։');
+      } else {
+        const data = await res.json();
+        alert('Սխալ՝ ' + data.error);
+      }
+    } catch (err) {
+      alert('Չհաջողվեց պահպանել թարգմանությունները։');
+    } finally {
+      setIsSavingAllTrans(false);
+    }
+  };
+
+  const handleExportJSON = () => {
+    const exportData = {
+      hy: {},
+      en: {}
+    } as any;
+
+    allTranslationsList.forEach(item => {
+      if (!exportData.hy[item.section]) exportData.hy[item.section] = {};
+      if (!exportData.en[item.section]) exportData.en[item.section] = {};
+
+      exportData.hy[item.section][item.key] = item.hy;
+      exportData.en[item.section][item.key] = item.en;
+    });
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportData, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `translations_backup_${new Date().toISOString().slice(0,10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  const handleImportJSON = async () => {
+    try {
+      const parsed = JSON.parse(importJsonText);
+      if (!parsed.hy || !parsed.en) {
+        alert('Սխալ JSON ձևաչափ. Պետք է պարունակի "hy" և "en" դաշտեր:');
+        return;
+      }
+
+      const updated = {
+        hy: importMode === 'replace' ? {} : { ...dynamicTranslations.hy },
+        en: importMode === 'replace' ? {} : { ...dynamicTranslations.en }
+      } as any;
+
+      for (const section in parsed.hy) {
+        if (!updated.hy[section]) updated.hy[section] = {};
+        for (const key in parsed.hy[section]) {
+          updated.hy[section][key] = parsed.hy[section][key];
+        }
+      }
+
+      for (const section in parsed.en) {
+        if (!updated.en[section]) updated.en[section] = {};
+        for (const key in parsed.en[section]) {
+          updated.en[section][key] = parsed.en[section][key];
+        }
+      }
+
+      const res = await fetch('/api/translations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token || ''
+        },
+        body: JSON.stringify(updated)
+      });
+
+      if (res.ok) {
+        setDynamicTranslations(updated);
+        setShowImportModal(false);
+        setImportJsonText('');
+        alert('Թարգմանությունները հաջողությամբ ներմուծվեցին։');
+      } else {
+        const data = await res.json();
+        alert('Ներմուծումը ձախողվեց՝ ' + data.error);
+      }
+    } catch (e: any) {
+      alert('Անվավեր JSON: ' + e.message);
+    }
+  };
+
+  const handleJsonFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result;
+      if (typeof result === 'string') {
+        setImportJsonText(result);
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleSaveApiSettings = async (e: React.FormEvent) => {
@@ -2543,159 +3226,951 @@ export default function AdminDashboard() {
                 TAB 3: MESSAGES INBOX
                 ══════════════════════════════════════════════════════════════════════════ */}
 
-            {activeTab === 'messages' && (
-              <div className={getTabClass('messages')} style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0 }}>Հետադարձ Կապի Նամակներ</h2>
+            {/* ══════════════════════════════════════════════════════════════════════════
+                TAB 3: MESSAGES INBOX
+                ══════════════════════════════════════════════════════════════════════════ */}
 
-                {/* Messages Listing */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {messages.map(msg => (
-                    <div 
-                      key={msg.id}
-                      onClick={() => setSelectedMessage(msg)}
-                      style={{
-                        background: 'var(--panel)',
-                        border: '1px solid var(--panel-border)',
-                        borderRadius: '16px',
-                        padding: '24px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        gap: '20px',
-                        transition: 'transform 0.2s, box-shadow 0.2s',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.1)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
-                      }}
-                    >
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
-                          <span style={{ fontWeight: 700, fontSize: '1.05rem', color: '#fff' }}>{msg.name}</span>
-                          <span style={{ fontSize: '0.85rem', color: '#00C49F', textDecoration: 'underline' }}>{msg.email}</span>
-                          <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-                            {new Date(msg.created_at).toLocaleString()}
-                          </span>
-                        </div>
-                        <p style={{ 
-                          margin: 0, 
-                          color: 'var(--text)', 
-                          opacity: 0.8,
-                          fontSize: '0.9rem',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis'
-                        }}>
-                          {msg.message}
-                        </p>
-                      </div>
+            {activeTab === 'messages' && (() => {
+              const unreadInboxCount = messages.filter(m => !m.read && !m.spam && !m.trash).length;
+              const unreadSpamCount = messages.filter(m => !m.read && m.spam && !m.trash).length;
+              const unreadTrashCount = messages.filter(m => !m.read && m.trash).length;
 
-                      <div style={{ display: 'flex', gap: '12px' }} onClick={(e) => e.stopPropagation()}>
-                        <a 
-                          href={`mailto:${msg.email}`}
-                          style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none',
-                            background: 'rgba(0,196,159,0.1)', border: '1px solid rgba(0,196,159,0.2)', borderRadius: '10px',
-                            color: '#00C49F', width: '38px', height: '38px', fontSize: '1rem', transition: 'background 0.2s'
-                          }}
-                          title="Պատասխանել էլ. փոստով"
-                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,196,159,0.2)'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(0,196,159,0.1)'}
-                        >
-                          <span className="icon-Mail" />
-                        </a>
-                        <div
-                          onClick={() => handleDeleteMessage(msg.id)}
-                          style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: 'rgba(255,107,107,0.1)', border: '1px solid rgba(255,107,107,0.2)', borderRadius: '10px',
-                            color: '#ff6b6b', width: '38px', height: '38px', fontSize: '1rem', cursor: 'pointer', transition: 'background 0.2s'
-                          }}
-                          title="Ջնջել նամակը"
-                          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,107,107,0.2)'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,107,107,0.1)'}
-                        >
-                          <span className="icon-Trash" />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+              const filteredMails = messages.filter(msg => {
+                if (selectedMailFolder === 'inbox') return !msg.spam && !msg.trash;
+                if (selectedMailFolder === 'starred') return !!msg.starred && !msg.trash;
+                if (selectedMailFolder === 'sent') return !!msg.replies && msg.replies.length > 0 && !msg.trash;
+                if (selectedMailFolder === 'spam') return !!msg.spam && !msg.trash;
+                if (selectedMailFolder === 'trash') return !!msg.trash;
+                return true;
+              }).filter(msg => {
+                if (!mailSearchQuery.trim()) return true;
+                const q = mailSearchQuery.toLowerCase();
+                return msg.name.toLowerCase().includes(q) || msg.email.toLowerCase().includes(q) || msg.message.toLowerCase().includes(q);
+              });
 
-                  {messages.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '60px', color: 'var(--muted)', border: '1px dashed var(--panel-border)', borderRadius: '16px' }}>
-                      Նամակների արկղը դատարկ է
-                    </div>
-                  )}
-                </div>
+              const allFilteredIds = filteredMails.map(m => m.id!);
+              const isAllSelected = filteredMails.length > 0 && filteredMails.every(m => selectedMailIds.includes(m.id!));
+              const handleToggleSelectAll = () => {
+                if (isAllSelected) {
+                  setSelectedMailIds(prev => prev.filter(id => !allFilteredIds.includes(id)));
+                } else {
+                  setSelectedMailIds(prev => Array.from(new Set([...prev, ...allFilteredIds])));
+                }
+              };
 
-                {/* Message detail modal viewer */}
-                {selectedMessage && (
-                  <div 
-                    onClick={() => setSelectedMessage(null)}
-                    style={{
-                      position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
-                    }}
-                  >
-                    <div 
-                      onClick={(e) => e.stopPropagation()}
-                      className="admin-modal-container"
-                      style={{
-                        background: 'var(--panel)', border: '1px solid var(--panel-border)', borderRadius: '24px',
-                        width: '100%', maxWidth: '600px', padding: '36px',
-                        boxShadow: '0 20px 60px rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column', gap: '20px'
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                          <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: '0 0 6px' }}>{selectedMessage.name}</h3>
-                          <span style={{ fontSize: '0.85rem', color: '#00C49F' }}>{selectedMessage.email}</span>
-                        </div>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-                          {new Date(selectedMessage.created_at).toLocaleString()}
-                        </span>
-                      </div>
+              const toolBtnStyle = {
+                background: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: '6px',
+                padding: '4px 8px',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                color: '#334155',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: '28px',
+                height: '28px',
+                transition: 'background 0.2s'
+              };
 
-                      <div style={{ 
-                        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '16px',
-                        padding: '20px', color: '#fff', fontSize: '0.95rem', lineHeight: '1.6', whiteSpace: 'pre-wrap', maxHeight: '350px', overflowY: 'auto'
-                      }}>
-                        {selectedMessage.message}
-                      </div>
-
-                      <div className="admin-modal-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
-                        <hd-button 
-                          onClick={() => setSelectedMessage(null)}
-                          data-color="rgba(255,255,255,0.1)"
-                          data-width="100px"
-                          data-height="40px"
-                        >
-                          Փակել
-                        </hd-button>
-                        <a 
-                          href={`mailto:${selectedMessage.email}`}
-                          style={{ textDecoration: 'none' }}
-                        >
-                          <hd-button 
-                            data-width="150px"
-                            data-height="40px"
-                            data-thickness="3px"
-                          >
-                            Պատասխանել
-                          </hd-button>
-                        </a>
-                      </div>
+              return (
+                <div className={getTabClass('messages')} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0 }}>Հետադարձ Կապի Նամակներ</h2>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: '4px' }}>Կառավարեք հաճախորդներից ստացված հարցումները, սպամը և պատասխանեք նրանց անմիջապես այստեղից</p>
                     </div>
                   </div>
-                )}
-              </div>
-            )}
+
+                  <div style={{
+                    display: 'flex',
+                    background: 'var(--panel)',
+                    border: '1px solid var(--panel-border)',
+                    borderRadius: '24px',
+                    minHeight: '680px',
+                    height: 'calc(100vh - 240px)',
+                    maxHeight: '900px',
+                    overflow: 'hidden',
+                    boxShadow: '0 12px 40px rgba(0,0,0,0.12)'
+                  }}>
+                    {/* PANE 1: Folder Navigation Sidebar */}
+                    <div style={{
+                      width: '230px',
+                      borderRight: '1px solid var(--panel-border)',
+                      padding: '24px 16px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      background: 'rgba(255,255,255,0.01)'
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--muted)', letterSpacing: '1px', textTransform: 'uppercase', paddingLeft: '12px', marginBottom: '12px' }}>
+                          Պանակներ
+                        </div>
+                        
+                        {[
+                          { id: 'inbox', name: 'Մուտքային', count: unreadInboxCount, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> },
+                          { id: 'starred', name: 'Աստղանշված', count: messages.filter(m => m.starred && !m.trash).length, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> },
+                          { id: 'sent', name: 'Ուղարկված', count: messages.filter(m => m.replied && !m.trash).length, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> },
+                          { id: 'spam', name: 'Սպամ', count: unreadSpamCount, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> },
+                          { id: 'trash', name: 'Աղբաման', count: unreadTrashCount, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg> }
+                        ].map(folder => {
+                          const isActive = selectedMailFolder === folder.id;
+                          return (
+                            <div
+                              key={folder.id}
+                              onClick={() => {
+                                setSelectedMailFolder(folder.id as any);
+                                setSelectedMessage(null);
+                                setSelectedMailIds([]);
+                              }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '12px 14px',
+                                borderRadius: '12px',
+                                cursor: 'pointer',
+                                background: isActive ? 'var(--switcher-capsule-bg)' : 'transparent',
+                                color: isActive ? '#fff' : 'var(--muted)',
+                                fontWeight: isActive ? 600 : 500,
+                                fontSize: '0.9rem',
+                                transition: 'all 0.2s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isActive) {
+                                  e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                                  e.currentTarget.style.color = '#fff';
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isActive) {
+                                  e.currentTarget.style.background = 'transparent';
+                                  e.currentTarget.style.color = 'var(--muted)';
+                                }
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <span style={{ display: 'flex', opacity: isActive ? 1 : 0.7 }}>{folder.icon}</span>
+                                <span>{folder.name}</span>
+                              </div>
+                              {folder.count > 0 && (
+                                <span style={{
+                                  fontSize: '0.75rem',
+                                  background: folder.id === 'spam' || folder.id === 'trash' ? 'rgba(255,107,107,0.15)' : 'rgba(0,196,159,0.15)',
+                                  color: folder.id === 'spam' || folder.id === 'trash' ? '#ff6b6b' : '#00C49F',
+                                  padding: '2px 8px',
+                                  borderRadius: '20px',
+                                  fontWeight: 700
+                                }}>
+                                  {folder.count}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        {/* Signature Editor Section */}
+                        <div style={{
+                          padding: '14px',
+                          border: '1px solid var(--panel-border)',
+                          borderRadius: '16px',
+                          background: 'rgba(255,255,255,0.015)',
+                          marginTop: '20px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '10px'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--muted)', letterSpacing: '0.5px' }}>ՍՏՈՐԱԳՐՈՒԹՅՈՒՆ</span>
+                            <button
+                              type="button"
+                              onClick={() => setIsEditingSignature(!isEditingSignature)}
+                              style={{ background: 'transparent', border: 'none', color: '#00C49F', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600 }}
+                            >
+                              {isEditingSignature ? 'Չեղարկել' : 'Խմբագրել'}
+                            </button>
+                          </div>
+                          {isEditingSignature ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => insertTagIntoSignature('b')}
+                                  style={{
+                                    background: 'rgba(255,255,255,0.05)',
+                                    border: '1px solid var(--panel-border)',
+                                    borderRadius: '6px',
+                                    color: '#fff',
+                                    padding: '2px 8px',
+                                    fontSize: '0.75rem',
+                                    cursor: 'pointer',
+                                    fontWeight: 'bold',
+                                    transition: 'background 0.2s'
+                                  }}
+                                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                  title="Թավ (Bold)"
+                                >
+                                  B
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => insertTagIntoSignature('i')}
+                                  style={{
+                                    background: 'rgba(255,255,255,0.05)',
+                                    border: '1px solid var(--panel-border)',
+                                    borderRadius: '6px',
+                                    color: '#fff',
+                                    padding: '2px 8px',
+                                    fontSize: '0.75rem',
+                                    cursor: 'pointer',
+                                    fontStyle: 'italic',
+                                    transition: 'background 0.2s'
+                                  }}
+                                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                  title="Շեղ (Italic)"
+                                >
+                                  I
+                                </button>
+                              </div>
+                              <textarea
+                                id="signature-textarea"
+                                value={signature}
+                                onChange={(e) => setSignature(e.target.value)}
+                                placeholder="Գրեք Ձեր ստորագրությունը..."
+                                rows={3}
+                                style={{
+                                  width: '100%',
+                                  background: 'rgba(0,0,0,0.2)',
+                                  border: '1px solid var(--panel-border)',
+                                  borderRadius: '8px',
+                                  color: '#fff',
+                                  fontSize: '0.8rem',
+                                  padding: '8px',
+                                  outline: 'none',
+                                  resize: 'vertical',
+                                  lineHeight: '1.4'
+                                }}
+                              />
+                              <hd-button
+                                onClick={handleSaveSignature}
+                                disabled={savingSignature}
+                                data-width="100%"
+                                data-height="30px"
+                                data-thickness="2px"
+                              >
+                                {savingSignature ? 'Պահպանվում է...' : 'Պահպանել'}
+                              </hd-button>
+                            </div>
+                          ) : (
+                            <div 
+                              dangerouslySetInnerHTML={{
+                                __html: signature ? signature.replace(/\n/g, '<br>') : '<span style="font-style: italic; color: var(--muted);">Ստորագրություն չկա</span>'
+                              }}
+                              style={{
+                                fontSize: '0.8rem',
+                                color: '#dedede',
+                                maxHeight: '80px',
+                                overflowY: 'auto',
+                                lineHeight: '1.4'
+                              }}
+                            />
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {selectedMailFolder === 'inbox' && unreadInboxCount > 0 && (
+                          <hd-button
+                            onClick={handleBulkMarkRead}
+                            data-width="100%"
+                            data-height="38px"
+                            data-color="rgba(0,196,159,0.15)"
+                            style={{ color: '#00C49F' }}
+                          >
+                            ✔ Նշել բոլորը կարդացված
+                          </hd-button>
+                        )}
+                        
+                        {selectedMailFolder === 'trash' && messages.some(m => m.trash) && (
+                          <hd-button
+                            onClick={handleBulkEmptyTrash}
+                            data-width="100%"
+                            data-height="38px"
+                            data-color="rgba(255,107,107,0.15)"
+                            style={{ color: '#ff6b6b' }}
+                          >
+                            🗑 Դատարկել աղբամանը
+                          </hd-button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* PANE 2: Mails List Pane */}
+                    <div style={{
+                      width: '340px',
+                      borderRight: '1px solid #e2e8f0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      background: '#f8fafc'
+                    }}>
+                      {/* Selection Toolbar or Search Header */}
+                      {selectedMailIds.length > 0 ? (
+                        <div style={{
+                          padding: '16px',
+                          borderBottom: '1px solid #e2e8f0',
+                          background: 'rgba(0,196,159,0.08)',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', color: '#1e293b', fontWeight: 600 }}>
+                            <hd-checkbox
+                              checked={isAllSelected}
+                              onChange={handleToggleSelectAll}
+                              data-size="20px"
+                            />
+                            <span>Նշված է {selectedMailIds.length}</span>
+                          </div>
+                          
+                          <div style={{ display: 'flex', gap: '10px' }}>
+                            {selectedMailFolder === 'inbox' && (
+                              <button
+                                onClick={() => handleBulkAction('read')}
+                                style={{ background: 'transparent', border: 'none', color: '#00C49F', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', fontWeight: 600 }}
+                                title="Նշել կարդացված"
+                              >
+                                ✔
+                              </button>
+                            )}
+                            {selectedMailFolder !== 'trash' ? (
+                              <button
+                                onClick={() => handleBulkAction('trash')}
+                                style={{ background: 'transparent', border: 'none', color: '#ff6b6b', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', fontWeight: 600 }}
+                                title="Տեղափոխել աղբաման"
+                              >
+                                🗑
+                              </button>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => handleBulkAction('restore')}
+                                  style={{ background: 'transparent', border: 'none', color: '#00C49F', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', fontWeight: 600 }}
+                                  title="Վերականգնել"
+                                >
+                                  ↩
+                                </button>
+                                <button
+                                  onClick={() => handleBulkAction('delete')}
+                                  style={{ background: 'transparent', border: 'none', color: '#ff6b6b', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', fontWeight: 600 }}
+                                  title="Ջնջել ընդմիշտ"
+                                >
+                                  ❌
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        /* Standard Search bar (no select-all checkbox when none is selected) */
+                        <div style={{ padding: '20px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <div style={{ position: 'relative', flex: 1 }}>
+                            <hd-input
+                              placeholder="Փնտրել նամակներ..."
+                              value={mailSearchQuery}
+                              onInput={(e: any) => setMailSearchQuery(e.target.value)}
+                              data-width="100%"
+                              data-height="38px"
+                              data-thickness="2px"
+                              data-text-color="#0f172a"
+                              style={{ paddingLeft: '40px' } as any}
+                            />
+                            <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5, pointerEvents: 'none', zIndex: 10, color: '#4a5568' }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Mails Scroll list */}
+                      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+                        {filteredMails.map(msg => {
+                          const isSelected = selectedMessage?.id === msg.id;
+                          const isChecked = selectedMailIds.includes(msg.id!);
+                          const dateStr = msg.created_at ? new Date(msg.created_at).toLocaleDateString() : '';
+                          const isCardHovered = hoveredMailId === msg.id;
+                          const shouldShowCheckbox = isCardHovered || isChecked || selectedMailIds.length > 0;
+                          
+                          return (
+                            <div
+                              key={msg.id}
+                              onClick={() => handleSelectMessage(msg)}
+                              onMouseEnter={() => setHoveredMailId(msg.id!)}
+                              onMouseLeave={() => setHoveredMailId(null)}
+                              style={{
+                                padding: '18px 20px',
+                                cursor: 'pointer',
+                                borderBottom: '1px solid #e2e8f0',
+                                background: isSelected ? '#ffffff' : (isCardHovered ? 'rgba(0,0,0,0.02)' : 'transparent'),
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: '12px',
+                                position: 'relative',
+                                transition: 'background 0.2s ease'
+                              }}
+                            >
+                              {/* Selection checkbox */}
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  marginTop: '4px',
+                                  opacity: shouldShowCheckbox ? 1 : 0,
+                                  pointerEvents: shouldShowCheckbox ? 'auto' : 'none',
+                                  transition: 'opacity 0.2s ease'
+                                }}
+                              >
+                                <hd-checkbox
+                                  checked={isChecked}
+                                  onChange={(e: any) => {
+                                    const checked = e.target.checked;
+                                    setSelectedMailIds(prev => checked ? [...prev, msg.id!] : prev.filter(x => x !== msg.id!));
+                                  }}
+                                  data-size="20px"
+                                />
+                              </div>
+
+                              {/* Unread dot */}
+                              {!msg.read && (
+                                <div style={{
+                                  width: '8px',
+                                  height: '8px',
+                                  borderRadius: '50%',
+                                  background: '#00C49F',
+                                  position: 'absolute',
+                                  left: '4px',
+                                  top: '24px',
+                                  boxShadow: '0 0 8px #00C49F'
+                                }} />
+                              )}
+
+                              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{
+                                    fontWeight: !msg.read ? 700 : 500,
+                                    fontSize: '0.95rem',
+                                    color: isSelected ? '#00c49f' : '#000000',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    maxWidth: '180px'
+                                  }}>
+                                    {msg.name}
+                                  </span>
+                                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                    {dateStr}
+                                  </span>
+                                </div>
+
+                                <div style={{
+                                  fontSize: '0.8rem',
+                                  color: '#00C49F',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
+                                }}>
+                                  {msg.email}
+                                </div>
+
+                                <p style={{
+                                  margin: 0,
+                                  fontSize: '0.85rem',
+                                  color: '#475569',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 2,
+                                  WebkitBoxOrient: 'vertical',
+                                  lineHeight: '1.4',
+                                  opacity: isSelected ? 0.95 : 0.75
+                                }}>
+                                  {msg.message}
+                                </p>
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    {msg.replied && (
+                                      <span style={{ display: 'flex', color: '#00C49F' }} title="Պատասխանված է">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                                      </span>
+                                    )}
+                                    {msg.replies && msg.replies.length > 0 && (
+                                      <span style={{ fontSize: '0.75rem', color: '#00C49F', background: 'rgba(0,196,159,0.1)', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>
+                                        {msg.replies.length} նամակ
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {/* Star icon toggle */}
+                                  <div 
+                                    onClick={(e) => handleToggleStar(msg, e)}
+                                    style={{
+                                      display: 'flex',
+                                      padding: '4px',
+                                      cursor: 'pointer',
+                                      color: msg.starred ? '#FFBB28' : 'var(--muted)',
+                                      opacity: msg.starred ? 1 : 0.4,
+                                      transition: 'opacity 0.2s, transform 0.2s'
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                                    onMouseLeave={(e) => {
+                                      if (!msg.starred) e.currentTarget.style.opacity = '0.4';
+                                    }}
+                                  >
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill={msg.starred ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+                                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                    </svg>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {filteredMails.length === 0 && (
+                          <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)', fontSize: '0.9rem' }}>
+                            Նամակներ չեն գտնվել
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* PANE 3: Mail Details Preview Pane */}
+                    <div style={{
+                      flex: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      background: '#ffffff',
+                      maxHeight: '100%',
+                      overflowY: 'auto'
+                    }}>
+                      {selectedMessage ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                          {/* Detail Header & Toolbar */}
+                          <div style={{
+                            padding: '24px 30px',
+                            borderBottom: '1px solid #e2e8f0',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: '16px'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                              {/* Avatar */}
+                              <div style={{
+                                width: '46px',
+                                height: '46px',
+                                borderRadius: '50%',
+                                background: `hsl(${(selectedMessage.name.charCodeAt(0) * 15) % 360}, 60%, 40%)`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 700,
+                                fontSize: '1.2rem',
+                                color: '#fff',
+                                textShadow: '0 1px 2px rgba(0,0,0,0.2)'
+                              }}>
+                                {selectedMessage.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#0f172a' }}>{selectedMessage.name}</div>
+                                <a
+                                  href={`mailto:${selectedMessage.email}`}
+                                  style={{ fontSize: '0.85rem', color: '#00C49F', textDecoration: 'underline' }}
+                                >
+                                  {selectedMessage.email}
+                                </a>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <span style={{ fontSize: '0.8rem', color: '#64748b', marginRight: '8px' }}>
+                                {selectedMessage.created_at ? new Date(selectedMessage.created_at).toLocaleString() : ''}
+                              </span>
+
+                              {/* Actions toolbar */}
+                              <div style={{ display: 'flex', gap: '6px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '4px' }}>
+                                <button
+                                  onClick={() => handleToggleStar(selectedMessage)}
+                                  style={{
+                                    background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', padding: '8px', borderRadius: '6px',
+                                    color: selectedMessage.starred ? '#FFBB28' : '#64748b'
+                                  }}
+                                  title={selectedMessage.starred ? 'Ապաաստղանշել' : 'Աստղանշել'}
+                                >
+                                  <svg width="18" height="18" viewBox="0 0 24 24" fill={selectedMessage.starred ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                </button>
+
+                                <button
+                                  onClick={() => handleToggleSpam(selectedMessage)}
+                                  style={{
+                                    background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', padding: '8px', borderRadius: '6px',
+                                    color: selectedMessage.spam ? '#ff6b6b' : '#64748b'
+                                  }}
+                                  title={selectedMessage.spam ? 'Ոչ Սպամ' : 'Սպամ'}
+                                >
+                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                                </button>
+
+                                <button
+                                  onClick={() => handleToggleTrash(selectedMessage)}
+                                  style={{
+                                    background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', padding: '8px', borderRadius: '6px',
+                                    color: selectedMessage.trash ? '#00C49F' : '#64748b'
+                                  }}
+                                  title={selectedMessage.trash ? 'Վերականգնել' : 'Տեղափոխել աղբաման'}
+                                >
+                                  {selectedMessage.trash ? (
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 4 17 10 23 16"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                                  ) : (
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                  )}
+                                </button>
+
+                                {selectedMessage.trash && (
+                                  <button
+                                    onClick={() => handleDeleteMessage(selectedMessage.id!)}
+                                    style={{
+                                      background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', padding: '8px', borderRadius: '6px',
+                                      color: '#ff6b6b'
+                                    }}
+                                    title="Ջնջել ընդմիշտ"
+                                  >
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Detail Content Scroll Area */}
+                          <div style={{ padding: '30px', display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                            {/* Original Message Card (White Document Layout) */}
+                            <div style={{
+                              background: '#f8fafc',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '16px',
+                              padding: '24px',
+                              color: '#0f172a',
+                              fontSize: '0.95rem',
+                              lineHeight: '1.6',
+                              whiteSpace: 'pre-wrap',
+                              boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)'
+                            }}>
+                              {selectedMessage.message}
+                            </div>
+
+                            {/* Conversation Replies Thread */}
+                            {selectedMessage.replies && selectedMessage.replies.length > 0 && (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '10px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <div style={{ height: '1px', background: 'var(--panel-border)', flex: 1 }} />
+                                  <span style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 600, letterSpacing: '0.5px' }}>
+                                    ՆԱՄԱԿԱԳՐՈՒԹՅԱՆ ՊԱՏՄՈՒԹՅՈՒՆ
+                                  </span>
+                                  <div style={{ height: '1px', background: 'var(--panel-border)', flex: 1 }} />
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'relative', paddingLeft: '16px' }}>
+                                  {/* Thread timeline vertical line */}
+                                  <div style={{
+                                    position: 'absolute',
+                                    left: '4px',
+                                    top: '12px',
+                                    bottom: '12px',
+                                    width: '1px',
+                                    background: 'linear-gradient(to bottom, #00C49F, rgba(0,196,159,0.1))'
+                                  }} />
+
+                                  {selectedMessage.replies.map(rep => (
+                                    <div
+                                      key={rep.id}
+                                      style={{
+                                        background: '#ffffff',
+                                        border: '1px solid #e2e8f0',
+                                        borderRadius: '16px',
+                                        padding: '20px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '8px',
+                                        position: 'relative',
+                                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
+                                      }}
+                                    >
+                                      {/* Timeline dot */}
+                                      <div style={{
+                                        width: '9px',
+                                        height: '9px',
+                                        borderRadius: '50%',
+                                        background: '#00C49F',
+                                        position: 'absolute',
+                                        left: '-16px',
+                                        top: '24px',
+                                        boxShadow: '0 0 6px #00C49F'
+                                      }} />
+
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#00C49F' }}>Դուք պատասխանել եք</span>
+                                        </div>
+                                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                          {new Date(rep.sent_at).toLocaleString()}
+                                        </span>
+                                      </div>
+                                      <div style={{ fontWeight: 600, fontSize: '0.85rem', color: '#1e293b' }}>
+                                        {rep.subject}
+                                      </div>
+                                      <div 
+                                        dangerouslySetInnerHTML={{ __html: rep.message }}
+                                        style={{
+                                          color: '#334155',
+                                          fontSize: '0.9rem',
+                                          lineHeight: '1.5',
+                                          textAlign: 'left'
+                                        }}
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Quick Reply Form (White Background layout + Rich Text Editor) */}
+                            {!selectedMessage.trash && (
+                              <div style={{
+                                background: '#ffffff',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '20px',
+                                padding: '24px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '16px',
+                                marginTop: '20px',
+                                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
+                              }}>
+                                <div style={{ fontWeight: 700, fontSize: '1rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                                  Պատասխանել նամակին
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <label style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Թեմա</label>
+                                  <hd-input
+                                    value={replySubject}
+                                    onInput={(e: any) => setReplySubject(e.target.value)}
+                                    placeholder="Պատասխանի վերնագիրը..."
+                                    data-width="100%"
+                                    data-height="40px"
+                                    data-thickness="2px"
+                                    data-text-color="#0f172a"
+                                  />
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  <label style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>Պատասխան տեքստ (Rich Text)</label>
+                                  
+                                  {/* Custom Rich Text Editor container */}
+                                  <div style={{
+                                    border: '1px solid #cbd5e1',
+                                    borderRadius: '12px',
+                                    background: '#ffffff',
+                                    overflow: 'hidden',
+                                    display: 'flex',
+                                    flexDirection: 'column'
+                                  }}>
+                                    {/* Rich Editor Toolbar */}
+                                    <div style={{
+                                      display: 'flex',
+                                      flexWrap: 'wrap',
+                                      gap: '6px',
+                                      borderBottom: '1px solid #e2e8f0',
+                                      padding: '10px 14px',
+                                      background: '#f8fafc',
+                                      alignItems: 'center'
+                                    }}>
+                                      {/* Group 1: Undo/Redo */}
+                                      <div style={{ display: 'flex', gap: '2px', borderRight: '1px solid #e2e8f0', paddingRight: '6px' }}>
+                                        <button type="button" onClick={() => document.execCommand('undo', false)} style={toolBtnStyle} title="Հետարկել (Undo)">↩</button>
+                                        <button type="button" onClick={() => document.execCommand('redo', false)} style={toolBtnStyle} title="Կրկնել (Redo)">↪</button>
+                                      </div>
+
+                                      {/* Group 2: Format Block */}
+                                      <select
+                                        onChange={(e) => document.execCommand('formatBlock', false, e.target.value)}
+                                        style={{
+                                          background: '#ffffff',
+                                          border: '1px solid #cbd5e1',
+                                          borderRadius: '6px',
+                                          padding: '4px 6px',
+                                          fontSize: '0.8rem',
+                                          color: '#334155',
+                                          outline: 'none',
+                                          cursor: 'pointer'
+                                        }}
+                                        defaultValue="<p>"
+                                      >
+                                        <option value="<p>">Տեքստ (Paragraph)</option>
+                                        <option value="<h1>">Վերնագիր 1 (H1)</option>
+                                        <option value="<h2>">Վերնագիր 2 (H2)</option>
+                                        <option value="<h3>">Վերնագիր 3 (H3)</option>
+                                        <option value="<blockquote>">Մեջբերում (Quote)</option>
+                                      </select>
+
+                                      {/* Group 3: Styles */}
+                                      <div style={{ display: 'flex', gap: '2px', borderRight: '1px solid #e2e8f0', paddingRight: '6px' }}>
+                                        <button type="button" onClick={() => document.execCommand('bold', false)} style={{ ...toolBtnStyle, fontWeight: 'bold' }} title="Հաստ (Bold)">B</button>
+                                        <button type="button" onClick={() => document.execCommand('italic', false)} style={{ ...toolBtnStyle, fontStyle: 'italic' }} title="Շեղ (Italic)">I</button>
+                                        <button type="button" onClick={() => document.execCommand('underline', false)} style={{ ...toolBtnStyle, textDecoration: 'underline' }} title="Ընդգծված (Underline)">U</button>
+                                        <button type="button" onClick={() => document.execCommand('strikeThrough', false)} style={{ ...toolBtnStyle, textDecoration: 'line-through' }} title="Ջնջված (Strikethrough)">S</button>
+                                      </div>
+
+                                      {/* Group 4: Align */}
+                                      <div style={{ display: 'flex', gap: '2px', borderRight: '1px solid #e2e8f0', paddingRight: '6px' }}>
+                                        <button type="button" onClick={() => document.execCommand('justifyLeft', false)} style={toolBtnStyle} title="Ձախակողմյան (Align Left)">▤</button>
+                                        <button type="button" onClick={() => document.execCommand('justifyCenter', false)} style={toolBtnStyle} title="Կենտրոնացված (Align Center)">▥</button>
+                                        <button type="button" onClick={() => document.execCommand('justifyRight', false)} style={toolBtnStyle} title="Աջակողմյան (Align Right)">▧</button>
+                                      </div>
+
+                                      {/* Group 5: Lists */}
+                                      <div style={{ display: 'flex', gap: '2px', borderRight: '1px solid #e2e8f0', paddingRight: '6px' }}>
+                                        <button type="button" onClick={() => document.execCommand('insertUnorderedList', false)} style={toolBtnStyle} title="Կետերով ցուակ (Bullet list)">• Ցուցակ</button>
+                                        <button type="button" onClick={() => document.execCommand('insertOrderedList', false)} style={toolBtnStyle} title="Թվերով ցուցակ (Numbered list)">1. Ցուցակ</button>
+                                      </div>
+
+                                      {/* Group 6: Colors */}
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', borderRight: '1px solid #e2e8f0', paddingRight: '6px' }}>
+                                        <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Գույն՝</span>
+                                        <input
+                                          type="color"
+                                          onChange={(e) => document.execCommand('foreColor', false, e.target.value)}
+                                          style={{
+                                            border: 'none',
+                                            background: 'transparent',
+                                            width: '24px',
+                                            height: '24px',
+                                            cursor: 'pointer',
+                                            padding: 0
+                                          }}
+                                          title="Տեքստի Գույն (Text Color)"
+                                        />
+                                      </div>
+
+                                      {/* Group 7: Links & Actions */}
+                                      <div style={{ display: 'flex', gap: '2px' }}>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const url = window.prompt("Մուտքագրեք հղումը (URL):", "https://");
+                                            if (url) document.execCommand('createLink', false, url);
+                                          }}
+                                          style={toolBtnStyle}
+                                          title="Ավելացնել հղում (Link)"
+                                        >
+                                          🔗
+                                        </button>
+                                        <button type="button" onClick={() => document.execCommand('unlink', false)} style={toolBtnStyle} title="Ջնջել հղումը (Unlink)">🔗❌</button>
+                                        <button type="button" onClick={() => document.execCommand('removeFormat', false)} style={{ ...toolBtnStyle, color: '#ff6b6b' }} title="Մաքրել ձևավորումը (Clear format)">🧹</button>
+                                      </div>
+                                    </div>
+
+                                    {/* Editor content area */}
+                                    <div
+                                      key={selectedMessage.id}
+                                      contentEditable
+                                      onInput={(e: any) => setReplyBody(e.currentTarget.innerHTML)}
+                                      dangerouslySetInnerHTML={{ __html: replyBody }}
+                                      style={{
+                                        minHeight: '180px',
+                                        padding: '14px',
+                                        background: '#ffffff',
+                                        color: '#0f172a',
+                                        outline: 'none',
+                                        fontSize: '0.95rem',
+                                        lineHeight: '1.5',
+                                        textAlign: 'left',
+                                        overflowY: 'auto'
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+
+                                {replyStatus.text && (
+                                  <div style={{
+                                    fontSize: '0.85rem',
+                                    color: replyStatus.type === 'success' ? '#00C49F' : '#ff6b6b',
+                                    background: replyStatus.type === 'success' ? 'rgba(0,196,159,0.1)' : 'rgba(255,107,107,0.1)',
+                                    padding: '10px 14px',
+                                    borderRadius: '8px',
+                                    fontWeight: 500
+                                  }}>
+                                    {replyStatus.text}
+                                  </div>
+                                )}
+
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                                  <hd-button
+                                    onClick={() => handleSendReply(selectedMessage)}
+                                    disabled={sendingReply}
+                                    data-width="180px"
+                                    data-height="42px"
+                                    data-thickness="3px"
+                                  >
+                                    {sendingReply ? 'Ուղարկվում է...' : 'Ուղարկել Պատասխան'}
+                                  </hd-button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        /* Empty state */
+                        <div style={{
+                          flex: 1,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '16px',
+                          color: 'var(--muted)',
+                          padding: '40px'
+                        }}>
+                          <div style={{
+                            width: '80px',
+                            height: '80px',
+                            borderRadius: '50%',
+                            background: 'rgba(255,255,255,0.015)',
+                            border: '1px dashed var(--panel-border)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'var(--muted)',
+                            opacity: 0.6
+                          }}>
+                            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                          </div>
+                          <div style={{ fontSize: '0.95rem', fontWeight: 500 }}>Ընտրեք նամակ կարդալու համար</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* ══════════════════════════════════════════════════════════════════════════
                 TAB 4: TRANSLATIONS
@@ -2707,14 +4182,83 @@ export default function AdminDashboard() {
                     <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0 }}>Թարգմանությունների Կառավարում</h2>
                     <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: '4px' }}>Խմբագրեք կամ ավելացրեք նոր տեքստային թարգմանություններ կայքի և ադմին դաշբորդի համար</p>
                   </div>
-                  <hd-button 
-                    onClick={() => setShowAddTrans(true)}
-                    data-width="220px" 
-                    data-height="42px"
-                    data-thickness="3px"
-                  >
-                    Ավելացնել Թարգմանություն
-                  </hd-button>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <hd-button 
+                      onClick={() => setShowImportModal(true)}
+                      data-width="170px" 
+                      data-height="42px"
+                      data-color="rgba(255,255,255,0.06)"
+                    >
+                      📥 Ներմուծել JSON
+                    </hd-button>
+                    <hd-button 
+                      onClick={handleExportJSON}
+                      data-width="170px" 
+                      data-height="42px"
+                      data-color="rgba(255,255,255,0.06)"
+                    >
+                      📤 Արտահանել JSON
+                    </hd-button>
+                    <hd-button 
+                      onClick={() => setShowAddTrans(true)}
+                      data-width="220px" 
+                      data-height="42px"
+                      data-thickness="3px"
+                    >
+                      Ավելացնել Թարգմանություն
+                    </hd-button>
+                  </div>
+                </div>
+
+                {/* Metric Summary Cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+                  <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+                    <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: '6px', fontWeight: 500 }}>Ընդհանուր Բանալիներ</div>
+                    <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text)' }}>{translationStats.totalKeys}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '8px' }}>
+                      Համակարգային և ավելացված բոլոր տեքստերը
+                    </div>
+                  </div>
+
+                  <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+                    <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: '6px', fontWeight: 500 }}>Հայերեն Լրացվածություն</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                      <span style={{ fontSize: '2rem', fontWeight: 800, color: translationStats.percentHy === 100 ? '#00C49F' : '#FFBB28' }}>
+                        {translationStats.percentHy}%
+                      </span>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+                        ({translationStats.filledHy} / {translationStats.totalKeys})
+                      </span>
+                    </div>
+                    <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', marginTop: '12px', overflow: 'hidden' }}>
+                      <div style={{ width: `${translationStats.percentHy}%`, height: '100%', background: translationStats.percentHy === 100 ? '#00C49F' : '#FFBB28', borderRadius: '3px', transition: 'width 0.3s' }} />
+                    </div>
+                  </div>
+
+                  <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+                    <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: '6px', fontWeight: 500 }}>Անգլերեն Լրացվածություն</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                      <span style={{ fontSize: '2rem', fontWeight: 800, color: translationStats.percentEn === 100 ? '#00C49F' : '#FFBB28' }}>
+                        {translationStats.percentEn}%
+                      </span>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+                        ({translationStats.filledEn} / {translationStats.totalKeys})
+                      </span>
+                    </div>
+                    <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', marginTop: '12px', overflow: 'hidden' }}>
+                      <div style={{ width: `${translationStats.percentEn}%`, height: '100%', background: translationStats.percentEn === 100 ? '#00C49F' : '#FFBB28', borderRadius: '3px', transition: 'width 0.3s' }} />
+                    </div>
+                  </div>
+
+                  <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
+                    <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: '6px', fontWeight: 500 }}>Կարգավորման Կարիք Ունեցող</div>
+                    <div style={{ fontSize: '2rem', fontWeight: 800, color: translationStats.missingAny > 0 ? '#ff6b6b' : '#00C49F' }}>
+                      {translationStats.missingAny > 0 ? `${translationStats.missingAny} տող` : 'Ամբողջական է'}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '8px' }}>
+                      {translationStats.missingAny > 0 ? 'Որոշ բանալիներ չունեն թարգմանություն' : 'Բոլոր բանալիները թարգմանված են'}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Filter and Search Bar */}
@@ -2726,12 +4270,13 @@ export default function AdminDashboard() {
                   display: 'flex',
                   gap: '16px',
                   alignItems: 'center',
-                  flexWrap: 'wrap'
+                  flexWrap: 'wrap',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
                 }}>
-                  <div style={{ flex: 1, minWidth: '240px' }}>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Որոնում</label>
+                  <div style={{ flex: 2, minWidth: '240px' }}>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Որոնում</label>
                     <hd-input 
-                      placeholder="Որոնել ըստ բանալու կամ արժեքի..."
+                      placeholder="Որոնել ըստ բանալու կամ թարգմանության տեքստի..."
                       value={transSearch}
                       onInput={(e: any) => { setTransSearch(e.target.value); setVisibleTransCount(50); }}
                       data-width="100%"
@@ -2739,8 +4284,8 @@ export default function AdminDashboard() {
                     data-font-size="14pt" />
                   </div>
 
-                  <div style={{ width: '200px' }}>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Բաժին</label>
+                  <div style={{ flex: 1, minWidth: '160px' }}>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Բաժին</label>
                     <hd-select
                       value={transSectionFilter}
                       onChange={(e: any) => { setTransSectionFilter(e.target.value); setVisibleTransCount(50); }}
@@ -2753,162 +4298,485 @@ export default function AdminDashboard() {
                       ))}
                     </hd-select>
                   </div>
+
+                  <div style={{ flex: 1, minWidth: '160px' }}>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Կարգավիճակ</label>
+                    <hd-select
+                      value={transFilterStatus}
+                      onChange={(e: any) => { setTransFilterStatus(e.target.value); setVisibleTransCount(50); }}
+                      data-width="100%"
+                      data-height="40px"
+                    >
+                      <span value="all" {...(transFilterStatus === 'all' ? {selected: true} : {})}>Բոլորը</span>
+                      <span value="missing" {...(transFilterStatus === 'missing' ? {selected: true} : {})}>Թերի (Լրացման կարիք)</span>
+                      <span value="custom" {...(transFilterStatus === 'custom' ? {selected: true} : {})}>Փոփոխվածներ</span>
+                    </hd-select>
+                  </div>
+
+                  <div style={{ minWidth: '120px' }}>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Դիտման ռեժիմ</label>
+                    <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--panel-border)', borderRadius: '8px', padding: '3px', height: '40px', alignItems: 'center', gap: '4px' }}>
+                      <hd-button
+                        onClick={() => setTransViewMode('grid')}
+                        data-width="80px"
+                        data-height="32px"
+                        data-color={transViewMode === 'grid' ? 'rgba(255,255,255,0.08)' : 'transparent'}
+                        data-font-size="0.8rem"
+                      >
+                        Քարտեր
+                      </hd-button>
+                      <hd-button
+                        onClick={() => setTransViewMode('table')}
+                        data-width="80px"
+                        data-height="32px"
+                        data-color={transViewMode === 'table' ? 'rgba(255,255,255,0.08)' : 'transparent'}
+                        data-font-size="0.8rem"
+                      >
+                        Աղյուսակ
+                      </hd-button>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Translations Grid/List */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {filteredTranslations.slice(0, visibleTransCount).map(item => {
-                    const rowKey = `${item.section}::${item.key}`;
-                    const hasLocalEdits = editingTrans[rowKey] !== undefined && (
-                      editingTrans[rowKey].hy !== item.hy || editingTrans[rowKey].en !== item.en
-                    );
-                    return (
-                      <div 
-                        key={rowKey}
-                        style={{
-                          background: 'var(--panel)',
-                          border: '1px solid var(--panel-border)',
-                          borderRadius: '16px',
-                          padding: '24px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '16px',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                            <span style={{ 
-                              background: 'rgba(0,196,159,0.08)', 
-                              border: '1px solid rgba(0,196,159,0.15)', 
-                              color: '#00C49F',
-                              padding: '4px 10px', 
-                              borderRadius: '8px', 
-                              fontSize: '0.75rem', 
-                              fontWeight: 700 
-                            }}>
-                              [{item.section}]
-                            </span>
-                            <span style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: 'monospace', color: '#fff' }}>
-                              {item.key}
-                            </span>
+                {/* Bulk Actions Panel */}
+                {(Object.keys(editingTrans).length > 0 || (translationStats.missingAny > 0 && filteredTranslations.length > 0)) && (
+                  <div style={{
+                    background: 'rgba(0, 196, 159, 0.04)',
+                    border: '1px dashed rgba(0, 196, 159, 0.3)',
+                    borderRadius: '16px',
+                    padding: '16px 20px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '12px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '1.1rem' }}>⚙️</span>
+                      <span style={{ fontSize: '0.88rem', fontWeight: 500, color: 'var(--muted)' }}>
+                        {Object.keys(editingTrans).length > 0 ? (
+                          <>Առկա են <strong style={{ color: '#00C49F' }}>{Object.keys(editingTrans).length}</strong> չպահպանված տեղական խմբագրումներ։</>
+                        ) : (
+                          <>Կան թերի լրացված թարգմանության տողեր։</>
+                        )}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      {translationStats.missingAny > 0 && (
+                        <hd-button
+                          onClick={handleBulkTranslateMissing}
+                          disabled={isTranslatingBulk}
+                          data-color="#FFBB28"
+                          data-width="240px"
+                          data-height="36px"
+                          data-font-size="0.82rem"
+                        >
+                          {isTranslatingBulk ? '⏳ Թարգմանվում է...' : '🪄 Ավտո-թարգմանել թափուրները'}
+                        </hd-button>
+                      )}
+
+                      {Object.keys(editingTrans).length > 0 && (
+                        <>
+                          <hd-button
+                            onClick={() => setEditingTrans({})}
+                            data-color="#ff6b6b"
+                            data-width="120px"
+                            data-height="36px"
+                            data-font-size="0.82rem"
+                          >
+                            Չեղարկել բոլորը
+                          </hd-button>
+
+                          <hd-button
+                            onClick={handleSaveAllTranslations}
+                            disabled={isSavingAllTrans}
+                            data-color="#00C49F"
+                            data-width="220px"
+                            data-height="36px"
+                            data-font-size="0.82rem"
+                          >
+                            {isSavingAllTrans ? '💾 Պահպանվում է...' : `💾 Պահպանել բոլորը (${Object.keys(editingTrans).length})`}
+                          </hd-button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Translations Grid or Table View */}
+                {transViewMode === 'grid' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {filteredTranslations.slice(0, visibleTransCount).map(item => {
+                      const rowKey = `${item.section}::${item.key}`;
+                      const hasLocalEdits = editingTrans[rowKey] !== undefined && (
+                        editingTrans[rowKey].hy !== item.hy || editingTrans[rowKey].en !== item.en
+                      );
+                      const isTranslating = translatingKeys[rowKey];
+                      return (
+                        <div 
+                          key={rowKey}
+                          style={{
+                            background: 'var(--panel)',
+                            border: '1px solid var(--panel-border)',
+                            borderRadius: '16px',
+                            padding: '24px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '16px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                              <span style={{ 
+                                background: 'rgba(0,196,159,0.08)', 
+                                border: '1px solid rgba(0,196,159,0.15)', 
+                                color: '#00C49F',
+                                padding: '4px 10px', 
+                                borderRadius: '8px', 
+                                fontSize: '0.75rem', 
+                                fontWeight: 700 
+                              }}>
+                                [{item.section}]
+                              </span>
+                              <span style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: 'monospace', color: 'var(--text)' }}>
+                                {item.key}
+                              </span>
+                              <hd-button 
+                                onClick={() => {
+                                  navigator.clipboard.writeText(item.key);
+                                  alert('Բանալին պատճենվեց հիշողության մեջ:');
+                                }}
+                                data-color="transparent"
+                                data-width="32px"
+                                data-height="24px"
+                                data-font-size="0.75rem"
+                                title="Պատճենել բանալին"
+                              >
+                                📋
+                              </hd-button>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {item.isCustom ? (
+                                <span style={{ 
+                                  fontSize: '0.72rem', 
+                                  background: 'rgba(255, 187, 40, 0.08)', 
+                                  border: '1px solid rgba(255, 187, 40, 0.15)', 
+                                  color: '#FFBB28', 
+                                  padding: '3px 8px', 
+                                  borderRadius: '6px',
+                                  fontWeight: 600
+                                }}>
+                                  Փոփոխված
+                                </span>
+                              ) : (
+                                <span style={{ 
+                                  fontSize: '0.72rem', 
+                                  background: 'rgba(255,255,255,0.03)', 
+                                  border: '1px solid rgba(255,255,255,0.06)',
+                                  color: 'var(--muted)', 
+                                  padding: '3px 8px', 
+                                  borderRadius: '6px',
+                                  fontWeight: 500
+                                }}>
+                                  Համակարգային
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {item.isCustom ? (
-                              <span style={{ 
-                                fontSize: '0.72rem', 
-                                background: 'rgba(255, 187, 40, 0.08)', 
-                                border: '1px solid rgba(255, 187, 40, 0.15)', 
-                                color: '#FFBB28', 
-                                padding: '3px 8px', 
-                                borderRadius: '6px',
-                                fontWeight: 600
-                              }}>
-                                Փոփոխված
-                              </span>
-                            ) : (
-                              <span style={{ 
-                                fontSize: '0.72rem', 
-                                background: 'rgba(255,255,255,0.03)', 
-                                border: '1px solid rgba(255,255,255,0.06)',
-                                color: 'var(--muted)', 
-                                padding: '3px 8px', 
-                                borderRadius: '6px',
-                                fontWeight: 500
-                              }}>
-                                Համակարգային
-                              </span>
+
+                          {/* Textareas */}
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                <label style={{ fontSize: '0.78rem', color: 'var(--muted)', fontWeight: 600 }}>Հայերեն (Armenian)</label>
+                                <hd-button 
+                                  onClick={() => handleAutoTranslateRow(item.section, item.key, 'en', 'hy')}
+                                  disabled={isTranslating}
+                                  data-color="rgba(255,255,255,0.03)"
+                                  data-width="210px"
+                                  data-height="28px"
+                                  data-font-size="0.7rem"
+                                >
+                                  {isTranslating ? '⏳ Թարգմանվում է...' : '🪄 Ավտո-թարգմանել անգլերենից'}
+                                </hd-button>
+                              </div>
+                              <hd-textarea
+                                value={editingTrans[rowKey]?.hy ?? item.hy}
+                                onInput={(e: any) => handleEditRow(item.section, item.key, 'hy', e.target.value)}
+                                data-width="100%"
+                                data-disable-horizontal-resize="true"
+                                style={{ minHeight: '60px' }}
+                              data-font-size="14pt" data-height="200pt" />
+                              <div style={{ fontSize: '0.7rem', color: 'var(--muted)', marginTop: '4px', textAlign: 'right' }}>
+                                {(editingTrans[rowKey]?.hy ?? item.hy).length} նիշ
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                <label style={{ fontSize: '0.78rem', color: 'var(--muted)', fontWeight: 600 }}>Անգլերեն (English)</label>
+                                <hd-button 
+                                  onClick={() => handleAutoTranslateRow(item.section, item.key, 'hy', 'en')}
+                                  disabled={isTranslating}
+                                  data-color="rgba(255,255,255,0.03)"
+                                  data-width="210px"
+                                  data-height="28px"
+                                  data-font-size="0.7rem"
+                                >
+                                  {isTranslating ? '⏳ Translating...' : '🪄 Auto-translate from Armenian'}
+                                </hd-button>
+                              </div>
+                              <hd-textarea
+                                value={editingTrans[rowKey]?.en ?? item.en}
+                                onInput={(e: any) => handleEditRow(item.section, item.key, 'en', e.target.value)}
+                                data-width="100%"
+                                data-disable-horizontal-resize="true"
+                                style={{ minHeight: '60px' }}
+                              data-font-size="14pt" data-height="200pt" />
+                              <div style={{ fontSize: '0.7rem', color: 'var(--muted)', marginTop: '4px', textAlign: 'right' }}>
+                                {(editingTrans[rowKey]?.en ?? item.en).length} chars
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid var(--panel-border)', paddingTop: '16px' }}>
+                            {(item.isCustom || hasLocalEdits) && (
+                              <hd-button
+                                onClick={() => {
+                                  if (hasLocalEdits) {
+                                    setEditingTrans(prev => {
+                                      const next = { ...prev };
+                                      delete next[rowKey];
+                                      return next;
+                                    });
+                                  } else {
+                                    handleDeleteTranslation(item.section, item.key);
+                                  }
+                                }}
+                                data-color="#ff6b6b"
+                                data-width="120px"
+                                data-height="32px"
+                                data-font-size="0.78rem"
+                              >
+                                {hasLocalEdits ? 'Չեղարկել' : 'Ջնջել / Reset'}
+                              </hd-button>
                             )}
-                          </div>
-                        </div>
-
-                        {/* Textareas */}
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-                          <div>
-                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Հայերեն (Armenian)</label>
-                            <hd-textarea
-                              value={editingTrans[rowKey]?.hy ?? item.hy}
-                              onInput={(e: any) => handleEditRow(item.section, item.key, 'hy', e.target.value)}
-                              data-width="100%"
-                              data-disable-horizontal-resize="true"
-                              style={{ minHeight: '60px' }}
-                            data-font-size="14pt" data-height="200pt" />
-                          </div>
-                          <div>
-                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Անգլերեն (English)</label>
-                            <hd-textarea
-                              value={editingTrans[rowKey]?.en ?? item.en}
-                              onInput={(e: any) => handleEditRow(item.section, item.key, 'en', e.target.value)}
-                              data-width="100%"
-                              data-disable-horizontal-resize="true"
-                              style={{ minHeight: '60px' }}
-                            data-font-size="14pt" data-height="200pt" />
-                          </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid var(--panel-border)', paddingTop: '16px' }}>
-                          {(item.isCustom || hasLocalEdits) && (
                             <hd-button
-                              onClick={() => {
-                                if (hasLocalEdits) {
-                                  // Revert local changes
-                                  setEditingTrans(prev => {
-                                    const next = { ...prev };
-                                    delete next[rowKey];
-                                    return next;
-                                  });
-                                } else {
-                                  handleDeleteTranslation(item.section, item.key);
-                                }
-                              }}
-                              data-color="#ff6b6b"
-                              data-width="120px"
+                              onClick={() => handleSaveTranslation(
+                                item.section, 
+                                item.key, 
+                                editingTrans[rowKey]?.hy ?? item.hy, 
+                                editingTrans[rowKey]?.en ?? item.en
+                              )}
+                              disabled={!hasLocalEdits}
+                              data-color={hasLocalEdits ? '#00C49F' : 'rgba(255,255,255,0.03)'}
+                              data-width="110px"
                               data-height="32px"
                               data-font-size="0.78rem"
                             >
-                              {hasLocalEdits ? 'Չեղարկել' : 'Ջնջել / Reset'}
+                              Պահպանել
                             </hd-button>
-                          )}
-                          <hd-button
-                            onClick={() => handleSaveTranslation(
-                              item.section, 
-                              item.key, 
-                              editingTrans[rowKey]?.hy ?? item.hy, 
-                              editingTrans[rowKey]?.en ?? item.en
-                            )}
-                            disabled={!hasLocalEdits}
-                            data-color={hasLocalEdits ? '#00C49F' : 'rgba(255,255,255,0.03)'}
-                            data-width="110px"
-                            data-height="32px"
-                            data-font-size="0.78rem"
-                          >
-                            Պահպանել
-                          </hd-button>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ overflowX: 'auto', border: '1px solid var(--panel-border)', borderRadius: '16px', background: 'var(--panel)', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '1px solid var(--panel-border)', background: 'rgba(255,255,255,0.02)' }}>
+                          <th style={{ padding: '16px 20px', fontWeight: 600, color: 'var(--muted)', width: '22%' }}>Բաժին / Բանալի</th>
+                          <th style={{ padding: '16px 20px', fontWeight: 600, color: 'var(--muted)', width: '35%' }}>Հայերեն (Armenian)</th>
+                          <th style={{ padding: '16px 20px', fontWeight: 600, color: 'var(--muted)', width: '35%' }}>Անգլերեն (English)</th>
+                          <th style={{ padding: '16px 20px', fontWeight: 600, color: 'var(--muted)', width: '8%', textAlign: 'right' }}>Գործողություններ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredTranslations.slice(0, visibleTransCount).map(item => {
+                          const rowKey = `${item.section}::${item.key}`;
+                          const hasLocalEdits = editingTrans[rowKey] !== undefined && (
+                            editingTrans[rowKey].hy !== item.hy || editingTrans[rowKey].en !== item.en
+                          );
+                          const isTranslating = translatingKeys[rowKey];
+                          return (
+                            <tr key={rowKey} style={{ borderBottom: '1px solid var(--panel-border)', transition: 'background 0.2s', background: hasLocalEdits ? 'rgba(0, 196, 159, 0.02)' : 'transparent' }}>
+                              <td style={{ padding: '16px 20px', verticalAlign: 'top' }}>
+                                <span style={{ 
+                                  background: 'rgba(0,196,159,0.08)', 
+                                  border: '1px solid rgba(0,196,159,0.15)', 
+                                  color: '#00C49F',
+                                  padding: '2px 6px', 
+                                  borderRadius: '6px', 
+                                  fontSize: '0.7rem', 
+                                  fontWeight: 700,
+                                  display: 'inline-block',
+                                  marginBottom: '6px'
+                                }}>
+                                  {item.section}
+                                </span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <span style={{ fontWeight: 700, fontFamily: 'monospace', fontSize: '0.82rem', wordBreak: 'break-all', color: 'var(--text)' }}>
+                                    {item.key}
+                                  </span>
+                                  <hd-button 
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(item.key);
+                                      alert('Բանալին պատճենվեց:');
+                                    }}
+                                    data-color="transparent"
+                                    data-width="28px"
+                                    data-height="24px"
+                                    title="Պատճենել բանալին"
+                                  >
+                                    📋
+                                  </hd-button>
+                                </div>
+                                {item.isCustom ? (
+                                  <span style={{ fontSize: '0.65rem', color: '#FFBB28', marginTop: '4px', display: 'inline-block' }}>● Փոփոխված</span>
+                                ) : (
+                                  <span style={{ fontSize: '0.65rem', color: 'var(--muted)', marginTop: '4px', display: 'inline-block' }}>● Համակարգային</span>
+                                )}
+                              </td>
+                              <td style={{ padding: '12px 16px', verticalAlign: 'top' }}>
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                  <hd-textarea
+                                    value={editingTrans[rowKey]?.hy ?? item.hy}
+                                    onInput={(e: any) => handleEditRow(item.section, item.key, 'hy', e.target.value)}
+                                    data-width="100%"
+                                    data-disable-horizontal-resize="true"
+                                    data-height="60px"
+                                    data-font-size="14pt"
+                                  />
+                                  <hd-button
+                                    onClick={() => handleAutoTranslateRow(item.section, item.key, 'en', 'hy')}
+                                    disabled={isTranslating}
+                                    title="Թարգմանել Անգլերենից"
+                                    data-color="transparent"
+                                    data-width="32px"
+                                    data-height="32px"
+                                    style={{
+                                      position: 'absolute',
+                                      right: '8px',
+                                      zIndex: 2
+                                    }}
+                                  >
+                                    {isTranslating ? '⏳' : '🪄'}
+                                  </hd-button>
+                                </div>
+                                <div style={{ fontSize: '0.68rem', color: 'var(--muted)', marginTop: '4px', textAlign: 'right' }}>
+                                  {(editingTrans[rowKey]?.hy ?? item.hy).length} նիշ
+                                </div>
+                              </td>
+                              <td style={{ padding: '12px 16px', verticalAlign: 'top' }}>
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                  <hd-textarea
+                                    value={editingTrans[rowKey]?.en ?? item.en}
+                                    onInput={(e: any) => handleEditRow(item.section, item.key, 'en', e.target.value)}
+                                    data-width="100%"
+                                    data-disable-horizontal-resize="true"
+                                    data-height="60px"
+                                    data-font-size="14pt"
+                                  />
+                                  <hd-button
+                                    onClick={() => handleAutoTranslateRow(item.section, item.key, 'hy', 'en')}
+                                    disabled={isTranslating}
+                                    title="Translate from Armenian"
+                                    data-color="transparent"
+                                    data-width="32px"
+                                    data-height="32px"
+                                    style={{
+                                      position: 'absolute',
+                                      right: '8px',
+                                      zIndex: 2
+                                    }}
+                                  >
+                                    {isTranslating ? '⏳' : '🪄'}
+                                  </hd-button>
+                                </div>
+                                <div style={{ fontSize: '0.68rem', color: 'var(--muted)', marginTop: '4px', textAlign: 'right' }}>
+                                  {(editingTrans[rowKey]?.en ?? item.en).length} chars
+                                </div>
+                              </td>
+                              <td style={{ padding: '16px 20px', verticalAlign: 'middle', textAlign: 'right' }}>
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                  {hasLocalEdits && (
+                                    <hd-button
+                                      onClick={() => {
+                                        setEditingTrans(prev => {
+                                          const next = { ...prev };
+                                          delete next[rowKey];
+                                          return next;
+                                        });
+                                      }}
+                                      title="Չեղարկել փոփոխությունները"
+                                      data-color="#ff6b6b"
+                                      data-width="36px"
+                                      data-height="30px"
+                                      data-font-size="0.82rem"
+                                    >
+                                      ↩
+                                    </hd-button>
+                                  )}
+                                  <hd-button
+                                    onClick={() => handleSaveTranslation(
+                                      item.section,
+                                      item.key,
+                                      editingTrans[rowKey]?.hy ?? item.hy,
+                                      editingTrans[rowKey]?.en ?? item.en
+                                    )}
+                                    disabled={!hasLocalEdits}
+                                    title="Պահպանել տողը"
+                                    data-color={hasLocalEdits ? '#00C49F' : 'rgba(255,255,255,0.03)'}
+                                    data-width="36px"
+                                    data-height="30px"
+                                    data-font-size="0.82rem"
+                                  >
+                                    💾
+                                  </hd-button>
+                                  {item.isCustom && !hasLocalEdits && (
+                                    <hd-button
+                                      onClick={() => handleDeleteTranslation(item.section, item.key)}
+                                      title="Ջնջել թարգմանությունը"
+                                      data-color="#ff6b6b"
+                                      data-width="36px"
+                                      data-height="30px"
+                                      data-font-size="0.82rem"
+                                    >
+                                      🗑️
+                                    </hd-button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
 
-                  {filteredTranslations.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '60px', color: 'var(--muted)', border: '1px dashed var(--panel-border)', borderRadius: '16px' }}>
-                      Որոնմանը համապատասխանող թարգմանություններ չգտնվեցին
-                    </div>
-                  )}
+                {filteredTranslations.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '60px', color: 'var(--muted)', border: '1px dashed var(--panel-border)', borderRadius: '16px' }}>
+                    Որոնմանը համապատասխանող թարգմանություններ չգտնվեցին
+                  </div>
+                )}
 
-                  {filteredTranslations.length > visibleTransCount && (
-                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
-                      <hd-button
-                        onClick={() => setVisibleTransCount(prev => prev + 50)}
-                        data-width="200px"
-                        data-height="40px"
-                        data-color="rgba(255,255,255,0.06)"
-                      >
-                        Տեսնել ավելին (+50)
-                      </hd-button>
-                    </div>
-                  )}
-                </div>
+                {filteredTranslations.length > visibleTransCount && (
+                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+                    <hd-button
+                      onClick={() => setVisibleTransCount(prev => prev + 50)}
+                      data-width="200px"
+                      data-height="40px"
+                      data-color="rgba(255,255,255,0.06)"
+                    >
+                      Տեսնել ավելին (+50)
+                    </hd-button>
+                  </div>
+                )}
 
                 {/* Add Translation Modal */}
                 {showAddTrans && (
@@ -3013,6 +4881,115 @@ export default function AdminDashboard() {
                           </hd-button>
                         </div>
                       </form>
+                    </div>
+                  </div>
+                )}
+
+                {/* Import JSON Modal */}
+                {showImportModal && (
+                  <div 
+                    onClick={() => { setShowImportModal(false); setImportJsonText(''); }}
+                    style={{
+                      position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+                    }}
+                  >
+                    <div 
+                      onClick={(e) => e.stopPropagation()}
+                      className="admin-modal-container"
+                      style={{
+                        background: 'var(--panel)', border: '1px solid var(--panel-border)', borderRadius: '24px',
+                        width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto', padding: '36px',
+                        boxShadow: '0 20px 60px rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column', gap: '24px'
+                      }}
+                    >
+                      <div>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>Ներմուծել Թարգմանություններ (JSON)</h3>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: '4px' }}>
+                          Վերբեռնեք կամ տեղադրեք JSON ֆայլը՝ թարգմանությունները թարմացնելու համար։
+                        </p>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {/* File Upload Input */}
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Ընտրել Ֆայլ (.json)</label>
+                          <input 
+                            type="file" 
+                            accept=".json"
+                            onChange={handleJsonFileChange}
+                            style={{
+                              width: '100%',
+                              padding: '10px',
+                              background: 'rgba(255,255,255,0.02)',
+                              border: '1px solid var(--panel-border)',
+                              borderRadius: '8px',
+                              color: '#fff',
+                              fontSize: '0.85rem',
+                              cursor: 'pointer'
+                            }}
+                          />
+                        </div>
+
+                        {/* Paste area */}
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Կամ Տեղադրել JSON Տեքստը</label>
+                          <hd-textarea
+                            placeholder='{"hy": { "common": { "app_title": "HDesign" } }, "en": { ... }}'
+                            value={importJsonText}
+                            onInput={(e: any) => setImportJsonText(e.target.value)}
+                            data-width="100%"
+                            data-disable-horizontal-resize="true"
+                            data-height="140px"
+                            data-font-size="12pt"
+                          />
+                        </div>
+
+                        {/* Import mode */}
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Միացման Ռեժիմ</label>
+                          <div style={{ display: 'flex', gap: '16px' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--text)', cursor: 'pointer' }}>
+                              <hd-radio 
+                                name="importMode" 
+                                checked={importMode === 'merge'} 
+                                onChange={() => setImportMode('merge')} 
+                              />
+                              Միացնել (Merge)
+                            </label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--text)', cursor: 'pointer' }}>
+                              <hd-radio 
+                                name="importMode" 
+                                checked={importMode === 'replace'} 
+                                onChange={() => setImportMode('replace')} 
+                              />
+                              Փոխարինել բոլորը (Replace)
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="admin-modal-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
+                        <hd-button 
+                          type="button"
+                          onClick={() => { setShowImportModal(false); setImportJsonText(''); }}
+                          data-color="rgba(255,255,255,0.1)"
+                          data-width="120px"
+                          data-height="42px"
+                        >
+                          Չեղարկել
+                        </hd-button>
+                        <hd-button 
+                          type="button"
+                          onClick={handleImportJSON}
+                          disabled={!importJsonText.trim()}
+                          data-width="150px"
+                          data-height="42px"
+                          data-thickness="3px"
+                        >
+                          Ներմուծել
+                        </hd-button>
+                      </div>
                     </div>
                   </div>
                 )}

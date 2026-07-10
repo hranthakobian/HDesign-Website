@@ -1225,7 +1225,7 @@ export default function Home() {
           boxSizing: "border-box"
         }}>
           <InteractiveWaveText 
-            lines={["ՍՏԵՂԾԱ", "ԵՒ ԳՈՐԾՆԱԿԱՆ"]}
+            lines={[t('home', 'hero_line1', 'ՍՏԵՂԾԱ'), t('home', 'hero_line2', 'ԵՒ ԳՈՐԾՆԱԿԱՆ')]}
           />
           <div style={{ 
             display: "flex", 
@@ -1242,7 +1242,7 @@ export default function Home() {
               lineHeight: "1.6",
               fontWeight: "400"
             }}>
-              Ամեն ոք չի կարող մեծ վարպետ դառնալ, բայց մեծ վարպետը կարող է գալ ամենուրից
+              {t('home', 'hero_quote', 'Ամեն ոք չի կարող մեծ վարպետ դառնալ, բայց մեծ վարպետը կարող է գալ ամենուրից')}
             </p>
             <div style={{ 
               width: "180px", 
@@ -1278,7 +1278,7 @@ export default function Home() {
                   href={getBrandingLink(card)}
                   className="marquee-card" 
                   style={{ textDecoration: "none" }}
-                  title="Սեղմեք մանրամասների համար"
+                  title={t('home', 'click_details', 'Սեղմեք մանրամասների համար')}
                 >
                   <img 
                     src={card.image_url || card.image} 
@@ -1378,14 +1378,14 @@ export default function Home() {
             {/* Bio Details */}
             <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
               <h2 style={{ fontSize: "2rem", fontWeight: "800", color: "#ffffff", margin: 0 }}>
-                Մասին
+                {t('home', 'about_title', 'Մասին')}
               </h2>
               <div style={{ display: "flex", flexDirection: "column", gap: "16px", color: "#ffffff", opacity: 0.9, fontSize: "1.05rem", lineHeight: "1.7" }}>
                 <p>
-                  Ողջույն, ես Հրանտ Հակոբյանն եմ և Ճարտարապետության և շինարարության Հայաստանի Ազգային Համալսարանի ճարտարապետության ֆակուլտետի 4-րդ կուրսի ուսանող եմ։
+                  {t('home', 'about_p1', 'Ողջույն, ես Հրանտ Հակոբյանն եմ և Ճարտարապետության և շինարարության Հայաստանի Ազգային Համալսարանի ճարտարապետության ֆակուլտետի 4-րդ կուրսի ուսանող եմ։')}
                 </p>
                 <p style={{ fontWeight: 700 }}>
-                  Ես մասնագիտանում եմ տառաստեղծության և բրենդինգի մեջ։
+                  {t('home', 'about_p2', 'Ես մասնագիտանում եմ տառաստեղծության և բրենդինգի մեջ։')}
                 </p>
               </div>
               <div>
@@ -1399,7 +1399,7 @@ export default function Home() {
                   data-color="#083F39"
                   data-text-color="#fff"
                 >
-                  Կապնվել
+                  {t('home', 'contact_btn', 'Կապնվել')}
                 </hd-button>
               </div>
             </div>
@@ -1412,7 +1412,7 @@ export default function Home() {
         {/* ══ SECTION 4: GALLERY (Այլ աշխատանքներ) ══ */}
         <section id="works">
           <h2 style={{ fontSize: "2.2rem", fontWeight: "900", textAlign: "center", color: "var(--text)", marginBottom: "16px" }}>
-            Այլ աշխատանքներ
+            {t('home', 'other_works', 'Այլ աշխատանքներ')}
           </h2>
           
           <div className="gallery-grid" style={{ display: "flex", flexDirection: "column", gap: "24px", alignItems: "center" }}>
@@ -1439,7 +1439,7 @@ export default function Home() {
                 data-height="52px"
                 data-thickness="3px"
               >
-                Ավելի
+                {t('home', 'more_btn', 'Ավելի')}
               </hd-button>
             </Link>
           </div>
@@ -1540,7 +1540,7 @@ export default function Home() {
             justifyContent: "center",
             gap: "12px"
           }}>
-            Դիզայնի Համակարգը
+            {t('home', 'design_system', 'Դիզայնի Համակարգը')}
             <svg 
               viewBox="0 0 3976 1364" 
               fill="none" 
@@ -1559,14 +1559,14 @@ export default function Home() {
             marginTop: "-30px",
             marginBottom: "40px"
           }}>
-            Բաղադրիչներ
+            {t('home', 'components_title', 'Բաղադրիչներ')}
           </h3>
           
           <div className="homepage-playground-container">
             {/* Sidebar List of 12 components */}
             <div className="playground-sidebar-column">
               <span style={{ fontSize: "0.75rem", fontWeight: "800", opacity: 0.5, letterSpacing: "1px", padding: "6px 8px 12px 8px" }}>
-                ԿՈՄՊՈՆԵՆՏՆԵՐ
+                {t('home', 'components_label', 'ԿՈՄՊՈՆԵՆՏՆԵՐ')}
               </span>
               <hd-scrollbar style={{ height: "420px", overflow: "auto", overscrollBehavior: "contain" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px", paddingRight: "10px" }}>
@@ -1854,7 +1854,7 @@ export default function Home() {
                         </label>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
                           <hd-checkbox checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
-                          <span style={{ fontSize: "0.8rem" }}>Պասիվ</span>
+                          <span style={{ fontSize: "0.8rem" }}>{t('home', 'disabled_label', 'Պասիվ')}</span>
                         </label>
                       </>
                     )}
@@ -1863,11 +1863,11 @@ export default function Home() {
                       <>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
                           <hd-checkbox checked={playgroundCheckedState} onChange={(e: any) => setPlaygroundCheckedState(e.target.checked)} />
-                          <span style={{ fontSize: "0.8rem" }}>Ընտրված (Checked)</span>
+                          <span style={{ fontSize: "0.8rem" }}>{t('home', 'checked_state', 'Ընտրված (Checked)')}</span>
                         </label>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
                           <hd-checkbox checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
-                          <span style={{ fontSize: "0.8rem" }}>Պասիվ</span>
+                          <span style={{ fontSize: "0.8rem" }}>{t('home', 'disabled_label', 'Պասիվ')}</span>
                         </label>
                       </>
                     )}
@@ -1876,11 +1876,11 @@ export default function Home() {
                       <>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
                           <hd-checkbox checked={playgroundRadioState} onChange={(e: any) => setPlaygroundRadioState(e.target.checked)} />
-                          <span style={{ fontSize: "0.8rem" }}>Ընտրված (Checked)</span>
+                          <span style={{ fontSize: "0.8rem" }}>{t('home', 'checked_state', 'Ընտրված (Checked)')}</span>
                         </label>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
                           <hd-checkbox checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
-                          <span style={{ fontSize: "0.8rem" }}>Պասիվ</span>
+                          <span style={{ fontSize: "0.8rem" }}>{t('home', 'disabled_label', 'Պասիվ')}</span>
                         </label>
                       </>
                     )}
@@ -1889,18 +1889,18 @@ export default function Home() {
                       <>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
                           <hd-checkbox checked={playgroundSwitchState} onChange={(e: any) => setPlaygroundSwitchState(e.target.checked)} />
-                          <span style={{ fontSize: "0.8rem" }}>Միացված (Active)</span>
+                          <span style={{ fontSize: "0.8rem" }}>{t('home', 'active_label', 'Միացված (Active)')}</span>
                         </label>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
                           <hd-checkbox checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
-                          <span style={{ fontSize: "0.8rem" }}>Պասիվ</span>
+                          <span style={{ fontSize: "0.8rem" }}>{t('home', 'disabled_label', 'Պասիվ')}</span>
                         </label>
                       </>
                     )}
 
                     {playgroundActiveTab === "hd-select" && (
                       <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Արժեք</span>
+                        <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>{t('home', 'value_label', 'Արժեք')}</span>
                         <hd-select value={playgroundSelectVal} onChange={(e: any) => setPlaygroundSelectVal(e.target.value)} data-height="34px" data-thickness="2px">
                           {playgroundSelectOptions.split(",").map((opt, i) => (
                             <span key={i} value={`option${i+1}`}>{opt.trim()}</span>
@@ -1911,7 +1911,7 @@ export default function Home() {
 
                     {playgroundActiveTab === "hd-segment" && (
                       <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Ակտիվ տաբ</span>
+                        <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>{t('home', 'active_tab', 'Ակտիվ տաբ')}</span>
                         <hd-select value={playgroundSegmentVal} onChange={(e: any) => setPlaygroundSegmentVal(e.target.value)} data-height="34px" data-thickness="2px">
                           {playgroundSegmentOptions.split(",").map((opt, i) => (
                             <span key={i} value={`tab${i+1}`}>{opt.trim()}</span>
@@ -1922,7 +1922,7 @@ export default function Home() {
 
                     {playgroundActiveTab === "hd-color-picker" && (
                       <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Գույնը (Hex)</span>
+                        <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>{t('home', 'color_hex', 'Գույնը (Hex)')}</span>
                         <input
                           type="color"
                           value={playgroundColorPickerVal}
@@ -1934,7 +1934,7 @@ export default function Home() {
 
                     {playgroundActiveTab === "hd-color-panel" && (
                       <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Գույնը (Hex)</span>
+                        <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>{t('home', 'color_hex', 'Գույնը (Hex)')}</span>
                         <input
                           type="color"
                           value={playgroundColorPanelVal}
@@ -1946,7 +1946,7 @@ export default function Home() {
 
                     {playgroundActiveTab === "hd-scrollbar" && (
                       <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Պարունակության բարձրություն: {playgroundScrollContentHeight}px</span>
+                        <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>{t('home', 'content_height', 'Պարունակության բարձրություն:')} {playgroundScrollContentHeight}px</span>
                         <hd-slider min="150" max="500" value={playgroundScrollContentHeight} onInput={(e: any) => setPlaygroundScrollContentHeight(Number(e.target.value))} />
                       </label>
                     )}
@@ -1957,13 +1957,11 @@ export default function Home() {
             </div>
           </div>
         </section>
-
         {/* ══ SECTION 6: ICONS (Պատկերակներ) ══ */}
         <section>
           <h2 style={{ fontSize: "1.4rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "20px", textAlign: "center", color: "var(--text)" }}>
-            Պատկերներ
+            {t('home', 'icons_title', 'Պատկերներ')}
           </h2>
-
           {/* Two-column layout: Left (Grid) & Right (Details) */}
           <div 
             ref={sectionRef}
@@ -1984,7 +1982,7 @@ export default function Home() {
                     key={idx} 
                     className={`icon-explorer-card ${selectedIconDetail === icon ? "active" : ""}`}
                     onClick={() => setSelectedIconDetail(icon)}
-                    title="Սեղմեք՝ տեսնելու օգտագործման ձևը"
+                    title={t('home', 'click_usage', 'Սեղմեք՝ տեսնելու օգտագործման ձևը')}
                   >
                     <span 
                       className={`icon-symbol ${icon}`} 
@@ -1997,7 +1995,7 @@ export default function Home() {
                     <span className="icon-name">{icon.replace("icon-", "").replace(/-/g, " ")}</span>
                     
                     <div className="icon-tooltip">
-                      Մանրամասներ
+                      {t('home', 'details_label', 'Մանրամասներ')}
                     </div>
                   </div>
                 ))}
@@ -2027,7 +2025,7 @@ export default function Home() {
                 boxShadow: "var(--shadow)"
               }}>
                 <hd-input 
-                  placeholder="Որոնել պատկերակ..." 
+                  placeholder={t('home', 'search_icon', 'Որոնել պատկերակ...')} 
                   value={iconSearch}
                   onInput={(e: any) => setIconSearch(e.target.value)}
                   data-width="100%"
@@ -2049,7 +2047,7 @@ export default function Home() {
               }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "var(--text)" }}>
-                    Հաստություն (Thickness)
+                    {t('home', 'thickness', 'Հաստություն (Thickness)')}
                   </span>
                   <span style={{ fontSize: "0.85rem", fontWeight: "700", color: "var(--primary-color)" }}>
                     {iconWeight}
@@ -2125,7 +2123,7 @@ export default function Home() {
                 {/* 5 Sizes Showcase */}
                 <div style={{ width: "100%", textAlign: "center" }}>
                   <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "var(--muted)", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
-                    Չափսերի Տարբերակներ (16px - 64px)
+                    {t('home', 'sizes_showcase', 'Չափսերի Տարբերակներ (16px - 64px)')}
                   </span>
                   <div style={{
                     display: "flex",
@@ -2159,7 +2157,7 @@ export default function Home() {
                     data-thickness="3px"
                     data-color="transparent"
                     data-text-color="var(--text)"
-                    title="Ներբեռնել SVG"
+                    title={t('home', 'download_svg', 'Ներբեռնել SVG')}
                     style={{ flex: 1 }}
                   >
                     <span className="icon-Download" style={{ fontSize: "0.85rem", marginRight: "6px" }} />
@@ -2172,7 +2170,7 @@ export default function Home() {
                     data-thickness="3px"
                     data-color="var(--primary-color)"
                     data-text-color="#ffffff"
-                    title="Ներբեռնել PNG"
+                    title={t('home', 'download_png', 'Ներբեռնել PNG')}
                     style={{ flex: 1 }}
                   >
                     <span className="icon-Download" style={{ fontSize: "0.85rem", marginRight: "6px" }} />
@@ -2192,7 +2190,7 @@ export default function Home() {
                         style={{ background: "transparent", border: "none", color: copiedSnippet === "html" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
                       >
                         <span className={copiedSnippet === "html" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.8rem" }} />
-                        {copiedSnippet === "html" ? "Պատճենված է" : "Պատճենել"}
+                        {copiedSnippet === "html" ? t('home', 'copied', 'Պատճենված է') : t('home', 'copy', 'Պատճենել')}
                       </span>
                     </div>
                     <div style={{
@@ -2219,7 +2217,7 @@ export default function Home() {
                         style={{ background: "transparent", border: "none", color: copiedSnippet === "react" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
                       >
                         <span className={copiedSnippet === "react" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.8rem" }} />
-                        {copiedSnippet === "react" ? "Պատճենված է" : "Պատճենել"}
+                        {copiedSnippet === "react" ? t('home', 'copied', 'Պատճենված է') : t('home', 'copy', 'Պատճենել')}
                       </span>
                     </div>
                     <div style={{
@@ -2246,7 +2244,7 @@ export default function Home() {
                         style={{ background: "transparent", border: "none", color: copiedSnippet === "css" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
                       >
                         <span className={copiedSnippet === "css" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.8rem" }} />
-                        {copiedSnippet === "css" ? "Պատճենված է" : "Պատճենել"}
+                        {copiedSnippet === "css" ? t('home', 'copied', 'Պատճենված է') : t('home', 'copy', 'Պատճենել')}
                       </span>
                     </div>
                     <div style={{
@@ -2308,7 +2306,7 @@ export default function Home() {
 
         {/* HDesign Font Glyphs Map & Variability Slider */}
         <h2 style={{ fontSize: "1.4rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginTop: "60px", marginBottom: "20px", textAlign: "center", color: "var(--text)" }}>
-          Տառատեսակ
+          {t('home', 'font_title', 'Տառատեսակ')}
         </h2>
         <div style={{
           background: "var(--panel)",
@@ -2323,15 +2321,15 @@ export default function Home() {
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
             <div>
               <h3 style={{ fontSize: "1.25rem", fontWeight: "800", color: "var(--text)", margin: "0 0 6px 0" }}>
-                HDesign Տառատեսակի Գլիֆներ
+                {t('home', 'font_glyphs', 'HDesign Տառատեսակի Գլիֆներ')}
               </h3>
               <p style={{ fontSize: "0.85rem", color: "var(--muted)", margin: 0, minHeight: "20px" }}>
                 {copiedChar ? (
                   <span style={{ color: "var(--primary-color)", fontWeight: "bold" }}>
-                    «{copiedChar}» նիշը պատճենվեց:
+                    {t('home', 'char_copied', '«{char}» նիշը պատճենվեց:').replace('{char}', copiedChar)}
                   </span>
                 ) : (
-                  "Կտտացրեք նիշի վրա՝ այն պատճենելու համար"
+                  t('home', 'click_copy_char', 'Կտտացրեք նիշի վրա՝ այն պատճենելու համար')
                 )}
               </p>
             </div>
@@ -2350,7 +2348,7 @@ export default function Home() {
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ fontSize: "0.8rem", fontWeight: "600", color: "var(--muted)" }}>
-                  Հաստություն (Font Weight)
+                  {t('home', 'font_weight_label', 'Հաստություն (Font Weight)')}
                 </span>
                 <span style={{ fontSize: "0.85rem", fontWeight: "700", color: "var(--primary-color)" }}>
                   {hdesignFontWeight}

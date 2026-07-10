@@ -7,23 +7,24 @@ export default function PageTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const prevPathRef = useRef(pathname);
+  const isAdmin = pathname?.startsWith("/admin");
 
   useEffect(() => {
     if (pathname === prevPathRef.current) return;
     prevPathRef.current = pathname;
 
     const el = wrapperRef.current;
-    if (!el) return;
+    if (!el || isAdmin) return;
 
     // Trigger slide-in animation by re-applying the class
     el.classList.remove("page-slide-in");
     // Force reflow so the browser registers the removal
     void el.offsetWidth;
     el.classList.add("page-slide-in");
-  }, [pathname]);
+  }, [pathname, isAdmin]);
 
   return (
-    <div ref={wrapperRef} className="page-slide-in">
+    <div ref={wrapperRef} className={isAdmin ? "" : "page-slide-in"}>
       {children}
     </div>
   );

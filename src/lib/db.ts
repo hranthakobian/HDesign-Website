@@ -320,16 +320,34 @@ export async function deleteCase(id: string): Promise<boolean> {
 // MESSAGES (Contact Form submissions)
 // ══════════════════════════════════════════════════════════════════════════════
 
+export type MessageReply = {
+  id: string;
+  messageId: string;
+  subject: string;
+  message: string;
+  sent_at: string;
+};
+
 export type Message = {
   id?: string;
   name: string;
   email: string;
   message: string;
   created_at?: string;
+  
+  // Status flags
+  read?: boolean;
+  starred?: boolean;
+  spam?: boolean;
+  trash?: boolean;
+  replied?: boolean;
+  replies?: MessageReply[];
 };
 
 export async function getMessages(): Promise<Message[]> {
   await ensureLocalDbFiles();
+
+  let rawMessages: Message[] = [];
 
   const readClient = supabaseAdmin || supabase;
   if (readClient) {
@@ -339,24 +357,47 @@ export async function getMessages(): Promise<Message[]> {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && data) return data;
+      if (!error && data) {
+        rawMessages = data;
+      }
     } catch (err) {
       console.warn('Supabase getMessages failed, using local storage:', err);
     }
   }
 
   // Fallback to local JSON database
-  if (isServer) {
+  if (rawMessages.length === 0 && isServer) {
     const fs = getFs();
     try {
       const content = await fs.readFile(MESSAGES_FILE, 'utf-8');
-      return JSON.parse(content) as Message[];
+      rawMessages = JSON.parse(content) as Message[];
     } catch (err) {
       console.error('Error reading local messages:', err);
     }
   }
 
-  return [];
+  // Enrich with metadata and replies
+  try {
+    const meta = await getSiteSetting('messages_meta', {});
+    const replies = await getSiteSetting('messages_replies', []);
+
+    return rawMessages.map((msg: any) => {
+      const id = msg.id || '';
+      const msgMeta = meta[id] || {};
+      return {
+        ...msg,
+        read: msgMeta.read ?? false,
+        starred: msgMeta.starred ?? false,
+        spam: msgMeta.spam ?? false,
+        trash: msgMeta.trash ?? false,
+        replied: msgMeta.replied ?? false,
+        replies: (replies || []).filter((r: any) => r.messageId === id)
+      };
+    });
+  } catch (err) {
+    console.warn('Failed to merge messages metadata/replies:', err);
+    return rawMessages;
+  }
 }
 
 export async function saveMessage(m: Message): Promise<{ success: boolean; data?: Message; error?: string }> {
@@ -441,6 +482,23 @@ export async function deleteMessage(id: string): Promise<boolean> {
       const messages = JSON.parse(content) as Message[];
       const filtered = messages.filter(x => x.id !== id);
       await fs.writeFile(MESSAGES_FILE, JSON.stringify(filtered, null, 2), 'utf-8');
+      
+      // Clean up metadata and replies too
+      try {
+        const meta = await getSiteSetting('messages_meta', {});
+        if (meta[id]) {
+          delete meta[id];
+          await saveSiteSetting('messages_meta', meta);
+        }
+        const replies = await getSiteSetting('messages_replies', []);
+        const filteredReplies = replies.filter((r: any) => r.messageId !== id);
+        if (replies.length !== filteredReplies.length) {
+          await saveSiteSetting('messages_replies', filteredReplies);
+        }
+      } catch (cleanErr) {
+        console.warn('Failed to clean up deleted message metadata:', cleanErr);
+      }
+
       return true;
     } catch (err: any) {
       localErrorMsg = err.message || String(err);
@@ -453,6 +511,55 @@ export async function deleteMessage(id: string): Promise<boolean> {
   if (localErrorMsg) errorParts.push(`Local storage fallback error: ${localErrorMsg}`);
   
   throw new Error(errorParts.join(' | ') || 'Failed to delete message.');
+}
+
+export async function updateMessageMeta(
+  id: string,
+  updates: Partial<{ read: boolean; starred: boolean; spam: boolean; trash: boolean; replied: boolean }>
+): Promise<boolean> {
+  try {
+    const meta = await getSiteSetting('messages_meta', {});
+    const existing = meta[id] || { read: false, starred: false, spam: false, trash: false, replied: false };
+    meta[id] = { ...existing, ...updates };
+    
+    const result = await saveSiteSetting('messages_meta', meta);
+    return result.success;
+  } catch (err) {
+    console.error('Error updating message metadata:', err);
+    return false;
+  }
+}
+
+export async function addMessageReply(reply: {
+  messageId: string;
+  subject: string;
+  message: string;
+}): Promise<{ success: boolean; data?: MessageReply; error?: string }> {
+  try {
+    const newReply: MessageReply = {
+      id: Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15),
+      messageId: reply.messageId,
+      subject: reply.subject,
+      message: reply.message,
+      sent_at: new Date().toISOString()
+    };
+
+    const replies = await getSiteSetting('messages_replies', []);
+    replies.unshift(newReply);
+    
+    const result = await saveSiteSetting('messages_replies', replies);
+    if (!result.success) {
+      return { success: false, error: result.error || 'Failed to save replies.' };
+    }
+
+    // Also mark original message as replied and read
+    await updateMessageMeta(reply.messageId, { replied: true, read: true });
+
+    return { success: true, data: newReply };
+  } catch (err: any) {
+    console.error('Error saving reply:', err);
+    return { success: false, error: err.message || 'Error saving reply' };
+  }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

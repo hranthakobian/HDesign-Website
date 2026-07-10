@@ -1,8 +1,10 @@
 "use client";
-
+ 
 import { useState } from "react";
-
+import { useI18n } from "@/lib/i18n";
+ 
 export default function ContactPage() {
+  const { t } = useI18n();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -11,12 +13,12 @@ export default function ContactPage() {
   });
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
-
+ 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.message) {
       setStatus("error");
-      setErrorMessage("Խնդրում ենք լրացնել բոլոր պարտադիր դաշտերը:");
+      setErrorMessage(t('contact_page', 'error_fields', 'Խնդրում ենք լրացնել բոլոր պարտադիր դաշտերը:'));
       return;
     }
     
@@ -41,14 +43,14 @@ export default function ContactPage() {
       } else {
         const errorData = await res.json().catch(() => ({}));
         setStatus("error");
-        setErrorMessage(errorData.error || "Տեղի ունեցավ սխալ: Խնդրում ենք փորձել մի փոքր ուշ:");
+        setErrorMessage(errorData.error || t('contact_page', 'error_send', 'Տեղի ունեցավ սխալ: Խնդրում ենք փորձել մի փոքր ուշ:'));
       }
     } catch (err) {
       setStatus("error");
-      setErrorMessage("Ցանցային սխալ: Խնդրում ենք ստուգել կապը և փորձել կրկին:");
+      setErrorMessage(t('contact_page', 'error_network', 'Ցանցային սխալ: Խնդրում ենք ստուգել կապը և փորձել կրկին:'));
     }
   };
-
+ 
   return (
     <main className="shell" style={{ marginTop: "140px", minHeight: "80vh", position: "relative" }}>
       {/* Dynamic Background Pattern */}
@@ -64,18 +66,18 @@ export default function ContactPage() {
           boxShadow: "var(--shadow)"
         }}
       >
-
+ 
         <div style={{ position: "relative", zIndex: 10, display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: "48px" }} className="contact-grid">
           
           {/* Left Column: Contact Form */}
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
             <div>
-              <h1 style={{ fontSize: "2.5rem", fontWeight: "900", color: "var(--text)", margin: "0 0 8px 0" }}>Կապ</h1>
+              <h1 style={{ fontSize: "2.5rem", fontWeight: "900", color: "var(--text)", margin: "0 0 8px 0" }}>{t('contact_page', 'title', 'Կապ')}</h1>
               <p style={{ color: "var(--text)", opacity: 0.8, fontSize: "1.05rem", margin: 0 }}>
-                Ունե՞ք հարցեր կամ առաջարկներ: Գրեք ինձ և ես կպատասխանեմ հնարավորինս սեղմ ժամկետներում:
+                {t('contact_page', 'subtitle', 'Ունե՞ք հարցեր կամ առաջարկներ: Գրեք ինձ և ես կպատասխանեմ հնարավորինս սեղմ ժամկետներում:')}
               </p>
             </div>
-
+ 
             {status === "success" ? (
               <div style={{ 
                 background: "rgba(74, 137, 124, 0.1)", 
@@ -89,8 +91,8 @@ export default function ContactPage() {
                 gap: "16px"
               }}>
                 <span className="icon-Check" style={{ fontSize: "3rem", color: "#4a897c" }} />
-                <h3 style={{ fontSize: "1.4rem", fontWeight: "bold", margin: 0, color: "var(--text)" }}>Հաղորդագրությունը հաջողությամբ ուղարկվել է:</h3>
-                <p style={{ color: "var(--text)", opacity: 0.8, margin: 0 }}>Շնորհակալություն կապնվելու համար: Ես կպատասխանեմ ձեզ շուտով:</p>
+                <h3 style={{ fontSize: "1.4rem", fontWeight: "bold", margin: 0, color: "var(--text)" }}>{t('contact_page', 'success_title', 'Հաղորդագրությունը հաջողությամբ ուղարկվել է:')}</h3>
+                <p style={{ color: "var(--text)", opacity: 0.8, margin: 0 }}>{t('contact_page', 'success_desc', 'Շնորհակալություն կապնվելու համար: Ես կպատասխանեմ ձեզ շուտով:')}</p>
                 <div style={{ marginTop: "12px" }}>
                   <hd-button 
                     onClick={() => setStatus("idle")} 
@@ -98,7 +100,7 @@ export default function ContactPage() {
                     data-height="46px" 
                     data-thickness="3px"
                   >
-                    Գրել նոր նամակ
+                    {t('contact_page', 'new_msg_btn', 'Գրել նոր նամակ')}
                   </hd-button>
                 </div>
               </div>
@@ -106,9 +108,9 @@ export default function ContactPage() {
               <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }} className="contact-form-row">
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <span style={{ fontSize: "0.85rem", opacity: 0.8 }}>Անուն *</span>
+                    <span style={{ fontSize: "0.85rem", opacity: 0.8 }}>{t('contact_page', 'name_label', 'Անուն *')}</span>
                     <hd-input 
-                      placeholder="Ձեր անունը" 
+                      placeholder={t('contact_page', 'name_placeholder', 'Ձեր անունը')} 
                       value={formData.name}
                       onInput={(e: any) => setFormData({ ...formData, name: e.target.value })}
                       data-width="100%"
@@ -117,9 +119,9 @@ export default function ContactPage() {
                     data-font-size="14pt" />
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <span style={{ fontSize: "0.85rem", opacity: 0.8 }}>Էլ. հասցե *</span>
+                    <span style={{ fontSize: "0.85rem", opacity: 0.8 }}>{t('contact_page', 'email_label', 'Էլ. հասցե *')}</span>
                     <hd-input 
-                      placeholder="Ձեր էլ. հասցեն" 
+                      placeholder={t('contact_page', 'email_placeholder', 'Ձեր էլ. հասցեն')} 
                       value={formData.email}
                       onInput={(e: any) => setFormData({ ...formData, email: e.target.value })}
                       data-width="100%"
@@ -130,9 +132,9 @@ export default function ContactPage() {
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <span style={{ fontSize: "0.85rem", opacity: 0.8 }}>Թեմա</span>
+                  <span style={{ fontSize: "0.85rem", opacity: 0.8 }}>{t('contact_page', 'subject_label', 'Թեմա')}</span>
                   <hd-input 
-                    placeholder="Նամակի թեման" 
+                    placeholder={t('contact_page', 'subject_placeholder', 'Նամակի թեման')} 
                     value={formData.subject}
                     onInput={(e: any) => setFormData({ ...formData, subject: e.target.value })}
                     data-width="100%"
@@ -142,9 +144,9 @@ export default function ContactPage() {
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <span style={{ fontSize: "0.85rem", opacity: 0.8 }}>Հաղորդագրություն *</span>
+                  <span style={{ fontSize: "0.85rem", opacity: 0.8 }}>{t('contact_page', 'message_label', 'Հաղորդագրություն *')}</span>
                   <hd-textarea 
-                    placeholder="Գրեք ձեր հաղորդագրությունը այստեղ..." 
+                    placeholder={t('contact_page', 'message_placeholder', 'Գրեք ձեր հաղորդագրությունը այստեղ...')} 
                     value={formData.message}
                     onInput={(e: any) => setFormData({ ...formData, message: e.target.value })}
                     data-width="100%"
@@ -153,7 +155,7 @@ export default function ContactPage() {
 
                 {status === "error" && (
                   <p style={{ color: "#ff6b6b", fontSize: "0.9rem", margin: 0 }}>
-                    * {errorMessage || "Խնդրում ենք լրացնել բոլոր պարտադիր դաշտերը:"}
+                    * {errorMessage || t('contact_page', 'error_fields', 'Խնդրում ենք լրացնել բոլոր պարտադիր դաշտերը:')}
                   </p>
                 )}
 
@@ -165,7 +167,7 @@ export default function ContactPage() {
                     data-thickness="3px"
                     disabled={status === "sending"}
                   >
-                    {status === "sending" ? "Ուղարկվում է..." : "Ուղարկել"}
+                    {status === "sending" ? t('contact_page', 'submitting_btn', 'Ուղարկվում է...') : t('contact_page', 'submit_btn', 'Ուղարկել')}
                   </hd-button>
                 </div>
               </form>
@@ -175,9 +177,9 @@ export default function ContactPage() {
           {/* Right Column: Contact Details */}
           <div style={{ display: "flex", flexDirection: "column", gap: "32px", paddingLeft: "24px", borderLeft: "1px solid var(--panel-border)" }} className="contact-details-col">
             <div>
-              <h3 style={{ fontSize: "1.3rem", fontWeight: "bold", color: "var(--text)", margin: "0 0 16px 0" }}>Կոնտակտներ</h3>
+              <h3 style={{ fontSize: "1.3rem", fontWeight: "bold", color: "var(--text)", margin: "0 0 16px 0" }}>{t('contact_page', 'details_title', 'Կոնտակտներ')}</h3>
               <p style={{ color: "var(--text)", opacity: 0.8, fontSize: "0.95rem", lineHeight: "1.6", margin: 0 }}>
-                Ազատ զգացեք կապվելու ցանկացած հարցով կամ համագործակցության առաջարկներով:
+                {t('contact_page', 'details_desc', 'Ազատ զգացեք կապվելու ցանկացած հարցով կամ համագործակցության առաջարկներով:')}
               </p>
             </div>
 
@@ -195,7 +197,7 @@ export default function ContactPage() {
                   <span className="icon-Mail" style={{ fontSize: "1.2rem", color: "var(--text)" }} />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>Էլ. հասցե</span>
+                  <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>{t('contact_page', 'email_label_small', 'Էլ. հասցե')}</span>
                   <a href="mailto:hrant@hakobian.am" style={{ color: "var(--text)", textDecoration: "none", fontWeight: "600" }}>hrant@hakobian.am</a>
                 </div>
               </div>
@@ -213,7 +215,7 @@ export default function ContactPage() {
                   <span className="icon-Call" style={{ fontSize: "1.2rem", color: "var(--text)" }} />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>Հեռախոս</span>
+                  <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>{t('contact_page', 'phone_label_small', 'Հեռախոս')}</span>
                   <a href="tel:+37400000000" style={{ color: "var(--text)", textDecoration: "none", fontWeight: "600" }}>+374 00 000000</a>
                 </div>
               </div>
@@ -231,8 +233,8 @@ export default function ContactPage() {
                   <span className="icon-Map-Pin" style={{ fontSize: "1.2rem", color: "var(--text)" }} />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>Հասցե</span>
-                  <span style={{ color: "var(--text)", fontWeight: "600" }}>Երևան, Հայաստան</span>
+                  <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>{t('contact_page', 'address_label_small', 'Հասցե')}</span>
+                  <span style={{ color: "var(--text)", fontWeight: "600" }}>{t('contact', 'address_label', 'Երևան, Հայաստան')}</span>
                 </div>
               </div>
             </div>
