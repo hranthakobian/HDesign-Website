@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { hyTranslations, enTranslations } from '@/lib/i18n';
@@ -221,6 +221,349 @@ export default function AdminDashboard() {
   const [cases, setCases] = useState<Case[]>([]);
   const [fonts, setFonts] = useState<Font[]>([]);
   const [casesSubTab, setCasesSubTab] = useState<'branding' | 'gallery' | 'fonts'>('branding');
+
+  // Floating Nav Drag & Dock States
+  const [offsetX, setOffsetX] = useState(0);
+  const [offsetY, setOffsetY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dockState, setDockState] = useState<'bottom' | 'left' | 'right'>('bottom');
+  const [snapPreview, setSnapPreview] = useState<'none' | 'left' | 'right' | 'center'>('none');
+  
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const startYRef = useRef(0);
+  const hasDraggedRef = useRef(false);
+  const offsetXRef = useRef(0);
+  const offsetYRef = useRef(0);
+  const dockStateRef = useRef<'bottom' | 'left' | 'right'>('bottom');
+  const lastSelectedIdRef = useRef<string | null>(null);
+
+  // Sync states with refs
+  useEffect(() => {
+    offsetXRef.current = offsetX;
+  }, [offsetX]);
+
+  useEffect(() => {
+    offsetYRef.current = offsetY;
+  }, [offsetY]);
+
+  useEffect(() => {
+    dockStateRef.current = dockState;
+  }, [dockState]);
+
+  // Load saved position and dock state on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedDock = localStorage.getItem('hdesign_admin_nav_dock');
+      const savedOffsetX = localStorage.getItem('hdesign_admin_nav_offset');
+      const savedOffsetY = localStorage.getItem('hdesign_admin_nav_offset_y');
+      if (savedDock) {
+        setDockState(savedDock as any);
+      }
+      if (savedOffsetX) {
+        setOffsetX(parseFloat(savedOffsetX));
+      }
+      if (savedOffsetY) {
+        setOffsetY(parseFloat(savedOffsetY));
+      }
+    }
+  }, []);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    // Only drag on left click
+    if (e.button !== 0) return;
+    
+    isDraggingRef.current = true;
+    startXRef.current = e.clientX;
+    startYRef.current = e.clientY;
+    hasDraggedRef.current = false;
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDraggingRef.current) return;
+    
+    const deltaX = e.clientX - startXRef.current;
+    const deltaY = e.clientY - startYRef.current;
+    
+    // Check dragging threshold to prevent micro-dragging on clicks
+    if (Math.abs(e.clientX - startXRef.current) > 5 || Math.abs(e.clientY - startYRef.current) > 5) {
+      if (!hasDraggedRef.current) {
+        hasDraggedRef.current = true;
+        setIsDragging(true);
+      }
+    }
+    
+    if (hasDraggedRef.current) {
+      // If docked as sidebar (left or right)
+      if (dockStateRef.current !== 'bottom') {
+        // Horizontal break-out threshold: e.g. pulling 60px away from the docked edge
+        const isLeftBreakout = dockStateRef.current === 'left' && e.clientX > 100;
+        const isRightBreakout = dockStateRef.current === 'right' && e.clientX < window.innerWidth - 100;
+        
+        if (isLeftBreakout || isRightBreakout) {
+          // Break out to bottom dock
+          setDockState('bottom');
+          dockStateRef.current = 'bottom';
+          
+          const initialOffset = e.clientX - window.innerWidth / 2;
+          setOffsetX(initialOffset);
+          offsetXRef.current = initialOffset;
+          setOffsetY(0);
+          offsetYRef.current = 0;
+          
+          startXRef.current = e.clientX;
+          startYRef.current = e.clientY;
+        } else {
+          // Drag vertically along the sidebar
+          const newRawOffsetY = offsetYRef.current + deltaY;
+          const maxOffsetY = typeof window !== 'undefined' ? window.innerHeight / 2 - 80 : 400;
+          let clampedOffsetY = Math.max(-maxOffsetY, Math.min(maxOffsetY, newRawOffsetY));
+          
+          // Subtle magnetic snap to vertical center (within 12px)
+          if (Math.abs(clampedOffsetY) < 12) {
+            clampedOffsetY = 0;
+            setSnapPreview('center');
+          } else {
+            setSnapPreview('none');
+          }
+          
+          offsetYRef.current = clampedOffsetY;
+          setOffsetY(clampedOffsetY);
+          startYRef.current = e.clientY;
+          startXRef.current = e.clientX; // keep track of horizontal positions for breakout
+        }
+      } else {
+        // Floating bottom dragging (horizontal)
+        const newRawOffsetX = offsetXRef.current + deltaX;
+        const maxOffsetX = typeof window !== 'undefined' ? window.innerWidth / 2 - 100 : 500;
+        let clampedOffsetX = Math.max(-maxOffsetX, Math.min(maxOffsetX, newRawOffsetX));
+        
+        // Subtle magnetic snap to center (within 12px)
+        if (Math.abs(clampedOffsetX) < 12) {
+          clampedOffsetX = 0;
+        }
+        
+        offsetXRef.current = clampedOffsetX;
+        setOffsetX(clampedOffsetX);
+        startXRef.current = e.clientX;
+        startYRef.current = e.clientY;
+        
+        // Snapping zones based on 8% of window width for ease of docking
+        const leftZoneLimit = window.innerWidth * 0.08;
+        const rightZoneLimit = window.innerWidth * 0.92;
+        
+        if (e.clientX < leftZoneLimit) {
+          setSnapPreview('left');
+        } else if (e.clientX > rightZoneLimit) {
+          setSnapPreview('right');
+        } else if (clampedOffsetX === 0) {
+          setSnapPreview('center');
+        } else {
+          setSnapPreview('none');
+        }
+      }
+    }
+  };
+
+  const handleMouseUp = () => {
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    setSnapPreview('none');
+    window.removeEventListener('mousemove', handleMouseMove);
+    window.removeEventListener('mouseup', handleMouseUp);
+    
+    if (hasDraggedRef.current && typeof window !== 'undefined') {
+      const clientX = startXRef.current;
+      const clientY = startYRef.current;
+      
+      let finalDock = dockStateRef.current;
+      let finalOffsetX = offsetXRef.current;
+      let finalOffsetY = offsetYRef.current;
+      
+      if (dockStateRef.current === 'bottom') {
+        const leftZoneLimit = window.innerWidth * 0.08;
+        const rightZoneLimit = window.innerWidth * 0.92;
+        
+        if (clientX < leftZoneLimit) {
+          finalDock = 'left';
+          finalOffsetX = 0;
+          finalOffsetY = clientY - window.innerHeight / 2;
+        } else if (clientX > rightZoneLimit) {
+          finalDock = 'right';
+          finalOffsetX = 0;
+          finalOffsetY = clientY - window.innerHeight / 2;
+        } else if (Math.abs(finalOffsetX) < 12) {
+          finalOffsetX = 0;
+        }
+      } else {
+        if (Math.abs(finalOffsetY) < 12) {
+          finalOffsetY = 0;
+        }
+      }
+      
+      setDockState(finalDock);
+      setOffsetX(finalOffsetX);
+      setOffsetY(finalOffsetY);
+      
+      localStorage.setItem('hdesign_admin_nav_dock', finalDock);
+      localStorage.setItem('hdesign_admin_nav_offset', finalOffsetX.toString());
+      localStorage.setItem('hdesign_admin_nav_offset_y', finalOffsetY.toString());
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return;
+    
+    isDraggingRef.current = true;
+    startXRef.current = e.touches[0].clientX;
+    startYRef.current = e.touches[0].clientY;
+    hasDraggedRef.current = false;
+    
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd);
+  };
+
+  const handleTouchMove = (e: TouchEvent) => {
+    if (!isDraggingRef.current || e.touches.length !== 1) return;
+    
+    const clientX = e.touches[0].clientX;
+    const clientY = e.touches[0].clientY;
+    
+    const deltaX = clientX - startXRef.current;
+    const deltaY = clientY - startYRef.current;
+    
+    if (Math.abs(clientX - startXRef.current) > 5 || Math.abs(clientY - startYRef.current) > 5) {
+      if (!hasDraggedRef.current) {
+        hasDraggedRef.current = true;
+        setIsDragging(true);
+      }
+    }
+    
+    if (hasDraggedRef.current) {
+      e.preventDefault(); // prevent scroll
+      
+      if (dockStateRef.current !== 'bottom') {
+        const isLeftBreakout = dockStateRef.current === 'left' && clientX > 100;
+        const isRightBreakout = dockStateRef.current === 'right' && clientX < window.innerWidth - 100;
+        
+        if (isLeftBreakout || isRightBreakout) {
+          setDockState('bottom');
+          dockStateRef.current = 'bottom';
+          
+          const initialOffset = clientX - window.innerWidth / 2;
+          setOffsetX(initialOffset);
+          offsetXRef.current = initialOffset;
+          setOffsetY(0);
+          offsetYRef.current = 0;
+          
+          startXRef.current = clientX;
+          startYRef.current = clientY;
+        } else {
+          const newRawOffsetY = offsetYRef.current + deltaY;
+          const maxOffsetY = typeof window !== 'undefined' ? window.innerHeight / 2 - 80 : 400;
+          let clampedOffsetY = Math.max(-maxOffsetY, Math.min(maxOffsetY, newRawOffsetY));
+          
+          if (Math.abs(clampedOffsetY) < 12) {
+            clampedOffsetY = 0;
+            setSnapPreview('center');
+          } else {
+            setSnapPreview('none');
+          }
+          
+          offsetYRef.current = clampedOffsetY;
+          setOffsetY(clampedOffsetY);
+          startYRef.current = clientY;
+          startXRef.current = clientX;
+        }
+      } else {
+        const newRawOffsetX = offsetXRef.current + deltaX;
+        const maxOffsetX = typeof window !== 'undefined' ? window.innerWidth / 2 - 100 : 500;
+        let clampedOffsetX = Math.max(-maxOffsetX, Math.min(maxOffsetX, newRawOffsetX));
+        
+        if (Math.abs(clampedOffsetX) < 12) {
+          clampedOffsetX = 0;
+        }
+        
+        offsetXRef.current = clampedOffsetX;
+        setOffsetX(clampedOffsetX);
+        startXRef.current = clientX;
+        startYRef.current = clientY;
+        
+        const leftZoneLimit = window.innerWidth * 0.08;
+        const rightZoneLimit = window.innerWidth * 0.92;
+        
+        if (clientX < leftZoneLimit) {
+          setSnapPreview('left');
+        } else if (clientX > rightZoneLimit) {
+          setSnapPreview('right');
+        } else if (clampedOffsetX === 0) {
+          setSnapPreview('center');
+        } else {
+          setSnapPreview('none');
+        }
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    setSnapPreview('none');
+    window.removeEventListener('touchmove', handleTouchMove);
+    window.removeEventListener('touchend', handleTouchEnd);
+    
+    if (hasDraggedRef.current && typeof window !== 'undefined') {
+      const clientX = startXRef.current;
+      const clientY = startYRef.current;
+      
+      let finalDock = dockStateRef.current;
+      let finalOffsetX = offsetXRef.current;
+      let finalOffsetY = offsetYRef.current;
+      
+      if (dockStateRef.current === 'bottom') {
+        const leftZoneLimit = window.innerWidth * 0.08;
+        const rightZoneLimit = window.innerWidth * 0.92;
+        
+        if (clientX < leftZoneLimit) {
+          finalDock = 'left';
+          finalOffsetX = 0;
+          finalOffsetY = clientY - window.innerHeight / 2;
+        } else if (clientX > rightZoneLimit) {
+          finalDock = 'right';
+          finalOffsetX = 0;
+          finalOffsetY = clientY - window.innerHeight / 2;
+        } else if (Math.abs(finalOffsetX) < 12) {
+          finalOffsetX = 0;
+        }
+      } else {
+        if (Math.abs(finalOffsetY) < 12) {
+          finalOffsetY = 0;
+        }
+      }
+      
+      setDockState(finalDock);
+      setOffsetX(finalOffsetX);
+      setOffsetY(finalOffsetY);
+      
+      localStorage.setItem('hdesign_admin_nav_dock', finalDock);
+      localStorage.setItem('hdesign_admin_nav_offset', finalOffsetX.toString());
+      localStorage.setItem('hdesign_admin_nav_offset_y', finalOffsetY.toString());
+    }
+  };
+
+  const handleDoubleClick = () => {
+    setDockState('bottom');
+    setOffsetX(0);
+    setOffsetY(0);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('hdesign_admin_nav_dock');
+      localStorage.removeItem('hdesign_admin_nav_offset');
+      localStorage.removeItem('hdesign_admin_nav_offset_y');
+    }
+  };
 
   // Slide-over drawer states
   const [drawerType, setDrawerType] = useState<'case_preview' | 'case_edit' | 'font_preview' | 'font_edit' | null>(null);
@@ -1033,7 +1376,48 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleSelectMessage = async (msg: Message) => {
+  const handleSelectMessage = async (msg: Message, e?: React.MouseEvent) => {
+    if (e && e.ctrlKey) {
+      setSelectedMailIds(prev => {
+        const isSel = prev.includes(msg.id!);
+        if (isSel) {
+          return prev.filter(id => id !== msg.id!);
+        } else {
+          lastSelectedIdRef.current = msg.id!;
+          return [...prev, msg.id!];
+        }
+      });
+    } else if (e && e.shiftKey && lastSelectedIdRef.current !== null) {
+      const currentFilteredMails = messages.filter(m => {
+        if (selectedMailFolder === 'inbox') return !m.spam && !m.trash;
+        if (selectedMailFolder === 'starred') return !!m.starred && !m.trash;
+        if (selectedMailFolder === 'sent') return !!m.replies && m.replies.length > 0 && !m.trash;
+        if (selectedMailFolder === 'spam') return !!m.spam && !m.trash;
+        if (selectedMailFolder === 'trash') return !!m.trash;
+        return true;
+      }).filter(m => {
+        if (!mailSearchQuery.trim()) return true;
+        const q = mailSearchQuery.toLowerCase();
+        return m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q) || m.message.toLowerCase().includes(q);
+      });
+
+      const idxStart = currentFilteredMails.findIndex(m => m.id === lastSelectedIdRef.current);
+      const idxEnd = currentFilteredMails.findIndex(m => m.id === msg.id);
+
+      if (idxStart !== -1 && idxEnd !== -1) {
+        const minIdx = Math.min(idxStart, idxEnd);
+        const maxIdx = Math.max(idxStart, idxEnd);
+        const rangeIds = currentFilteredMails.slice(minIdx, maxIdx + 1).map(m => m.id!);
+        
+        setSelectedMailIds(prev => {
+          return Array.from(new Set([...prev, ...rangeIds]));
+        });
+      }
+    } else {
+      setSelectedMailIds([msg.id!]);
+      lastSelectedIdRef.current = msg.id!;
+    }
+
     setSelectedMessage(msg);
     setReplySubject(`Re: ${msg.name}-ի հաղորդագրությունը HDesign-ին`);
     setReplyStatus({ type: null, text: '' });
@@ -2308,6 +2692,67 @@ export default function AdminDashboard() {
           visibility: visible;
           transform: translateX(-50%) translateY(-10px);
         }
+        .tooltip-left {
+          position: absolute;
+          left: 100% !important;
+          top: 50% !important;
+          bottom: auto !important;
+          transform: translateY(-50%) translateX(0px) !important;
+          opacity: 0;
+          visibility: hidden;
+          transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+          pointer-events: none;
+        }
+        .tooltip-left::after {
+          content: '' !important;
+          position: absolute;
+          right: 100% !important;
+          top: 50% !important;
+          left: auto !important;
+          transform: translateY(-50%) !important;
+          width: 0;
+          height: 0;
+          border-top: 6px solid transparent !important;
+          border-bottom: 6px solid transparent !important;
+          border-right: 6px solid rgba(8, 63, 57, 0.95) !important;
+          border-left: none !important;
+        }
+        .nav-btn:hover .tooltip-left {
+          opacity: 1 !important;
+          visibility: visible !important;
+          transform: translateY(-50%) translateX(10px) !important;
+        }
+        .tooltip-right {
+          position: absolute;
+          right: 100% !important;
+          top: 50% !important;
+          bottom: auto !important;
+          left: auto !important;
+          transform: translateY(-50%) translateX(0px) !important;
+          opacity: 0;
+          visibility: hidden;
+          transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+          pointer-events: none;
+        }
+        .tooltip-right::after {
+          content: '' !important;
+          position: absolute;
+          left: 100% !important;
+          top: 50% !important;
+          right: auto !important;
+          transform: translateY(-50%) !important;
+          width: 0;
+          height: 0;
+          border-top: 6px solid transparent !important;
+          border-bottom: 6px solid transparent !important;
+          border-left: 6px solid rgba(8, 63, 57, 0.95) !important;
+          border-right: none !important;
+        }
+        .nav-btn:hover .tooltip-right {
+          opacity: 1 !important;
+          visibility: visible !important;
+          transform: translateY(-50%) translateX(-10px) !important;
+        }
         .tab-content-slide-left {
           animation: slideInFromRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
@@ -3292,7 +3737,7 @@ export default function AdminDashboard() {
                     height: 'calc(100vh - 240px)',
                     maxHeight: '900px',
                     overflow: 'hidden',
-                    boxShadow: '0 12px 40px rgba(0,0,0,0.12)'
+                    boxShadow: 'rgba(0, 0, 0, 0.1) 0px 8px 32px'
                   }}>
                     {/* PANE 1: Folder Navigation Sidebar */}
                     <div style={{
@@ -3310,11 +3755,11 @@ export default function AdminDashboard() {
                         </div>
                         
                         {[
-                          { id: 'inbox', name: 'Մուտքային', count: unreadInboxCount, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg> },
+                          { id: 'inbox', name: 'Մուտքային', count: unreadInboxCount, icon: <span className="icon-Mail" style={{ fontSize: '1.2rem' }} /> },
                           { id: 'starred', name: 'Աստղանշված', count: messages.filter(m => m.starred && !m.trash).length, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> },
-                          { id: 'sent', name: 'Ուղարկված', count: messages.filter(m => m.replied && !m.trash).length, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> },
-                          { id: 'spam', name: 'Սպամ', count: unreadSpamCount, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> },
-                          { id: 'trash', name: 'Աղբաման', count: unreadTrashCount, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg> }
+                          { id: 'sent', name: 'Ուղարկված', count: messages.filter(m => m.replied && !m.trash).length, icon: <span className="icon-North-West-Arrow" style={{ fontSize: '1.2rem' }} /> },
+                          { id: 'spam', name: 'Սպամ', count: unreadSpamCount, icon: <span className="icon-Warning" style={{ fontSize: '1.2rem' }} /> },
+                          { id: 'trash', name: 'Աղբաման', count: unreadTrashCount, icon: <span className="icon-Trash" style={{ fontSize: '1.2rem' }} /> }
                         ].map(folder => {
                           const isActive = selectedMailFolder === folder.id;
                           return (
@@ -3520,7 +3965,7 @@ export default function AdminDashboard() {
                       {/* Selection Toolbar or Search Header */}
                       {selectedMailIds.length > 0 ? (
                         <div style={{
-                          padding: '16px',
+                          padding: '20px 16px',
                           borderBottom: '1px solid #e2e8f0',
                           background: 'rgba(0,196,159,0.08)',
                           display: 'flex',
@@ -3532,6 +3977,7 @@ export default function AdminDashboard() {
                               checked={isAllSelected}
                               onChange={handleToggleSelectAll}
                               data-size="20px"
+                              style={{ cursor: 'pointer' }}
                             />
                             <span>Նշված է {selectedMailIds.length}</span>
                           </div>
@@ -3588,8 +4034,8 @@ export default function AdminDashboard() {
                               data-text-color="#0f172a"
                               style={{ paddingLeft: '40px' } as any}
                             />
-                            <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5, pointerEvents: 'none', zIndex: 10, color: '#4a5568' }}>
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5, pointerEvents: 'none', zIndex: 10, color: '#4a5568', display: 'flex' }}>
+                              <span className="icon-Search" style={{ fontSize: '1rem' }} />
                             </span>
                           </div>
                         </div>
@@ -3607,7 +4053,7 @@ export default function AdminDashboard() {
                           return (
                             <div
                               key={msg.id}
-                              onClick={() => handleSelectMessage(msg)}
+                              onClick={(e) => handleSelectMessage(msg, e)}
                               onMouseEnter={() => setHoveredMailId(msg.id!)}
                               onMouseLeave={() => setHoveredMailId(null)}
                               style={{
@@ -3638,9 +4084,17 @@ export default function AdminDashboard() {
                                   checked={isChecked}
                                   onChange={(e: any) => {
                                     const checked = e.target.checked;
-                                    setSelectedMailIds(prev => checked ? [...prev, msg.id!] : prev.filter(x => x !== msg.id!));
+                                    setSelectedMailIds(prev => {
+                                      if (checked) {
+                                        lastSelectedIdRef.current = msg.id!;
+                                        return [...prev, msg.id!];
+                                      } else {
+                                        return prev.filter(x => x !== msg.id!);
+                                      }
+                                    });
                                   }}
                                   data-size="20px"
+                                  style={{ cursor: 'pointer' }}
                                 />
                               </div>
 
@@ -3705,7 +4159,7 @@ export default function AdminDashboard() {
                                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                     {msg.replied && (
                                       <span style={{ display: 'flex', color: '#00C49F' }} title="Պատասխանված է">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                                        <span className="icon-Check" style={{ fontSize: '0.85rem' }} />
                                       </span>
                                     )}
                                     {msg.replies && msg.replies.length > 0 && (
@@ -3731,9 +4185,7 @@ export default function AdminDashboard() {
                                       if (!msg.starred) e.currentTarget.style.opacity = '0.4';
                                     }}
                                   >
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill={msg.starred ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-                                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                                    </svg>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill={msg.starred ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                                   </div>
                                 </div>
                               </div>
@@ -3824,7 +4276,7 @@ export default function AdminDashboard() {
                                   }}
                                   title={selectedMessage.spam ? 'Ոչ Սպամ' : 'Սպամ'}
                                 >
-                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                                  <span className="icon-Warning" style={{ fontSize: '1.2rem' }} />
                                 </button>
 
                                 <button
@@ -3836,7 +4288,7 @@ export default function AdminDashboard() {
                                   title={selectedMessage.trash ? 'Վերականգնել' : 'Տեղափոխել աղբաման'}
                                 >
                                   {selectedMessage.trash ? (
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 4 17 10 23 16"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                                    <span className="icon-Chevrolt-Arrow-Left" style={{ fontSize: '1.2rem' }} />
                                   ) : (
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                                   )}
@@ -3851,7 +4303,7 @@ export default function AdminDashboard() {
                                     }}
                                     title="Ջնջել ընդմիշտ"
                                   >
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                    <span className="icon-Close" style={{ fontSize: '1.2rem' }} />
                                   </button>
                                 )}
                               </div>
@@ -3870,7 +4322,7 @@ export default function AdminDashboard() {
                               fontSize: '0.95rem',
                               lineHeight: '1.6',
                               whiteSpace: 'pre-wrap',
-                              boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)'
+                              boxShadow: 'rgba(0, 0, 0, 0.1) 0px 8px 32px'
                             }}>
                               {selectedMessage.message}
                             </div>
@@ -3909,7 +4361,7 @@ export default function AdminDashboard() {
                                         flexDirection: 'column',
                                         gap: '8px',
                                         position: 'relative',
-                                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
+                                        boxShadow: 'rgba(0, 0, 0, 0.1) 0px 8px 32px'
                                       }}
                                     >
                                       {/* Timeline dot */}
@@ -3961,10 +4413,10 @@ export default function AdminDashboard() {
                                 flexDirection: 'column',
                                 gap: '16px',
                                 marginTop: '20px',
-                                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
+                                boxShadow: 'rgba(0, 0, 0, 0.1) 0px 8px 32px'
                               }}>
                                 <div style={{ fontWeight: 700, fontSize: '1rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                                  <span className="icon-Chevrolt-Arrow-Left" style={{ fontSize: '1.2rem', marginRight: '4px' }} />
                                   Պատասխանել նամակին
                                 </div>
 
@@ -6371,28 +6823,62 @@ export default function AdminDashboard() {
       {/* Floating Bottom Navigation Tab Bar */}
       <nav 
         className="admin-floating-nav"
+        onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
+        onDoubleClick={handleDoubleClick}
+        onDragStart={(e) => e.preventDefault()}
         style={{ 
-          position: 'fixed', 
-          bottom: '24px', 
-          left: '50%', 
-          transform: 'translateX(-50%)', 
+          position: 'fixed',
           display: 'flex', 
           alignItems: 'center', 
           gap: '10px', 
-          height: '68px',
-          padding: '0 8px',
           background: 'var(--nav-bg)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
           borderRadius: '24px',
           zIndex: 1000,
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.35)',
           border: '1px solid var(--panel-border)',
-          transition: 'all 0.3s ease'
+          userSelect: 'none',
+          touchAction: 'none',
+          
+          // Dynamic layout based on dock state
+          flexDirection: dockState === 'bottom' ? 'row' : 'column',
+          padding: dockState === 'bottom' ? '0 8px' : '8px 0',
+          
+          // Positioning
+          bottom: dockState === 'bottom' ? '24px' : 'auto',
+          left: dockState === 'bottom' ? '50%' : (dockState === 'left' ? '24px' : 'auto'),
+          right: dockState === 'right' ? '24px' : 'auto',
+          top: dockState === 'bottom' ? 'auto' : '50%',
+          
+          // Transform & transitions
+          transform: dockState === 'bottom' 
+            ? `translateX(calc(-50% + ${offsetX}px))` 
+            : `translateY(calc(-50% + ${offsetY}px))`,
+          
+          // Dimensions
+          height: dockState === 'bottom' ? '68px' : 'auto',
+          width: dockState === 'bottom' ? 'auto' : '68px',
+          
+          // Snapping visual preview feedback
+          boxShadow: snapPreview === 'left' || snapPreview === 'right' || snapPreview === 'center'
+            ? '0 0 24px rgba(0, 196, 159, 0.4), rgba(0, 0, 0, 0.1) 0px 8px 32px'
+            : 'rgba(0, 0, 0, 0.1) 0px 8px 32px',
+          borderColor: snapPreview === 'left' || snapPreview === 'right' || snapPreview === 'center'
+            ? '#00C49F'
+            : 'var(--panel-border)',
+          
+          transition: isDragging 
+            ? 'none' 
+            : 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s, border-color 0.3s, box-shadow 0.3s, left 0.3s, right 0.3s, top 0.3s, bottom 0.3s',
+          cursor: isDragging ? 'grabbing' : 'grab'
         }}
       >
         <div 
-          onClick={() => setActiveTab('analytics')}
+          onClick={() => {
+            if (hasDraggedRef.current) return;
+            setActiveTab('analytics');
+          }}
           className="nav-btn"
           style={{
             display: 'flex',
@@ -6408,11 +6894,16 @@ export default function AdminDashboard() {
           }}
         >
           <span className="icon-Dashboard" style={{ fontSize: '1.4rem' }} />
-          <div className="nav-tooltip">Վիճակագրություն</div>
+          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
+            Վիճակագրություն
+          </div>
         </div>
 
         <div 
-          onClick={() => setActiveTab('cases')}
+          onClick={() => {
+            if (hasDraggedRef.current) return;
+            setActiveTab('cases');
+          }}
           className="nav-btn"
           style={{
             display: 'flex',
@@ -6428,12 +6919,17 @@ export default function AdminDashboard() {
           }}
         >
           <span className="icon-Image" style={{ fontSize: '1.4rem' }} />
-          <div className="nav-tooltip">Քեյսեր</div>
+          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
+            Քեյսեր
+          </div>
         </div>
 
 
         <div 
-          onClick={() => setActiveTab('messages')}
+          onClick={() => {
+            if (hasDraggedRef.current) return;
+            setActiveTab('messages');
+          }}
           className="nav-btn"
           style={{
             display: 'flex',
@@ -6449,11 +6945,16 @@ export default function AdminDashboard() {
           }}
         >
           <span className="icon-Mail" style={{ fontSize: '1.4rem' }} />
-          <div className="nav-tooltip">Նամակներ</div>
+          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
+            Նամակներ
+          </div>
         </div>
 
         <div 
-          onClick={() => setActiveTab('subscribers')}
+          onClick={() => {
+            if (hasDraggedRef.current) return;
+            setActiveTab('subscribers');
+          }}
           className="nav-btn"
           style={{
             display: 'flex',
@@ -6469,11 +6970,16 @@ export default function AdminDashboard() {
           }}
         >
           <span className="icon-Notifications" style={{ fontSize: '1.4rem' }} />
-          <div className="nav-tooltip">Բաժանորդներ</div>
+          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
+            Բաժանորդներ
+          </div>
         </div>
 
         <div 
-          onClick={() => setActiveTab('translations')}
+          onClick={() => {
+            if (hasDraggedRef.current) return;
+            setActiveTab('translations');
+          }}
           className="nav-btn"
           style={{
             display: 'flex',
@@ -6489,11 +6995,16 @@ export default function AdminDashboard() {
           }}
         >
           <span className="icon-Earth" style={{ fontSize: '1.4rem' }} />
-          <div className="nav-tooltip">Թարգմանություններ</div>
+          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
+            Թարգմանություններ
+          </div>
         </div>
 
         <div 
-          onClick={() => setActiveTab('apis')}
+          onClick={() => {
+            if (hasDraggedRef.current) return;
+            setActiveTab('apis');
+          }}
           className="nav-btn"
           style={{
             display: 'flex',
@@ -6509,11 +7020,16 @@ export default function AdminDashboard() {
           }}
         >
           <span className="icon-Settings" style={{ fontSize: '1.4rem' }} />
-          <div className="nav-tooltip">API-ներ</div>
+          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
+            API-ներ
+          </div>
         </div>
 
         <div 
-          onClick={() => setActiveTab('personalization')}
+          onClick={() => {
+            if (hasDraggedRef.current) return;
+            setActiveTab('personalization');
+          }}
           className="nav-btn"
           style={{
             display: 'flex',
@@ -6529,11 +7045,16 @@ export default function AdminDashboard() {
           }}
         >
           <span className="icon-Cursor" style={{ fontSize: '1.4rem' }} />
-          <div className="nav-tooltip">Անհատականացում</div>
+          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
+            Անհատականացում
+          </div>
         </div>
 
         <div 
-          onClick={() => setActiveTab('settings')}
+          onClick={() => {
+            if (hasDraggedRef.current) return;
+            setActiveTab('settings');
+          }}
           className="nav-btn"
           style={{
             display: 'flex',
@@ -6549,9 +7070,67 @@ export default function AdminDashboard() {
           }}
         >
           <span className="icon-Profile" style={{ fontSize: '1.4rem' }} />
-          <div className="nav-tooltip">Կարգավորումներ</div>
+          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
+            Կարգավորումներ
+          </div>
         </div>
       </nav>
+
+      {/* Dock Snap Preview Indicators */}
+      {isDragging && (
+        <>
+          {/* Left Dock Preview */}
+          <div style={{
+            position: 'fixed',
+            left: '24px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: '68px',
+            height: '350px',
+            borderRadius: '24px',
+            border: snapPreview === 'left' ? '2px dashed rgba(0, 196, 159, 0.3)' : '2px dashed rgba(255, 255, 255, 0.05)',
+            background: snapPreview === 'left' ? 'rgba(0, 196, 159, 0.04)' : 'transparent',
+            pointerEvents: 'none',
+            transition: 'all 0.25s ease',
+            opacity: 0.35,
+            zIndex: 999
+          }} />
+
+          {/* Right Dock Preview */}
+          <div style={{
+            position: 'fixed',
+            right: '24px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: '68px',
+            height: '350px',
+            borderRadius: '24px',
+            border: snapPreview === 'right' ? '2px dashed rgba(0, 196, 159, 0.3)' : '2px dashed rgba(255, 255, 255, 0.05)',
+            background: snapPreview === 'right' ? 'rgba(0, 196, 159, 0.04)' : 'transparent',
+            pointerEvents: 'none',
+            transition: 'all 0.25s ease',
+            opacity: 0.35,
+            zIndex: 999
+          }} />
+
+          {/* Bottom Dock Preview */}
+          <div style={{
+            position: 'fixed',
+            bottom: '24px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '350px',
+            height: '68px',
+            borderRadius: '24px',
+            border: snapPreview === 'center' ? '2px dashed rgba(0, 196, 159, 0.3)' : '2px dashed rgba(255, 255, 255, 0.05)',
+            background: snapPreview === 'center' ? 'rgba(0, 196, 159, 0.04)' : 'transparent',
+            pointerEvents: 'none',
+            transition: 'all 0.25s ease',
+            opacity: 0.35,
+            zIndex: 999
+          }} />
+        </>
+      )}
 
       {/* API Unlocks Passcode Prompt Modal */}
       {showPasscodePrompt && (

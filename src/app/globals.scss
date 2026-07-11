@@ -4,7 +4,7 @@
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
-  unicode-range: U+0000-001F, U+0021-009F, U+00A1-10FFFF; /* Excludes space (U+0020) and non-breaking space (U+00A0) */
+  unicode-range: U+0000-001F, U+0021-009F, U+00A1-E8FF, U+EA00-10FFFF; /* Excludes space (U+0020), non-breaking space (U+00A0), and icon range U+E900-E9FF */
 }
 
 .preview-font-container, .preview-font-container * {
@@ -35,7 +35,9 @@ html[data-custom-cursor="true"] {
   }
 
   [style*="cursor: pointer"], [style*="cursor:pointer"], .cursor-pointer,
-  a, button, select, summary, [role="button"], input[type="submit"], input[type="button"] {
+  a, button, select, summary, [role="button"], input[type="submit"], input[type="button"],
+  hd-checkbox, hd-checkbox *, hd-button, hd-button *, hd-radio, hd-radio *, hd-switch, hd-switch *, hd-select, hd-select *,
+  .custom-checkbox-wrapper, .custom-checkbox-wrapper *, .custom-button-wrapper, .custom-button-wrapper *, .custom-radio-wrapper, .custom-radio-wrapper *, .custom-switch-wrapper, .custom-switch-wrapper *, .custom-select-wrapper, .custom-select-wrapper * {
     cursor: var(--custom-cursor-pointer) !important;
   }
 
