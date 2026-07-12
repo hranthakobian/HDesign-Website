@@ -48,10 +48,68 @@ const iconsList = [
   "icon-Check", "icon-Home", "icon-Profile", "icon-Monitor", "icon-Eye",
   "icon-Locked", "icon-Unlocked", "icon-Close-Eye", "icon-Warning", "icon-Info",
   "icon-Call", "icon-Mail", "icon-Map-Pin", "icon-Clock", "icon-Calendar",
-  "icon-Pin", "icon-Trash", "icon-Close", "icon-Plus",
-  "icon-Arrow-Up", "icon-North-West-Arrow", "icon-Chevrolt-Arrow-Left", "icon-Chevrolt-Arrow-Right",
+  "icon-Pin", "icon-Trash", "icon-Close", "icon-Plus", "icon-Pencil",
+  "icon-Arrow-Up", "icon-Chevrolt-Arrow-Left", "icon-Chevrolt-Arrow-Right",
   "icon-Image", "icon-Camera", "icon-Download", "icon-Attech", "icon-Bell", "icon-Notifications",
-  "icon-Chat-Bubble", "icon-Two-Chat-Bubble", "icon-Earth", "icon-Cursor"
+  "icon-Chat-Bubble", "icon-Two-Chat-Bubble", "icon-Earth", "icon-Cursor",
+  // New icons
+  "icon-Arrow-Left-Up", "icon-Arrow-Right-Up", "icon-Arrow-Right", "icon-Arrow-Right-Bottom",
+  "icon-Arrow-Bottom", "icon-Arrow-Left-Bottom", "icon-Arrow-Left", "icon-Chevrolt-Arrow-Top",
+  "icon-Chevrolt-Arrow-Bottom", "icon-Star", "icon-API", "icon-Decline", "icon-Play",
+  "icon-Stop", "icon-Pause", "icon-Text-Cursor", "icon-Pointer-Cursor",
+  "icon-Undo-Arrow", "icon-Redo-Arrow", "icon-Share-Arrow-Left", "icon-Share-Arrow-Right",
+  "icon-Copy", "icon-Paste", "icon-Cut",
+  "icon-HD-Logo", "icon-HD-Logo-Horizontal", "icon-Hamburger-Menu", "icon-Send",
+  "icon-Three-Dots-Vertical", "icon-Three-Dots-Horizontal"
+];
+
+const iconCategories = [
+  {
+    titleHy: "Սլաքներ",
+    titleEn: "Arrows",
+    icons: [
+      "icon-Arrow-Up", "icon-Chevrolt-Arrow-Left", "icon-Chevrolt-Arrow-Right",
+      "icon-Arrow-Left-Up", "icon-Arrow-Right-Up", "icon-Arrow-Right", "icon-Arrow-Right-Bottom",
+      "icon-Arrow-Bottom", "icon-Arrow-Left-Bottom", "icon-Arrow-Left", "icon-Chevrolt-Arrow-Top",
+      "icon-Chevrolt-Arrow-Bottom", "icon-Undo-Arrow", "icon-Redo-Arrow", "icon-Share-Arrow-Left",
+      "icon-Share-Arrow-Right"
+    ]
+  },
+  {
+    titleHy: "Փականներ և Անվտանգություն",
+    titleEn: "Locks & Security",
+    icons: [
+      "icon-Locked", "icon-Unlocked", "icon-Close-Eye", "icon-Eye"
+    ]
+  },
+  {
+    titleHy: "Հաղորդակցություն",
+    titleEn: "Communication",
+    icons: [
+      "icon-Call", "icon-Mail", "icon-Chat-Bubble", "icon-Two-Chat-Bubble", "icon-Bell", "icon-Notifications",
+      "icon-Send"
+    ]
+  },
+  {
+    titleHy: "Մեդիա",
+    titleEn: "Media",
+    icons: [
+      "icon-Image", "icon-Camera", "icon-Play", "icon-Stop", "icon-Pause"
+    ]
+  },
+  {
+    titleHy: "Հիմնական և Գործիքներ",
+    titleEn: "General & Tools",
+    icons: [
+      "icon-QR-Code", "icon-Pattern", "icon-Dashboard", "icon-Settings", "icon-Search",
+      "icon-Check", "icon-Home", "icon-Profile", "icon-Monitor", "icon-Warning", "icon-Info",
+      "icon-Map-Pin", "icon-Clock", "icon-Calendar", "icon-Pin", "icon-Trash", "icon-Close",
+      "icon-Plus", "icon-Pencil", "icon-Copy", "icon-Paste", "icon-Cut", "icon-Download",
+      "icon-Attech", "icon-Star", "icon-API", "icon-Decline", "icon-Cursor", "icon-Text-Cursor",
+      "icon-Pointer-Cursor", "icon-Earth", "icon-HD-Logo", "icon-HD-Logo-Horizontal",
+      "icon-Hamburger-Menu", "icon-Three-Dots-Vertical", "icon-Three-Dots-Horizontal"
+    ]
+  }
 ];
 
 // Character sets for HDesign glyph map
@@ -624,6 +682,12 @@ export default function Home() {
   const [copiedIcon, setCopiedIcon] = useState<string | null>(null);
   const [selectedIconDetail, setSelectedIconDetail] = useState<string | null>("icon-QR-Code");
   const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
+  
+  const lowercaseIconName = selectedIconDetail ? selectedIconDetail.replace("icon-", "").toLowerCase() : "";
+  const htmlSnippet = `<i class="hd-icon hd-icon-${lowercaseIconName}"></i>`;
+  const reactSnippet = `<i className="hd-icon hd-icon-${lowercaseIconName}" />`;
+  const cssSnippet = `.hd-icon-${lowercaseIconName}`;
+
   const [iconWeight, setIconWeight] = useState<number>(400);
   const [hdesignFontWeight, setHdesignFontWeight] = useState<number>(400);
   const [copiedChar, setCopiedChar] = useState<string | null>(null);
@@ -1191,6 +1255,16 @@ export default function Home() {
   );
 
   const visibleIcons = filteredIcons;
+
+  const categoriesWithFilteredIcons = iconCategories.map(cat => {
+    const filtered = cat.icons.filter(icon => 
+      icon.toLowerCase().includes(iconSearch.toLowerCase())
+    );
+    return {
+      ...cat,
+      filteredIcons: filtered
+    };
+  }).filter(cat => cat.filteredIcons.length > 0);
 
   return (
     <>
@@ -1976,26 +2050,49 @@ export default function Home() {
           >
             {/* Left Column: Icons Grid */}
             <div style={{ flex: "1 1 500px", minWidth: "0" }}>
-              <div className="icon-explorer-grid" style={{ marginTop: 0 }}>
-                {visibleIcons.map((icon, idx) => (
-                  <div 
-                    key={idx} 
-                    className={`icon-explorer-card ${selectedIconDetail === icon ? "active" : ""}`}
-                    onClick={() => setSelectedIconDetail(icon)}
-                    title={t('home', 'click_usage', 'Սեղմեք՝ տեսնելու օգտագործման ձևը')}
-                  >
-                    <span 
-                      className={`icon-symbol ${icon}`} 
-                      style={{ 
-                        fontWeight: iconWeight,
-                        fontVariationSettings: `'wght' ${iconWeight}`,
-                        transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease"
-                      }} 
-                    />
-                    <span className="icon-name">{icon.replace("icon-", "").replace(/-/g, " ")}</span>
-                    
-                    <div className="icon-tooltip">
-                      {t('home', 'details_label', 'Մանրամասներ')}
+              <div style={{ display: "flex", flexDirection: "column", gap: "36px" }}>
+                {categoriesWithFilteredIcons.map((category, catIdx) => (
+                  <div key={catIdx}>
+                    <h3 style={{ 
+                      fontSize: "0.85rem", 
+                      fontWeight: "750", 
+                      textTransform: "uppercase", 
+                      letterSpacing: "1px", 
+                      color: "var(--text)", 
+                      opacity: 0.6, 
+                      marginBottom: "16px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px"
+                    }}>
+                      {locale === 'en' ? category.titleEn : category.titleHy}
+                      <span style={{ fontSize: "0.75rem", opacity: 0.5, fontWeight: "normal" }}>
+                        ({category.filteredIcons.length})
+                      </span>
+                    </h3>
+                    <div className="icon-explorer-grid" style={{ marginTop: 0 }}>
+                      {category.filteredIcons.map((icon, idx) => (
+                        <div 
+                          key={idx} 
+                          className={`icon-explorer-card ${selectedIconDetail === icon ? "active" : ""}`}
+                          onClick={() => setSelectedIconDetail(icon)}
+                          title={t('home', 'click_usage', 'Սեղմեք՝ տեսնելու օգտագործման ձևը')}
+                        >
+                          <span 
+                            className={`icon-symbol ${icon}`} 
+                            style={{ 
+                              fontWeight: iconWeight,
+                              fontVariationSettings: `'wght' ${iconWeight}`,
+                              transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease"
+                            }} 
+                          />
+                          <span className="icon-name">{icon.replace("icon-", "").replace(/-/g, " ")}</span>
+                          
+                          <div className="icon-tooltip">
+                            {t('home', 'details_label', 'Մանրամասներ')}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}
@@ -2158,7 +2255,7 @@ export default function Home() {
                     data-color="transparent"
                     data-text-color="var(--text)"
                     title={t('home', 'download_svg', 'Ներբեռնել SVG')}
-                    style={{ flex: 1 }}
+                    style={{ flex: 1, opacity: getSvgString(selectedIconDetail) ? 1 : 0.5, pointerEvents: getSvgString(selectedIconDetail) ? "auto" : "none" }}
                   >
                     <span className="icon-Download" style={{ fontSize: "0.85rem", marginRight: "6px" }} />
                     SVG
@@ -2171,7 +2268,7 @@ export default function Home() {
                     data-color="var(--primary-color)"
                     data-text-color="#ffffff"
                     title={t('home', 'download_png', 'Ներբեռնել PNG')}
-                    style={{ flex: 1 }}
+                    style={{ flex: 1, opacity: getSvgString(selectedIconDetail) ? 1 : 0.5, pointerEvents: getSvgString(selectedIconDetail) ? "auto" : "none" }}
                   >
                     <span className="icon-Download" style={{ fontSize: "0.85rem", marginRight: "6px" }} />
                     PNG
@@ -2186,7 +2283,7 @@ export default function Home() {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
                       <span style={{ fontSize: "0.7rem", fontWeight: "600", color: "var(--muted)", textTransform: "uppercase" }}>HTML</span>
                       <span 
-                        onClick={() => handleCopySnippet(`<span class="${selectedIconDetail}"></span>`, "html")}
+                        onClick={() => handleCopySnippet(htmlSnippet, "html")}
                         style={{ background: "transparent", border: "none", color: copiedSnippet === "html" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
                       >
                         <span className={copiedSnippet === "html" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.8rem" }} />
@@ -2204,7 +2301,7 @@ export default function Home() {
                       whiteSpace: "pre-wrap",
                       wordBreak: "break-all"
                     }}>
-                      {`<span class="${selectedIconDetail}"></span>`}
+                      {htmlSnippet}
                     </div>
                   </div>
 
@@ -2213,7 +2310,7 @@ export default function Home() {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
                       <span style={{ fontSize: "0.7rem", fontWeight: "600", color: "var(--muted)", textTransform: "uppercase" }}>React / JSX</span>
                       <span 
-                        onClick={() => handleCopySnippet(`<span className="${selectedIconDetail}" />`, "react")}
+                        onClick={() => handleCopySnippet(reactSnippet, "react")}
                         style={{ background: "transparent", border: "none", color: copiedSnippet === "react" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
                       >
                         <span className={copiedSnippet === "react" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.8rem" }} />
@@ -2231,7 +2328,7 @@ export default function Home() {
                       whiteSpace: "pre-wrap",
                       wordBreak: "break-all"
                     }}>
-                      {`<span className="${selectedIconDetail}" />`}
+                      {reactSnippet}
                     </div>
                   </div>
 
@@ -2240,7 +2337,7 @@ export default function Home() {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
                       <span style={{ fontSize: "0.7rem", fontWeight: "600", color: "var(--muted)", textTransform: "uppercase" }}>CSS Class</span>
                       <span 
-                        onClick={() => handleCopySnippet(selectedIconDetail, "css")}
+                        onClick={() => handleCopySnippet(cssSnippet, "css")}
                         style={{ background: "transparent", border: "none", color: copiedSnippet === "css" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
                       >
                         <span className={copiedSnippet === "css" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.8rem" }} />
@@ -2258,7 +2355,7 @@ export default function Home() {
                       whiteSpace: "pre-wrap",
                       wordBreak: "break-all"
                     }}>
-                      {`.${selectedIconDetail}`}
+                      {cssSnippet}
                     </div>
                   </div>
 
@@ -2808,8 +2905,8 @@ export default function Home() {
                   onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"}
                   onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)"}
                 >
-                  <span>{isSlideshowPlaying ? "⏸" : "▶"}</span>
-                  <span>{isSlideshowPlaying ? (locale === "en" ? "Pause" : "Դադար") : (locale === "en" ? "Autoplay" : "Ավտոմատ")}</span>
+                  <span className={isSlideshowPlaying ? "hd-icon hd-icon-pause" : "hd-icon hd-icon-play"} style={{ fontSize: "0.85rem", display: "inline-block" }} />
+                  <span>{isSlideshowPlaying ? (locale === "en" ? "Pause" : "Դադար") : (locale === "en" ? "Autoplay" : "Ինքնաշխատ")}</span>
                 </button>
 
                 {/* Close Button */}
@@ -2847,7 +2944,6 @@ export default function Home() {
                 overflow: "hidden"
               }}
             >
-              {/* Prev Arrow */}
               <div 
                 onClick={(e) => { 
                   e.stopPropagation(); 
@@ -2873,7 +2969,7 @@ export default function Home() {
                 onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"; e.currentTarget.style.transform = "scale(1.1)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)"; e.currentTarget.style.transform = "scale(1)"; }}
               >
-                ←
+                <span className="hd-icon hd-icon-chevrolt-arrow-left" />
               </div>
 
               {/* Central Viewport */}
@@ -2913,7 +3009,6 @@ export default function Home() {
                 )}
               </div>
 
-              {/* Next Arrow */}
               <div 
                 onClick={(e) => { 
                   e.stopPropagation(); 
@@ -2939,7 +3034,7 @@ export default function Home() {
                 onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"; e.currentTarget.style.transform = "scale(1.1)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)"; e.currentTarget.style.transform = "scale(1)"; }}
               >
-                →
+                <span className="hd-icon hd-icon-chevrolt-arrow-right" />
               </div>
             </div>
 

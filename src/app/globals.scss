@@ -1209,7 +1209,7 @@ html[data-theme="custom"] .portfolio-header-wrapper.scrolled .portfolio-header-c
   
   &:hover {
     .dropdown-chevron {
-      transform: rotate(-90deg) !important;
+      transform: rotate(180deg) !important;
     }
 
     .portfolio-nav-item {

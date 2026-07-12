@@ -75,19 +75,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang="en" data-theme="light" data-color="#083f39" style={{ "--hue": themeHue } as any}>
       <head>
         <link rel="stylesheet" href="https://api.hakobian.am/libs/v1/style.css" />
-        <link rel="stylesheet" href="https://api.hakobian.am/libs/v1/icons/style.css" />
-        
-        <link rel="preload" href="https://api.hakobian.am/libs/v1/fonts/hdesign.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
-        <link rel="preload" href="https://api.hakobian.am/libs/v1/icons/varFonts/HDesign-Thin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-        <link rel="preload" href="https://api.hakobian.am/libs/v1/icons/varFonts/HDesign-ExtraLight.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-        <link rel="preload" href="https://api.hakobian.am/libs/v1/icons/varFonts/HDesign-Light.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-        <link rel="preload" href="https://api.hakobian.am/libs/v1/icons/varFonts/HDesign-Regular.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-        <link rel="preload" href="https://api.hakobian.am/libs/v1/icons/varFonts/HDesign-Medium.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-        <link rel="preload" href="https://api.hakobian.am/libs/v1/icons/varFonts/HDesign-SemiBold.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-        <link rel="preload" href="https://api.hakobian.am/libs/v1/icons/varFonts/HDesign-Bold.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-        <link rel="preload" href="https://api.hakobian.am/libs/v1/icons/varFonts/HDesign-ExtraBold.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-        <link rel="preload" href="https://api.hakobian.am/libs/v1/icons/varFonts/HDesign-Black.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-        
+        <link rel="stylesheet" href="/icons/style.css" />
+
         {/* Google Analytics Script */}
         {apiSettings.google_analytics_enabled && apiSettings.google_analytics_id && (
           <>

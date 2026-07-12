@@ -3756,7 +3756,7 @@ export default function AdminDashboard() {
                         
                         {[
                           { id: 'inbox', name: 'Մուտքային', count: unreadInboxCount, icon: <span className="icon-Mail" style={{ fontSize: '1.2rem' }} /> },
-                          { id: 'starred', name: 'Աստղանշված', count: messages.filter(m => m.starred && !m.trash).length, icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> },
+                          { id: 'starred', name: 'Աստղանշված', count: messages.filter(m => m.starred && !m.trash).length, icon: <span className="icon-Star" style={{ fontSize: '1.2rem' }} /> },
                           { id: 'sent', name: 'Ուղարկված', count: messages.filter(m => m.replied && !m.trash).length, icon: <span className="icon-North-West-Arrow" style={{ fontSize: '1.2rem' }} /> },
                           { id: 'spam', name: 'Սպամ', count: unreadSpamCount, icon: <span className="icon-Warning" style={{ fontSize: '1.2rem' }} /> },
                           { id: 'trash', name: 'Աղբաման', count: unreadTrashCount, icon: <span className="icon-Trash" style={{ fontSize: '1.2rem' }} /> }
@@ -4185,7 +4185,7 @@ export default function AdminDashboard() {
                                       if (!msg.starred) e.currentTarget.style.opacity = '0.4';
                                     }}
                                   >
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill={msg.starred ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                    <span className="icon-Star" style={{ fontSize: '1rem', color: msg.starred ? '#ffbb28' : 'inherit' }} />
                                   </div>
                                 </div>
                               </div>
@@ -4265,7 +4265,7 @@ export default function AdminDashboard() {
                                   }}
                                   title={selectedMessage.starred ? 'Ապաաստղանշել' : 'Աստղանշել'}
                                 >
-                                  <svg width="18" height="18" viewBox="0 0 24 24" fill={selectedMessage.starred ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                  <span className="icon-Star" style={{ fontSize: '1.2rem' }} />
                                 </button>
 
                                 <button
@@ -4290,7 +4290,7 @@ export default function AdminDashboard() {
                                   {selectedMessage.trash ? (
                                     <span className="icon-Chevrolt-Arrow-Left" style={{ fontSize: '1.2rem' }} />
                                   ) : (
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                    <span className="icon-Trash" style={{ fontSize: '1.2rem' }} />
                                   )}
                                 </button>
 
@@ -4613,7 +4613,7 @@ export default function AdminDashboard() {
                             color: 'var(--muted)',
                             opacity: 0.6
                           }}>
-                            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                            <span className="icon-Mail" style={{ fontSize: '2.5rem' }} />
                           </div>
                           <div style={{ fontSize: '0.95rem', fontWeight: 500 }}>Ընտրեք նամակ կարդալու համար</div>
                         </div>
@@ -7019,7 +7019,7 @@ export default function AdminDashboard() {
             transition: 'all 0.2s'
           }}
         >
-          <span className="icon-Settings" style={{ fontSize: '1.4rem' }} />
+          <span className="icon-API" style={{ fontSize: '1.4rem' }} />
           <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
             API-ներ
           </div>

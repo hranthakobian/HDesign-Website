@@ -224,7 +224,7 @@ export default function Header() {
         <span className="nav-item-text">{text}</span>
         
         {hasDropdown && (
-          <span className="icon-Chevrolt-Arrow-Right dropdown-chevron" style={{ fontSize: "0.6rem", marginLeft: "6px", display: "inline-block", transform: "rotate(90deg)", transition: "transform 0.3s ease" }} />
+          <span className="hd-icon hd-icon-chevrolt-arrow-bottom dropdown-chevron" style={{ fontSize: "0.6rem", marginLeft: "6px", display: "inline-block", transform: "rotate(0deg)", transition: "transform 0.3s ease" }} />
         )}
         
         {/* Right Side Double Lines */}

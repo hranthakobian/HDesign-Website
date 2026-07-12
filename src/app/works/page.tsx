@@ -389,7 +389,7 @@ function WorksContent() {
                     }}
                   >
                     <span 
-                      className="icon-Chevrolt-Arrow-Left" 
+                      className="icon-Chevrolt-Arrow-Right" 
                       style={{ 
                         position: "absolute",
                         top: "40px",
@@ -499,8 +499,8 @@ function WorksContent() {
                 onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"}
                 onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)"}
               >
-                <span>{isSlideshowPlaying ? "⏸" : "▶"}</span>
-                <span>{isSlideshowPlaying ? t('works_page', 'pause', 'Դադար') : t('works_page', 'autoplay', 'Ավտոմատ')}</span>
+                <span className={isSlideshowPlaying ? "hd-icon hd-icon-pause" : "hd-icon hd-icon-play"} style={{ fontSize: "0.85rem", display: "inline-block" }} />
+                <span>{isSlideshowPlaying ? t('works_page', 'pause', 'Դադար') : t('works_page', 'autoplay', 'Ինքնաշխատ')}</span>
               </button>
 
               {/* Close Button */}
@@ -538,7 +538,6 @@ function WorksContent() {
               overflow: "hidden"
             }}
           >
-            {/* Prev Arrow */}
             <div 
               className="lightbox-arrow prev-arrow"
               onClick={(e) => { 
@@ -565,7 +564,7 @@ function WorksContent() {
               onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"; e.currentTarget.style.transform = "scale(1.1)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)"; e.currentTarget.style.transform = "scale(1)"; }}
             >
-              ←
+              <span className="hd-icon hd-icon-chevrolt-arrow-left" />
             </div>
 
             {/* Central Viewport */}
@@ -604,7 +603,6 @@ function WorksContent() {
               )}
             </div>
 
-            {/* Next Arrow */}
             <div 
               className="lightbox-arrow next-arrow"
               onClick={(e) => { 
@@ -631,7 +629,7 @@ function WorksContent() {
               onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.15)"; e.currentTarget.style.transform = "scale(1.1)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.05)"; e.currentTarget.style.transform = "scale(1)"; }}
             >
-              →
+              <span className="hd-icon hd-icon-chevrolt-arrow-right" />
             </div>
           </div>
 
