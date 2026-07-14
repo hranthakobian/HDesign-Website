@@ -1324,52 +1324,59 @@ export default function Home() {
           width: "100%",
           boxSizing: "border-box"
         }}>
-          <InteractiveWaveText 
-            lines={[t('home', 'hero_line1', 'ՍՏԵՂԾԱ'), t('home', 'hero_line2', 'ԵՒ ԳՈՐԾՆԱԿԱՆ')]}
-          />
-          <div style={{ 
-            display: "flex", 
-            flexDirection: "column", 
-            alignItems: "flex-end", 
-            textAlign: "right",
-            marginTop: "20px"
-          }}>
-            <p style={{ 
-              fontSize: "clamp(1.05rem, 2.2vw, 1.25rem)", 
-              maxWidth: "600px", 
-              color: "var(--text)", 
-              margin: "0 0 14px 0", 
-              lineHeight: "1.6",
-              fontWeight: "400"
-            }}>
-              {t('home', 'hero_quote', 'Ամեն ոք չի կարող մեծ վարպետ դառնալ, բայց մեծ վարպետը կարող է գալ ամենուրից')}
-            </p>
+          <hd-reveal data-direction="up" data-duration="1000">
+            <InteractiveWaveText 
+              lines={[t('home', 'hero_line1', 'ՍՏԵՂԾԱ'), t('home', 'hero_line2', 'ԵՒ ԳՈՐԾՆԱԿԱՆ')]}
+            />
+          </hd-reveal>
+          <hd-reveal data-direction="up" data-duration="1000" data-delay="300">
             <div style={{ 
-              width: "180px", 
-              height: "auto",
-              display: "flex",
-              justifyContent: "flex-end"
+              display: "flex", 
+              flexDirection: "column", 
+              alignItems: "flex-end", 
+              textAlign: "right",
+              marginTop: "20px"
             }}>
-              <img 
-                src="/signature.png" 
-                alt="Signature" 
-                className="hero-signature"
-                style={{ 
-                  width: "100%", 
-                  height: "auto", 
-                  objectFit: "contain"
-                }} 
-              />
+              <p style={{ 
+                fontSize: "clamp(1.05rem, 2.2vw, 1.25rem)", 
+                maxWidth: "600px", 
+                color: "var(--text)", 
+                margin: "0 0 14px 0", 
+                lineHeight: "1.6",
+                fontWeight: "400"
+              }}>
+                {t('home', 'hero_quote', 'Ամեն ոք չի կարող մեծ վարպետ դառնալ, բայց մեծ վարպետը կարող է գալ ամենուրից')}
+              </p>
+              <div style={{ 
+                width: "180px", 
+                height: "auto",
+                display: "flex",
+                justifyContent: "flex-end"
+              }}>
+                <img 
+                  src="/signature.png" 
+                  alt="Signature" 
+                  className="hero-signature"
+                  style={{ 
+                    width: "100%", 
+                    height: "auto", 
+                    objectFit: "contain"
+                  }} 
+                />
+              </div>
             </div>
-          </div>
+          </hd-reveal>
         </section>
 
         {/* ══ SECTION 2: BRANDING CASES (Բրենդինգի Քեյսեր) ══ */}
         <section>
-          <h2 style={{ fontSize: "32pt", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "-20px", paddingLeft: "20px", color: "var(--text)" }}>
-            {locale === "en" ? "Branding" : "Բրենդինգ"}
-          </h2>
-          <div className="marquee-container">
+          <hd-reveal data-direction="up" data-duration="800">
+            <h2 style={{ fontSize: "32pt", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "-20px", paddingLeft: "20px", color: "var(--text)" }}>
+              {locale === "en" ? "Branding" : "Բրենդինգ"}
+            </h2>
+          </hd-reveal>
+          <hd-reveal data-direction="up" data-duration="1000" data-delay="150">
+            <div className="marquee-container">
             <div className="marquee-track">
               {/* Loop twice to make it seamless */}
               {getRepeatedMarqueeItems().map((card, idx) => (
@@ -1441,6 +1448,7 @@ export default function Home() {
               ))}
             </div>
           </div>
+          </hd-reveal>
         </section>
 
         {/* Close shell container to let About section go full-width */}
@@ -1467,42 +1475,46 @@ export default function Home() {
 
           <div className="landing-about-grid" style={{ maxWidth: "1500px", margin: "0 auto", padding: "80px 0 40px", display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: "48px", alignItems: "center", position: "relative", zIndex: 5 }}>
             {/* Profile Image container */}
-            <div style={{ position: "relative", borderRadius: "20px", overflow: "hidden", aspectRatio: "1" }}>
-              <img 
-                src="/profile_hrant.jpg" 
-                alt="Hrant Hakobyan" 
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            </div>
+            <hd-reveal data-direction="right" data-duration="1000">
+              <div style={{ position: "relative", borderRadius: "20px", overflow: "hidden", aspectRatio: "1" }}>
+                <img 
+                  src="/profile_hrant.jpg" 
+                  alt="Hrant Hakobyan" 
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              </div>
+            </hd-reveal>
 
             {/* Bio Details */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-              <h2 style={{ fontSize: "2rem", fontWeight: "800", color: "#ffffff", margin: 0 }}>
-                {t('home', 'about_title', 'Մասին')}
-              </h2>
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px", color: "#ffffff", opacity: 0.9, fontSize: "1.05rem", lineHeight: "1.7" }}>
-                <p>
-                  {t('home', 'about_p1', 'Ողջույն, ես Հրանտ Հակոբյանն եմ և Ճարտարապետության և շինարարության Հայաստանի Ազգային Համալսարանի ճարտարապետության ֆակուլտետի 4-րդ կուրսի ուսանող եմ։')}
-                </p>
-                <p style={{ fontWeight: 700 }}>
-                  {t('home', 'about_p2', 'Ես մասնագիտանում եմ տառաստեղծության և բրենդինգի մեջ։')}
-                </p>
+            <hd-reveal data-direction="left" data-duration="1000" data-delay="150">
+              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                <h2 style={{ fontSize: "2rem", fontWeight: "800", color: "#ffffff", margin: 0 }}>
+                  {t('home', 'about_title', 'Մասին')}
+                </h2>
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px", color: "#ffffff", opacity: 0.9, fontSize: "1.05rem", lineHeight: "1.7" }}>
+                  <p>
+                    {t('home', 'about_p1', 'Ողջույն, ես Հրանտ Հակոբյանն եմ և Ճարտարապետության և շինարարության Հայաստանի Ազգային Համալսարանի ճարտարապետության ֆակուլտետի 4-րդ կուրսի ուսանող եմ։')}
+                  </p>
+                  <p style={{ fontWeight: 700 }}>
+                    {t('home', 'about_p2', 'Ես մասնագիտանում եմ տառաստեղծության և բրենդինգի մեջ։')}
+                  </p>
+                </div>
+                <div>
+                  <hd-button 
+                    onClick={() => {
+                      document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    data-width="160px"
+                    data-height="52px"
+                    data-thickness="3px"
+                    data-color="#083F39"
+                    data-text-color="#fff"
+                  >
+                    {t('home', 'contact_btn', 'Կապնվել')}
+                  </hd-button>
+                </div>
               </div>
-              <div>
-                <hd-button 
-                  onClick={() => {
-                    document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
-                  }}
-                  data-width="160px"
-                  data-height="52px"
-                  data-thickness="3px"
-                  data-color="#083F39"
-                  data-text-color="#fff"
-                >
-                  {t('home', 'contact_btn', 'Կապնվել')}
-                </hd-button>
-              </div>
-            </div>
+            </hd-reveal>
           </div>
         </section>
 
@@ -1511,38 +1523,42 @@ export default function Home() {
 
         {/* ══ SECTION 4: GALLERY (Այլ աշխատանքներ) ══ */}
         <section id="works">
-          <h2 style={{ fontSize: "2.2rem", fontWeight: "900", textAlign: "center", color: "var(--text)", marginBottom: "16px" }}>
-            {t('home', 'other_works', 'Այլ աշխատանքներ')}
-          </h2>
+          <hd-reveal data-direction="up" data-duration="800">
+            <h2 style={{ fontSize: "2.2rem", fontWeight: "900", textAlign: "center", color: "var(--text)", marginBottom: "16px" }}>
+              {t('home', 'other_works', 'Այլ աշխատանքներ')}
+            </h2>
+          </hd-reveal>
           
-          <div className="gallery-grid" style={{ display: "flex", flexDirection: "column", gap: "24px", alignItems: "center" }}>
-            {/* Row 1 (first 5 cases) */}
-            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "24px", width: "100%" }}>
-              {galleryCases.slice(0, 5).map((work, idx) => renderGalleryCard(work, idx))}
+          <hd-reveal data-direction="up" data-duration="1000" data-delay="150">
+            <div className="gallery-grid" style={{ display: "flex", flexDirection: "column", gap: "24px", alignItems: "center" }}>
+              {/* Row 1 (first 5 cases) */}
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "24px", width: "100%" }}>
+                {galleryCases.slice(0, 5).map((work, idx) => renderGalleryCard(work, idx))}
+              </div>
+
+              {/* Row 2 (next 5 cases) */}
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "24px", width: "100%" }}>
+                {galleryCases.slice(5, 10).map((work, idx) => renderGalleryCard(work, 5 + idx))}
+              </div>
+
+              {/* Row 3 (last 5 cases) */}
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "24px", width: "100%" }}>
+                {galleryCases.slice(10, 15).map((work, idx) => renderGalleryCard(work, 10 + idx))}
+              </div>
             </div>
 
-            {/* Row 2 (next 5 cases) */}
-            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "24px", width: "100%" }}>
-              {galleryCases.slice(5, 10).map((work, idx) => renderGalleryCard(work, 5 + idx))}
+            <div style={{ display: "flex", justifyContent: "center", marginTop: "36px" }}>
+              <Link href="/works?category=design">
+                <hd-button 
+                  data-width="160px"
+                  data-height="52px"
+                  data-thickness="3px"
+                >
+                  {t('home', 'more_btn', 'Ավելի')}
+                </hd-button>
+              </Link>
             </div>
-
-            {/* Row 3 (last 5 cases) */}
-            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "24px", width: "100%" }}>
-              {galleryCases.slice(10, 15).map((work, idx) => renderGalleryCard(work, 10 + idx))}
-            </div>
-          </div>
-
-          <div style={{ display: "flex", justifyContent: "center", marginTop: "36px" }}>
-            <Link href="/works?category=design">
-              <hd-button 
-                data-width="160px"
-                data-height="52px"
-                data-thickness="3px"
-              >
-                {t('home', 'more_btn', 'Ավելի')}
-              </hd-button>
-            </Link>
-          </div>
+          </hd-reveal>
         </section>
 
         {/* ══ SECTION 5: PLAYGROUND (Դիզայնի Համակարգը) ══ */}
@@ -1562,6 +1578,16 @@ export default function Home() {
               padding: 0;
               box-shadow: none;
               backdrop-filter: none;
+            }
+            .playground-sidebar-wrapper {
+              display: block;
+            }
+            .playground-preview-wrapper {
+              display: block;
+              min-width: 0;
+            }
+            .playground-controls-wrapper {
+              display: block;
             }
             .playground-sidebar-column {
               display: flex;
@@ -1603,8 +1629,10 @@ export default function Home() {
               .homepage-playground-container {
                 grid-template-columns: 220px 1fr;
               }
-              .playground-controls-column {
+              .playground-controls-wrapper {
                 grid-column: span 2;
+              }
+              .playground-controls-column {
                 max-height: 400px;
                 height: 400px;
               }
@@ -1612,6 +1640,9 @@ export default function Home() {
             @media (max-width: 768px) {
               .homepage-playground-container {
                 grid-template-columns: 1fr;
+              }
+              .playground-controls-wrapper {
+                grid-column: span 1;
               }
               .playground-sidebar-column {
                 max-height: 300px;
@@ -1622,43 +1653,45 @@ export default function Home() {
                 max-height: none;
               }
               .playground-controls-column {
-                grid-column: span 1;
                 max-height: 400px;
                 height: 400px;
               }
             }
           `}</style>
           
-          <h2 style={{
-            fontSize: "2.2rem",
-            fontWeight: "900",
-            textAlign: "center",
-            color: "var(--text)",
-            marginBottom: "24px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "12px"
-          }}>
-            {t('home', 'design_system', 'Դիզայնի Համակարգը')}
-            <sup style={{ fontSize: "0.9rem", color: "var(--primary-color)", fontWeight: "bold", marginLeft: "4px" }}>ԲԵՏԱ</sup>
-          </h2>
-          <h3 style={{
-            fontSize: "1.4rem",
-            fontWeight: "700",
-            textTransform: "uppercase",
-            letterSpacing: "1px",
-            textAlign: "center",
-            color: "var(--text)",
-            marginTop: "-16px",
-            marginBottom: "40px"
-          }}>
-            {t('home', 'components_title', 'Բաղադրիչներ')}
-          </h3>
+          <hd-reveal data-direction="up" data-duration="800">
+            <h2 style={{
+              fontSize: "2.2rem",
+              fontWeight: "900",
+              textAlign: "center",
+              color: "var(--text)",
+              marginBottom: "24px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "12px"
+            }}>
+              {t('home', 'design_system', 'Դիզայնի Համակարգը')}
+              <sup style={{ fontSize: "0.9rem", color: "var(--primary-color)", fontWeight: "bold", marginLeft: "4px" }}>ԲԵՏԱ</sup>
+            </h2>
+            <h3 style={{
+              fontSize: "1.4rem",
+              fontWeight: "700",
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+              textAlign: "center",
+              color: "var(--text)",
+              marginTop: "-16px",
+              marginBottom: "40px"
+            }}>
+              {t('home', 'components_title', 'Բաղադրիչներ')}
+            </h3>
+          </hd-reveal>
           
           <div className="homepage-playground-container">
             {/* Sidebar List of 12 components */}
-            <div className="playground-sidebar-column">
+            <hd-reveal className="playground-sidebar-wrapper" data-direction="up" data-duration="900" data-delay="0">
+              <div className="playground-sidebar-column">
               <span style={{ fontSize: "0.75rem", fontWeight: "800", opacity: 0.5, letterSpacing: "1px", padding: "6px 8px 12px 8px" }}>
                 {t('home', 'components_label', 'ԿՈՄՊՈՆԵՆՏՆԵՐ')}
               </span>
@@ -1693,9 +1726,11 @@ export default function Home() {
                 </div>
               </hd-scrollbar>
             </div>
+            </hd-reveal>
 
             {/* Central Canvas Preview & Code */}
-            <div className="playground-preview-column">
+            <hd-reveal className="playground-preview-wrapper" data-direction="up" data-duration="900" data-delay="150">
+              <div className="playground-preview-column">
               {/* Checkered preview box */}
               <div style={{
                 border: "1px solid var(--panel-border)",
@@ -1793,9 +1828,11 @@ export default function Home() {
                 </hd-scrollbar>
               </div>
             </div>
+            </hd-reveal>
 
             {/* Right configuration controls */}
-            <div className="playground-controls-column">
+            <hd-reveal className="playground-controls-wrapper" data-direction="up" data-duration="900" data-delay="300">
+              <div className="playground-controls-column">
               <span style={{ fontSize: "0.75rem", fontWeight: "800", opacity: 0.5, letterSpacing: "1px", paddingBottom: "8px" }}>
                 ԿԱՐԳԱՎՈՐՈՒՄՆԵՐ
               </span>
@@ -2049,25 +2086,29 @@ export default function Home() {
                 </div>
               </hd-scrollbar>
             </div>
+            </hd-reveal>
           </div>
         </section>
         {/* ══ SECTION 6: ICONS (Պատկերակներ) ══ */}
         <section>
-          <h2 style={{ fontSize: "1.4rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "20px", textAlign: "center", color: "var(--text)" }}>
-            {t('home', 'icons_title', 'Պատկերներ')} ({iconsList.length})
-          </h2>
+          <hd-reveal data-direction="up" data-duration="800">
+            <h2 style={{ fontSize: "1.4rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "20px", textAlign: "center", color: "var(--text)" }}>
+              {t('home', 'icons_title', 'Պատկերներ')} ({iconsList.length})
+            </h2>
+          </hd-reveal>
           {/* Two-column layout: Left (Grid) & Right (Details) */}
-          <div 
-            ref={sectionRef}
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "32px",
-              width: "100%",
-              alignItems: "flex-start",
-              marginTop: "24px"
-            }}
-          >
+          <hd-reveal data-direction="up" data-duration="1000" data-delay="150">
+            <div 
+              ref={sectionRef}
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "32px",
+                width: "100%",
+                alignItems: "flex-start",
+                marginTop: "24px"
+              }}
+            >
             {/* Left Column: Icons Grid */}
             <div style={{ flex: "1 1 500px", minWidth: "0" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "36px" }}>
@@ -2548,9 +2589,11 @@ export default function Home() {
             )}
           </div>
         </div>
+        </hd-reveal>
 
         {/* HDesign Font Glyphs Map & Variability Slider */}
-        <h2 style={{ fontSize: "1.4rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginTop: "60px", marginBottom: "20px", textAlign: "center", color: "var(--text)" }}>
+        <hd-reveal data-direction="up" data-duration="1000">
+          <h2 style={{ fontSize: "1.4rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginTop: "60px", marginBottom: "20px", textAlign: "center", color: "var(--text)" }}>
           {t('home', 'font_title', 'Տառատեսակ')}
         </h2>
         <div style={{
@@ -2846,6 +2889,7 @@ export default function Home() {
             }
           `}</style>
         </div>
+        </hd-reveal>
       </section>
         {/* Close shell container */}
         </div>
