@@ -66,6 +66,12 @@ declare module 'react' {
         onChange?: (event: any) => void;
       };
       'hd-scrollbar': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+      'hd-reveal': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        'data-direction'?: string;
+        'data-delay'?: string | number;
+        'data-duration'?: string | number;
+        'data-threshold'?: string | number;
+      };
       'hd-select': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
         placeholder?: string;
         value?: string | number;
