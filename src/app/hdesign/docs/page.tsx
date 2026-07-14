@@ -229,6 +229,24 @@ data-font-size="14pt" />`}
 </hd-scrollbar>`}
         />
 
+        {/* Scroll Reveal example */}
+        <CodeExample 
+          title="Scroll Reveal / Սքրոլ Անիմացիա (<hd-reveal>)"
+          description="Տարրերի հայտնվելու անիմացիա սքրոլ անելիս: Աջակցում է տարբեր ուղղություններ, ուշացում (delay), տևողություն (duration) և IntersectionObserver-ի շեմ (threshold)։"
+          code={`<hd-reveal 
+  data-direction="up" 
+  data-delay="200" 
+  data-duration="1000" 
+  data-threshold="0.15"
+>
+  <div style={{ padding: "24px", background: "var(--panel)", borderRadius: "16px" }}>
+    <h3>Անիմացիոն Բովանդակություն</h3>
+    <p>Այս տարրը սահուն կերպով կհայտնվի սքրոլի ժամանակ:</p>
+  </div>
+</hd-reveal>`}
+        />
+
+
       </div>
     </main>
   );

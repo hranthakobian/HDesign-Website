@@ -2940,6 +2940,51 @@ hd-switch, hd-checkbox {
   }
 }
 
+/* Scroll Reveal Animation System */
+hd-reveal, .hd-reveal {
+  display: block;
+  opacity: 0;
+  transition-property: opacity, transform;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  transition-duration: 800ms;
+  will-change: transform, opacity;
+
+  &.reveal-up {
+    transform: translateY(40px);
+  }
+  &.reveal-down {
+    transform: translateY(-40px);
+  }
+  &.reveal-left {
+    transform: translateX(45px);
+  }
+  &.reveal-right {
+    transform: translateX(-45px);
+  }
+  &.reveal-scale {
+    transform: scale(0.92);
+  }
+  &.reveal-fade {
+    transform: none;
+  }
+
+  &.hd-revealed {
+    opacity: 1;
+    transform: translate(0) scale(1);
+  }
+}
+
+/* Staggered Delay Helpers */
+.hd-delay-100 { transition-delay: 100ms; }
+.hd-delay-200 { transition-delay: 200ms; }
+.hd-delay-300 { transition-delay: 300ms; }
+.hd-delay-400 { transition-delay: 400ms; }
+.hd-delay-500 { transition-delay: 500ms; }
+.hd-delay-600 { transition-delay: 600ms; }
+.hd-delay-700 { transition-delay: 700ms; }
+.hd-delay-800 { transition-delay: 800ms; }
+
+
 
 
 

@@ -59,7 +59,14 @@ export default function HDesignSamplesPage() {
 
   const [scrollContentHeight, setScrollContentHeight] = useState<number>(300);
 
-  // 12 HDesign components details
+  // hd-reveal specific attributes
+  const [revealDirection, setRevealDirection] = useState<string>("up");
+  const [revealDelay, setRevealDelay] = useState<number>(0);
+  const [revealDuration, setRevealDuration] = useState<number>(800);
+  const [revealThreshold, setRevealThreshold] = useState<number>(0.1);
+  const [revealKey, setRevealKey] = useState<number>(0);
+
+  // 13 HDesign components details
   const componentsList: ComponentItem[] = [
     { id: "hd-button", name: "Կոճակ (Button)", desc: "Կոճակ անիմացիոն եզրագծերի էֆեկտներով", icon: "icon-Settings" },
     { id: "hd-input", name: "Մուտքի դաշտ (Input)", desc: "Տեքստի մուտքագրման դաշտ caret-ի անիմացիայով", icon: "icon-Cursor" },
@@ -72,17 +79,21 @@ export default function HDesignSamplesPage() {
     { id: "hd-segment", name: "Սեգմենտավորում (Segment)", desc: "Սահմանափակ տարբերակների սեգմենտավորված փոխանջատիչ", icon: "icon-Cursor" },
     { id: "hd-color-picker", name: "Գույնի ընտրիչ (Color Picker)", desc: "Կոմպակտ գունային ներկապնակի կոճակ", icon: "icon-Settings" },
     { id: "hd-color-panel", name: "Գունային վահանակ (Color Panel)", desc: "Ներդրված գունային ընտրության վահանակ", icon: "icon-Settings" },
-    { id: "hd-scrollbar", name: "Կոմպակտ սահնակ (Scrollbar)", desc: "Մինիմալիստական սքրոլբարի տարա", icon: "icon-Cursor" }
+    { id: "hd-scrollbar", name: "Կոմպակտ սահնակ (Scrollbar)", desc: "Մինիմալիստական սքրոլբարի տարա", icon: "icon-Cursor" },
+    { id: "hd-reveal", name: "Սքրոլ Անիմացիա (Scroll Reveal)", desc: "Տարրերի հայտնվելը սքրոլ անելիս", icon: "icon-Info" }
   ];
 
   // Dynamic component key to force React remount on attribute change
-  const componentKey = `${activeTab}-${width}-${height}-${thickness}-${color}-${textColor}-${radius}-${btnText}-${isDisabled}-${inputPlaceholder}-${inputValue}-${inputType}-${textareaPlaceholder}-${textareaDisableResize}-${sliderMin}-${sliderMax}-${sliderVal}-${sliderStep}-${checkedState}-${checkboxSize}-${radioState}-${radioSize}-${switchState}-${switchSize}-${selectPlaceholder}-${selectVal}-${selectOptions}-${segmentVal}-${segmentOptions}-${colorPickerVal}-${colorPanelVal}-${scrollContentHeight}`;
+  const componentKey = `${activeTab}-${width}-${height}-${thickness}-${color}-${textColor}-${radius}-${btnText}-${isDisabled}-${inputPlaceholder}-${inputValue}-${inputType}-${textareaPlaceholder}-${textareaDisableResize}-${sliderMin}-${sliderMax}-${sliderVal}-${sliderStep}-${checkedState}-${checkboxSize}-${radioState}-${radioSize}-${switchState}-${switchSize}-${selectPlaceholder}-${selectVal}-${selectOptions}-${segmentVal}-${segmentOptions}-${colorPickerVal}-${colorPanelVal}-${scrollContentHeight}-${revealDirection}-${revealDelay}-${revealDuration}-${revealThreshold}-${revealKey}`;
 
   function handleTabChange(id: string) {
     setActiveTab(id);
     // Set appropriate defaults for styles
     if (id === "hd-checkbox" || id === "hd-radio" || id === "hd-switch" || id === "hd-color-picker") {
       setWidth("auto");
+      setHeight("auto");
+    } else if (id === "hd-reveal") {
+      setWidth("100%");
       setHeight("auto");
     } else {
       setWidth("240px");
@@ -202,6 +213,12 @@ export default function HDesignSamplesPage() {
         return `<hd-color-panel\n  value="${colorPanelVal}"\n  data-width="${width}"\n  data-height="${height}"\n/>`;
       case "hd-scrollbar":
         return `<hd-scrollbar style="width: ${width}; height: ${height}; overflow: auto;">\n  <div style="padding: 20px; height: ${scrollContentHeight}px;">\n    Երկար պարունակություն սքրոլ անելու համար...\n  </div>\n</hd-scrollbar>`;
+      case "hd-reveal":
+        const dirAttr = revealDirection ? ` data-direction="${revealDirection}"` : "";
+        const delayAttr = revealDelay ? ` data-delay="${revealDelay}"` : "";
+        const durationAttr = revealDuration ? ` data-duration="${revealDuration}"` : "";
+        const thresholdAttr = revealThreshold ? ` data-threshold="${revealThreshold}"` : "";
+        return `<hd-reveal${dirAttr}${delayAttr}${durationAttr}${thresholdAttr}>\n  <div style="background: var(--panel); border: 1px solid var(--panel-border); padding: 32px; border-radius: 12px; text-align: center;">\n    <h3>Հայտնվող Տարր</h3>\n    <p>Այս բովանդակությունը կհայտնվի սահուն կերպով</p>\n  </div>\n</hd-reveal>`;
       default:
         return "";
     }
@@ -363,6 +380,30 @@ export default function HDesignSamplesPage() {
               </div>
             </div>
           </hd-scrollbar>
+        );
+      case "hd-reveal":
+        return (
+          <hd-reveal
+            key={`${componentKey}-${revealKey}`}
+            data-direction={revealDirection}
+            data-delay={revealDelay}
+            data-duration={revealDuration}
+            data-threshold={revealThreshold}
+            style={{ width: "100%" }}
+          >
+            <div style={{
+              background: "var(--panel)",
+              border: "1px solid var(--panel-border)",
+              padding: "32px",
+              borderRadius: "16px",
+              textAlign: "center",
+              boxShadow: "var(--shadow)",
+              color: "var(--text)"
+            }}>
+              <h3 style={{ margin: "0 0 8px 0", fontSize: "1.2rem", fontWeight: "bold" }}>Հայտնվող Տարր</h3>
+              <p style={{ margin: 0, fontSize: "0.9rem", opacity: 0.8 }}>Այս բովանդակությունը կհայտնվի սահուն կերպով</p>
+            </div>
+          </hd-reveal>
         );
       default:
         return null;
@@ -1153,6 +1194,66 @@ export default function HDesignSamplesPage() {
                     />
                   </label>
                 )}
+
+                {/* 13. hd-reveal settings */}
+                {activeTab === "hd-reveal" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <span style={{ fontSize: "0.8rem", opacity: 0.8 }}>Անիմացիայի ուղղություն</span>
+                      <hd-select value={revealDirection} onChange={(e: any) => setRevealDirection(e.target.value)} data-height="38px" data-thickness="2px">
+                        <span value="up">Վերև (Up)</span>
+                        <span value="down">Ներքև (Down)</span>
+                        <span value="left">Աջից ձախ (Left)</span>
+                        <span value="right">Ձախից աջ (Right)</span>
+                        <span value="scale">Մասշտաբավորում (Scale)</span>
+                        <span value="fade">Ֆեյդ / Մարում (Fade)</span>
+                      </hd-select>
+                    </label>
+
+                    <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <span style={{ fontSize: "0.8rem", opacity: 0.8 }}>Ուշացում (Delay): {revealDelay}ms</span>
+                      <hd-slider
+                        min="0"
+                        max="1000"
+                        step="50"
+                        value={revealDelay}
+                        onInput={(e: any) => setRevealDelay(Number(e.target.value))}
+                      />
+                    </label>
+
+                    <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <span style={{ fontSize: "0.8rem", opacity: 0.8 }}>Տևողություն (Duration): {revealDuration}ms</span>
+                      <hd-slider
+                        min="200"
+                        max="2000"
+                        step="100"
+                        value={revealDuration}
+                        onInput={(e: any) => setRevealDuration(Number(e.target.value))}
+                      />
+                    </label>
+
+                    <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <span style={{ fontSize: "0.8rem", opacity: 0.8 }}>Շեմ (Threshold): {revealThreshold}</span>
+                      <hd-slider
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={revealThreshold}
+                        onInput={(e: any) => setRevealThreshold(Number(e.target.value))}
+                      />
+                    </label>
+
+                    <hd-button 
+                      onClick={() => setRevealKey(prev => prev + 1)}
+                      data-width="100%" 
+                      data-height="38px"
+                      data-thickness="2px"
+                    >
+                      Կրկնել Անիմացիան
+                    </hd-button>
+                  </div>
+                )}
+
 
               </div>
 

@@ -1298,51 +1298,57 @@ export default function Home() {
           width: "100%",
           boxSizing: "border-box"
         }}>
-          <InteractiveWaveText 
-            lines={[t('home', 'hero_line1', 'ՍՏԵՂԾԱ'), t('home', 'hero_line2', 'ԵՒ ԳՈՐԾՆԱԿԱՆ')]}
-          />
-          <div style={{ 
-            display: "flex", 
-            flexDirection: "column", 
-            alignItems: "flex-end", 
-            textAlign: "right",
-            marginTop: "20px"
-          }}>
-            <p style={{ 
-              fontSize: "clamp(1.05rem, 2.2vw, 1.25rem)", 
-              maxWidth: "600px", 
-              color: "var(--text)", 
-              margin: "0 0 14px 0", 
-              lineHeight: "1.6",
-              fontWeight: "400"
-            }}>
-              {t('home', 'hero_quote', 'Ամեն ոք չի կարող մեծ վարպետ դառնալ, բայց մեծ վարպետը կարող է գալ ամենուրից')}
-            </p>
+          <hd-reveal data-direction="up" data-duration="1000">
+            <InteractiveWaveText 
+              lines={[t('home', 'hero_line1', 'ՍՏԵՂԾԱ'), t('home', 'hero_line2', 'ԵՒ ԳՈՐԾՆԱԿԱՆ')]}
+            />
+          </hd-reveal>
+          <hd-reveal data-direction="up" data-delay="250" data-duration="1000" style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
             <div style={{ 
-              width: "180px", 
-              height: "auto",
-              display: "flex",
-              justifyContent: "flex-end"
+              display: "flex", 
+              flexDirection: "column", 
+              alignItems: "flex-end", 
+              textAlign: "right",
+              marginTop: "20px"
             }}>
-              <img 
-                src="/signature.png" 
-                alt="Signature" 
-                className="hero-signature"
-                style={{ 
-                  width: "100%", 
-                  height: "auto", 
-                  objectFit: "contain"
-                }} 
-              />
+              <p style={{ 
+                fontSize: "clamp(1.05rem, 2.2vw, 1.25rem)", 
+                maxWidth: "600px", 
+                color: "var(--text)", 
+                margin: "0 0 14px 0", 
+                lineHeight: "1.6",
+                fontWeight: "400"
+              }}>
+                {t('home', 'hero_quote', 'Ամեն ոք չի կարող մեծ վարպետ դառնալ, բայց մեծ վարպետը կարող է գալ ամենուրից')}
+              </p>
+              <div style={{ 
+                width: "180px", 
+                height: "auto",
+                display: "flex",
+                justifyContent: "flex-end"
+              }}>
+                <img 
+                  src="/signature.png" 
+                  alt="Signature" 
+                  className="hero-signature"
+                  style={{ 
+                    width: "100%", 
+                    height: "auto", 
+                    objectFit: "contain"
+                  }} 
+                />
+              </div>
             </div>
-          </div>
+          </hd-reveal>
         </section>
 
         {/* ══ SECTION 2: BRANDING CASES (Բրենդինգի Քեյսեր) ══ */}
         <section>
-          <h2 style={{ fontSize: "32pt", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "-20px", paddingLeft: "20px", color: "var(--text)" }}>
-            {locale === "en" ? "Branding" : "Բրենդինգ"}
-          </h2>
+          <hd-reveal data-direction="left" data-duration="900">
+            <h2 style={{ fontSize: "32pt", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "-20px", paddingLeft: "20px", color: "var(--text)" }}>
+              {locale === "en" ? "Branding" : "Բրենդինգ"}
+            </h2>
+          </hd-reveal>
           <div className="marquee-container">
             <div className="marquee-track">
               {/* Loop twice to make it seamless */}

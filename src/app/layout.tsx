@@ -13,6 +13,8 @@ import UpcomingCheck from "@/components/UpcomingCheck";
 import { getSiteSetting } from "@/lib/db";
 import SmoothScroll from "@/components/SmoothScroll";
 import Preloader from "@/components/Preloader";
+import HDesignRevealInit from "@/components/HDesignRevealInit";
+
 
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
@@ -103,6 +105,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <body>
         <Preloader />
         <SmoothScroll />
+        <HDesignRevealInit />
         <CustomCursor />
         <AnalyticsTracker />
         <I18nProvider>
