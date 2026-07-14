@@ -59,11 +59,18 @@ const iconsList = [
   "icon-Stop", "icon-Pause", "icon-Text-Cursor", "icon-Pointer-Cursor",
   "icon-Undo-Arrow", "icon-Redo-Arrow", "icon-Share-Arrow-Left", "icon-Share-Arrow-Right",
   "icon-Copy", "icon-Paste", "icon-Cut",
-  "icon-HD-Logo", "icon-HD-Logo-Horizontal", "icon-Hamburger-Menu", "icon-Send",
+  "icon-HD-Logo", "icon-HD-Logo-Horizontal", "icon-Send",
   "icon-Three-Dots-Vertical", "icon-Three-Dots-Horizontal"
 ];
 
 const iconCategories = [
+  {
+    titleHy: "Լոգո և Մենյու",
+    titleEn: "Logo & Menu",
+    icons: [
+      "icon-HD-Logo", "icon-HD-Logo-Horizontal"
+    ]
+  },
   {
     titleHy: "Սլաքներ",
     titleEn: "Arrows",
@@ -106,8 +113,7 @@ const iconCategories = [
       "icon-Map-Pin", "icon-Clock", "icon-Calendar", "icon-Pin", "icon-Trash", "icon-Close",
       "icon-Plus", "icon-Pencil", "icon-Copy", "icon-Paste", "icon-Cut", "icon-Download",
       "icon-Attech", "icon-Star", "icon-API", "icon-Decline", "icon-Cursor", "icon-Text-Cursor",
-      "icon-Pointer-Cursor", "icon-Earth", "icon-HD-Logo", "icon-HD-Logo-Horizontal",
-      "icon-Hamburger-Menu", "icon-Three-Dots-Vertical", "icon-Three-Dots-Horizontal"
+      "icon-Pointer-Cursor", "icon-Earth", "icon-Three-Dots-Vertical", "icon-Three-Dots-Horizontal"
     ]
   }
 ];
@@ -682,11 +688,22 @@ export default function Home() {
   const [copiedIcon, setCopiedIcon] = useState<string | null>(null);
   const [selectedIconDetail, setSelectedIconDetail] = useState<string | null>("icon-QR-Code");
   const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
+  const [iconSortOrder, setIconSortOrder] = useState<"default" | "alphabetical">("default");
   
   const lowercaseIconName = selectedIconDetail ? selectedIconDetail.replace("icon-", "").toLowerCase() : "";
-  const htmlSnippet = `<i class="hd-icon hd-icon-${lowercaseIconName}"></i>`;
-  const reactSnippet = `<i className="hd-icon hd-icon-${lowercaseIconName}" />`;
-  const cssSnippet = `.hd-icon-${lowercaseIconName}`;
+  const isLogoHorizontal = selectedIconDetail === "icon-HD-Logo-Horizontal";
+  
+  const htmlSnippet = isLogoHorizontal 
+    ? `<i class="hd-icon hd-icon-hd-logo-horizontal"></i>\n<!-- կամ (or) -->\n<i class="hd-icon hd-icon-hamburger-menu"></i>`
+    : `<i class="hd-icon hd-icon-${lowercaseIconName}"></i>`;
+
+  const reactSnippet = isLogoHorizontal
+    ? `<i className="hd-icon hd-icon-hd-logo-horizontal" />\n{/* կամ (or) */}\n<i className="hd-icon hd-icon-hamburger-menu" />`
+    : `<i className="hd-icon hd-icon-${lowercaseIconName}" />`;
+
+  const cssSnippet = isLogoHorizontal
+    ? `.hd-icon-hd-logo-horizontal\n/* կամ (or) */\n.hd-icon-hamburger-menu`
+    : `.hd-icon-${lowercaseIconName}`;
 
   const [iconWeight, setIconWeight] = useState<number>(400);
   const [hdesignFontWeight, setHdesignFontWeight] = useState<number>(400);
@@ -1257,9 +1274,18 @@ export default function Home() {
   const visibleIcons = filteredIcons;
 
   const categoriesWithFilteredIcons = iconCategories.map(cat => {
-    const filtered = cat.icons.filter(icon => 
+    let filtered = cat.icons.filter(icon => 
       icon.toLowerCase().includes(iconSearch.toLowerCase())
     );
+
+    if (iconSortOrder === "alphabetical") {
+      filtered = [...filtered].sort((a, b) => {
+        const cleanA = a.replace("icon-", "").toLowerCase();
+        const cleanB = b.replace("icon-", "").toLowerCase();
+        return cleanA.localeCompare(cleanB);
+      });
+    }
+
     return {
       ...cat,
       filteredIcons: filtered
@@ -1298,57 +1324,51 @@ export default function Home() {
           width: "100%",
           boxSizing: "border-box"
         }}>
-          <hd-reveal data-direction="up" data-duration="1000">
-            <InteractiveWaveText 
-              lines={[t('home', 'hero_line1', 'ՍՏԵՂԾԱ'), t('home', 'hero_line2', 'ԵՒ ԳՈՐԾՆԱԿԱՆ')]}
-            />
-          </hd-reveal>
-          <hd-reveal data-direction="up" data-delay="250" data-duration="1000" style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-            <div style={{ 
-              display: "flex", 
-              flexDirection: "column", 
-              alignItems: "flex-end", 
-              textAlign: "right",
-              marginTop: "20px"
+          <InteractiveWaveText 
+            lines={[t('home', 'hero_line1', 'ՍՏԵՂԾԱ'), t('home', 'hero_line2', 'ԵՒ ԳՈՐԾՆԱԿԱՆ')]}
+          />
+          <div style={{ 
+            display: "flex", 
+            flexDirection: "column", 
+            alignItems: "flex-end", 
+            textAlign: "right",
+            marginTop: "20px"
+          }}>
+            <p style={{ 
+              fontSize: "clamp(1.05rem, 2.2vw, 1.25rem)", 
+              maxWidth: "600px", 
+              color: "var(--text)", 
+              margin: "0 0 14px 0", 
+              lineHeight: "1.6",
+              fontWeight: "400"
             }}>
-              <p style={{ 
-                fontSize: "clamp(1.05rem, 2.2vw, 1.25rem)", 
-                maxWidth: "600px", 
-                color: "var(--text)", 
-                margin: "0 0 14px 0", 
-                lineHeight: "1.6",
-                fontWeight: "400"
-              }}>
-                {t('home', 'hero_quote', 'Ամեն ոք չի կարող մեծ վարպետ դառնալ, բայց մեծ վարպետը կարող է գալ ամենուրից')}
-              </p>
-              <div style={{ 
-                width: "180px", 
-                height: "auto",
-                display: "flex",
-                justifyContent: "flex-end"
-              }}>
-                <img 
-                  src="/signature.png" 
-                  alt="Signature" 
-                  className="hero-signature"
-                  style={{ 
-                    width: "100%", 
-                    height: "auto", 
-                    objectFit: "contain"
-                  }} 
-                />
-              </div>
+              {t('home', 'hero_quote', 'Ամեն ոք չի կարող մեծ վարպետ դառնալ, բայց մեծ վարպետը կարող է գալ ամենուրից')}
+            </p>
+            <div style={{ 
+              width: "180px", 
+              height: "auto",
+              display: "flex",
+              justifyContent: "flex-end"
+            }}>
+              <img 
+                src="/signature.png" 
+                alt="Signature" 
+                className="hero-signature"
+                style={{ 
+                  width: "100%", 
+                  height: "auto", 
+                  objectFit: "contain"
+                }} 
+              />
             </div>
-          </hd-reveal>
+          </div>
         </section>
 
         {/* ══ SECTION 2: BRANDING CASES (Բրենդինգի Քեյսեր) ══ */}
         <section>
-          <hd-reveal data-direction="left" data-duration="900">
-            <h2 style={{ fontSize: "32pt", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "-20px", paddingLeft: "20px", color: "var(--text)" }}>
-              {locale === "en" ? "Branding" : "Բրենդինգ"}
-            </h2>
-          </hd-reveal>
+          <h2 style={{ fontSize: "32pt", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "-20px", paddingLeft: "20px", color: "var(--text)" }}>
+            {locale === "en" ? "Branding" : "Բրենդինգ"}
+          </h2>
           <div className="marquee-container">
             <div className="marquee-track">
               {/* Loop twice to make it seamless */}
@@ -1621,22 +1641,16 @@ export default function Home() {
             gap: "12px"
           }}>
             {t('home', 'design_system', 'Դիզայնի Համակարգը')}
-            <svg 
-              viewBox="0 0 3976 1364" 
-              fill="none" 
-              xmlns="http://www.w3.org/2000/svg"
-              style={{ height: "32px", width: "auto", flexShrink: 0 }}
-            >
-              <rect x="37.5" y="37.5" width="3901" height="1289" rx="336.5" stroke="currentColor" strokeWidth="75"/>
-              <path d="M798.759 957.395C798.759 969.896 793.979 980.926 784.42 990.485C775.596 999.309 764.934 1003.72 752.433 1003.72C739.932 1003.72 728.902 999.309 719.343 990.485C710.519 980.926 706.107 969.896 706.107 957.395H798.759ZM798.759 773.194H1184.81C1198.05 773.194 1209.08 777.238 1217.9 785.327C1226.72 793.416 1231.14 803.71 1231.14 816.211C1231.14 828.712 1226.72 839.374 1217.9 848.198C1209.08 856.287 1198.05 860.331 1184.81 860.331H798.759V957.395H706.107V606.641C706.107 563.256 711.99 524.651 723.755 490.826C736.256 456.265 753.536 427.22 775.596 403.689C797.656 380.158 824.128 362.143 855.012 349.642C885.896 336.406 920.089 329.788 957.591 329.788C1042.89 329.788 1107.97 354.422 1152.82 403.689C1197.68 452.221 1220.11 519.872 1220.11 606.641V633.113H1127.45V618.774C1127.45 554.065 1114.95 504.43 1089.95 469.869C1065.69 434.573 1024.87 416.925 967.518 416.925C910.162 416.925 867.513 434.573 839.57 469.869C812.363 504.43 798.759 554.065 798.759 618.774V773.194ZM1220.11 633.113C1220.11 645.614 1215.33 656.644 1205.77 666.203C1196.94 675.027 1186.28 679.439 1173.78 679.439C1161.28 679.439 1150.25 675.027 1140.69 666.203C1131.87 656.644 1127.45 645.614 1127.45 633.113H1220.11ZM1358.5 372.805C1358.5 360.304 1362.91 349.642 1371.73 340.818C1381.29 331.259 1392.32 326.479 1404.82 326.479C1417.32 326.479 1427.99 331.259 1436.81 340.818C1446.37 349.642 1451.15 360.304 1451.15 372.805V505.165H1830.58C1843.82 505.165 1854.85 509.577 1863.67 518.401C1872.5 526.49 1876.91 536.784 1876.91 549.285C1876.91 561.786 1872.5 572.08 1863.67 580.169C1854.85 588.258 1843.82 592.302 1830.58 592.302H1451.15V711.426C1451.15 776.135 1464.75 826.138 1491.96 861.434C1519.9 895.995 1562.55 913.275 1619.91 913.275C1677.26 913.275 1718.08 895.995 1742.34 861.434C1767.34 826.138 1779.84 776.135 1779.84 711.426V697.087C1779.84 684.586 1784.26 673.924 1793.08 665.1C1802.64 655.541 1813.67 650.761 1826.17 650.761C1838.67 650.761 1849.33 655.541 1858.16 665.1C1867.72 673.924 1872.5 684.586 1872.5 697.087V723.559C1872.5 810.328 1850.07 878.347 1805.21 927.614C1760.36 976.146 1695.28 1000.41 1609.98 1000.41C1572.48 1000.41 1538.29 994.162 1507.4 981.661C1476.52 968.425 1450.05 950.042 1427.99 926.511C1405.93 902.98 1388.65 873.935 1376.15 839.374C1364.38 804.813 1358.5 766.208 1358.5 723.559V372.805ZM2002.79 810.696C2002.79 798.195 2007.2 787.533 2016.02 778.709C2025.58 769.15 2036.98 764.37 2050.22 764.37C2062.72 764.37 2073.38 769.15 2082.2 778.709C2091.76 787.533 2096.54 798.195 2096.54 810.696H2097.64C2097.64 842.315 2110.88 869.155 2137.35 891.215C2163.82 912.54 2198.39 923.202 2241.03 923.202C2268.24 923.202 2291.04 919.525 2309.42 912.172C2328.54 904.819 2343.98 895.627 2355.75 884.597C2368.25 873.567 2377.07 861.434 2382.22 848.198C2388.1 834.962 2391.04 822.461 2391.04 810.696C2391.04 791.577 2386.63 775.4 2377.81 762.164C2368.98 748.928 2356.85 737.898 2341.41 729.074C2326.7 720.25 2309.42 712.897 2289.57 707.014C2270.45 700.396 2249.86 694.146 2227.8 688.263C2203.53 681.645 2179.63 674.659 2156.1 667.306C2132.57 659.953 2111.25 649.658 2092.13 636.422C2073.75 623.186 2058.67 606.641 2046.91 586.787C2035.88 566.198 2030.36 540.093 2030.36 508.474C2030.36 482.002 2035.51 457.736 2045.8 435.676C2056.83 412.881 2071.91 393.762 2091.03 378.32C2110.15 362.143 2132.57 349.642 2158.31 340.818C2184.05 331.994 2211.62 327.582 2241.03 327.582C2275.6 327.582 2306.11 332.729 2332.58 343.024C2359.79 352.583 2382.59 365.819 2400.97 382.732C2420.09 398.909 2434.43 417.66 2443.99 438.985C2454.28 460.31 2459.43 482.002 2459.43 504.062H2460.53C2460.53 516.563 2455.75 527.593 2446.19 537.152C2437.37 545.976 2426.71 550.388 2414.21 550.388C2400.97 550.388 2389.57 545.976 2380.01 537.152C2371.19 527.593 2366.78 516.563 2366.78 504.062H2367.88C2367.88 490.091 2364.2 477.222 2356.85 465.457C2350.23 453.692 2341.04 443.765 2329.27 435.676C2318.24 426.852 2305.01 420.234 2289.57 415.822C2274.12 410.675 2257.95 408.101 2241.03 408.101C2221.92 408.101 2204.64 411.042 2189.19 416.925C2174.49 422.808 2161.62 430.529 2150.59 440.088C2140.29 448.912 2132.21 459.207 2126.32 470.972C2120.44 482.737 2117.5 494.503 2117.5 506.268C2117.5 523.181 2121.18 537.152 2128.53 548.182C2136.62 559.212 2147.28 568.771 2160.52 576.86C2173.75 584.213 2189.19 590.831 2206.84 596.714C2224.49 601.861 2243.24 607.376 2263.09 613.259C2288.83 620.612 2314.57 628.333 2340.3 636.422C2366.04 643.775 2389.2 654.438 2409.79 668.409C2430.38 682.38 2446.93 700.396 2459.43 722.456C2472.66 743.781 2479.28 771.723 2479.28 806.284C2479.28 834.962 2473.4 861.802 2461.63 886.803C2450.6 911.069 2434.8 932.026 2414.21 949.674C2393.62 967.322 2368.62 981.293 2339.2 991.588C2309.79 1001.15 2277.07 1005.93 2241.03 1005.93C2202.8 1005.93 2168.6 1000.78 2138.46 990.485C2109.04 980.19 2084.04 966.219 2063.45 948.571C2043.6 930.188 2028.52 909.231 2018.23 885.7C2007.93 862.169 2002.79 837.168 2002.79 810.696ZM3041.52 383.835C3041.52 371.334 3045.93 360.672 3054.76 351.848C3064.32 342.289 3075.35 337.509 3087.85 337.509C3100.35 337.509 3111.01 342.289 3119.83 351.848C3129.39 360.672 3134.17 371.334 3134.17 383.835V726.868C3134.17 760.693 3131.6 791.945 3126.45 820.623C3121.3 848.566 3112.11 872.464 3098.88 892.318L3215.79 971.734C3226.09 977.617 3232.34 986.073 3234.54 997.103C3237.49 1008.13 3236.02 1018.8 3230.13 1029.09C3222.04 1043.06 3209.91 1050.05 3193.73 1050.05C3186.38 1050.05 3179.39 1047.84 3172.78 1043.43L3039.31 948.571C3021.67 966.219 2997.4 979.823 2966.52 989.382C2936.37 998.941 2904.75 1003.72 2871.66 1003.72C2834.16 1003.72 2799.96 997.838 2769.08 986.073C2738.19 974.308 2711.72 957.027 2689.66 934.232C2667.6 910.701 2650.32 882.391 2637.82 849.301C2626.06 815.476 2620.17 777.238 2620.17 734.589V383.835C2620.17 371.334 2624.59 360.672 2633.41 351.848C2642.97 342.289 2654 337.509 2666.5 337.509C2679 337.509 2689.66 342.289 2698.49 351.848C2708.05 360.672 2712.83 383.835V722.456C2712.83 787.165 2726.43 837.168 2753.64 872.464C2781.58 907.025 2824.23 924.305 2881.58 924.305C2937.47 924.305 2980.12 907.025 3009.53 872.464C3038.95 837.168 3049.61 789.004 3041.52 727.971V383.835Z" fill="currentColor"/>
-            </svg>
+            <sup style={{ fontSize: "0.9rem", color: "var(--primary-color)", fontWeight: "bold", marginLeft: "4px" }}>ԲԵՏԱ</sup>
           </h2>
           <h3 style={{
-            fontSize: "1.2rem",
-            fontWeight: "600",
-            color: "var(--muted)",
+            fontSize: "1.4rem",
+            fontWeight: "700",
+            textTransform: "uppercase",
+            letterSpacing: "1px",
             textAlign: "center",
-            marginTop: "-30px",
+            color: "var(--text)",
+            marginTop: "-16px",
             marginBottom: "40px"
           }}>
             {t('home', 'components_title', 'Բաղադրիչներ')}
@@ -1744,7 +1758,7 @@ export default function Home() {
                     onMouseEnter={(e) => (e.currentTarget.style.color = "#b0b0b0")}
                     onMouseLeave={(e) => (e.currentTarget.style.color = "#ffffff")}
                   >
-                    <span className="icon-Attech" style={{ fontSize: "0.85rem" }} />
+                    <span className={playgroundCopied ? "icon-Check" : "icon-Copy"} style={{ fontSize: "0.85rem" }} />
                     <span>{playgroundCopied ? "ՊԱՏՃԵՆՎԱԾ Է!" : "ՊԱՏՃԵՆԵԼ"}</span>
                   </button>
                 </div>
@@ -2040,7 +2054,7 @@ export default function Home() {
         {/* ══ SECTION 6: ICONS (Պատկերակներ) ══ */}
         <section>
           <h2 style={{ fontSize: "1.4rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "20px", textAlign: "center", color: "var(--text)" }}>
-            {t('home', 'icons_title', 'Պատկերներ')}
+            {t('home', 'icons_title', 'Պատկերներ')} ({iconsList.length})
           </h2>
           {/* Two-column layout: Left (Grid) & Right (Details) */}
           <div 
@@ -2125,7 +2139,10 @@ export default function Home() {
                 border: "1px solid var(--panel-border)",
                 borderRadius: "24px",
                 padding: "24px",
-                boxShadow: "var(--shadow)"
+                boxShadow: "var(--shadow)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "16px"
               }}>
                 <hd-input 
                   placeholder={t('home', 'search_icon', 'Որոնել պատկերակ...')} 
@@ -2135,6 +2152,25 @@ export default function Home() {
                   data-height="46px"
                   data-thickness="3px"
                 data-font-size="14pt" />
+
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: "0.82rem", color: "var(--muted)", fontWeight: "600" }}>
+                    {t('home', 'sort_by', 'Դասավորել')}
+                  </span>
+                  <hd-segment
+                    value={iconSortOrder}
+                    onChange={(e: any) => setIconSortOrder(e.target.value)}
+                    data-height="34px"
+                    data-thickness="2px"
+                  >
+                    <span value="default" {...(iconSortOrder === "default" ? { selected: true } : {})}>
+                      {t('home', 'sort_default', 'Խմբավորված')}
+                    </span>
+                    <span value="alphabetical" {...(iconSortOrder === "alphabetical" ? { selected: true } : {})}>
+                      A-Z
+                    </span>
+                  </hd-segment>
+                </div>
               </div>
 
               {/* Sticky Thickness Slider Card inside Sidebar */}
@@ -2182,10 +2218,14 @@ export default function Home() {
                 {/* Header Info */}
                 <div style={{ textAlign: "left" }}>
                   <h3 style={{ fontSize: "1.4rem", fontWeight: "700", color: "var(--text)", margin: "0 0 4px 0" }}>
-                    {selectedIconDetail.replace("icon-", "").replace(/-/g, " ")}
+                    {selectedIconDetail === "icon-HD-Logo-Horizontal"
+                      ? "HD Logo Horizontal / Hamburger Menu"
+                      : selectedIconDetail.replace("icon-", "").replace(/-/g, " ")}
                   </h3>
                   <p style={{ fontSize: "0.8rem", color: "var(--muted)", margin: "0", fontFamily: "monospace" }}>
-                    Class: {selectedIconDetail}
+                    Class: {selectedIconDetail === "icon-HD-Logo-Horizontal"
+                      ? "icon-HD-Logo-Horizontal / icon-Hamburger-Menu"
+                      : selectedIconDetail}
                   </p>
                 </div>
 
@@ -2261,7 +2301,7 @@ export default function Home() {
                     data-color="transparent"
                     data-text-color="var(--text)"
                     title={t('home', 'download_svg', 'Ներբեռնել SVG')}
-                    style={{ flex: 1, opacity: getSvgString(selectedIconDetail) ? 1 : 0.5, pointerEvents: getSvgString(selectedIconDetail) ? "auto" : "none" }}
+                    style={{ flex: 1 }}
                   >
                     <span className="icon-Download" style={{ fontSize: "0.85rem", marginRight: "6px" }} />
                     SVG
@@ -2274,7 +2314,7 @@ export default function Home() {
                     data-color="var(--primary-color)"
                     data-text-color="#ffffff"
                     title={t('home', 'download_png', 'Ներբեռնել PNG')}
-                    style={{ flex: 1, opacity: getSvgString(selectedIconDetail) ? 1 : 0.5, pointerEvents: getSvgString(selectedIconDetail) ? "auto" : "none" }}
+                    style={{ flex: 1 }}
                   >
                     <span className="icon-Download" style={{ fontSize: "0.85rem", marginRight: "6px" }} />
                     PNG
@@ -2286,83 +2326,185 @@ export default function Home() {
                   
                   {/* HTML Usage */}
                   <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                      <span style={{ fontSize: "0.7rem", fontWeight: "600", color: "var(--muted)", textTransform: "uppercase" }}>HTML</span>
-                      <span 
-                        onClick={() => handleCopySnippet(htmlSnippet, "html")}
-                        style={{ background: "transparent", border: "none", color: copiedSnippet === "html" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
-                      >
-                        <span className={copiedSnippet === "html" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.8rem" }} />
-                        {copiedSnippet === "html" ? t('home', 'copied', 'Պատճենված է') : t('home', 'copy', 'Պատճենել')}
-                      </span>
-                    </div>
-                    <div style={{
-                      background: "var(--input-bg)",
-                      border: "1px solid var(--panel-border)",
-                      borderRadius: "6px",
-                      padding: "6px 10px",
-                      fontSize: "0.75rem",
-                      color: "var(--text)",
-                      fontFamily: "monospace",
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-all"
-                    }}>
-                      {htmlSnippet}
-                    </div>
+                    <div style={{ fontSize: "0.7rem", fontWeight: "600", color: "var(--muted)", textTransform: "uppercase", marginBottom: "4px" }}>HTML</div>
+                    
+                    {selectedIconDetail === "icon-HD-Logo-Horizontal" ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
+                            <span style={{ fontSize: "0.68rem", color: "var(--muted)" }}>HD Logo Horizontal</span>
+                            <span 
+                              onClick={() => handleCopySnippet(`<i class="hd-icon hd-icon-hd-logo-horizontal"></i>`, "html1")}
+                              style={{ background: "transparent", border: "none", color: copiedSnippet === "html1" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
+                            >
+                              <span className={copiedSnippet === "html1" ? "icon-Check" : "icon-Copy"} style={{ fontSize: "0.8rem" }} />
+                              {copiedSnippet === "html1" ? t('home', 'copied', 'Պատճենված է') : t('home', 'copy', 'Պատճենել')}
+                            </span>
+                          </div>
+                          <div style={{ background: "var(--input-bg)", border: "1px solid var(--panel-border)", borderRadius: "6px", padding: "6px 10px", fontSize: "0.75rem", color: "var(--text)", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+                            {`<i class="hd-icon hd-icon-hd-logo-horizontal"></i>`}
+                          </div>
+                        </div>
+
+                        <div style={{ textAlign: "center", fontSize: "0.75rem", color: "var(--primary-color)", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", margin: "2px 0" }}>
+                          {t('home', 'or', 'Կամ')}
+                        </div>
+
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
+                            <span style={{ fontSize: "0.68rem", color: "var(--muted)" }}>Hamburger Menu</span>
+                            <span 
+                              onClick={() => handleCopySnippet(`<i class="hd-icon hd-icon-hamburger-menu"></i>`, "html2")}
+                              style={{ background: "transparent", border: "none", color: copiedSnippet === "html2" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
+                            >
+                              <span className={copiedSnippet === "html2" ? "icon-Check" : "icon-Copy"} style={{ fontSize: "0.8rem" }} />
+                              {copiedSnippet === "html2" ? t('home', 'copied', 'Պատճենված է') : t('home', 'copy', 'Պատճենել')}
+                            </span>
+                          </div>
+                          <div style={{ background: "var(--input-bg)", border: "1px solid var(--panel-border)", borderRadius: "6px", padding: "6px 10px", fontSize: "0.75rem", color: "var(--text)", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+                            {`<i class="hd-icon hd-icon-hamburger-menu"></i>`}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                          <span style={{ fontSize: "0.7rem", fontWeight: "600", color: "var(--muted)", textTransform: "uppercase" }}>HTML</span>
+                          <span 
+                            onClick={() => handleCopySnippet(htmlSnippet, "html")}
+                            style={{ background: "transparent", border: "none", color: copiedSnippet === "html" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
+                          >
+                            <span className={copiedSnippet === "html" ? "icon-Check" : "icon-Copy"} style={{ fontSize: "0.8rem" }} />
+                            {copiedSnippet === "html" ? t('home', 'copied', 'Պատճենված է') : t('home', 'copy', 'Պատճենել')}
+                          </span>
+                        </div>
+                        <div style={{ background: "var(--input-bg)", border: "1px solid var(--panel-border)", borderRadius: "6px", padding: "6px 10px", fontSize: "0.75rem", color: "var(--text)", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+                          {htmlSnippet}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* React / JSX Usage */}
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                      <span style={{ fontSize: "0.7rem", fontWeight: "600", color: "var(--muted)", textTransform: "uppercase" }}>React / JSX</span>
-                      <span 
-                        onClick={() => handleCopySnippet(reactSnippet, "react")}
-                        style={{ background: "transparent", border: "none", color: copiedSnippet === "react" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
-                      >
-                        <span className={copiedSnippet === "react" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.8rem" }} />
-                        {copiedSnippet === "react" ? t('home', 'copied', 'Պատճենված է') : t('home', 'copy', 'Պատճենել')}
-                      </span>
-                    </div>
-                    <div style={{
-                      background: "var(--input-bg)",
-                      border: "1px solid var(--panel-border)",
-                      borderRadius: "6px",
-                      padding: "6px 10px",
-                      fontSize: "0.75rem",
-                      color: "var(--text)",
-                      fontFamily: "monospace",
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-all"
-                    }}>
-                      {reactSnippet}
-                    </div>
+                  <div style={{ marginTop: "10px" }}>
+                    <div style={{ fontSize: "0.7rem", fontWeight: "600", color: "var(--muted)", textTransform: "uppercase", marginBottom: "4px" }}>React / JSX</div>
+                    
+                    {selectedIconDetail === "icon-HD-Logo-Horizontal" ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
+                            <span style={{ fontSize: "0.68rem", color: "var(--muted)" }}>HD Logo Horizontal</span>
+                            <span 
+                              onClick={() => handleCopySnippet(`<i className="hd-icon hd-icon-hd-logo-horizontal" />`, "react1")}
+                              style={{ background: "transparent", border: "none", color: copiedSnippet === "react1" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
+                            >
+                              <span className={copiedSnippet === "react1" ? "icon-Check" : "icon-Copy"} style={{ fontSize: "0.8rem" }} />
+                              {copiedSnippet === "react1" ? t('home', 'copied', 'Պատճենված է') : t('home', 'copy', 'Պատճենել')}
+                            </span>
+                          </div>
+                          <div style={{ background: "var(--input-bg)", border: "1px solid var(--panel-border)", borderRadius: "6px", padding: "6px 10px", fontSize: "0.75rem", color: "var(--text)", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+                            {`<i className="hd-icon hd-icon-hd-logo-horizontal" />`}
+                          </div>
+                        </div>
+
+                        <div style={{ textAlign: "center", fontSize: "0.75rem", color: "var(--primary-color)", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", margin: "2px 0" }}>
+                          {t('home', 'or', 'Կամ')}
+                        </div>
+
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
+                            <span style={{ fontSize: "0.68rem", color: "var(--muted)" }}>Hamburger Menu</span>
+                            <span 
+                              onClick={() => handleCopySnippet(`<i className="hd-icon hd-icon-hamburger-menu" />`, "react2")}
+                              style={{ background: "transparent", border: "none", color: copiedSnippet === "react2" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
+                            >
+                              <span className={copiedSnippet === "react2" ? "icon-Check" : "icon-Copy"} style={{ fontSize: "0.8rem" }} />
+                              {copiedSnippet === "react2" ? t('home', 'copied', 'Պատճենված է') : t('home', 'copy', 'Պատճենել')}
+                            </span>
+                          </div>
+                          <div style={{ background: "var(--input-bg)", border: "1px solid var(--panel-border)", borderRadius: "6px", padding: "6px 10px", fontSize: "0.75rem", color: "var(--text)", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+                            {`<i className="hd-icon hd-icon-hamburger-menu" />`}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                          <span style={{ fontSize: "0.7rem", fontWeight: "600", color: "var(--muted)", textTransform: "uppercase" }}>React / JSX</span>
+                          <span 
+                            onClick={() => handleCopySnippet(reactSnippet, "react")}
+                            style={{ background: "transparent", border: "none", color: copiedSnippet === "react" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
+                          >
+                            <span className={copiedSnippet === "react" ? "icon-Check" : "icon-Copy"} style={{ fontSize: "0.8rem" }} />
+                            {copiedSnippet === "react" ? t('home', 'copied', 'Պատճենված է') : t('home', 'copy', 'Պատճենել')}
+                          </span>
+                        </div>
+                        <div style={{ background: "var(--input-bg)", border: "1px solid var(--panel-border)", borderRadius: "6px", padding: "6px 10px", fontSize: "0.75rem", color: "var(--text)", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+                          {reactSnippet}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* CSS Class */}
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                      <span style={{ fontSize: "0.7rem", fontWeight: "600", color: "var(--muted)", textTransform: "uppercase" }}>CSS Class</span>
-                      <span 
-                        onClick={() => handleCopySnippet(cssSnippet, "css")}
-                        style={{ background: "transparent", border: "none", color: copiedSnippet === "css" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
-                      >
-                        <span className={copiedSnippet === "css" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.8rem" }} />
-                        {copiedSnippet === "css" ? t('home', 'copied', 'Պատճենված է') : t('home', 'copy', 'Պատճենել')}
-                      </span>
-                    </div>
-                    <div style={{
-                      background: "var(--input-bg)",
-                      border: "1px solid var(--panel-border)",
-                      borderRadius: "6px",
-                      padding: "6px 10px",
-                      fontSize: "0.75rem",
-                      color: "var(--text)",
-                      fontFamily: "monospace",
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-all"
-                    }}>
-                      {cssSnippet}
-                    </div>
+                  <div style={{ marginTop: "10px" }}>
+                    <div style={{ fontSize: "0.7rem", fontWeight: "600", color: "var(--muted)", textTransform: "uppercase", marginBottom: "4px" }}>CSS Class</div>
+                    
+                    {selectedIconDetail === "icon-HD-Logo-Horizontal" ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
+                            <span style={{ fontSize: "0.68rem", color: "var(--muted)" }}>HD Logo Horizontal</span>
+                            <span 
+                              onClick={() => handleCopySnippet(`.hd-icon-hd-logo-horizontal`, "css1")}
+                              style={{ background: "transparent", border: "none", color: copiedSnippet === "css1" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
+                            >
+                              <span className={copiedSnippet === "css1" ? "icon-Check" : "icon-Copy"} style={{ fontSize: "0.8rem" }} />
+                              {copiedSnippet === "css1" ? t('home', 'copied', 'Պատճենված է') : t('home', 'copy', 'Պատճենել')}
+                            </span>
+                          </div>
+                          <div style={{ background: "var(--input-bg)", border: "1px solid var(--panel-border)", borderRadius: "6px", padding: "6px 10px", fontSize: "0.75rem", color: "var(--text)", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+                            {`.hd-icon-hd-logo-horizontal`}
+                          </div>
+                        </div>
+
+                        <div style={{ textAlign: "center", fontSize: "0.75rem", color: "var(--primary-color)", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", margin: "2px 0" }}>
+                          {t('home', 'or', 'Կամ')}
+                        </div>
+
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
+                            <span style={{ fontSize: "0.68rem", color: "var(--muted)" }}>Hamburger Menu</span>
+                            <span 
+                              onClick={() => handleCopySnippet(`.hd-icon-hamburger-menu`, "css2")}
+                              style={{ background: "transparent", border: "none", color: copiedSnippet === "css2" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
+                            >
+                              <span className={copiedSnippet === "css2" ? "icon-Check" : "icon-Copy"} style={{ fontSize: "0.8rem" }} />
+                              {copiedSnippet === "css2" ? t('home', 'copied', 'Պատճենված է') : t('home', 'copy', 'Պատճենել')}
+                            </span>
+                          </div>
+                          <div style={{ background: "var(--input-bg)", border: "1px solid var(--panel-border)", borderRadius: "6px", padding: "6px 10px", fontSize: "0.75rem", color: "var(--text)", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+                            {`.hd-icon-hamburger-menu`}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                          <span style={{ fontSize: "0.7rem", fontWeight: "600", color: "var(--muted)", textTransform: "uppercase" }}>CSS Class</span>
+                          <span 
+                            onClick={() => handleCopySnippet(cssSnippet, "css")}
+                            style={{ background: "transparent", border: "none", color: copiedSnippet === "css" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
+                          >
+                            <span className={copiedSnippet === "css" ? "icon-Check" : "icon-Copy"} style={{ fontSize: "0.8rem" }} />
+                            {copiedSnippet === "css" ? t('home', 'copied', 'Պատճենված է') : t('home', 'copy', 'Պատճենել')}
+                          </span>
+                        </div>
+                        <div style={{ background: "var(--input-bg)", border: "1px solid var(--panel-border)", borderRadius: "6px", padding: "6px 10px", fontSize: "0.75rem", color: "var(--text)", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+                          {cssSnippet}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                 </div>
@@ -2381,7 +2523,7 @@ export default function Home() {
                         onClick={() => handleCopySnippet(`<link rel="stylesheet" href="https://api.hakobian.am/libs/v1/icons/style.css" />`, "libcss")}
                         style={{ background: "transparent", border: "none", color: copiedSnippet === "libcss" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.65rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
                       >
-                        <span className={copiedSnippet === "libcss" ? "icon-Check" : "icon-Pattern"} style={{ fontSize: "0.75rem" }} />
+                        <span className={copiedSnippet === "libcss" ? "icon-Check" : "icon-Copy"} style={{ fontSize: "0.75rem" }} />
                         {copiedSnippet === "libcss" ? "Պատճենված է" : "Պատճենել"}
                       </span>
                     </div>
