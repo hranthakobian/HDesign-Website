@@ -828,6 +828,10 @@ export default function AdminDashboard() {
   const [upcomingDescEn, setUpcomingDescEn] = useState('Our website is temporarily offline for maintenance and creative updates. We will be back soon with a fresh experience.');
   const [upcomingEmail, setUpcomingEmail] = useState('info@hdesign.am');
   const [upcomingTel, setUpcomingTel] = useState('+374 99 00 00 00');
+  const [contactEmail, setContactEmail] = useState('hrant@hakobian.am');
+  const [contactTel, setContactTel] = useState('+374 00 000000');
+  const [contactAddressHy, setContactAddressHy] = useState('Երևան, Հայաստան');
+  const [contactAddressEn, setContactAddressEn] = useState('Yerevan, Armenia');
   const [savingSettings, setSavingSettings] = useState(false);
 
   // Password Change Form State
@@ -1079,6 +1083,10 @@ export default function AdminDashboard() {
         setUpcomingDescEn(generalSettingsData.upcoming_desc_en || 'Our website is temporarily offline for maintenance and creative updates. We will be back soon with a fresh experience.');
         setUpcomingEmail(generalSettingsData.upcoming_email || 'info@hdesign.am');
         setUpcomingTel(generalSettingsData.upcoming_tel || '+374 99 00 00 00');
+        setContactEmail(generalSettingsData.contact_email || 'hrant@hakobian.am');
+        setContactTel(generalSettingsData.contact_tel || '+374 00 000000');
+        setContactAddressHy(generalSettingsData.contact_address_hy || 'Երևան, Հայաստան');
+        setContactAddressEn(generalSettingsData.contact_address_en || 'Yerevan, Armenia');
       } catch (err: any) {
         setDataError(err.message || 'Տվյալների բեռնումը ձախողվեց:');
       } finally {
@@ -2401,7 +2409,11 @@ export default function AdminDashboard() {
           upcoming_desc_hy: upcomingDescHy,
           upcoming_desc_en: upcomingDescEn,
           upcoming_email: upcomingEmail,
-          upcoming_tel: upcomingTel
+          upcoming_tel: upcomingTel,
+          contact_email: contactEmail,
+          contact_tel: contactTel,
+          contact_address_hy: contactAddressHy,
+          contact_address_en: contactAddressEn
         })
       });
 
@@ -2660,7 +2672,12 @@ export default function AdminDashboard() {
       color: 'var(--text)', 
       minHeight: '100vh',
       fontFamily: 'HDesign, sans-serif',
-      paddingBottom: '120px'
+      paddingBottom: '120px',
+      ['--hue' as any]: '172',
+      ['--saturation' as any]: '77%',
+      ['--lightness' as any]: '14%',
+      ['--text-lightness' as any]: '14%',
+      ['--text-color-custom' as any]: '#083f39'
     }}>
       <style>{`
         .nav-btn {
@@ -6826,6 +6843,85 @@ export default function AdminDashboard() {
                             data-font-size="0.85rem"
                           >
                             Պահպանել Վերնագիրը
+                          </hd-button>
+                        </div>
+                      </form>
+                    </div>
+
+                    {/* Card 1.5: Website Contact Settings */}
+                    <div style={{
+                      background: 'var(--panel)',
+                      border: '1px solid var(--panel-border)',
+                      borderRadius: '16px',
+                      padding: '24px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '20px'
+                    }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className="icon-Call" style={{ color: '#00C49F' }} />
+                        Կայքի Կոնտակտային Տվյալներ (Contact Details)
+                      </h3>
+
+                      <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Էլ. հասցե (Email)</label>
+                          <hd-input 
+                            type="text"
+                            placeholder="hrant@hakobian.am"
+                            value={contactEmail}
+                            onInput={(e: any) => setContactEmail(e.target.value)}
+                            data-width="100%"
+                            data-height="40px"
+                          data-font-size="14pt" />
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Հեռախոս (Phone)</label>
+                          <hd-input 
+                            type="text"
+                            placeholder="+374 00 000000"
+                            value={contactTel}
+                            onInput={(e: any) => setContactTel(e.target.value)}
+                            data-width="100%"
+                            data-height="40px"
+                          data-font-size="14pt" />
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Հասցե (Armenian Address)</label>
+                          <hd-input 
+                            type="text"
+                            placeholder="Երևան, Հայաստան"
+                            value={contactAddressHy}
+                            onInput={(e: any) => setContactAddressHy(e.target.value)}
+                            data-width="100%"
+                            data-height="40px"
+                          data-font-size="14pt" />
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Address (English)</label>
+                          <hd-input 
+                            type="text"
+                            placeholder="Yerevan, Armenia"
+                            value={contactAddressEn}
+                            onInput={(e: any) => setContactAddressEn(e.target.value)}
+                            data-width="100%"
+                            data-height="40px"
+                          data-font-size="14pt" />
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                          <hd-button 
+                            type="submit" 
+                            data-thickness="3px"
+                            data-width="180px"
+                            data-height="40px"
+                            data-font-size="0.85rem"
+                            disabled={savingSettings}
+                          >
+                            {savingSettings ? 'Պահպանվում է...' : 'Պահպանել Կոնտակտները'}
                           </hd-button>
                         </div>
                       </form>

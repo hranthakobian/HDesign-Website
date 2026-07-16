@@ -65,34 +65,34 @@ html[data-custom-cursor="true"] {
   --text-lightness: 14%;
   --bg: #f8fafc;
   --panel: #ffffff;
-  --panel-border: hsla(var(--hue), var(--saturation), var(--lightness), 0.08);
+  --panel-border: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.08);
   --text: hsl(var(--hue), var(--saturation), var(--text-lightness));
   --muted: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.6);
-  --accent: hsl(var(--hue), var(--saturation), var(--lightness));
-  --shadow: 0 10px 40px hsla(var(--hue), var(--saturation), var(--lightness), 0.06);
+  --accent: hsl(var(--hue), var(--saturation), var(--text-lightness));
+  --shadow: 0 10px 40px hsla(var(--hue), var(--saturation), var(--text-lightness), 0.06);
 
   /* Open-Border System Overrides */
   --primary-color: hsl(var(--hue), var(--saturation), var(--text-lightness));
   --text-color: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.7);
-  --inactive-color: hsla(var(--hue), var(--saturation), var(--lightness), 0.25);
-  --check-color: hsl(var(--hue), var(--saturation), var(--lightness));
+  --inactive-color: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.25);
+  --check-color: hsl(var(--hue), var(--saturation), var(--text-lightness));
   --border-radius: 12px;
   --border-left-bottom-gap: 12px;
   --border-top-right-gap: 24px;
 
   /* Form & Button Elements */
-  --input-bg: hsla(var(--hue), var(--saturation), var(--lightness), 0.03);
-  --input-border: hsla(var(--hue), var(--saturation), var(--lightness), 0.12);
-  --btn-bg: hsla(var(--hue), var(--saturation), var(--lightness), 0.04);
-  --btn-hover-bg: hsla(var(--hue), var(--saturation), var(--lightness), 0.08);
+  --input-bg: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.03);
+  --input-border: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.12);
+  --btn-bg: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.04);
+  --btn-hover-bg: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.08);
   --nav-bg: rgba(255, 255, 255, 0.85);
   --logo-panel-bg: rgba(255, 255, 255, 0.85);
   --dropdown-bg: #ffffffd9;
 
   /* Switcher & Language Toggles */
-  --switcher-bg: hsla(var(--hue), var(--saturation), var(--lightness), 0.06);
-  --switcher-border: hsla(var(--hue), var(--saturation), var(--lightness), 0.15);
-  --switcher-capsule-bg: hsl(var(--hue), var(--saturation), var(--lightness));
+  --switcher-bg: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.06);
+  --switcher-border: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.15);
+  --switcher-capsule-bg: hsl(var(--hue), var(--saturation), var(--text-lightness));
   --switcher-text-active: #ffffff;
   --switcher-text-inactive: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.8);
   --lang-active-color: #ffffff;
@@ -172,11 +172,11 @@ html[data-theme="dark"] {
 html[data-theme="light"] {
   --bg: #f8fafc;
   --panel: #ffffff;
-  --panel-border: hsla(var(--hue), var(--saturation), var(--lightness), 0.08);
+  --panel-border: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.08);
   --text: hsl(var(--hue), var(--saturation), var(--text-lightness));
   --muted: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.6);
-  --accent: hsl(var(--hue), var(--saturation), var(--lightness));
-  --shadow: 0 10px 40px hsla(var(--hue), var(--saturation), var(--lightness), 0.06);
+  --accent: hsl(var(--hue), var(--saturation), var(--text-lightness));
+  --shadow: 0 10px 40px hsla(var(--hue), var(--saturation), var(--text-lightness), 0.06);
 
   --hue: 172;
   --saturation: 77%;
@@ -184,19 +184,19 @@ html[data-theme="light"] {
   --text-lightness: 14%;
   --primary-color: hsl(var(--hue), var(--saturation), var(--text-lightness));
   --text-color: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.7);
-  --inactive-color: hsla(var(--hue), var(--saturation), var(--lightness), 0.25);
-  --check-color: hsl(var(--hue), var(--saturation), var(--lightness));
+  --inactive-color: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.25);
+  --check-color: hsl(var(--hue), var(--saturation), var(--text-lightness));
 
-  --input-bg: hsla(var(--hue), var(--saturation), var(--lightness), 0.03);
-  --input-border: hsla(var(--hue), var(--saturation), var(--lightness), 0.12);
-  --btn-bg: hsla(var(--hue), var(--saturation), var(--lightness), 0.04);
-  --btn-hover-bg: hsla(var(--hue), var(--saturation), var(--lightness), 0.08);
+  --input-bg: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.03);
+  --input-border: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.12);
+  --btn-bg: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.04);
+  --btn-hover-bg: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.08);
   --nav-bg: rgba(255, 255, 255, 0.85);
   --logo-panel-bg: rgba(255, 255, 255, 0.85);
 
-  --switcher-bg: hsla(var(--hue), var(--saturation), var(--lightness), 0.06);
-  --switcher-border: hsla(var(--hue), var(--saturation), var(--lightness), 0.15);
-  --switcher-capsule-bg: hsl(var(--hue), var(--saturation), var(--lightness));
+  --switcher-bg: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.06);
+  --switcher-border: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.15);
+  --switcher-capsule-bg: hsl(var(--hue), var(--saturation), var(--text-lightness));
   --switcher-text-active: #ffffff;
   --switcher-text-inactive: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.8);
   --lang-active-color: #ffffff;

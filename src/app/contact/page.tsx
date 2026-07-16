@@ -1,10 +1,19 @@
 "use client";
- 
+
 import { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
  
 export default function ContactPage() {
   const { t, locale } = useI18n();
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: ""
+  });
+  const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+
   const [contactEmail, setContactEmail] = useState("hrant@hakobian.am");
   const [contactTel, setContactTel] = useState("+374 00 000000");
   const [contactAddressHy, setContactAddressHy] = useState("Երևան, Հայաստան");
@@ -21,14 +30,6 @@ export default function ContactPage() {
       })
       .catch(err => console.error("Failed to load contact settings:", err));
   }, []);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    subject: "",
-    message: ""
-  });
-  const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
-  const [errorMessage, setErrorMessage] = useState("");
  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

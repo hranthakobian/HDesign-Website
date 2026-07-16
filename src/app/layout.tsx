@@ -133,10 +133,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             </PageTransition>
             <Footer 
               siteTitle={{ hy: personalization.site_title_hy || "HDesign", en: personalization.site_title_en || "HDesign" }} 
-              contactEmail={generalSettings?.contact_email || "hrant@hakobian.am"}
-              contactTel={generalSettings?.contact_tel || "+374 00 000000"}
-              contactAddressHy={generalSettings?.contact_address_hy || "Երևան, Հայաստան"}
-              contactAddressEn={generalSettings?.contact_address_en || "Yerevan, Armenia"}
+              contactEmail={generalSettings?.contact_email}
+              contactTel={generalSettings?.contact_tel}
+              contactAddressHy={generalSettings?.contact_address_hy}
+              contactAddressEn={generalSettings?.contact_address_en}
             />
           </UpcomingCheck>
         </I18nProvider>

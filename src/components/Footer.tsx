@@ -117,9 +117,17 @@ export default function Footer({
                   {t('contact', 'contacts_title', 'Կոնտակտներ')}
                 </h4>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px", color: "#ffffff", opacity: 0.8, fontSize: "0.9rem" }}>
-                  <div>{t('contact', 'email_label', 'Էլ. հասցե՝')} <a href={`mailto:${contactEmail}`} style={{ color: '#ffffff', textDecoration: 'none' }}>{contactEmail}</a></div>
-                  <div>{t('contact', 'phone_label', 'Հեռախոս՝')} <a href={`tel:${contactTel.replaceAll(' ', '')}`} style={{ color: '#ffffff', textDecoration: 'none' }}>{contactTel}</a></div>
-                  <div>{locale === 'en' ? contactAddressEn : contactAddressHy}</div>
+                  <div>
+                    {t('contact', 'email_label', 'Էլ. հասցե՝')}{" "}
+                    <a href={`mailto:${contactEmail}`} style={{ color: "#ffffff", textDecoration: "none" }}>{contactEmail}</a>
+                  </div>
+                  <div>
+                    {t('contact', 'phone_label', 'Հեռախոս՝')}{" "}
+                    <a href={`tel:${contactTel.replaceAll(" ", "")}`} style={{ color: "#ffffff", textDecoration: "none" }}>{contactTel}</a>
+                  </div>
+                  <div>
+                    {locale === 'en' ? contactAddressEn : contactAddressHy}
+                  </div>
                 </div>
               </div>
             </div>

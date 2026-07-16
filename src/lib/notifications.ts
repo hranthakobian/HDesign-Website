@@ -287,7 +287,15 @@ export async function sendContactEmails({
   email: string;
   message: string;
 }) {
-  const adminEmail = 'hrant@hakobian.am';
+  let adminEmail = 'hrant@hakobian.am';
+  try {
+    const generalSettings = await getSiteSetting('general_settings');
+    if (generalSettings && generalSettings.contact_email) {
+      adminEmail = generalSettings.contact_email;
+    }
+  } catch (err) {
+    console.warn('Failed to load contact email from settings, falling back to default:', err);
+  }
   
   // 1. Email to admin (hrant@hakobian.am)
   const adminSubject = `Նոր հաղորդագրություն կապի ձևից - ${name}`;

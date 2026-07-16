@@ -625,7 +625,19 @@ export default function CaseEditor() {
   );
 
   return (
-    <div style={{ background: "var(--bg)", color: "var(--text)", height: "100vh", display: "flex", flexDirection: "column", fontFamily: "HDesign, sans-serif" }}>
+    <div style={{ 
+      background: "var(--bg)", 
+      color: "var(--text)", 
+      height: "100vh", 
+      display: "flex", 
+      flexDirection: "column", 
+      fontFamily: "HDesign, sans-serif",
+      ['--hue' as any]: '172',
+      ['--saturation' as any]: '77%',
+      ['--lightness' as any]: '14%',
+      ['--text-lightness' as any]: '14%',
+      ['--text-color-custom' as any]: '#083f39'
+    }}>
       {uploadProgress && (
         <div style={{
           position: "fixed",
