@@ -686,7 +686,7 @@ export default function CaseEditor() {
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <Link href="/admin?tab=cases" style={{ textDecoration: "none" }}>
             <button style={{ padding: "6px 14px", background: "var(--btn-bg)", border: "1px solid var(--panel-border)", borderRadius: 8, color: "var(--text)", cursor: "pointer", fontSize: "0.82rem", display: "flex", alignItems: "center", gap: 6 }}>
-              ← Ադմին
+              ← Վարիչ
             </button>
           </Link>
           <div style={{ width: 1, height: 20, background: "var(--panel-border)" }} />

@@ -8,6 +8,8 @@ const DEFAULT_PERSONALIZATION = {
   site_desc_hy: "Դիզայնի և Բրենդավորման Ստուդիա",
   site_desc_en: "Design & Branding Studio",
   theme_hue: "172",
+  theme_saturation: "77",
+  theme_lightness: "14",
   cursor_colors: [
     "#d4907e", // Soft Dusty Rose
     "#89b59a", // Soft Sage Green

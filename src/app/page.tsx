@@ -286,31 +286,31 @@ const brandingCases = [
     id: 1,
     title: "Pasta",
     color: "#d32f2f", // Red
-    image: "/branding/pasta.png"
+    image: ""
   },
   {
     id: 2,
     title: "11...",
     color: "#e65100", // Orange
-    image: "/branding/eleven.png"
+    image: ""
   },
   {
     id: 3,
     title: "Posters",
     color: "#880e4f", // Dark Pink / Crimson
-    image: "/branding/posters.png"
+    image: ""
   },
   {
     id: 4,
     title: "Teal Lines",
     color: "#004d40", // Dark Teal
-    image: "/branding/teal.png"
+    image: ""
   },
   {
     id: 5,
     title: "Mobile UI",
     color: "#311b92", // Deep Indigo
-    image: "/branding/mobile.png"
+    image: ""
   }
 ];
 
@@ -1055,10 +1055,88 @@ export default function Home() {
 
   // Helper to retrieve custom SVG for hardcoded seed cases
   const getSvgForCase = (caseId: string) => {
-    if (caseId.startsWith('local-g-')) {
-      const idNum = parseInt(caseId.replace('local-g-', ''));
+    const cleanId = String(caseId).toLowerCase();
+    if (cleanId.startsWith('local-g-')) {
+      const idNum = parseInt(cleanId.replace('local-g-', ''));
       const original = galleryWorks.find(x => x.id === idNum);
       return original?.svg || null;
+    }
+    
+    // Custom SVGs for branding cases
+    if (cleanId === 'pasta' || cleanId === 'local-b-1' || cleanId === 'seed-1') {
+      return (
+        <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <rect width="200" height="150" fill="var(--panel)" />
+          {/* Spaghetti / Pasta strands */}
+          <path d="M 35,120 C 50,40 150,40 165,120" stroke="var(--primary-color)" strokeWidth="6" strokeLinecap="round" />
+          <path d="M 55,120 C 70,60 130,60 145,120" stroke="var(--accent)" strokeWidth="4" strokeLinecap="round" />
+          <path d="M 75,120 C 85,85 115,85 125,120" stroke="#fbc02d" strokeWidth="2" strokeLinecap="round" />
+          {/* Fork/Pasta fork */}
+          <path d="M 100,15 L 100,75 M 85,25 L 115,25 M 85,15 L 85,25 M 115,15 L 115,25 M 100,15 L 100,25" stroke="var(--text)" strokeWidth="2.5" strokeLinecap="round" />
+          <text x="100" y="112" fill="var(--text)" fontSize="13" fontWeight="bold" textAnchor="middle" letterSpacing="1" fontFamily="HDesign">PASTA</text>
+        </svg>
+      );
+    }
+    if (cleanId === 'eleven' || cleanId === 'local-b-2' || cleanId === 'seed-2') {
+      return (
+        <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <rect width="200" height="150" fill="var(--panel)" />
+          {/* Two minimalist vertical lines representing 11 */}
+          <line x1="88" y1="35" x2="88" y2="105" stroke="var(--primary-color)" strokeWidth="10" strokeLinecap="round" />
+          <line x1="112" y1="35" x2="112" y2="105" stroke="var(--primary-color)" strokeWidth="10" strokeLinecap="round" />
+          <circle cx="100" cy="70" r="45" stroke="var(--text)" strokeWidth="1.5" strokeDasharray="4 4" />
+          <text x="100" y="128" fill="var(--text)" fontSize="10" fontWeight="700" textAnchor="middle" letterSpacing="3">ELEVEN</text>
+        </svg>
+      );
+    }
+    if (cleanId === 'posters' || cleanId === 'local-b-3' || cleanId === 'seed-3') {
+      return (
+        <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <rect width="200" height="150" fill="var(--panel)" />
+          {/* Experimental typographic posters look */}
+          <rect x="35" y="20" width="130" height="110" stroke="var(--text)" strokeWidth="2" />
+          <line x1="35" y1="75" x2="165" y2="75" stroke="var(--panel-border)" strokeWidth="1" />
+          <line x1="100" y1="20" x2="100" y2="130" stroke="var(--panel-border)" strokeWidth="1" />
+          <text x="67" y="55" fill="var(--text)" fontSize="18" fontWeight="900" textAnchor="middle" fontFamily="HDesign">P</text>
+          <text x="133" y="55" fill="var(--primary-color)" fontSize="18" fontWeight="900" textAnchor="middle" fontFamily="HDesign">S</text>
+          <text x="67" y="110" fill="var(--primary-color)" fontSize="18" fontWeight="900" textAnchor="middle" fontFamily="HDesign">T</text>
+          <text x="133" y="110" fill="var(--text)" fontSize="18" fontWeight="900" textAnchor="middle" fontFamily="HDesign">R</text>
+        </svg>
+      );
+    }
+    if (cleanId === 'teal-lines' || cleanId === 'teal' || cleanId === 'local-b-4' || cleanId === 'seed-4') {
+      return (
+        <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <rect width="200" height="150" fill="var(--panel)" />
+          {/* Abstract teal lines overlapping */}
+          <path d="M 20,40 L 180,40 M 20,75 L 180,75 M 20,110 L 180,110" stroke="var(--panel-border)" strokeWidth="1" />
+          <path d="M 40,20 L 40,130 M 100,20 L 100,130 M 160,20 L 160,130" stroke="var(--panel-border)" strokeWidth="1" />
+          <path d="M 30,30 L 170,120" stroke="var(--primary-color)" strokeWidth="4" strokeLinecap="round" />
+          <path d="M 30,120 L 170,30" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="100" cy="75" r="12" fill="var(--panel)" stroke="var(--primary-color)" strokeWidth="2.5" />
+          <text x="100" y="78" fill="var(--text)" fontSize="8" fontWeight="900" textAnchor="middle">TEAL</text>
+        </svg>
+      );
+    }
+    if (cleanId === 'mobile-ui' || cleanId === 'mobile' || cleanId === 'local-b-5' || cleanId === 'seed-5') {
+      return (
+        <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <rect width="200" height="150" fill="var(--panel)" />
+          {/* Smartphone device shell */}
+          <rect x="70" y="15" width="60" height="120" rx="8" stroke="var(--text)" strokeWidth="3" fill="var(--input-bg)" />
+          {/* Speaker / Notch */}
+          <rect x="92" y="20" width="16" height="3" rx="1.5" fill="var(--text)" />
+          {/* Interface elements inside */}
+          <circle cx="85" cy="45" r="7" fill="var(--primary-color)" />
+          <rect x="96" y="40" width="22" height="4" rx="2" fill="var(--text)" opacity="0.6" />
+          <rect x="96" y="47" width="14" height="3" rx="1.5" fill="var(--text)" opacity="0.4" />
+          <rect x="80" y="65" width="40" height="24" rx="4" fill="var(--panel-border)" stroke="var(--text)" strokeWidth="1" />
+          <rect x="80" y="97" width="18" height="18" rx="3" fill="var(--primary-color)" />
+          <rect x="102" y="97" width="18" height="18" rx="3" fill="var(--accent)" />
+          {/* Home indicator bar */}
+          <rect x="90" y="130" width="20" height="2" rx="1" fill="var(--text)" opacity="0.5" />
+        </svg>
+      );
     }
     return null;
   };
@@ -1387,44 +1465,50 @@ export default function Home() {
                   style={{ textDecoration: "none" }}
                   title={t('home', 'click_details', 'Սեղմեք մանրամասների համար')}
                 >
-                  <img 
-                    src={card.image_url || card.image} 
-                    alt={card.title} 
-                    className="card-bg-design" 
-                    crossOrigin="anonymous"
-                    onLoad={(e) => {
-                      const img = e.currentTarget;
-                      try {
-                        const canvas = document.createElement("canvas");
-                        canvas.width = 1;
-                        canvas.height = 1;
-                        const ctx = canvas.getContext("2d");
-                        if (ctx) {
-                          ctx.drawImage(img, 0, 0, 1, 1);
-                          const pixel = ctx.getImageData(0, 0, 1, 1).data;
-                          const r = pixel[0];
-                          const g = pixel[1];
-                          const b = pixel[2];
-                          
-                          const extracted = getColorsFromRgb(r, g, b);
-                          setHoverColors(prev => ({
-                            ...prev,
-                            [card.id]: { overlay: extracted.overlayBg, line: extracted.lineColor }
-                          }));
+                  {card.image_url || card.image ? (
+                    <img 
+                      src={card.image_url || card.image} 
+                      alt={card.title} 
+                      className="card-bg-design" 
+                      crossOrigin="anonymous"
+                      onLoad={(e) => {
+                        const img = e.currentTarget;
+                        try {
+                          const canvas = document.createElement("canvas");
+                          canvas.width = 1;
+                          canvas.height = 1;
+                          const ctx = canvas.getContext("2d");
+                          if (ctx) {
+                            ctx.drawImage(img, 0, 0, 1, 1);
+                            const pixel = ctx.getImageData(0, 0, 1, 1).data;
+                            const r = pixel[0];
+                            const g = pixel[1];
+                            const b = pixel[2];
+                            
+                            const extracted = getColorsFromRgb(r, g, b);
+                            setHoverColors(prev => ({
+                              ...prev,
+                              [card.id]: { overlay: extracted.overlayBg, line: extracted.lineColor }
+                            }));
+                          }
+                        } catch (err) {
+                          console.warn("Color extraction failed for marquee card", card.id, err);
                         }
-                      } catch (err) {
-                        console.warn("Color extraction failed for marquee card", card.id, err);
-                      }
-                    }}
-                    style={{ 
-                      width: "100%", 
-                      height: "100%", 
-                      objectFit: "cover", 
-                      position: "absolute", 
-                      inset: 0, 
-                      zIndex: 1
-                    }} 
-                  />
+                      }}
+                      style={{ 
+                        width: "100%", 
+                        height: "100%", 
+                        objectFit: "cover", 
+                        position: "absolute", 
+                        inset: 0, 
+                        zIndex: 1
+                      }} 
+                    />
+                  ) : (
+                    <div className="card-bg-design" style={{ position: "absolute", inset: 0, zIndex: 1, overflow: "hidden" }}>
+                      {getSvgForCase(card.id)}
+                    </div>
+                  )}
                   
                   {/* Decorative Hover SVGs */}
                   <div className="card-hover-decor top-left">

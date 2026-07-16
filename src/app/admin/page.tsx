@@ -83,6 +83,8 @@ type Visit = {
   landing_page: string;
   created_at: string;
   updated_at: string;
+  is_spam?: boolean;
+  spam_reason?: string;
 };
 
 const CHART_COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#a28CFE', '#FF6688'];
@@ -109,6 +111,9 @@ type PersonalizationSettings = {
   site_desc_hy: string;
   site_desc_en: string;
   theme_hue: string;
+  theme_saturation: string;
+  theme_lightness: string;
+  text_color: string;
   cursor_colors: string[];
   cursors: {
     default: CursorDef;
@@ -213,6 +218,9 @@ export default function AdminDashboard() {
     site_desc_hy: 'Դիզայնի և Բրենդավորման Ստուդիա',
     site_desc_en: 'Design & Branding Studio',
     theme_hue: '172',
+    theme_saturation: '77',
+    theme_lightness: '14',
+    text_color: '#083f39',
     cursor_colors: DEFAULT_COLORS,
     cursors: DEFAULT_CURSORS
   });
@@ -777,6 +785,7 @@ export default function AdminDashboard() {
   const [savingSignature, setSavingSignature] = useState(false);
   const [hoveredMailId, setHoveredMailId] = useState<string | null>(null);
   const [visits, setVisits] = useState<Visit[]>([]);
+  const [analyticsSubTab, setAnalyticsSubTab] = useState<'overview' | 'spam'>('overview');
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [emailSubject, setEmailSubject] = useState("");
   const [emailMessage, setEmailMessage] = useState("");
@@ -1057,6 +1066,9 @@ export default function AdminDashboard() {
           site_desc_hy: 'Դիզայնի և Բրենդավորման Ստուդիա',
           site_desc_en: 'Design & Branding Studio',
           theme_hue: '172',
+          theme_saturation: '77',
+          theme_lightness: '14',
+          text_color: '#083f39',
           cursor_colors: DEFAULT_COLORS,
           cursors: DEFAULT_CURSORS
         });
@@ -2472,6 +2484,9 @@ export default function AdminDashboard() {
   const stats = useMemo(() => {
     if (!visits.length) return null;
 
+    const cleanVisits = visits.filter(v => !v.is_spam);
+    const spamVisits = visits.filter(v => v.is_spam);
+
     const visitsByDate: Record<string, number> = {};
     const browsers: Record<string, number> = {};
     const os: Record<string, number> = {};
@@ -2482,7 +2497,7 @@ export default function AdminDashboard() {
     let totalStayDuration = 0;
     const uniqueSessionIds = new Set<string>();
 
-    for (const v of visits) {
+    for (const v of cleanVisits) {
       uniqueSessionIds.add(v.session_id);
 
       // Date string format for chart (visits count)
@@ -2545,7 +2560,7 @@ export default function AdminDashboard() {
       .slice(0, 10);
 
     return {
-      totalViews: visits.length,
+      totalViews: cleanVisits.length,
       uniqueVisitors: totalSessions,
       avgStayStr,
       visitsChartData,
@@ -2553,9 +2568,13 @@ export default function AdminDashboard() {
       osChartData,
       deviceChartData,
       topReferrers,
-      topLocations
+      topLocations,
+      spamCount: spamVisits.length
     };
   }, [visits]);
+
+  const cleanVisits = useMemo(() => visits.filter(v => !v.is_spam), [visits]);
+  const spamVisits = useMemo(() => visits.filter(v => v.is_spam), [visits]);
 
   // Loading indicator for login verify
   if (loadingAuth) {
@@ -2592,7 +2611,7 @@ export default function AdminDashboard() {
         }}>
           <div style={{ marginBottom: '24px' }}>
             <img src="/logo.png" alt="Logo" style={{ height: '50px', marginBottom: '12px', objectFit: 'contain' }} />
-            <h2 style={{ color: '#fff', fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>HDesign Ադմին</h2>
+            <h2 style={{ color: '#fff', fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>HDesign Վարիչ</h2>
             <p style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.85rem', marginTop: '6px' }}>Մուտք գործելու համար ներմուծեք գաղտնաբառը</p>
           </div>
 
@@ -2845,7 +2864,7 @@ export default function AdminDashboard() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <img src="/logo.png" alt="Logo" style={{ height: '36px', borderRadius: '6px' }} />
           <div>
-            <h1 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0 }}>HDesign Ադմին</h1>
+            <h1 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0 }}>HDesign Վարիչ</h1>
             <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>Կառավարման Համակարգ</span>
           </div>
         </div>
@@ -2892,146 +2911,315 @@ export default function AdminDashboard() {
             {activeTab === 'analytics' && (
               <div className={getTabClass('analytics')} style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
                 
-                {/* Metric Summary Cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
-                  <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)' }}>
-                    <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: '6px' }}>Ընդհանուր Դիտումներ</div>
-                    <div style={{ fontSize: '2rem', fontWeight: 700 }}>{stats?.totalViews || 0}</div>
-                  </div>
-                  <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)' }}>
-                    <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: '6px' }}>Միջին Stay տևողություն</div>
-                    <div style={{ fontSize: '2rem', fontWeight: 700, color: '#00C49F' }}>{stats?.avgStayStr || '0վ'}</div>
-                  </div>
-                  <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)' }}>
-                    <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: '6px' }}>Սեանսներ / Unique Visitors</div>
-                    <div style={{ fontSize: '2rem', fontWeight: 700 }}>{stats?.uniqueVisitors || 0}</div>
-                  </div>
-                  <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)' }}>
-                    <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: '6px' }}>Ստացված Նամակներ</div>
-                    <div style={{ fontSize: '2rem', fontWeight: 700, color: '#FFBB28' }}>{messages.length}</div>
-                  </div>
+                {/* Sub-tabs switcher for Analytics (Overview vs Spam Log) */}
+                <div style={{ 
+                  display: 'flex', 
+                  gap: '12px', 
+                  borderBottom: '1px solid var(--panel-border)', 
+                  paddingBottom: '12px',
+                  marginBottom: '10px'
+                }}>
+                  <button 
+                    onClick={() => setAnalyticsSubTab('overview')}
+                    style={{
+                      background: analyticsSubTab === 'overview' ? 'var(--switcher-capsule-bg)' : 'transparent',
+                      color: analyticsSubTab === 'overview' ? '#fff' : 'var(--muted)',
+                      border: 'none',
+                      padding: '10px 20px',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <span className="icon-Dashboard" style={{ fontSize: '1.1rem' }} /> Իրական Դիտումներ
+                  </button>
+                  <button 
+                    onClick={() => setAnalyticsSubTab('spam')}
+                    style={{
+                      background: analyticsSubTab === 'spam' ? 'var(--switcher-capsule-bg)' : 'transparent',
+                      color: analyticsSubTab === 'spam' ? '#fff' : 'var(--muted)',
+                      border: 'none',
+                      padding: '10px 20px',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <span className="icon-Warning" style={{ 
+                      fontSize: '1.1rem',
+                      color: analyticsSubTab === 'spam' ? '#ff6b6b' : 'inherit' 
+                    }} /> Սպամի Մատյան
+                    {stats && stats.spamCount > 0 && (
+                      <span style={{ 
+                        background: '#ff6b6b', 
+                        color: '#fff', 
+                        fontSize: '0.75rem', 
+                        padding: '2px 8px', 
+                        borderRadius: '20px', 
+                        fontWeight: 700,
+                        marginLeft: '4px'
+                      }}>
+                        {stats.spamCount}
+                      </span>
+                    )}
+                  </button>
                 </div>
 
-                {/* Main Graph (Visits Over Time) */}
-                {stats && stats.visitsChartData.length > 0 && (
-                  <section style={{ background: 'var(--panel)', padding: '30px', borderRadius: '16px', border: '1px solid var(--panel-border)' }}>
-                    <h3 style={{ margin: '0 0 20px', fontSize: '1.1rem', fontWeight: 600 }}>Այցելություններն ըստ օրերի</h3>
-                    <div style={{ height: '300px', width: '100%' }}>
-                      <ResponsiveContainer>
-                        <LineChart data={stats.visitsChartData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="var(--panel-border)" vertical={false} />
-                          <XAxis dataKey="date" stroke="var(--muted)" tickLine={false} axisLine={false} />
-                          <YAxis stroke="var(--muted)" tickLine={false} axisLine={false} />
-                          <RechartsTooltip contentStyle={{ background: '#111', border: '1px solid #333', borderRadius: '8px', color: '#fff' }} />
-                          <Line type="monotone" dataKey="count" name="Այցելություններ" stroke="#00C49F" strokeWidth={3} dot={{ r: 4, fill: '#00C49F' }} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </section>
-                )}
-
-                {/* Subcharts Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
-                  {/* Traffic Sources */}
-                  <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)', maxHeight: '380px', overflowY: 'auto' }}>
-                    <h3 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 600 }}>Տրաֆիկի Աղբյուրներ (Referrers)</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {stats?.topReferrers.map((ref, idx) => (
-                        <div key={ref.name} style={{ display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
-                          <span style={{ color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '75%' }}>
-                            {idx + 1}. {ref.name}
-                          </span>
-                          <span style={{ fontWeight: 600, color: 'var(--muted)' }}>{ref.value} այցելու</span>
-                        </div>
-                      ))}
-                      {(!stats?.topReferrers || stats.topReferrers.length === 0) && (
-                        <div style={{ color: 'var(--muted)', textAlign: 'center', padding: '20px' }}>Տվյալներ չկան</div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Geolocation countries/cities */}
-                  <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)', maxHeight: '380px', overflowY: 'auto' }}>
-                    <h3 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 600 }}>Տեղագրություն (Աշխարհագրություն)</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {stats?.topLocations.map((loc, idx) => (
-                        <div key={loc.name} style={{ display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
-                          <span style={{ color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '75%' }}>
-                            {idx + 1}. {loc.name}
-                          </span>
-                          <span style={{ fontWeight: 600, color: 'var(--muted)' }}>{loc.value} դիտում</span>
-                        </div>
-                      ))}
-                      {(!stats?.topLocations || stats.topLocations.length === 0) && (
-                        <div style={{ color: 'var(--muted)', textAlign: 'center', padding: '20px' }}>Տվյալներ չկան</div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Browsers Pie Chart */}
-                  {stats && stats.browserChartData.length > 0 && (
-                    <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)' }}>
-                      <h3 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 600 }}>Օգտագործվող Բրաուզերներ</h3>
-                      <div style={{ height: '220px' }}>
-                        <ResponsiveContainer>
-                          <PieChart>
-                            <Pie data={stats.browserChartData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={4} dataKey="value">
-                              {stats.browserChartData.map((_, index) => (
-                                <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="none" />
-                              ))}
-                            </Pie>
-                            <RechartsTooltip contentStyle={{ background: '#111', border: 'none', color: '#fff' }} />
-                            <Legend wrapperStyle={{ fontSize: '0.78rem' }} />
-                          </PieChart>
-                        </ResponsiveContainer>
+                {analyticsSubTab === 'overview' ? (
+                  <>
+                    {/* Metric Summary Cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+                      <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)' }}>
+                        <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: '6px' }}>Ընդհանուր Դիտումներ</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 700 }}>{stats?.totalViews || 0}</div>
+                      </div>
+                      <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)' }}>
+                        <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: '6px' }}>Միջին Stay տևողություն</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 700, color: '#00C49F' }}>{stats?.avgStayStr || '0վ'}</div>
+                      </div>
+                      <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)' }}>
+                        <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: '6px' }}>Սեանսներ / Unique Visitors</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 700 }}>{stats?.uniqueVisitors || 0}</div>
+                      </div>
+                      <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)' }}>
+                        <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: '6px' }}>Ստացված Նամակներ</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 700, color: '#FFBB28' }}>{messages.length}</div>
+                      </div>
+                      <div 
+                        onClick={() => setAnalyticsSubTab('spam')}
+                        style={{ 
+                          background: 'var(--panel)', 
+                          padding: '24px', 
+                          borderRadius: '16px', 
+                          border: '1px solid var(--panel-border)', 
+                          cursor: 'pointer',
+                          transition: 'border-color 0.2s',
+                          position: 'relative'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = 'rgba(255, 107, 107, 0.4)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = 'var(--panel-border)';
+                        }}
+                      >
+                        <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: '6px' }}>Մաքրված Սպամ (Դիտումներ)</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 700, color: '#ff6b6b' }}>{stats?.spamCount || 0}</div>
                       </div>
                     </div>
-                  )}
-                </div>
 
-                {/* Recent Session Logs */}
-                <div style={{ background: 'var(--panel)', padding: '30px', borderRadius: '16px', border: '1px solid var(--panel-border)', overflowX: 'auto' }}>
-                  <h3 style={{ margin: '0 0 20px', fontSize: '1.1rem', fontWeight: 600 }}>Վերջին Այցելությունները</h3>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid var(--panel-border)', color: 'var(--muted)' }}>
-                        <th style={{ padding: '12px' }}>Ամսաթիվ</th>
-                        <th style={{ padding: '12px' }}>Սարք</th>
-                        <th style={{ padding: '12px' }}>ՕՀ / Բրաուզեր</th>
-                        <th style={{ padding: '12px' }}>Տեղանք</th>
-                        <th style={{ padding: '12px' }}>Աղբյուր</th>
-                        <th style={{ padding: '12px' }}>Տևողություն</th>
-                        <th style={{ padding: '12px' }}>IP հասցե</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {visits.slice(0, 30).map(visit => {
-                        const durationMs = new Date(visit.updated_at).getTime() - new Date(visit.created_at).getTime();
-                        const durationSec = Math.max(0, Math.floor(durationMs / 1000));
-                        const minutes = Math.floor(durationSec / 60);
-                        const seconds = durationSec % 60;
-                        const durationStr = minutes > 0 ? `${minutes}ր ${seconds}վ` : `${seconds}վ`;
+                    {/* Main Graph (Visits Over Time) */}
+                    {stats && stats.visitsChartData.length > 0 && (
+                      <section style={{ background: 'var(--panel)', padding: '30px', borderRadius: '16px', border: '1px solid var(--panel-border)' }}>
+                        <h3 style={{ margin: '0 0 20px', fontSize: '1.1rem', fontWeight: 600 }}>Այցելություններն ըստ օրերի</h3>
+                        <div style={{ height: '300px', width: '100%' }}>
+                          <ResponsiveContainer>
+                            <LineChart data={stats.visitsChartData}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="var(--panel-border)" vertical={false} />
+                              <XAxis dataKey="date" stroke="var(--muted)" tickLine={false} axisLine={false} />
+                              <YAxis stroke="var(--muted)" tickLine={false} axisLine={false} />
+                              <RechartsTooltip contentStyle={{ background: '#111', border: '1px solid #333', borderRadius: '8px', color: '#fff' }} />
+                              <Line type="monotone" dataKey="count" name="Այցելություններ" stroke="#00C49F" strokeWidth={3} dot={{ r: 4, fill: '#00C49F' }} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </section>
+                    )}
 
-                        return (
-                          <tr key={visit.id} style={{ borderBottom: '1px solid var(--panel-border)' }}>
-                            <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>{new Date(visit.created_at).toLocaleString()}</td>
-                            <td style={{ padding: '12px', textTransform: 'capitalize' }}>{visit.device}</td>
-                            <td style={{ padding: '12px' }}>{visit.os} • {visit.browser}</td>
-                            <td style={{ padding: '12px' }}>{visit.country !== 'Unknown' ? `${visit.city} (${visit.country})` : 'Անհայտ'}</td>
-                            <td style={{ padding: '12px', color: '#00C49F' }}>{visit.referrer}</td>
-                            <td style={{ padding: '12px', fontWeight: 600 }}>{durationStr}</td>
-                            <td style={{ padding: '12px', opacity: 0.7 }}>{visit.ip_address}</td>
-                          </tr>
-                        );
-                      })}
-                      {visits.length === 0 && (
-                        <tr>
-                          <td colSpan={7} style={{ padding: '30px', textAlign: 'center', color: 'var(--muted)' }}>Այցելություններ դեռևս չեն գրանցվել</td>
-                        </tr>
+                    {/* Subcharts Grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+                      {/* Traffic Sources */}
+                      <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)', maxHeight: '380px', overflowY: 'auto' }}>
+                        <h3 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 600 }}>Տրաֆիկի Աղբյուրներ (Referrers)</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {stats?.topReferrers.map((ref, idx) => (
+                            <div key={ref.name} style={{ display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
+                              <span style={{ color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '75%' }}>
+                                {idx + 1}. {ref.name}
+                              </span>
+                              <span style={{ fontWeight: 600, color: 'var(--muted)' }}>{ref.value} այցելու</span>
+                            </div>
+                          ))}
+                          {(!stats?.topReferrers || stats.topReferrers.length === 0) && (
+                            <div style={{ color: 'var(--muted)', textAlign: 'center', padding: '20px' }}>Տվյալներ չկան</div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Geolocation countries/cities */}
+                      <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)', maxHeight: '380px', overflowY: 'auto' }}>
+                        <h3 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 600 }}>Տեղագրություն (Աշխարհագրություն)</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {stats?.topLocations.map((loc, idx) => (
+                            <div key={loc.name} style={{ display: 'flex', justifySelf: 'stretch', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
+                              <span style={{ color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '75%' }}>
+                                {idx + 1}. {loc.name}
+                              </span>
+                              <span style={{ fontWeight: 600, color: 'var(--muted)' }}>{loc.value} դիտում</span>
+                            </div>
+                          ))}
+                          {(!stats?.topLocations || stats.topLocations.length === 0) && (
+                            <div style={{ color: 'var(--muted)', textAlign: 'center', padding: '20px' }}>Տվյալներ չկան</div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Browsers Pie Chart */}
+                      {stats && stats.browserChartData.length > 0 && (
+                        <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)' }}>
+                          <h3 style={{ margin: '0 0 16px', fontSize: '1rem', fontWeight: 600 }}>Օգտագործվող Բրաուզերներ</h3>
+                          <div style={{ height: '220px' }}>
+                            <ResponsiveContainer>
+                              <PieChart>
+                                <Pie data={stats.browserChartData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={4} dataKey="value">
+                                  {stats.browserChartData.map((_, index) => (
+                                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} stroke="none" />
+                                  ))}
+                                </Pie>
+                                <RechartsTooltip contentStyle={{ background: '#111', border: 'none', color: '#fff' }} />
+                                <Legend wrapperStyle={{ fontSize: '0.78rem' }} />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
                       )}
-                    </tbody>
-                  </table>
-                </div>
+                    </div>
+
+                    {/* Recent Session Logs */}
+                    <div style={{ background: 'var(--panel)', padding: '30px', borderRadius: '16px', border: '1px solid var(--panel-border)', overflowX: 'auto' }}>
+                      <h3 style={{ margin: '0 0 20px', fontSize: '1.1rem', fontWeight: 600 }}>Վերջին Այցելությունները</h3>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid var(--panel-border)', color: 'var(--muted)' }}>
+                            <th style={{ padding: '12px' }}>Ամսաթիվ</th>
+                            <th style={{ padding: '12px' }}>Սարք</th>
+                            <th style={{ padding: '12px' }}>ՕՀ / Բրաուզեր</th>
+                            <th style={{ padding: '12px' }}>Տեղանք</th>
+                            <th style={{ padding: '12px' }}>Աղբյուր</th>
+                            <th style={{ padding: '12px' }}>Տևողություն</th>
+                            <th style={{ padding: '12px' }}>IP հասցե</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {cleanVisits.slice(0, 30).map(visit => {
+                            const durationMs = new Date(visit.updated_at).getTime() - new Date(visit.created_at).getTime();
+                            const durationSec = Math.max(0, Math.floor(durationMs / 1000));
+                            const minutes = Math.floor(durationSec / 60);
+                            const seconds = durationSec % 60;
+                            const durationStr = minutes > 0 ? `${minutes}ր ${seconds}վ` : `${seconds}վ`;
+
+                            return (
+                              <tr key={visit.id} style={{ borderBottom: '1px solid var(--panel-border)' }}>
+                                <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>{new Date(visit.created_at).toLocaleString()}</td>
+                                <td style={{ padding: '12px', textTransform: 'capitalize' }}>{visit.device}</td>
+                                <td style={{ padding: '12px' }}>{visit.os} • {visit.browser}</td>
+                                <td style={{ padding: '12px' }}>{visit.country !== 'Unknown' ? `${visit.city} (${visit.country})` : 'Անհայտ'}</td>
+                                <td style={{ padding: '12px', color: '#00C49F' }}>{visit.referrer}</td>
+                                <td style={{ padding: '12px', fontWeight: 600 }}>{durationStr}</td>
+                                <td style={{ padding: '12px', opacity: 0.7 }}>{visit.ip_address}</td>
+                              </tr>
+                            );
+                          })}
+                          {cleanVisits.length === 0 && (
+                            <tr>
+                              <td colSpan={7} style={{ padding: '30px', textAlign: 'center', color: 'var(--muted)' }}>Այցելություններ դեռևս չեն գրանցվել</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Metric Summary Cards for Spam */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+                      <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)' }}>
+                        <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: '6px' }}>Ընդհանուր Ֆիլտրված Սպամ</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 700, color: '#ff6b6b' }}>{spamVisits.length}</div>
+                      </div>
+                      <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)' }}>
+                        <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: '6px' }}>Մեկուսացված IP Հասցեներ</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 700, color: '#FFBB28' }}>
+                          {new Set(spamVisits.map(v => v.ip_address).filter(Boolean)).size}
+                        </div>
+                      </div>
+                      <div style={{ background: 'var(--panel)', padding: '24px', borderRadius: '16px', border: '1px solid var(--panel-border)', gridColumn: 'span 2' }}>
+                        <div style={{ color: 'var(--muted)', fontSize: '0.85rem', marginBottom: '6px' }}>Ամենատարածված Սպամի Տեսակը</div>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 600, color: '#00C49F', marginTop: '10px' }}>
+                          {(() => {
+                            if (!spamVisits.length) return 'Տվյալներ չկան';
+                            const counts: Record<string, number> = {};
+                            spamVisits.forEach(v => {
+                              const r = v.spam_reason || 'Անհայտ սպամ';
+                              counts[r] = (counts[r] || 0) + 1;
+                            });
+                            const topReason = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+                            return topReason ? `${topReason[0]} (${topReason[1]} անգամ)` : 'Անհայտ սպամ';
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Spam logs table */}
+                    <div style={{ background: 'var(--panel)', padding: '30px', borderRadius: '16px', border: '1px solid var(--panel-border)', overflowX: 'auto' }}>
+                      <h3 style={{ margin: '0 0 20px', fontSize: '1.1rem', fontWeight: 600, color: '#ff6b6b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span className="icon-Warning" /> Մաքրված Սպամերի Ցուցակ
+                      </h3>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid var(--panel-border)', color: 'var(--muted)' }}>
+                            <th style={{ padding: '12px' }}>Ամսաթիվ</th>
+                            <th style={{ padding: '12px' }}>IP հասցե</th>
+                            <th style={{ padding: '12px' }}>Սարք / ՕՀ</th>
+                            <th style={{ padding: '12px' }}>Թիրախավորված Էջ</th>
+                            <th style={{ padding: '12px' }}>Սպամի Բացատրություն</th>
+                            <th style={{ padding: '12px' }}>User Agent (Տեղեկություն)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {spamVisits.slice(0, 100).map(visit => (
+                            <tr key={visit.id} style={{ borderBottom: '1px solid var(--panel-border)' }}>
+                              <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>{new Date(visit.created_at).toLocaleString()}</td>
+                              <td style={{ padding: '12px', fontWeight: 600, color: '#ff6b6b' }}>{visit.ip_address}</td>
+                              <td style={{ padding: '12px' }}>{visit.device} • {visit.os}</td>
+                              <td style={{ padding: '12px', color: '#ffbb28', fontFamily: 'monospace', wordBreak: 'break-all' }}>{visit.landing_page}</td>
+                              <td style={{ padding: '12px' }}>
+                                <span style={{ 
+                                  background: 'rgba(255, 107, 107, 0.1)', 
+                                  border: '1px solid rgba(255, 107, 107, 0.2)', 
+                                  padding: '4px 10px', 
+                                  borderRadius: '8px', 
+                                  fontSize: '0.8rem',
+                                  display: 'inline-block',
+                                  color: '#ff8888'
+                                }}>
+                                  {visit.spam_reason || 'Համընկել է սպամի կանոնին'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '12px', opacity: 0.6, fontSize: '0.78rem', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={visit.user_agent}>
+                                {visit.user_agent}
+                              </td>
+                            </tr>
+                          ))}
+                          {spamVisits.length === 0 && (
+                            <tr>
+                              <td colSpan={6} style={{ padding: '30px', textAlign: 'center', color: 'var(--muted)' }}>Ֆիլտրված սպամ այցելություններ դեռևս չկան</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+
               </div>
             )}
 
@@ -4632,7 +4820,7 @@ export default function AdminDashboard() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                   <div>
                     <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0 }}>Թարգմանությունների Կառավարում</h2>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: '4px' }}>Խմբագրեք կամ ավելացրեք նոր տեքստային թարգմանություններ կայքի և ադմին դաշբորդի համար</p>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: '4px' }}>Խմբագրեք կամ ավելացրեք նոր տեքստային թարգմանություններ կայքի և վարիչի վահանակի համար</p>
                   </div>
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                     <hd-button 
@@ -5907,26 +6095,82 @@ export default function AdminDashboard() {
                         Գունային Թեմա (WYSIWYG)
                       </h3>
 
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 600 }}>Կայքի Ակցենտային Գույնը (Hue)</label>
-                          <span style={{ fontSize: '0.8rem', color: '#00C49F', fontWeight: 700 }}>{personalization.theme_hue}°</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        {/* Hue Slider */}
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 600 }}>Երանգ (Hue)</label>
+                            <span style={{ fontSize: '0.8rem', color: '#00C49F', fontWeight: 700 }}>{personalization.theme_hue}°</span>
+                          </div>
+                          <hd-slider 
+                            min="0" 
+                            max="360" 
+                            value={personalization.theme_hue} 
+                            onInput={(e: any) => setPersonalization(prev => ({ ...prev, theme_hue: e.target.value }))}
+                            data-width="100%"
+                            style={{
+                              background: 'linear-gradient(to right, red, yellow, lime, cyan, blue, magenta, red)',
+                              borderRadius: '3px',
+                            }}
+                          />
                         </div>
-                        
-                        {/* Interactive Range Slider */}
-                        <hd-slider 
-                          min="0" 
-                          max="360" 
-                          value={personalization.theme_hue} 
-                          onInput={(e: any) => setPersonalization(prev => ({ ...prev, theme_hue: e.target.value }))}
-                          data-width="100%"
-                          style={{
-                            background: 'linear-gradient(to right, red, yellow, lime, cyan, blue, magenta, red)',
-                            borderRadius: '3px',
-                          }}
-                        />
 
-                        {/* Real-time preview card using theme_hue */}
+                        {/* Saturation Slider */}
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 600 }}>Հագեցվածություն (Saturation)</label>
+                            <span style={{ fontSize: '0.8rem', color: '#00C49F', fontWeight: 700 }}>{personalization.theme_saturation || '77'}%</span>
+                          </div>
+                          <hd-slider 
+                            min="0" 
+                            max="100" 
+                            value={personalization.theme_saturation || '77'} 
+                            onInput={(e: any) => setPersonalization(prev => ({ ...prev, theme_saturation: e.target.value }))}
+                            data-width="100%"
+                            style={{
+                              background: `linear-gradient(to right, hsl(${personalization.theme_hue}, 0%, 50%), hsl(${personalization.theme_hue}, 100%, 50%))`,
+                              borderRadius: '3px',
+                            }}
+                          />
+                        </div>
+
+                        {/* Lightness Slider */}
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 600 }}>Պայծառություն (Lightness)</label>
+                            <span style={{ fontSize: '0.8rem', color: '#00C49F', fontWeight: 700 }}>{personalization.theme_lightness || '14'}%</span>
+                          </div>
+                          <hd-slider 
+                            min="0" 
+                            max="100" 
+                            value={personalization.theme_lightness || '14'} 
+                            onInput={(e: any) => setPersonalization(prev => ({ ...prev, theme_lightness: e.target.value }))}
+                            data-width="100%"
+                            style={{
+                              background: `linear-gradient(to right, #000000, hsl(${personalization.theme_hue}, 100%, 50%), #ffffff)`,
+                              borderRadius: '3px',
+                            }}
+                          />
+                        </div>
+
+                        {/* Text and Icon Color Picker */}
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 600 }}>Տեքստի և Պատկերակների Գույն (Text & Icons Color)</label>
+                            <span style={{ fontSize: '0.8rem', color: '#00C49F', fontWeight: 700 }}>{personalization.text_color || '#083f39'}</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                            <hd-color-picker
+                              data-color={personalization.text_color || '#083f39'}
+                              onChange={(e: any) => setPersonalization(prev => ({ ...prev, text_color: e.target.value }))}
+                              data-width="40px"
+                              data-height="40px"
+                            />
+                            <span style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>Ընտրեք կայքի հիմնական տեքստի և պատկերակների գույնը</span>
+                          </div>
+                        </div>
+
+                        {/* Real-time preview card using HSL variables */}
                         <div style={{
                           marginTop: '20px',
                           padding: '16px',
@@ -5936,8 +6180,10 @@ export default function AdminDashboard() {
                           display: 'flex',
                           flexDirection: 'column',
                           gap: '12px',
-                          // Apply the local CSS variable to preview the theme in real time
-                          ['--hue' as any]: personalization.theme_hue
+                          // Apply local CSS variables to preview the theme in real time
+                          ['--hue' as any]: personalization.theme_hue,
+                          ['--saturation' as any]: (personalization.theme_saturation || '77') + '%',
+                          ['--lightness' as any]: (personalization.theme_lightness || '14') + '%'
                         }}>
                           <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--muted)', fontWeight: 700 }}>Իրական ժամանակում նախադիտում (Live preview)</div>
                           <div style={{
@@ -5946,8 +6192,8 @@ export default function AdminDashboard() {
                             justifyContent: 'space-between',
                             padding: '10px 14px',
                             borderRadius: '8px',
-                            background: 'hsl(var(--hue, 172), 35%, 16%)',
-                            border: '1px solid hsl(var(--hue, 172), 35%, 22%)'
+                            background: 'hsl(var(--hue, 172), var(--saturation, 77%), var(--lightness, 14%))',
+                            border: '1px solid hsla(var(--hue, 172), var(--saturation, 77%), var(--lightness, 14%), 0.15)'
                           }}>
                             <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fff' }}>{personalization.site_title_hy || 'HDesign'}</span>
                             <div style={{ display: 'flex', gap: '8px' }}>
@@ -5958,8 +6204,9 @@ export default function AdminDashboard() {
                           <div style={{
                             padding: '12px',
                             borderRadius: '8px',
-                            background: 'hsl(var(--hue, 172), 35%, 12%)',
-                            color: 'rgba(255,255,255,0.7)',
+                            background: 'hsla(var(--hue, 172), var(--saturation, 77%), var(--lightness, 14%), 0.05)',
+                            border: '1px solid hsla(var(--hue, 172), var(--saturation, 77%), var(--lightness, 14%), 0.1)',
+                            color: 'hsl(var(--hue, 172), var(--saturation, 77%), var(--lightness, 14%))',
                             fontSize: '0.75rem',
                             lineHeight: '1.4'
                           }}>
@@ -6313,7 +6560,7 @@ export default function AdminDashboard() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                   <div>
                     <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0 }}>Հիմնական Կարգավորումներ</h2>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: '4px' }}>Կառավարեք ադմինի գաղտնաբառը և կայքի աշխատանքային ռեժիմը</p>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: '4px' }}>Կառավարեք վարիչի գաղտնաբառը և կայքի աշխատանքային ռեժիմը</p>
                   </div>
                 </div>
 
@@ -6336,7 +6583,7 @@ export default function AdminDashboard() {
                       </h3>
 
                       <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: 0, lineHeight: 1.5 }}>
-                        Միացնելով «Upcoming» ռեժիմը՝ կայքի հիմնական այցելուներին կցուցադրվի ժամանակավոր սպասման էջ (Coming Soon), իսկ ադմինիստրատիվ համակարգը (/admin) կշարունակի գործել սովորական ռեժիմով։
+                        Միացնելով «Upcoming» ռեժիմը՝ կայքի հիմնական այցելուներին կցուցադրվի ժամանակավոր սպասման էջ (Coming Soon), իսկ վարիչի համակարգը (/admin) կշարունակի գործել սովորական ռեժիմով։
                       </p>
 
                       <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -6486,89 +6733,188 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Right Column: Passcode change settings */}
-                  <div style={{
-                    background: 'var(--panel)',
-                    border: '1px solid var(--panel-border)',
-                    borderRadius: '16px',
-                    padding: '24px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '20px'
-                  }}>
-                    <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span className="icon-Profile" style={{ color: '#0088FE' }} />
-                      Փոխել Ադմինիստրատորի Գաղտնաբառը
-                    </h3>
+                  {/* Right Column wrapper */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                    {/* Card 1: Website Title & SEO */}
+                    <div style={{
+                      background: 'var(--panel)',
+                      border: '1px solid var(--panel-border)',
+                      borderRadius: '16px',
+                      padding: '24px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '20px'
+                    }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className="icon-Earth" style={{ color: '#00C49F' }} />
+                        Կայքի Վերնագիր և SEO (Website Identity)
+                      </h3>
 
-                    <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      <div>
-                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Ընթացիկ գաղտնաբառ</label>
-                        <hd-input 
-                          type="password"
-                          placeholder="Մուտքագրեք ընթացիկ գաղտնաբառը..."
-                          value={currentPasscode}
-                          onInput={(e: any) => setCurrentPasscode(e.target.value)}
-                          data-width="100%"
-                          data-height="40px"
-                        data-font-size="14pt" />
-                      </div>
-
-                      <div>
-                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Նոր գաղտնաբառ</label>
-                        <hd-input 
-                          type="password"
-                          placeholder="Մուտքագրեք նոր գաղտնաբառը..."
-                          value={newPasscode}
-                          onInput={(e: any) => setNewPasscode(e.target.value)}
-                          data-width="100%"
-                          data-height="40px"
-                        data-font-size="14pt" />
-                      </div>
-
-                      <div>
-                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Հաստատել նոր գաղտնաբառը</label>
-                        <hd-input 
-                          type="password"
-                          placeholder="Կրկնեք նոր գաղտնաբառը..."
-                          value={confirmPasscode}
-                          onInput={(e: any) => setConfirmPasscode(e.target.value)}
-                          data-width="100%"
-                          data-height="40px"
-                        data-font-size="14pt" />
-                      </div>
-
-                      {passwordError && (
-                        <div style={{
-                          fontSize: '0.82rem', color: '#ff6b6b', background: 'rgba(255, 107, 107, 0.08)',
-                          padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(255, 107, 107, 0.2)'
-                        }}>
-                          {passwordError}
+                      <form onSubmit={handleSavePersonalization} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Կայքի Անվանում (Հայերեն)</label>
+                          <hd-input 
+                            type="text"
+                            placeholder="Կայքի հայերեն վերնագիրը..."
+                            value={personalization.site_title_hy}
+                            onInput={(e: any) => setPersonalization(prev => ({ ...prev, site_title_hy: e.target.value }))}
+                            data-width="100%"
+                            data-height="40px"
+                          data-font-size="14pt" />
                         </div>
-                      )}
 
-                      {passwordSuccess && (
-                        <div style={{
-                          fontSize: '0.82rem', color: '#00c49f', background: 'rgba(0, 196, 159, 0.08)',
-                          padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(0, 196, 159, 0.2)'
-                        }}>
-                          {passwordSuccess}
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Site Title (English)</label>
+                          <hd-input 
+                            type="text"
+                            placeholder="English site title..."
+                            value={personalization.site_title_en}
+                            onInput={(e: any) => setPersonalization(prev => ({ ...prev, site_title_en: e.target.value }))}
+                            data-width="100%"
+                            data-height="40px"
+                          data-font-size="14pt" />
                         </div>
-                      )}
 
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
-                        <hd-button 
-                          type="submit" 
-                          data-thickness="3px"
-                          data-width="180px"
-                          data-height="40px"
-                          data-font-size="0.85rem"
-                          disabled={changingPassword}
-                        >
-                          {changingPassword ? 'Փոխվում է...' : 'Թարմացնել Գաղտնաբառը'}
-                        </hd-button>
-                      </div>
-                    </form>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Կայքի Նկարագրություն (Հայերեն)</label>
+                          <textarea
+                            placeholder="Մուտքագրեք կայքի նկարագրությունը..."
+                            value={personalization.site_desc_hy}
+                            onChange={(e) => setPersonalization(prev => ({ ...prev, site_desc_hy: e.target.value }))}
+                            style={{
+                              width: '100%',
+                              minHeight: '80px',
+                              background: 'rgba(255,255,255,0.02)',
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              borderRadius: '12px',
+                              padding: '12px',
+                              color: '#fff',
+                              fontSize: '0.85rem',
+                              outline: 'none',
+                              resize: 'vertical'
+                            }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Site Description (English)</label>
+                          <textarea
+                            placeholder="Enter English site description..."
+                            value={personalization.site_desc_en}
+                            onChange={(e) => setPersonalization(prev => ({ ...prev, site_desc_en: e.target.value }))}
+                            style={{
+                              width: '100%',
+                              minHeight: '80px',
+                              background: 'rgba(255,255,255,0.02)',
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              borderRadius: '12px',
+                              padding: '12px',
+                              color: '#fff',
+                              fontSize: '0.85rem',
+                              outline: 'none',
+                              resize: 'vertical'
+                            }}
+                          />
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                          <hd-button 
+                            type="submit" 
+                            data-thickness="3px"
+                            data-width="180px"
+                            data-height="40px"
+                            data-font-size="0.85rem"
+                          >
+                            Պահպանել Վերնագիրը
+                          </hd-button>
+                        </div>
+                      </form>
+                    </div>
+
+                    {/* Card 2: Passcode change settings */}
+                    <div style={{
+                      background: 'var(--panel)',
+                      border: '1px solid var(--panel-border)',
+                      borderRadius: '16px',
+                      padding: '24px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '20px'
+                    }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className="icon-Profile" style={{ color: '#0088FE' }} />
+                        Փոխել Վարիչի Գաղտնաբառը
+                      </h3>
+
+                      <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Ընթացիկ գաղտնաբառ</label>
+                          <hd-input 
+                            type="password"
+                            placeholder="Մուտքագրեք ընթացիկ գաղտնաբառը..."
+                            value={currentPasscode}
+                            onInput={(e: any) => setCurrentPasscode(e.target.value)}
+                            data-width="100%"
+                            data-height="40px"
+                          data-font-size="14pt" />
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Նոր գաղտնաբառ</label>
+                          <hd-input 
+                            type="password"
+                            placeholder="Մուտքագրեք նոր գաղտնաբառը..."
+                            value={newPasscode}
+                            onInput={(e: any) => setNewPasscode(e.target.value)}
+                            data-width="100%"
+                            data-height="40px"
+                          data-font-size="14pt" />
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Հաստատել նոր գաղտնաբառը</label>
+                          <hd-input 
+                            type="password"
+                            placeholder="Կրկնեք նոր գաղտնաբառը..."
+                            value={confirmPasscode}
+                            onInput={(e: any) => setConfirmPasscode(e.target.value)}
+                            data-width="100%"
+                            data-height="40px"
+                          data-font-size="14pt" />
+                        </div>
+
+                        {passwordError && (
+                          <div style={{
+                            fontSize: '0.82rem', color: '#ff6b6b', background: 'rgba(255, 107, 107, 0.08)',
+                            padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(255, 107, 107, 0.2)'
+                          }}>
+                            {passwordError}
+                          </div>
+                        )}
+
+                        {passwordSuccess && (
+                          <div style={{
+                            fontSize: '0.82rem', color: '#00c49f', background: 'rgba(0, 196, 159, 0.08)',
+                            padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(0, 196, 159, 0.2)'
+                          }}>
+                            {passwordSuccess}
+                          </div>
+                        )}
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                          <hd-button 
+                            type="submit" 
+                            data-thickness="3px"
+                            data-width="180px"
+                            data-height="40px"
+                            data-font-size="0.85rem"
+                            disabled={changingPassword}
+                          >
+                            {changingPassword ? 'Փոխվում է...' : 'Թարմացնել Գաղտնաբառը'}
+                          </hd-button>
+                        </div>
+                      </form>
+                    </div>
                   </div>
                 </div>
               </div>

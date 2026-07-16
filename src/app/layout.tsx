@@ -56,6 +56,8 @@ import { headers } from "next/headers";
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   const personalization = await getSiteSetting('personalization_settings', {});
   const themeHue = personalization.theme_hue || "172";
+  const themeSaturation = personalization.theme_saturation || "77";
+  const themeLightness = personalization.theme_lightness || "14";
 
   const apiSettings = await getSiteSetting('api_settings', {
     tildo_enabled: false,
@@ -74,7 +76,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const upcomingMode = isLocalhost ? false : !!generalSettings?.upcoming_mode;
 
   return (
-    <html lang="en" data-theme="light" data-color="#083f39" style={{ "--hue": themeHue } as any}>
+    <html lang="en" data-theme="light" data-color="#083f39" style={{
+      "--hue": themeHue,
+      "--saturation": themeSaturation + "%",
+      "--lightness": themeLightness + "%"
+    } as any}>
       <head>
         <link rel="stylesheet" href="https://api.hakobian.am/libs/v1/style.css" />
         <link rel="stylesheet" href="/icons/style.css" />
@@ -120,12 +126,18 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               upcoming_tel: generalSettings?.upcoming_tel
             }}
           >
-            <Header />
+            <Header siteTitle={{ hy: personalization.site_title_hy || "HDesign", en: personalization.site_title_en || "HDesign" }} />
             <GlobalBackground />
             <PageTransition>
               {children}
             </PageTransition>
-            <Footer />
+            <Footer 
+              siteTitle={{ hy: personalization.site_title_hy || "HDesign", en: personalization.site_title_en || "HDesign" }} 
+              contactEmail={generalSettings?.contact_email || "hrant@hakobian.am"}
+              contactTel={generalSettings?.contact_tel || "+374 00 000000"}
+              contactAddressHy={generalSettings?.contact_address_hy || "Երևան, Հայաստան"}
+              contactAddressEn={generalSettings?.contact_address_en || "Yerevan, Armenia"}
+            />
           </UpcomingCheck>
         </I18nProvider>
         <Script src="https://api.hakobian.am/libs/v1/script.js" strategy="afterInteractive" />

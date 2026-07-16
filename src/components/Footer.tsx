@@ -6,9 +6,21 @@ import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
 import SectionBackground from "@/components/SectionBackground";
 
-export default function Footer() {
+export default function Footer({ 
+  siteTitle,
+  contactEmail = "hrant@hakobian.am",
+  contactTel = "+374 00 000000",
+  contactAddressHy = "Երևան, Հայաստան",
+  contactAddressEn = "Yerevan, Armenia"
+}: { 
+  siteTitle?: { hy: string; en: string };
+  contactEmail?: string;
+  contactTel?: string;
+  contactAddressHy?: string;
+  contactAddressEn?: string;
+}) {
   const pathname = usePathname();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   // Subscription form states
   const [subscribeEmail, setSubscribeEmail] = useState("");
@@ -71,7 +83,9 @@ export default function Footer() {
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
                   <img src="/logo.png" alt="Logo" style={{ height: "30px", objectFit: "contain" }} />
-                  <span style={{ fontSize: "1.4rem", fontWeight: "800", color: "#ffffff" }}>HDesign</span>
+                  <span style={{ fontSize: "1.4rem", fontWeight: "800", color: "#ffffff" }}>
+                    {locale === 'en' ? (siteTitle?.en || "HDesign") : (siteTitle?.hy || "HDesign")}
+                  </span>
                 </div>
                 <p style={{ color: "#ffffff", opacity: 0.8, fontSize: "0.9rem", lineHeight: "1.6", margin: 0 }}>
                   {t('contact', 'desc', 'Ստեղծարար և Գործնական դիզայն լուծումներ: Յուրաքանչյուր ինտերֆեյս ստեղծված է սիրով և մաթեմատիկական ճշգրտությամբ:')}
@@ -103,9 +117,9 @@ export default function Footer() {
                   {t('contact', 'contacts_title', 'Կոնտակտներ')}
                 </h4>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px", color: "#ffffff", opacity: 0.8, fontSize: "0.9rem" }}>
-                  <div>{t('contact', 'email_label', 'Էլ. հասցե՝')} hrant@hakobian.am</div>
-                  <div>{t('contact', 'phone_label', 'Հեռախոս՝')} +374 00 000000</div>
-                  <div>{t('contact', 'address_label', 'Երևան, Հայաստան')}</div>
+                  <div>{t('contact', 'email_label', 'Էլ. հասցե՝')} <a href={`mailto:${contactEmail}`} style={{ color: '#ffffff', textDecoration: 'none' }}>{contactEmail}</a></div>
+                  <div>{t('contact', 'phone_label', 'Հեռախոս՝')} <a href={`tel:${contactTel.replaceAll(' ', '')}`} style={{ color: '#ffffff', textDecoration: 'none' }}>{contactTel}</a></div>
+                  <div>{locale === 'en' ? contactAddressEn : contactAddressHy}</div>
                 </div>
               </div>
             </div>

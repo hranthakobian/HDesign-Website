@@ -13,7 +13,11 @@ export async function GET() {
       upcoming_desc_hy: 'Մեր կորպորատիվ կայքը ժամանակավորապես անցանց է ստեղծարար փոփոխությունների և նորացման պատճառով։ Շուտով կվերադառնանք նորացված տեսքով։',
       upcoming_desc_en: 'Our website is temporarily offline for maintenance and creative updates. We will be back soon with a fresh experience.',
       upcoming_email: 'info@hdesign.am',
-      upcoming_tel: '+374 99 00 00 00'
+      upcoming_tel: '+374 99 00 00 00',
+      contact_email: 'hrant@hakobian.am',
+      contact_tel: '+374 00 000000',
+      contact_address_hy: 'Երևան, Հայաստան',
+      contact_address_en: 'Yerevan, Armenia'
     });
     
     // Return only public fields without caching
@@ -25,7 +29,11 @@ export async function GET() {
         upcoming_desc_hy: generalSettings?.upcoming_desc_hy || 'Մեր կորպորատիվ կայքը ժամանակավորապես անցանց է ստեղծարար փոփոխությունների և նորացման պատճառով։ Շուտով կվերադառնանք նորացված տեսքով։',
         upcoming_desc_en: generalSettings?.upcoming_desc_en || 'Our website is temporarily offline for maintenance and creative updates. We will be back soon with a fresh experience.',
         upcoming_email: generalSettings?.upcoming_email || 'info@hdesign.am',
-        upcoming_tel: generalSettings?.upcoming_tel || '+374 99 00 00 00'
+        upcoming_tel: generalSettings?.upcoming_tel || '+374 99 00 00 00',
+        contact_email: generalSettings?.contact_email || 'hrant@hakobian.am',
+        contact_tel: generalSettings?.contact_tel || '+374 00 000000',
+        contact_address_hy: generalSettings?.contact_address_hy || 'Երևան, Հայաստան',
+        contact_address_en: generalSettings?.contact_address_en || 'Yerevan, Armenia'
       },
       {
         headers: {
@@ -111,6 +119,18 @@ export async function POST(request: Request) {
     if (body.upcoming_tel !== undefined) {
       updatedSettings.upcoming_tel = body.upcoming_tel;
     }
+    if (body.contact_email !== undefined) {
+      updatedSettings.contact_email = body.contact_email;
+    }
+    if (body.contact_tel !== undefined) {
+      updatedSettings.contact_tel = body.contact_tel;
+    }
+    if (body.contact_address_hy !== undefined) {
+      updatedSettings.contact_address_hy = body.contact_address_hy;
+    }
+    if (body.contact_address_en !== undefined) {
+      updatedSettings.contact_address_en = body.contact_address_en;
+    }
 
     // 4. Save to database/fallback
     const result = await saveSiteSetting('general_settings', updatedSettings);
@@ -131,6 +151,10 @@ export async function POST(request: Request) {
       upcoming_desc_en: updatedSettings.upcoming_desc_en,
       upcoming_email: updatedSettings.upcoming_email,
       upcoming_tel: updatedSettings.upcoming_tel,
+      contact_email: updatedSettings.contact_email,
+      contact_tel: updatedSettings.contact_tel,
+      contact_address_hy: updatedSettings.contact_address_hy,
+      contact_address_en: updatedSettings.contact_address_en,
       newToken: passcodeChanged ? updatedSettings.admin_passcode : undefined
     });
   } catch (error: any) {

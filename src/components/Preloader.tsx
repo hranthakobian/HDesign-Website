@@ -39,10 +39,11 @@ export default function Preloader() {
     // 3. Coordinate page readiness checks
     let fontsReady = false;
     let pageReady = false;
+    let imagesReady = false;
     let minTimeReady = false;
 
     const checkAndHide = () => {
-      if (fontsReady && pageReady && minTimeReady && isMounted) {
+      if (fontsReady && pageReady && imagesReady && minTimeReady && isMounted) {
         setIsLoaded(true);
         // Re-enable scrolling
         document.documentElement.classList.remove("preloader-active");
@@ -86,7 +87,21 @@ export default function Preloader() {
       checkAndHide();
     }
 
-    // D. Safe fallback timer (max 4.5 seconds) in case of slow resources
+    // D. Images loaded check (tracks dynamically rendered images)
+    const imageInterval = setInterval(() => {
+      if (!isMounted) return;
+      const imgs = Array.from(document.images);
+      const pending = imgs.filter(img => !img.complete && img.src);
+      
+      if (pending.length === 0) {
+        imagesReady = true;
+        checkAndHide();
+      } else {
+        imagesReady = false;
+      }
+    }, 100);
+
+    // E. Safe fallback timer (max 4.5 seconds) in case of slow resources
     const fallbackTimer = setTimeout(() => {
       if (!isLoaded && isMounted) {
         setIsLoaded(true);
@@ -101,6 +116,7 @@ export default function Preloader() {
       isMounted = false;
       clearTimeout(minTimer);
       clearTimeout(fallbackTimer);
+      clearInterval(imageInterval);
       if (animRef.current) {
         animRef.current.destroy();
         animRef.current = null;

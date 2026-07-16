@@ -65,7 +65,7 @@ export default function FontWysiwygEditor() {
     if (typeof window !== "undefined") {
       const savedToken = localStorage.getItem("hdesign_admin_token");
       if (!savedToken) {
-        alert("Խնդրում ենք նախ մուտք գործել ադմինիստրատորի համակարգ:");
+        alert("Խնդրում ենք նախ մուտք գործել վարիչի համակարգ:");
         router.push("/admin");
         return;
       }
@@ -308,7 +308,7 @@ export default function FontWysiwygEditor() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Link href="/admin?tab=fonts" style={{ textDecoration: 'none' }}>
             <button style={{ padding: '8px 16px', background: 'var(--btn-bg)', border: '1px solid var(--panel-border)', borderRadius: '8px', color: 'var(--text)', cursor: 'pointer', fontSize: '0.85rem' }}>
-              ← Հետ դեպի Ադմին
+              ← Հետ դեպի Վարիչ
             </button>
           </Link>
           <span style={{ fontSize: '0.9rem', color: 'var(--panel-border)' }}>|</span>

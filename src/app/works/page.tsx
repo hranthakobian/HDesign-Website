@@ -75,6 +75,160 @@ function WorksContent() {
   const [aspectRatios, setAspectRatios] = useState<Record<string, number>>({});
   const [hoverColors, setHoverColors] = useState<Record<string, { overlay: string; line: string }>>({});
 
+  const getSvgForCase = (caseId: string) => {
+    const cleanId = String(caseId).toLowerCase();
+    
+    // Gallery Works SVGs
+    if (cleanId === 'local-g-1') {
+      return (
+        <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <rect x="40" y="20" width="120" height="110" fill="rgba(255,255,255,0.03)" stroke="rgba(212,175,55,0.4)" strokeWidth="3" />
+          <circle cx="100" cy="75" r="25" stroke="rgba(212,175,55,0.5)" strokeWidth="2" />
+          <path d="M85 75 L115 75 M100 60 L100 90" stroke="rgba(212,175,55,0.5)" strokeWidth="2" />
+          <text x="100" y="120" fill="rgba(212,175,55,0.6)" fontSize="8" textAnchor="middle" fontWeight="bold" fontFamily="HDesign">ՀԱՅԱՍՏԱՆ</text>
+        </svg>
+      );
+    }
+    if (cleanId === 'local-g-2') {
+      return (
+        <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <circle cx="70" cy="60" r="30" fill="#ffeb3b" />
+          <circle cx="130" cy="90" r="35" fill="#26a69a" />
+          <text x="100" y="80" fill="#ffffff" fontSize="22" fontWeight="900" textAnchor="middle" letterSpacing="2">BAUNS</text>
+          <text x="100" y="105" fill="#ffeb3b" fontSize="12" fontWeight="bold" textAnchor="middle">FESTIVAL</text>
+        </svg>
+      );
+    }
+    if (cleanId === 'local-g-3') {
+      return (
+        <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <rect x="20" y="20" width="160" height="110" fill="rgba(0,0,0,0.2)" stroke="#ffc107" strokeWidth="1" />
+          <line x1="100" y1="20" x2="100" y2="130" stroke="rgba(255,255,255,0.15)" strokeWidth="2" />
+          <text x="60" y="50" fill="#ffffff" fontSize="11" fontWeight="bold" textAnchor="middle">ՍԱՅԱԹ-ՆՈՎԱ</text>
+          <text x="60" y="70" fill="#ffc107" fontSize="8" textAnchor="middle">1722 - 1785</text>
+          <rect x="120" y="40" width="40" height="60" rx="2" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" />
+        </svg>
+      );
+    }
+    if (cleanId === 'local-g-4') {
+      return (
+        <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <path d="M70 100 L100 40 L130 100 Z" fill="rgba(255,255,255,0.05)" stroke="#ffffff" strokeWidth="3" />
+          <path d="M85 70 L100 40 L115 70" fill="none" stroke="#d84315" strokeWidth="3" />
+          <line x1="100" y1="40" x2="100" y2="100" stroke="#ff8f00" strokeWidth="2" />
+          <text x="100" y="125" fill="#ffffff" fontSize="14" fontWeight="bold" textAnchor="middle" letterSpacing="1">#ARTSAKH</text>
+        </svg>
+      );
+    }
+    if (cleanId === 'local-g-5') {
+      return (
+        <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <circle cx="100" cy="75" r="40" stroke="#00b0ff" strokeWidth="2" strokeDasharray="3 3" />
+          <path d="M80 85 C 80 50, 120 50, 120 85" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" />
+          <circle cx="100" cy="55" r="10" fill="#ffffff" />
+          <line x1="100" y1="95" x2="100" y2="125" stroke="#00b0ff" strokeWidth="2" />
+        </svg>
+      );
+    }
+    if (cleanId === 'local-g-6') {
+      return (
+        <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <path d="M70 40 L70 110 A 20 20 0 0 0 90 90 L90 70 A 20 20 0 0 1 110 50 L110 110" stroke="#81c784" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="110" cy="110" r="4" fill="#ffffff" />
+        </svg>
+      );
+    }
+    if (cleanId === 'local-g-7') {
+      return (
+        <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <rect x="60" y="30" width="80" height="90" rx="8" fill="rgba(255,255,255,0.02)" stroke="#d7ccc8" strokeWidth="4" />
+          <line x1="100" y1="30" x2="100" y2="120" stroke="#d7ccc8" strokeWidth="2" />
+          <line x1="60" y1="75" x2="140" y2="75" stroke="#d7ccc8" strokeWidth="2" />
+          <circle cx="100" cy="75" r="3" fill="#ffeb3b" />
+        </svg>
+      );
+    }
+    if (cleanId === 'local-g-8') {
+      return (
+        <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <circle cx="100" cy="75" r="45" stroke="#ffeb3b" strokeWidth="1" />
+          <rect x="65" y="40" width="70" height="70" stroke="#2196f3" strokeWidth="1" transform="rotate(45 100 75)" />
+          <line x1="50" y1="25" x2="150" y2="125" stroke="rgba(255,255,255,0.1)" strokeWidth="2" />
+          <line x1="150" y1="25" x2="50" y2="125" stroke="rgba(255,255,255,0.1)" strokeWidth="2" />
+        </svg>
+      );
+    }
+
+    // Branding Cases SVGs
+    if (cleanId === 'pasta' || cleanId === 'local-b-1' || cleanId === 'seed-1') {
+      return (
+        <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <rect width="200" height="150" fill="var(--panel)" />
+          <path d="M 35,120 C 50,40 150,40 165,120" stroke="var(--primary-color)" strokeWidth="6" strokeLinecap="round" />
+          <path d="M 55,120 C 70,60 130,60 145,120" stroke="var(--accent)" strokeWidth="4" strokeLinecap="round" />
+          <path d="M 75,120 C 85,85 115,85 125,120" stroke="#fbc02d" strokeWidth="2" strokeLinecap="round" />
+          <path d="M 100,15 L 100,75 M 85,25 L 115,25 M 85,15 L 85,25 M 115,15 L 115,25 M 100,15 L 100,25" stroke="var(--text)" strokeWidth="2.5" strokeLinecap="round" />
+          <text x="100" y="112" fill="var(--text)" fontSize="13" fontWeight="bold" textAnchor="middle" letterSpacing="1" fontFamily="HDesign">PASTA</text>
+        </svg>
+      );
+    }
+    if (cleanId === 'eleven' || cleanId === 'local-b-2' || cleanId === 'seed-2') {
+      return (
+        <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <rect width="200" height="150" fill="var(--panel)" />
+          <line x1="88" y1="35" x2="88" y2="105" stroke="var(--primary-color)" strokeWidth="10" strokeLinecap="round" />
+          <line x1="112" y1="35" x2="112" y2="105" stroke="var(--primary-color)" strokeWidth="10" strokeLinecap="round" />
+          <circle cx="100" cy="70" r="45" stroke="var(--text)" strokeWidth="1.5" strokeDasharray="4 4" />
+          <text x="100" y="128" fill="var(--text)" fontSize="10" fontWeight="700" textAnchor="middle" letterSpacing="3">ELEVEN</text>
+        </svg>
+      );
+    }
+    if (cleanId === 'posters' || cleanId === 'local-b-3' || cleanId === 'seed-3') {
+      return (
+        <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <rect width="200" height="150" fill="var(--panel)" />
+          <rect x="35" y="20" width="130" height="110" stroke="var(--text)" strokeWidth="2" />
+          <line x1="35" y1="75" x2="165" y2="75" stroke="var(--panel-border)" strokeWidth="1" />
+          <line x1="100" y1="20" x2="100" y2="130" stroke="var(--panel-border)" strokeWidth="1" />
+          <text x="67" y="55" fill="var(--text)" fontSize="18" fontWeight="900" textAnchor="middle" fontFamily="HDesign">P</text>
+          <text x="133" y="55" fill="var(--primary-color)" fontSize="18" fontWeight="900" textAnchor="middle" fontFamily="HDesign">S</text>
+          <text x="67" y="110" fill="var(--primary-color)" fontSize="18" fontWeight="900" textAnchor="middle" fontFamily="HDesign">T</text>
+          <text x="133" y="110" fill="var(--text)" fontSize="18" fontWeight="900" textAnchor="middle" fontFamily="HDesign">R</text>
+        </svg>
+      );
+    }
+    if (cleanId === 'teal-lines' || cleanId === 'teal' || cleanId === 'local-b-4' || cleanId === 'seed-4') {
+      return (
+        <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <rect width="200" height="150" fill="var(--panel)" />
+          <path d="M 20,40 L 180,40 M 20,75 L 180,75 M 20,110 L 180,110" stroke="var(--panel-border)" strokeWidth="1" />
+          <path d="M 40,20 L 40,130 M 100,20 L 100,130 M 160,20 L 160,130" stroke="var(--panel-border)" strokeWidth="1" />
+          <path d="M 30,30 L 170,120" stroke="var(--primary-color)" strokeWidth="4" strokeLinecap="round" />
+          <path d="M 30,120 L 170,30" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" />
+          <circle cx="100" cy="75" r="12" fill="var(--panel)" stroke="var(--primary-color)" strokeWidth="2.5" />
+          <text x="100" y="78" fill="var(--text)" fontSize="8" fontWeight="900" textAnchor="middle">TEAL</text>
+        </svg>
+      );
+    }
+    if (cleanId === 'mobile-ui' || cleanId === 'mobile' || cleanId === 'local-b-5' || cleanId === 'seed-5') {
+      return (
+        <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          <rect width="200" height="150" fill="var(--panel)" />
+          <rect x="70" y="15" width="60" height="120" rx="8" stroke="var(--text)" strokeWidth="3" fill="var(--input-bg)" />
+          <rect x="92" y="20" width="16" height="3" rx="1.5" fill="var(--text)" />
+          <circle cx="85" cy="45" r="7" fill="var(--primary-color)" />
+          <rect x="96" y="40" width="22" height="4" rx="2" fill="var(--text)" opacity="0.6" />
+          <rect x="96" y="47" width="14" height="3" rx="1.5" fill="var(--text)" opacity="0.4" />
+          <rect x="80" y="65" width="40" height="24" rx="4" fill="var(--panel-border)" stroke="var(--text)" strokeWidth="1" />
+          <rect x="80" y="97" width="18" height="18" rx="3" fill="var(--primary-color)" />
+          <rect x="102" y="97" width="18" height="18" rx="3" fill="var(--accent)" />
+          <rect x="90" y="130" width="20" height="2" rx="1" fill="var(--text)" opacity="0.5" />
+        </svg>
+      );
+    }
+    return null;
+  };
+
   const searchParams = useSearchParams();
   const activeCategory = searchParams ? searchParams.get("category") : null;
 
@@ -247,7 +401,7 @@ function WorksContent() {
                   title={t('works_page', 'view_gallery', 'Դիտել պատկերասրահը')}
                 >
                   <div className="gallery-img-container" style={{ background: work.bg, width: "100%", height: "100%" }}>
-                    {work.image_url && (
+                    {work.image_url ? (
                       <img 
                         src={work.image_url} 
                         alt={work.title} 
@@ -287,6 +441,8 @@ function WorksContent() {
                         }}
                         style={{ height: "100%", width: "100%", objectFit: "cover", opacity: 0.9, display: "block" }} 
                       />
+                    ) : (
+                      getSvgForCase(work.id)
                     )}
                   </div>
                   <div className="gallery-overlay" style={{ background: overlayBg }}>
@@ -345,7 +501,7 @@ function WorksContent() {
                   }}
                 >
                   {/* Branding Image */}
-                  {work.image_url && (
+                  {work.image_url ? (
                     <img 
                       src={work.image_url} 
                       alt={work.title} 
@@ -358,6 +514,10 @@ function WorksContent() {
                         transition: "transform 0.5s ease, opacity 0.5s ease"
                       }} 
                     />
+                  ) : (
+                    <div className="branding-card-img" style={{ width: "100%", height: "100%", overflow: "hidden", position: "absolute", inset: 0, borderRadius: "24px" }}>
+                      {getSvgForCase(work.id)}
+                    </div>
                   )}
                   
                   {/* Decorative Hover SVGs */}
@@ -599,7 +759,9 @@ function WorksContent() {
                   }}
                 />
               ) : (
-                <div style={{ color: "#fff" }}>Placeholder</div>
+                <div style={{ width: "min(400px, 80vw)", aspectRatio: "4/3", position: "relative", borderRadius: "16px", overflow: "hidden", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
+                  {getSvgForCase(filteredCases[selectedGalleryIndex]?.id)}
+                </div>
               )}
             </div>
 
@@ -687,7 +849,9 @@ function WorksContent() {
                   {work.image_url ? (
                     <img src={work.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   ) : (
-                    <div style={{ color: "#fff", fontSize: "10px" }}>SVG</div>
+                    <div style={{ width: "100%", height: "100%", position: "relative", overflow: "hidden" }}>
+                      {getSvgForCase(work.id)}
+                    </div>
                   )}
                 </div>
               ))}

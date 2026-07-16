@@ -1,10 +1,26 @@
 "use client";
  
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
  
 export default function ContactPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const [contactEmail, setContactEmail] = useState("hrant@hakobian.am");
+  const [contactTel, setContactTel] = useState("+374 00 000000");
+  const [contactAddressHy, setContactAddressHy] = useState("Երևան, Հայաստան");
+  const [contactAddressEn, setContactAddressEn] = useState("Yerevan, Armenia");
+
+  useEffect(() => {
+    fetch("/api/general-settings")
+      .then(res => res.json())
+      .then(data => {
+        if (data.contact_email) setContactEmail(data.contact_email);
+        if (data.contact_tel) setContactTel(data.contact_tel);
+        if (data.contact_address_hy) setContactAddressHy(data.contact_address_hy);
+        if (data.contact_address_en) setContactAddressEn(data.contact_address_en);
+      })
+      .catch(err => console.error("Failed to load contact settings:", err));
+  }, []);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -198,7 +214,7 @@ export default function ContactPage() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>{t('contact_page', 'email_label_small', 'Էլ. հասցե')}</span>
-                  <a href="mailto:hrant@hakobian.am" style={{ color: "var(--text)", textDecoration: "none", fontWeight: "600" }}>hrant@hakobian.am</a>
+                  <a href={`mailto:${contactEmail}`} style={{ color: "var(--text)", textDecoration: "none", fontWeight: "600" }}>{contactEmail}</a>
                 </div>
               </div>
 
@@ -216,7 +232,7 @@ export default function ContactPage() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>{t('contact_page', 'phone_label_small', 'Հեռախոս')}</span>
-                  <a href="tel:+37400000000" style={{ color: "var(--text)", textDecoration: "none", fontWeight: "600" }}>+374 00 000000</a>
+                  <a href={`tel:${contactTel.replaceAll(" ", "")}`} style={{ color: "var(--text)", textDecoration: "none", fontWeight: "600" }}>{contactTel}</a>
                 </div>
               </div>
 
@@ -234,7 +250,9 @@ export default function ContactPage() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={{ fontSize: "0.8rem", opacity: 0.6 }}>{t('contact_page', 'address_label_small', 'Հասցե')}</span>
-                  <span style={{ color: "var(--text)", fontWeight: "600" }}>{t('contact', 'address_label', 'Երևան, Հայաստան')}</span>
+                  <span style={{ color: "var(--text)", fontWeight: "600" }}>
+                    {locale === 'en' ? contactAddressEn : contactAddressHy}
+                  </span>
                 </div>
               </div>
             </div>

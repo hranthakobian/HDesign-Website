@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { supabaseAdmin } from './supabaseAdmin';
 import path from 'path';
+import { classifyVisits } from './spamDetector';
 
 // Helper to determine if we are on the server side
 const isServer = typeof window === 'undefined';
@@ -99,7 +100,7 @@ export const defaultSeededCases: Case[] = [
     title: 'Pasta',
     subtitle: 'Բրենդինգ և Փաթեթավորում',
     bg: '#d32f2f',
-    image_url: '/branding/pasta.png',
+    image_url: '',
     category: 'Branding',
     client: 'Pasta House Co.',
     year: '2025',
@@ -110,7 +111,7 @@ export const defaultSeededCases: Case[] = [
     title: '11...',
     subtitle: 'Ստեղծարար Պաստառներ',
     bg: '#e65100',
-    image_url: '/branding/eleven.png',
+    image_url: '',
     category: 'Poster Design',
     client: 'Creative Hub Yerevan',
     year: '2025',
@@ -121,7 +122,7 @@ export const defaultSeededCases: Case[] = [
     title: 'Posters',
     subtitle: 'Ցուցահանդեսի Բրենդավորում',
     bg: '#880e4f',
-    image_url: '/branding/posters.png',
+    image_url: '',
     category: 'Identity',
     client: 'Art Gallery',
     year: '2024',
@@ -132,7 +133,7 @@ export const defaultSeededCases: Case[] = [
     title: 'Teal Lines',
     subtitle: 'Մինիմալիստական Արտ',
     bg: '#004d40',
-    image_url: '/branding/teal.png',
+    image_url: '',
     category: 'Digital Art',
     client: 'Personal Project',
     year: '2026',
@@ -143,7 +144,7 @@ export const defaultSeededCases: Case[] = [
     title: 'Mobile UI',
     subtitle: 'Մոբայլ Հավելվածի Ինտերֆեյս',
     bg: '#311b92',
-    image_url: '/branding/mobile.png',
+    image_url: '',
     category: 'UI/UX Design',
     client: 'FinTech Startup',
     year: '2025',
@@ -580,6 +581,8 @@ export type VisitSession = {
   landing_page?: string;
   created_at?: string;
   updated_at?: string;
+  is_spam?: boolean;
+  spam_reason?: string;
 };
 
 export async function saveVisit(v: VisitSession): Promise<VisitSession | null> {
@@ -594,11 +597,18 @@ export async function saveVisit(v: VisitSession): Promise<VisitSession | null> {
   const adminClient = supabaseAdmin || supabase;
   if (adminClient) {
     try {
-      // Exclude string-based 'id' from the Supabase payload to let the database generate a UUID primary key,
-      // unless a valid UUID was explicitly passed in.
-      const { id, ...supabasePayload } = newVisit;
+      // Exclude string-based 'id' and spam classification fields from the Supabase payload 
+      // to let the database generate a UUID primary key and prevent column-not-found errors
+      const { id, is_spam, spam_reason, ...supabasePayload } = newVisit;
       const isUuid = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
-      const payload = v.id && isUuid(v.id) ? newVisit : supabasePayload;
+      
+      let payload;
+      if (v.id && isUuid(v.id)) {
+        const { is_spam: _, spam_reason: __, ...cleanedVisit } = newVisit;
+        payload = cleanedVisit;
+      } else {
+        payload = supabasePayload;
+      }
 
       const { data, error } = await adminClient
         .from('site_visits')
@@ -682,6 +692,9 @@ export async function updateVisitHeartbeat(sessionId: string): Promise<boolean> 
 export async function getVisits(): Promise<VisitSession[]> {
   await ensureLocalDbFiles();
 
+  let visits: VisitSession[] = [];
+  let success = false;
+
   const readClient = supabaseAdmin || supabase;
   if (readClient) {
     try {
@@ -690,24 +703,27 @@ export async function getVisits(): Promise<VisitSession[]> {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && data) return data;
+      if (!error && data) {
+        visits = data;
+        success = true;
+      }
     } catch (err) {
       console.warn('Supabase getVisits failed, using local storage:', err);
     }
   }
 
   // Fallback to local JSON database
-  if (isServer) {
+  if (!success && isServer) {
     const fs = getFs();
     try {
       const content = await fs.readFile(VISITS_FILE, 'utf-8');
-      return JSON.parse(content) as VisitSession[];
+      visits = JSON.parse(content) as VisitSession[];
     } catch (err) {
       console.error('Error reading local visits:', err);
     }
   }
 
-  return [];
+  return classifyVisits(visits);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

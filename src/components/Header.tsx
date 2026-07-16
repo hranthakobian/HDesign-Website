@@ -75,7 +75,7 @@ const LogoLegacy = () => (
   />
 );
 
-export default function Header() {
+export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: string } }) {
   const { locale, setLocale, t } = useI18n();
   const pathname = usePathname();
   const [theme, setTheme] = useState<'light' | 'dark' | 'green' | 'custom'>('light');
@@ -539,7 +539,9 @@ export default function Header() {
       }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: 'var(--text)' }}>
           <LogoLegacy />
-          <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>HDesign</span>
+          <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>
+            {locale === 'en' ? (siteTitle?.en || "HDesign") : (siteTitle?.hy || "HDesign")}
+          </span>
         </Link>
 
         {/* Smooth Language Switcher Toggle */}
