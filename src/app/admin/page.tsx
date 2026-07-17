@@ -202,6 +202,50 @@ function extractTidioWidgetId(input: string): string {
   return trimmed;
 }
 
+interface AboutTranslations {
+  title_hy: string;
+  title_en: string;
+  bio_p1_hy: string;
+  bio_p1_en: string;
+  bio_p2_hy: string;
+  bio_p2_en: string;
+  contact_btn_hy: string;
+  contact_btn_en: string;
+  works_btn_hy: string;
+  works_btn_en: string;
+  specs_title_hy: string;
+  specs_title_en: string;
+  spec1_title_hy: string;
+  spec1_title_en: string;
+  spec1_desc_hy: string;
+  spec1_desc_en: string;
+  spec2_title_hy: string;
+  spec2_title_en: string;
+  spec2_desc_hy: string;
+  spec2_desc_en: string;
+  spec3_title_hy: string;
+  spec3_title_en: string;
+  spec3_desc_hy: string;
+  spec3_desc_en: string;
+  // Home page keys
+  home_hero_line1_hy: string;
+  home_hero_line1_en: string;
+  home_hero_line2_hy: string;
+  home_hero_line2_en: string;
+  home_hero_quote_hy: string;
+  home_hero_quote_en: string;
+  home_about_title_hy: string;
+  home_about_title_en: string;
+  home_about_p1_hy: string;
+  home_about_p1_en: string;
+  home_about_p2_hy: string;
+  home_about_p2_en: string;
+  home_contact_btn_hy: string;
+  home_contact_btn_en: string;
+  home_other_works_hy: string;
+  home_other_works_en: string;
+}
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [passcode, setPasscode] = useState('');
@@ -211,7 +255,50 @@ export default function AdminDashboard() {
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   // Dashboard state
-  const [activeTab, setActiveTab] = useState<'analytics' | 'cases' | 'fonts' | 'messages' | 'translations' | 'apis' | 'personalization' | 'settings' | 'subscribers'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'cases' | 'fonts' | 'messages' | 'translations' | 'about' | 'apis' | 'personalization' | 'settings' | 'subscribers'>('analytics');
+  const [isSavingAbout, setIsSavingAbout] = useState(false);
+  const [aboutTranslations, setAboutTranslations] = useState<AboutTranslations>({
+    title_hy: '',
+    title_en: '',
+    bio_p1_hy: '',
+    bio_p1_en: '',
+    bio_p2_hy: '',
+    bio_p2_en: '',
+    contact_btn_hy: '',
+    contact_btn_en: '',
+    works_btn_hy: '',
+    works_btn_en: '',
+    specs_title_hy: '',
+    specs_title_en: '',
+    spec1_title_hy: '',
+    spec1_title_en: '',
+    spec1_desc_hy: '',
+    spec1_desc_en: '',
+    spec2_title_hy: '',
+    spec2_title_en: '',
+    spec2_desc_hy: '',
+    spec2_desc_en: '',
+    spec3_title_hy: '',
+    spec3_title_en: '',
+    spec3_desc_hy: '',
+    spec3_desc_en: '',
+    home_hero_line1_hy: '',
+    home_hero_line1_en: '',
+    home_hero_line2_hy: '',
+    home_hero_line2_en: '',
+    home_hero_quote_hy: '',
+    home_hero_quote_en: '',
+    home_about_title_hy: '',
+    home_about_title_en: '',
+    home_about_p1_hy: '',
+    home_about_p1_en: '',
+    home_about_p2_hy: '',
+    home_about_p2_en: '',
+    home_contact_btn_hy: '',
+    home_contact_btn_en: '',
+    home_other_works_hy: '',
+    home_other_works_en: '',
+  });
   const [personalization, setPersonalization] = useState<PersonalizationSettings>({
     site_title_hy: 'HDesign',
     site_title_en: 'HDesign',
@@ -843,7 +930,7 @@ export default function AdminDashboard() {
   const [changingPassword, setChangingPassword] = useState(false);
 
   // Transition States
-  const [prevTab, setPrevTab] = useState<'analytics' | 'cases' | 'fonts' | 'messages' | 'translations' | 'apis' | 'personalization' | 'settings' | 'subscribers'>('analytics');
+  const [prevTab, setPrevTab] = useState<'analytics' | 'cases' | 'fonts' | 'messages' | 'translations' | 'about' | 'apis' | 'personalization' | 'settings' | 'subscribers'>('analytics');
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
 
   const tabIndices = useMemo(() => ({
@@ -852,10 +939,11 @@ export default function AdminDashboard() {
     fonts: 2,
     messages: 3,
     translations: 4,
-    apis: 5,
-    personalization: 6,
-    settings: 7,
-    subscribers: 8
+    about: 5,
+    apis: 6,
+    personalization: 7,
+    settings: 8,
+    subscribers: 9
   }), []);
 
   useEffect(() => {
@@ -873,6 +961,58 @@ export default function AdminDashboard() {
     if (!slideDirection) return 'tab-content-fade';
     return slideDirection === 'left' ? 'tab-content-slide-left' : 'tab-content-slide-right';
   };
+
+  // Synchronize aboutTranslations whenever dynamicTranslations changes
+  useEffect(() => {
+    const hyDyn = dynamicTranslations?.hy?.['about'] || {};
+    const enDyn = dynamicTranslations?.en?.['about'] || {};
+    const hyDynHome = dynamicTranslations?.hy?.['home'] || {};
+    const enDynHome = dynamicTranslations?.en?.['home'] || {};
+    
+    setAboutTranslations({
+      title_hy: hyDyn['title'] || hyTranslations['about']?.['title'] || 'Մասին',
+      title_en: enDyn['title'] || enTranslations['about']?.['title'] || 'About',
+      bio_p1_hy: hyDyn['bio_p1'] || hyTranslations['about']?.['bio_p1'] || 'Ողջույն, ես Հրանտ Հակոբյանն եմ և Ճարտարապետության և շինարարության Հայաստանի Ազգային Համալսարանի ճարտարապետության ֆակուլտետի 4-րդ կուրսի ուսանող եմ։ Ես մասնագիտանում եմ տառաստեղծության և բրենդինգի մեջ։',
+      bio_p1_en: enDyn['bio_p1'] || enTranslations['about']?.['bio_p1'] || "Hello, I'm Hrant Hakobyan, a 4th-year architecture student at the National University of Architecture and Construction of Armenia. I specialize in type design and branding.",
+      bio_p2_hy: hyDyn['bio_p2'] || hyTranslations['about']?.['bio_p2'] || 'Իմ նախագծերում ես համատեղում եմ ճարտարապետական կառուցվածքայնությունն ու գրաֆիկական դիզայնի ճկունությունը: Յուրաքանչյուր տառատեսակ և տարբերանշան ինձ համար կառույց է, որն ունի իր սեփական հիմքերը, համամասնությունն ու գեղագիտական արժեքը:',
+      bio_p2_en: enDyn['bio_p2'] || enTranslations['about']?.['bio_p2'] || 'In my projects, I combine architectural structure with graphic design flexibility. Every typeface and logo is a building for me, with its own foundations, proportion, and aesthetic value.',
+      contact_btn_hy: hyDyn['contact_btn'] || hyTranslations['about']?.['contact_btn'] || 'Կապնվել',
+      contact_btn_en: enDyn['contact_btn'] || enTranslations['about']?.['contact_btn'] || 'Contact',
+      works_btn_hy: hyDyn['works_btn'] || hyTranslations['about']?.['works_btn'] || 'Աշխատանքներ',
+      works_btn_en: enDyn['works_btn'] || enTranslations['about']?.['works_btn'] || 'Works',
+      specs_title_hy: hyDyn['specs_title'] || hyTranslations['about']?.['specs_title'] || 'Մասնագիտացումներ',
+      specs_title_en: enDyn['specs_title'] || enTranslations['about']?.['specs_title'] || 'Specializations',
+      spec1_title_hy: hyDyn['spec1_title'] || hyTranslations['about']?.['spec1_title'] || 'Տառատեսակների ստեղծում',
+      spec1_title_en: enDyn['spec1_title'] || enTranslations['about']?.['spec1_title'] || 'Type Design',
+      spec1_desc_hy: hyDyn['spec1_desc'] || hyTranslations['about']?.['spec1_desc'] || 'Յուրահատուկ հայկական և լատինական տառատեսակների ձևավորում, որոնք համատեղում են պատմական ակունքները և ժամանակակից երկրաչափական միտումները:',
+      spec1_desc_en: enDyn['spec1_desc'] || enTranslations['about']?.['spec1_desc'] || 'Design of unique Armenian and Latin typefaces combining historical roots and modern geometric trends.',
+      spec2_title_hy: hyDyn['spec2_title'] || hyTranslations['about']?.['spec2_title'] || 'Բրենդավորում',
+      spec2_title_en: enDyn['spec2_title'] || enTranslations['about']?.['spec2_title'] || 'Branding',
+      spec2_desc_hy: hyDyn['spec2_desc'] || hyTranslations['about']?.['spec2_desc'] || 'Տեսողական ինքնության մշակում՝ տարբերանշաններ, կորպորատիվ գույներ, տառատեսակային համակարգեր և փաթեթավորում, որոնք առաննձնացնում են բրենդը շուկայում:',
+      spec2_desc_en: enDyn['spec2_desc'] || enTranslations['about']?.['spec2_desc'] || 'Visual identity development including logos, corporate colors, typographic systems, and packaging that make the brand stand out in the market.',
+      spec3_title_hy: hyDyn['spec3_title'] || hyTranslations['about']?.['spec3_title'] || 'Ինտերֆեյսների դիզայն',
+      spec3_title_en: enDyn['spec3_title'] || enTranslations['about']?.['spec3_title'] || 'UI/UX Design',
+      spec3_desc_hy: hyDyn['spec3_desc'] || hyTranslations['about']?.['spec3_desc'] || 'Օգտագործողի փորձի (UX) և միջավայրերի (UI) նախագծում՝ հիմնված մոդուլային դիզայն-համակարգերի և ճշգրիտ կառուցվածքների վրա:',
+      spec3_desc_en: enDyn['spec3_desc'] || enTranslations['about']?.['spec3_desc'] || 'Designing user experience (UX) and interfaces (UI) based on modular design systems and precise structures.',
+      // Home page
+      home_hero_line1_hy: hyDynHome['hero_line1'] || hyTranslations['home']?.['hero_line1'] || 'ՍՏԵՂԾԱ',
+      home_hero_line1_en: enDynHome['hero_line1'] || enTranslations['home']?.['hero_line1'] || 'CREATIVE',
+      home_hero_line2_hy: hyDynHome['hero_line2'] || hyTranslations['home']?.['hero_line2'] || 'ԵՒ ԳՈՐԾՆԱԿԱՆ',
+      home_hero_line2_en: enDynHome['hero_line2'] || enTranslations['home']?.['hero_line2'] || 'AND PRACTICAL',
+      home_hero_quote_hy: hyDynHome['hero_quote'] || hyTranslations['home']?.['hero_quote'] || 'Ամեն ոք չի կարող մեծ վարպետ դառնալ, բայց մեծ վարպետը կարող է գալ ամենուրից',
+      home_hero_quote_en: enDynHome['hero_quote'] || enTranslations['home']?.['hero_quote'] || 'Not everyone can become a great artist, but a great artist can come from anywhere',
+      home_about_title_hy: hyDynHome['about_title'] || hyTranslations['home']?.['about_title'] || 'Մասին',
+      home_about_title_en: enDynHome['about_title'] || enTranslations['home']?.['about_title'] || 'About',
+      home_about_p1_hy: hyDynHome['about_p1'] || hyTranslations['home']?.['about_p1'] || 'Ողջույն, ես Հրանտ Հակոբյանն եմ և Ճարտարապետության և շինարարության Հայաստանի Ազգային Համալսարանի ճարտարապետության ֆակուլտետի 4-րդ կուրսի ուսանող եմ։',
+      home_about_p1_en: enDynHome['about_p1'] || enTranslations['home']?.['about_p1'] || "Hello, I'm Hrant Hakobyan, a 4th-year architecture student at the National University of Architecture and Construction of Armenia.",
+      home_about_p2_hy: hyDynHome['about_p2'] || hyTranslations['home']?.['about_p2'] || 'Ես մասնագիտանում եմ տառաստեղծության և բրենդինգի մեջ։',
+      home_about_p2_en: enDynHome['about_p2'] || enTranslations['home']?.['about_p2'] || 'I specialize in type design and branding.',
+      home_contact_btn_hy: hyDynHome['contact_btn'] || hyTranslations['home']?.['contact_btn'] || 'Կապնվել',
+      home_contact_btn_en: enDynHome['contact_btn'] || enTranslations['home']?.['contact_btn'] || 'Contact',
+      home_other_works_hy: hyDynHome['other_works'] || hyTranslations['home']?.['other_works'] || 'Այլ աշխատանքներ',
+      home_other_works_en: enDynHome['other_works'] || enTranslations['home']?.['other_works'] || 'Other Works',
+    });
+  }, [dynamicTranslations]);
 
   // API Lock States
   const [isApiUnlocked, setIsApiUnlocked] = useState(false);
@@ -2362,6 +2502,97 @@ export default function AdminDashboard() {
       }
     } catch (err) {
       alert('Չհաջողվեց պահպանել API կարգավորումները։');
+    }
+  };
+
+  const handleSaveAboutTranslations = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+
+    setIsSavingAbout(true);
+
+    const updated = {
+      hy: { 
+        ...dynamicTranslations.hy,
+        about: {
+          ...(dynamicTranslations.hy?.about || {}),
+          title: aboutTranslations.title_hy,
+          bio_p1: aboutTranslations.bio_p1_hy,
+          bio_p2: aboutTranslations.bio_p2_hy,
+          contact_btn: aboutTranslations.contact_btn_hy,
+          works_btn: aboutTranslations.works_btn_hy,
+          specs_title: aboutTranslations.specs_title_hy,
+          spec1_title: aboutTranslations.spec1_title_hy,
+          spec1_desc: aboutTranslations.spec1_desc_hy,
+          spec2_title: aboutTranslations.spec2_title_hy,
+          spec2_desc: aboutTranslations.spec2_desc_hy,
+          spec3_title: aboutTranslations.spec3_title_hy,
+          spec3_desc: aboutTranslations.spec3_desc_hy,
+        },
+        home: {
+          ...(dynamicTranslations.hy?.home || {}),
+          hero_line1: aboutTranslations.home_hero_line1_hy,
+          hero_line2: aboutTranslations.home_hero_line2_hy,
+          hero_quote: aboutTranslations.home_hero_quote_hy,
+          about_title: aboutTranslations.home_about_title_hy,
+          about_p1: aboutTranslations.home_about_p1_hy,
+          about_p2: aboutTranslations.home_about_p2_hy,
+          contact_btn: aboutTranslations.home_contact_btn_hy,
+          other_works: aboutTranslations.home_other_works_hy,
+        }
+      },
+      en: { 
+        ...dynamicTranslations.en,
+        about: {
+          ...(dynamicTranslations.en?.about || {}),
+          title: aboutTranslations.title_en,
+          bio_p1: aboutTranslations.bio_p1_en,
+          bio_p2: aboutTranslations.bio_p2_en,
+          contact_btn: aboutTranslations.contact_btn_en,
+          works_btn: aboutTranslations.works_btn_en,
+          specs_title: aboutTranslations.specs_title_en,
+          spec1_title: aboutTranslations.spec1_title_en,
+          spec1_desc: aboutTranslations.spec1_desc_en,
+          spec2_title: aboutTranslations.spec2_title_en,
+          spec2_desc: aboutTranslations.spec2_desc_en,
+          spec3_title: aboutTranslations.spec3_title_en,
+          spec3_desc: aboutTranslations.spec3_desc_en,
+        },
+        home: {
+          ...(dynamicTranslations.en?.home || {}),
+          hero_line1: aboutTranslations.home_hero_line1_en,
+          hero_line2: aboutTranslations.home_hero_line2_en,
+          hero_quote: aboutTranslations.home_hero_quote_en,
+          about_title: aboutTranslations.home_about_title_en,
+          about_p1: aboutTranslations.home_about_p1_en,
+          about_p2: aboutTranslations.home_about_p2_en,
+          contact_btn: aboutTranslations.home_contact_btn_en,
+          other_works: aboutTranslations.home_other_works_en,
+        }
+      }
+    };
+
+    try {
+      const res = await fetch('/api/translations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token || ''
+        },
+        body: JSON.stringify(updated)
+      });
+
+      if (res.ok) {
+        setDynamicTranslations(updated);
+        alert('«Մասին» էջի տվյալները հաջողությամբ պահպանվեցին։');
+      } else {
+        const data = await res.json();
+        alert('Սխալ՝ ' + (data.error || 'Չհաջողվեց պահպանել։'));
+      }
+    } catch (err) {
+      alert('Չհաջողվեց պահպանել «Մասին» էջի տվյալները։');
+    } finally {
+      setIsSavingAbout(false);
     }
   };
 
@@ -6004,6 +6235,527 @@ export default function AdminDashboard() {
               </div>
             )}
 
+            {activeTab === 'about' && (
+              <div className={getTabClass('about')} style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                  <div>
+                    <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0 }}>«Մասին» Էջի Խմբագրում</h2>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: '4px' }}>Փոփոխեք «Մասին» էջի կենսագրական տեքստերը և մասնագիտացումները հայերենով և անգլերենով</p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSaveAboutTranslations} style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                  
+                  {/* 1. Bio & General Info */}
+                  <div style={{
+                    background: 'var(--panel)',
+                    border: '1px solid var(--panel-border)',
+                    borderRadius: '16px',
+                    padding: '24px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '24px'
+                  }}>
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span className="icon-Profile" style={{ color: '#00C49F' }} />
+                      Էջի Վերնագիր և Կենսագրություն
+                    </h3>
+
+                    {/* Title Row */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Էջի Վերնագիր (Հայերեն)</label>
+                        <hd-input 
+                          type="text"
+                          placeholder="Մասին..."
+                          value={aboutTranslations.title_hy}
+                          onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, title_hy: e.target.value }))}
+                          data-width="100%"
+                          data-height="40px"
+                          data-font-size="14pt"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Page Title (English)</label>
+                        <hd-input 
+                          type="text"
+                          placeholder="About..."
+                          value={aboutTranslations.title_en}
+                          onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, title_en: e.target.value }))}
+                          data-width="100%"
+                          data-height="40px"
+                          data-font-size="14pt"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Paragraph 1 Row */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Կենսագրություն Պարբերություն 1 (Հայերեն)</label>
+                        <textarea
+                          placeholder="Ողջույն, ես Հրանտ Հակոբյանն եմ..."
+                          value={aboutTranslations.bio_p1_hy}
+                          onChange={(e) => setAboutTranslations(prev => ({ ...prev, bio_p1_hy: e.target.value }))}
+                          style={{
+                            width: '100%',
+                            minHeight: '100px',
+                            background: 'rgba(255,255,255,0.02)',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            borderRadius: '12px',
+                            padding: '12px',
+                            color: '#fff',
+                            fontSize: '0.85rem',
+                            outline: 'none',
+                            resize: 'vertical',
+                            fontFamily: 'inherit',
+                            lineHeight: '1.5'
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Bio Paragraph 1 (English)</label>
+                        <textarea
+                          placeholder="Hello, I'm Hrant Hakobyan..."
+                          value={aboutTranslations.bio_p1_en}
+                          onChange={(e) => setAboutTranslations(prev => ({ ...prev, bio_p1_en: e.target.value }))}
+                          style={{
+                            width: '100%',
+                            minHeight: '100px',
+                            background: 'rgba(255,255,255,0.02)',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            borderRadius: '12px',
+                            padding: '12px',
+                            color: '#fff',
+                            fontSize: '0.85rem',
+                            outline: 'none',
+                            resize: 'vertical',
+                            fontFamily: 'inherit',
+                            lineHeight: '1.5'
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Paragraph 2 Row */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Կենսագրություն Պարբերություն 2 (Հայերեն)</label>
+                        <textarea
+                          placeholder="Իմ նախագծերում ես համատեղում եմ..."
+                          value={aboutTranslations.bio_p2_hy}
+                          onChange={(e) => setAboutTranslations(prev => ({ ...prev, bio_p2_hy: e.target.value }))}
+                          style={{
+                            width: '100%',
+                            minHeight: '100px',
+                            background: 'rgba(255,255,255,0.02)',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            borderRadius: '12px',
+                            padding: '12px',
+                            color: '#fff',
+                            fontSize: '0.85rem',
+                            outline: 'none',
+                            resize: 'vertical',
+                            fontFamily: 'inherit',
+                            lineHeight: '1.5'
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Bio Paragraph 2 (English)</label>
+                        <textarea
+                          placeholder="In my projects, I combine..."
+                          value={aboutTranslations.bio_p2_en}
+                          onChange={(e) => setAboutTranslations(prev => ({ ...prev, bio_p2_en: e.target.value }))}
+                          style={{
+                            width: '100%',
+                            minHeight: '100px',
+                            background: 'rgba(255,255,255,0.02)',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            borderRadius: '12px',
+                            padding: '12px',
+                            color: '#fff',
+                            fontSize: '0.85rem',
+                            outline: 'none',
+                            resize: 'vertical',
+                            fontFamily: 'inherit',
+                            lineHeight: '1.5'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2. Call to Action Buttons */}
+                  <div style={{
+                    background: 'var(--panel)',
+                    border: '1px solid var(--panel-border)',
+                    borderRadius: '16px',
+                    padding: '24px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '20px'
+                  }}>
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span className="icon-Hamburger-Menu" style={{ color: '#00C49F' }} />
+                      Կոճակների Տեքստեր
+                    </h3>
+
+                    {/* Contact Button */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Կապնվելու կոճակ (Հայերեն)</label>
+                        <hd-input 
+                          type="text"
+                          placeholder="Կապնվել..."
+                          value={aboutTranslations.contact_btn_hy}
+                          onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, contact_btn_hy: e.target.value }))}
+                          data-width="100%"
+                          data-height="40px"
+                          data-font-size="14pt"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Contact Button (English)</label>
+                        <hd-input 
+                          type="text"
+                          placeholder="Contact..."
+                          value={aboutTranslations.contact_btn_en}
+                          onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, contact_btn_en: e.target.value }))}
+                          data-width="100%"
+                          data-height="40px"
+                          data-font-size="14pt"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Works Button */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Աշխատանքների կոճակ (Հայերեն)</label>
+                        <hd-input 
+                          type="text"
+                          placeholder="Աշխատանքներ..."
+                          value={aboutTranslations.works_btn_hy}
+                          onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, works_btn_hy: e.target.value }))}
+                          data-width="100%"
+                          data-height="40px"
+                          data-font-size="14pt"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Works Button (English)</label>
+                        <hd-input 
+                          type="text"
+                          placeholder="Works..."
+                          value={aboutTranslations.works_btn_en}
+                          onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, works_btn_en: e.target.value }))}
+                          data-width="100%"
+                          data-height="40px"
+                          data-font-size="14pt"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3. Specializations */}
+                  <div style={{
+                    background: 'var(--panel)',
+                    border: '1px solid var(--panel-border)',
+                    borderRadius: '16px',
+                    padding: '24px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '24px'
+                  }}>
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span className="icon-Image" style={{ color: '#00C49F' }} />
+                      Մասնագիտացումներ
+                    </h3>
+
+                    {/* Specs Section Title */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Մասնագիտացումների Բաժնի Վերնագիր (Հայերեն)</label>
+                        <hd-input 
+                          type="text"
+                          placeholder="Մասնագիտացումներ..."
+                          value={aboutTranslations.specs_title_hy}
+                          onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, specs_title_hy: e.target.value }))}
+                          data-width="100%"
+                          data-height="40px"
+                          data-font-size="14pt"
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Specs Section Title (English)</label>
+                        <hd-input 
+                          type="text"
+                          placeholder="Specializations..."
+                          value={aboutTranslations.specs_title_en}
+                          onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, specs_title_en: e.target.value }))}
+                          data-width="100%"
+                          data-height="40px"
+                          data-font-size="14pt"
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '10px 0' }} />
+
+                    {/* Spec 1 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <h4 style={{ margin: 0, fontSize: '0.92rem', color: '#00C49F', fontWeight: 600 }}>Մասնագիտացում 1 (Տառատեսակներ)</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Անվանում (Հայերեն)</label>
+                          <hd-input 
+                            type="text"
+                            placeholder="Տառատեսակների ստեղծում..."
+                            value={aboutTranslations.spec1_title_hy}
+                            onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, spec1_title_hy: e.target.value }))}
+                            data-width="100%"
+                            data-height="40px"
+                            data-font-size="14pt"
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Title (English)</label>
+                          <hd-input 
+                            type="text"
+                            placeholder="Type Design..."
+                            value={aboutTranslations.spec1_title_en}
+                            onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, spec1_title_en: e.target.value }))}
+                            data-width="100%"
+                            data-height="40px"
+                            data-font-size="14pt"
+                          />
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Նկարագրություն (Հայերեն)</label>
+                          <textarea
+                            placeholder="Յուրահատուկ հայկական և լատինական..."
+                            value={aboutTranslations.spec1_desc_hy}
+                            onChange={(e) => setAboutTranslations(prev => ({ ...prev, spec1_desc_hy: e.target.value }))}
+                            style={{
+                              width: '100%',
+                              minHeight: '80px',
+                              background: 'rgba(255,255,255,0.02)',
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              borderRadius: '12px',
+                              padding: '12px',
+                              color: '#fff',
+                              fontSize: '0.85rem',
+                              outline: 'none',
+                              resize: 'vertical',
+                              fontFamily: 'inherit',
+                              lineHeight: '1.5'
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Description (English)</label>
+                          <textarea
+                            placeholder="Design of unique Armenian..."
+                            value={aboutTranslations.spec1_desc_en}
+                            onChange={(e) => setAboutTranslations(prev => ({ ...prev, spec1_desc_en: e.target.value }))}
+                            style={{
+                              width: '100%',
+                              minHeight: '80px',
+                              background: 'rgba(255,255,255,0.02)',
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              borderRadius: '12px',
+                              padding: '12px',
+                              color: '#fff',
+                              fontSize: '0.85rem',
+                              outline: 'none',
+                              resize: 'vertical',
+                              fontFamily: 'inherit',
+                              lineHeight: '1.5'
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ height: '1px', background: 'rgba(255,255,255,0.04)', margin: '10px 0' }} />
+
+                    {/* Spec 2 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <h4 style={{ margin: 0, fontSize: '0.92rem', color: '#00C49F', fontWeight: 600 }}>Մասնագիտացում 2 (Բրենդինգ)</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Անվանում (Հայերեն)</label>
+                          <hd-input 
+                            type="text"
+                            placeholder="Բրենդավորում..."
+                            value={aboutTranslations.spec2_title_hy}
+                            onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, spec2_title_hy: e.target.value }))}
+                            data-width="100%"
+                            data-height="40px"
+                            data-font-size="14pt"
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Title (English)</label>
+                          <hd-input 
+                            type="text"
+                            placeholder="Branding..."
+                            value={aboutTranslations.spec2_title_en}
+                            onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, spec2_title_en: e.target.value }))}
+                            data-width="100%"
+                            data-height="40px"
+                            data-font-size="14pt"
+                          />
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Նկարագրություն (Հայերեն)</label>
+                          <textarea
+                            placeholder="Տեսողական ինքնության մշակում..."
+                            value={aboutTranslations.spec2_desc_hy}
+                            onChange={(e) => setAboutTranslations(prev => ({ ...prev, spec2_desc_hy: e.target.value }))}
+                            style={{
+                              width: '100%',
+                              minHeight: '80px',
+                              background: 'rgba(255,255,255,0.02)',
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              borderRadius: '12px',
+                              padding: '12px',
+                              color: '#fff',
+                              fontSize: '0.85rem',
+                              outline: 'none',
+                              resize: 'vertical',
+                              fontFamily: 'inherit',
+                              lineHeight: '1.5'
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Description (English)</label>
+                          <textarea
+                            placeholder="Visual identity development..."
+                            value={aboutTranslations.spec2_desc_en}
+                            onChange={(e) => setAboutTranslations(prev => ({ ...prev, spec2_desc_en: e.target.value }))}
+                            style={{
+                              width: '100%',
+                              minHeight: '80px',
+                              background: 'rgba(255,255,255,0.02)',
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              borderRadius: '12px',
+                              padding: '12px',
+                              color: '#fff',
+                              fontSize: '0.85rem',
+                              outline: 'none',
+                              resize: 'vertical',
+                              fontFamily: 'inherit',
+                              lineHeight: '1.5'
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ height: '1px', background: 'rgba(255,255,255,0.04)', margin: '10px 0' }} />
+
+                    {/* Spec 3 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <h4 style={{ margin: 0, fontSize: '0.92rem', color: '#00C49F', fontWeight: 600 }}>Մասնագիտացում 3 (Ինտերֆեյսներ)</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Անվանում (Հայերեն)</label>
+                          <hd-input 
+                            type="text"
+                            placeholder="Ինտերֆեյսների դիզայն..."
+                            value={aboutTranslations.spec3_title_hy}
+                            onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, spec3_title_hy: e.target.value }))}
+                            data-width="100%"
+                            data-height="40px"
+                            data-font-size="14pt"
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Title (English)</label>
+                          <hd-input 
+                            type="text"
+                            placeholder="UI/UX Design..."
+                            value={aboutTranslations.spec3_title_en}
+                            onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, spec3_title_en: e.target.value }))}
+                            data-width="100%"
+                            data-height="40px"
+                            data-font-size="14pt"
+                          />
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Նկարագրություն (Հայերեն)</label>
+                          <textarea
+                            placeholder="Օգտագործողի փորձի (UX)..."
+                            value={aboutTranslations.spec3_desc_hy}
+                            onChange={(e) => setAboutTranslations(prev => ({ ...prev, spec3_desc_hy: e.target.value }))}
+                            style={{
+                              width: '100%',
+                              minHeight: '80px',
+                              background: 'rgba(255,255,255,0.02)',
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              borderRadius: '12px',
+                              padding: '12px',
+                              color: '#fff',
+                              fontSize: '0.85rem',
+                              outline: 'none',
+                              resize: 'vertical',
+                              fontFamily: 'inherit',
+                              lineHeight: '1.5'
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Description (English)</label>
+                          <textarea
+                            placeholder="Designing user experience (UX)..."
+                            value={aboutTranslations.spec3_desc_en}
+                            onChange={(e) => setAboutTranslations(prev => ({ ...prev, spec3_desc_en: e.target.value }))}
+                            style={{
+                              width: '100%',
+                              minHeight: '80px',
+                              background: 'rgba(255,255,255,0.02)',
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              borderRadius: '12px',
+                              padding: '12px',
+                              color: '#fff',
+                              fontSize: '0.85rem',
+                              outline: 'none',
+                              resize: 'vertical',
+                              fontFamily: 'inherit',
+                              lineHeight: '1.5'
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Save Button */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px', marginBottom: '40px' }}>
+                    <hd-button 
+                      type="submit"
+                      disabled={isSavingAbout}
+                      data-width="260px"
+                      data-height="46px"
+                      data-thickness="3px"
+                    >
+                      {isSavingAbout ? '⏳ Պահպանվում է...' : '💾 Պահպանել «Մասին» տվյալները'}
+                    </hd-button>
+                  </div>
+
+                </form>
+              </div>
+            )}
+
             {activeTab === 'personalization' && (
               <div className={getTabClass('personalization')} style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
@@ -7439,6 +8191,31 @@ export default function AdminDashboard() {
           <span className="icon-Earth" style={{ fontSize: '1.4rem' }} />
           <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
             Թարգմանություններ
+          </div>
+        </div>
+
+        <div 
+          onClick={() => {
+            if (hasDraggedRef.current) return;
+            setActiveTab('about');
+          }}
+          className="nav-btn"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: activeTab === 'about' ? 'var(--switcher-capsule-bg)' : 'transparent',
+            color: activeTab === 'about' ? '#fff' : 'var(--muted)',
+            borderRadius: '16px',
+            width: '50px',
+            height: '50px',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          <span className="icon-Info" style={{ fontSize: '1.4rem' }} />
+          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
+            Մասին էջ
           </div>
         </div>
 
