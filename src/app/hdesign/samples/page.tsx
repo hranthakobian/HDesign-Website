@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import HdVideoPlayer from "@/components/HdVideoPlayer";
 
 interface ComponentItem {
   id: string;
@@ -89,7 +90,10 @@ export default function HDesignSamplesPage() {
   function handleTabChange(id: string) {
     setActiveTab(id);
     // Set appropriate defaults for styles
-    if (id === "hd-checkbox" || id === "hd-radio" || id === "hd-switch" || id === "hd-color-picker") {
+    if (id === "hd-video") {
+      setWidth("100%");
+      setHeight("260px");
+    } else if (id === "hd-checkbox" || id === "hd-radio" || id === "hd-switch" || id === "hd-color-picker") {
       setWidth("auto");
       setHeight("auto");
     } else if (id === "hd-reveal") {
@@ -176,6 +180,8 @@ export default function HDesignSamplesPage() {
     const commonData = `${widthAttr}${heightAttr}${thicknessAttr}${colorAttr}${textColorAttr}${radiusAttr}`;
     
     switch(activeTab) {
+      case "hd-video":
+        return `<hd-video\n  src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"\n  poster="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80"\n  ${commonData}\n></hd-video>`;
       case "hd-button":
         return `<hd-button${isDisabled ? " disabled" : ""}${commonData}>\n  ${btnText}\n</hd-button>`;
       case "hd-input":
@@ -242,6 +248,18 @@ export default function HDesignSamplesPage() {
     } as any;
 
     switch(activeTab) {
+      case "hd-video":
+        return (
+          <HdVideoPlayer
+            key={componentKey}
+            width={width}
+            height={height}
+            thickness={thickness}
+            color={color}
+            textColor={textColor}
+            radius={radius}
+          />
+        );
       case "hd-button":
         return (
           <hd-button key={componentKey} {...commonProps} disabled={isDisabled} onClick={() => alert("Կոճակը սեղմված է")}>

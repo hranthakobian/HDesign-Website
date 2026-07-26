@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 import { getPastelColor, getCasePastelColor } from "@/lib/brandingData";
 import InteractiveWaveText from "@/components/InteractiveWaveText";
-import selectionJson from "../../icons/selection.json";
+import HdVideoPlayer from "@/components/HdVideoPlayer";
 
 // Helper to convert dynamic RGB to dark overlay background and bright pastel line color
 const getColorsFromRgb = (r: number, g: number, b: number) => {
@@ -60,7 +60,8 @@ const iconsList = [
   "icon-Undo-Arrow", "icon-Redo-Arrow", "icon-Share-Arrow-Left", "icon-Share-Arrow-Right",
   "icon-Copy", "icon-Paste", "icon-Cut",
   "icon-HD-Logo", "icon-HD-Logo-Horizontal", "icon-Send",
-  "icon-Three-Dots-Vertical", "icon-Three-Dots-Horizontal"
+  "icon-Three-Dots-Vertical", "icon-Three-Dots-Horizontal",
+  "icon-Volume-Mute", "icon-Low-Volume", "icon-Medium-Volume", "icon-High-Volume", "icon-Full-Screen", "icon-Expand"
 ];
 
 const iconCategories = [
@@ -101,7 +102,8 @@ const iconCategories = [
     titleHy: "Մեդիա",
     titleEn: "Media",
     icons: [
-      "icon-Image", "icon-Camera", "icon-Play", "icon-Stop", "icon-Pause"
+      "icon-Image", "icon-Camera", "icon-Play", "icon-Stop", "icon-Pause",
+      "icon-Volume-Mute", "icon-Low-Volume", "icon-Medium-Volume", "icon-High-Volume", "icon-Full-Screen", "icon-Expand"
     ]
   },
   {
@@ -495,11 +497,14 @@ const SectionBackground = ({ color, className, type }: { color: string; classNam
   );
 };
 
+const selectionJson: any = null;
+
 // Helper to get SVG string for an icon from selection.json
 const getSvgString = (iconName: string): string => {
+  if (!selectionJson?.icons) return "";
   const nameToMatch = iconName.replace("icon-", "").replace(/-/g, "").toLowerCase();
   
-  const iconData = (selectionJson as any).icons.find((i: any) => {
+  const iconData = selectionJson.icons.find((i: any) => {
     const candidate = i.properties.name.replace(/[\s-_]+/g, "").toLowerCase();
     return candidate === nameToMatch;
   });
@@ -538,7 +543,7 @@ const downloadPng = (iconName: string) => {
   const size = 512;
   
   const nameToMatch = iconName.replace("icon-", "").replace(/-/g, "").toLowerCase();
-  const iconData = (selectionJson as any).icons.find((i: any) => {
+  const iconData = selectionJson?.icons?.find((i: any) => {
     const candidate = i.properties.name.replace(/[\s-_]+/g, "").toLowerCase();
     return candidate === nameToMatch;
   });
@@ -581,6 +586,18 @@ export default function Home() {
   const [ratings, setRatings] = useState<Record<string, { sum: number; count: number }>>({});
   const [aspectRatios, setAspectRatios] = useState<Record<string, number>>({});
   const [hoverColors, setHoverColors] = useState<Record<string, { overlay: string; line: string }>>({});
+  const [customIcons, setCustomIcons] = useState<any[]>([]);
+  const [dsVideoSettings, setDsVideoSettings] = useState<{
+    video_hy: string;
+    video_en: string;
+    poster_hy: string;
+    poster_en: string;
+  }>({
+    video_hy: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    video_en: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    poster_hy: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80",
+    poster_en: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80"
+  });
 
   const renderCardRating = (workId: string) => {
     const item = ratings[workId];
@@ -689,23 +706,45 @@ export default function Home() {
   const [selectedIconDetail, setSelectedIconDetail] = useState<string | null>("icon-QR-Code");
   const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
   const [iconSortOrder, setIconSortOrder] = useState<"default" | "alphabetical">("default");
+  const [iconWeight, setIconWeight] = useState<number>(400);
   
   const lowercaseIconName = selectedIconDetail ? selectedIconDetail.replace("icon-", "").toLowerCase() : "";
   const isLogoHorizontal = selectedIconDetail === "icon-HD-Logo-Horizontal";
+
+  const weightClassNames: Record<number, string> = {
+    100: "thin",
+    200: "extralight",
+    300: "light",
+    400: "regular",
+    500: "medium",
+    600: "semibold",
+    700: "bold",
+    800: "extrabold",
+    900: "black"
+  };
+  const weightName = weightClassNames[iconWeight] || "regular";
+  const weightClassStr = iconWeight !== 400 ? ` hd-icon-${weightName}` : "";
+  const weightCssBlock = iconWeight !== 400 ? `.hd-icon-${weightName}, ` : "";
+
+  const htmlLogo1 = `<i class="hd-icon${weightClassStr} hd-icon-hd-logo-horizontal"></i>`;
+  const htmlLogo2 = `<i class="hd-icon${weightClassStr} hd-icon-hamburger-menu"></i>`;
+  const reactLogo1 = `<i className="hd-icon${weightClassStr} hd-icon-hd-logo-horizontal" />`;
+  const reactLogo2 = `<i className="hd-icon${weightClassStr} hd-icon-hamburger-menu" />`;
+  const cssLogo1 = `${weightCssBlock}.hd-icon-hd-logo-horizontal`;
+  const cssLogo2 = `${weightCssBlock}.hd-icon-hamburger-menu`;
   
   const htmlSnippet = isLogoHorizontal 
-    ? `<i class="hd-icon hd-icon-hd-logo-horizontal"></i>\n<!-- կամ (or) -->\n<i class="hd-icon hd-icon-hamburger-menu"></i>`
-    : `<i class="hd-icon hd-icon-${lowercaseIconName}"></i>`;
+    ? `${htmlLogo1}\n<!-- կամ (or) -->\n${htmlLogo2}`
+    : `<i class="hd-icon${weightClassStr} hd-icon-${lowercaseIconName}"></i>`;
 
   const reactSnippet = isLogoHorizontal
-    ? `<i className="hd-icon hd-icon-hd-logo-horizontal" />\n{/* կամ (or) */}\n<i className="hd-icon hd-icon-hamburger-menu" />`
-    : `<i className="hd-icon hd-icon-${lowercaseIconName}" />`;
+    ? `${reactLogo1}\n{/* կամ (or) */}\n${reactLogo2}`
+    : `<i className="hd-icon${weightClassStr} hd-icon-${lowercaseIconName}" />`;
 
   const cssSnippet = isLogoHorizontal
-    ? `.hd-icon-hd-logo-horizontal\n/* կամ (or) */\n.hd-icon-hamburger-menu`
-    : `.hd-icon-${lowercaseIconName}`;
+    ? `${cssLogo1}\n/* կամ (or) */\n${cssLogo2}`
+    : `${weightCssBlock}.hd-icon-${lowercaseIconName}`;
 
-  const [iconWeight, setIconWeight] = useState<number>(400);
   const [hdesignFontWeight, setHdesignFontWeight] = useState<number>(400);
   const [copiedChar, setCopiedChar] = useState<string | null>(null);
 
@@ -720,6 +759,10 @@ export default function Home() {
   const [playgroundColor, setPlaygroundColor] = useState<string>("#083f39");
   const [playgroundTextColor, setPlaygroundTextColor] = useState<string>("#ffffff");
   const [playgroundRadius, setPlaygroundRadius] = useState<string>("12px");
+  const [playgroundVideoAutoplay, setPlaygroundVideoAutoplay] = useState<boolean>(false);
+  const [playgroundVideoLoop, setPlaygroundVideoLoop] = useState<boolean>(true);
+  const [playgroundVideoMuted, setPlaygroundVideoMuted] = useState<boolean>(false);
+  const [playgroundVideoControls, setPlaygroundVideoControls] = useState<boolean>(true);
   const [playgroundBtnText, setPlaygroundBtnText] = useState<string>("Սեղմել այստեղ");
   const [playgroundIsDisabled, setPlaygroundIsDisabled] = useState<boolean>(false);
   const [playgroundInputPlaceholder, setPlaygroundInputPlaceholder] = useState<string>("Մուտքագրեք տեքստ...");
@@ -762,7 +805,7 @@ export default function Home() {
     { id: "hd-scrollbar", name: "Scrollbar (Կոմպակտ սահնակ)", desc: "Մինիմալիստական սքրոլբարի տարա" }
   ];
 
-  const playgroundComponentKey = `${playgroundActiveTab}-${playgroundWidth}-${playgroundHeight}-${playgroundThickness}-${playgroundColor}-${playgroundTextColor}-${playgroundRadius}-${playgroundBtnText}-${playgroundIsDisabled}-${playgroundInputPlaceholder}-${playgroundInputValue}-${playgroundInputType}-${playgroundTextareaPlaceholder}-${playgroundTextareaDisableResize}-${playgroundSliderMin}-${playgroundSliderMax}-${playgroundSliderVal}-${playgroundSliderStep}-${playgroundCheckedState}-${playgroundCheckboxSize}-${playgroundRadioState}-${playgroundRadioSize}-${playgroundSwitchState}-${playgroundSwitchSize}-${playgroundSelectPlaceholder}-${playgroundSelectVal}-${playgroundSelectOptions}-${playgroundSegmentVal}-${playgroundSegmentOptions}-${playgroundColorPickerVal}-${playgroundColorPanelVal}-${playgroundScrollContentHeight}`;
+  const playgroundComponentKey = `${playgroundActiveTab}-${playgroundWidth}-${playgroundHeight}-${playgroundThickness}-${playgroundColor}-${playgroundTextColor}-${playgroundRadius}-${playgroundVideoAutoplay}-${playgroundVideoLoop}-${playgroundVideoMuted}-${playgroundVideoControls}-${playgroundBtnText}-${playgroundIsDisabled}-${playgroundInputPlaceholder}-${playgroundInputValue}-${playgroundInputType}-${playgroundTextareaPlaceholder}-${playgroundTextareaDisableResize}-${playgroundSliderMin}-${playgroundSliderMax}-${playgroundSliderVal}-${playgroundSliderStep}-${playgroundCheckedState}-${playgroundCheckboxSize}-${playgroundRadioState}-${playgroundRadioSize}-${playgroundSwitchState}-${playgroundSwitchSize}-${playgroundSelectPlaceholder}-${playgroundSelectVal}-${playgroundSelectOptions}-${playgroundSegmentVal}-${playgroundSegmentOptions}-${playgroundColorPickerVal}-${playgroundColorPanelVal}-${playgroundScrollContentHeight}`;
 
   const generatePlaygroundCode = (): string => {
     const thicknessAttr = playgroundThickness ? ` data-thickness="${playgroundThickness}"` : "";
@@ -775,6 +818,12 @@ export default function Home() {
     const commonData = `${widthAttr}${heightAttr}${thicknessAttr}${colorAttr}${textColorAttr}${radiusAttr}`;
     
     switch(playgroundActiveTab) {
+      case "hd-video":
+        const vAuto = playgroundVideoAutoplay ? " autoplay" : "";
+        const vLoop = playgroundVideoLoop ? " loop" : "";
+        const vMute = playgroundVideoMuted ? " muted" : "";
+        const vCtrl = !playgroundVideoControls ? " no-controls" : "";
+        return `<hd-video\n  src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"\n  poster="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80"\n  ${commonData}${vAuto}${vLoop}${vMute}${vCtrl}\n></hd-video>`;
       case "hd-button":
         return `<hd-button${playgroundIsDisabled ? " disabled" : ""}${commonData}>\n  ${playgroundBtnText}\n</hd-button>`;
       case "hd-input":
@@ -825,7 +874,10 @@ export default function Home() {
 
   const handlePlaygroundTabChange = (id: string) => {
     setPlaygroundActiveTab(id);
-    if (id === "hd-checkbox" || id === "hd-radio" || id === "hd-switch" || id === "hd-color-picker") {
+    if (id === "hd-video") {
+      setPlaygroundWidth("100%");
+      setPlaygroundHeight("260px");
+    } else if (id === "hd-checkbox" || id === "hd-radio" || id === "hd-switch" || id === "hd-color-picker") {
       setPlaygroundWidth("auto");
       setPlaygroundHeight("auto");
     } else {
@@ -908,9 +960,25 @@ export default function Home() {
     } as any;
 
     switch(playgroundActiveTab) {
+      case "hd-video":
+        return (
+          <HdVideoPlayer
+            key={playgroundComponentKey}
+            width={playgroundWidth}
+            height={playgroundHeight}
+            thickness={playgroundThickness}
+            color={playgroundColor}
+            textColor={playgroundTextColor}
+            radius={playgroundRadius}
+            autoplay={playgroundVideoAutoplay}
+            loop={playgroundVideoLoop}
+            muted={playgroundVideoMuted}
+            showControls={playgroundVideoControls}
+          />
+        );
       case "hd-button":
         return (
-          <hd-button key={playgroundComponentKey} {...commonProps} disabled={playgroundIsDisabled} onClick={() => alert("Սեղմված է")}>
+          <hd-button key={playgroundComponentKey} suppressHydrationWarning {...commonProps} disabled={playgroundIsDisabled} onClick={() => alert("Սեղմված է")}>
             {playgroundBtnText}
           </hd-button>
         );
@@ -1183,6 +1251,29 @@ export default function Home() {
       setCasesList(fallbackList);
     }
     loadCases();
+
+    fetch("/api/general-settings")
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          setDsVideoSettings({
+            video_hy: data.design_system_video_hy || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+            video_en: data.design_system_video_en || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+            poster_hy: data.design_system_poster_hy || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80",
+            poster_en: data.design_system_poster_en || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80"
+          });
+        }
+      })
+      .catch(err => console.warn("Failed to load design system video settings:", err));
+
+    fetch("/api/icons-settings")
+      .then(res => res.json())
+      .then(data => {
+        if (data && Array.isArray(data.custom_icons)) {
+          setCustomIcons(data.custom_icons);
+        }
+      })
+      .catch(err => console.warn("Failed to load dynamic custom icons:", err));
   }, []);
 
 
@@ -1465,50 +1556,66 @@ export default function Home() {
                   style={{ textDecoration: "none" }}
                   title={t('home', 'click_details', 'Սեղմեք մանրամասների համար')}
                 >
-                  {card.image_url || card.image ? (
-                    <img 
-                      src={card.image_url || card.image} 
-                      alt={card.title} 
-                      className="card-bg-design" 
-                      crossOrigin="anonymous"
-                      onLoad={(e) => {
-                        const img = e.currentTarget;
-                        try {
-                          const canvas = document.createElement("canvas");
-                          canvas.width = 1;
-                          canvas.height = 1;
-                          const ctx = canvas.getContext("2d");
-                          if (ctx) {
-                            ctx.drawImage(img, 0, 0, 1, 1);
-                            const pixel = ctx.getImageData(0, 0, 1, 1).data;
-                            const r = pixel[0];
-                            const g = pixel[1];
-                            const b = pixel[2];
-                            
-                            const extracted = getColorsFromRgb(r, g, b);
-                            setHoverColors(prev => ({
-                              ...prev,
-                              [card.id]: { overlay: extracted.overlayBg, line: extracted.lineColor }
-                            }));
+                  {/* Unified Media Wrapper */}
+                  <div className="card-media-wrapper">
+                    {card.image_url || card.image ? (
+                      <img 
+                        src={card.image_url || card.image} 
+                        alt={card.title} 
+                        className="card-bg-design" 
+                        crossOrigin="anonymous"
+                        onLoad={(e) => {
+                          const img = e.currentTarget;
+                          try {
+                            const canvas = document.createElement("canvas");
+                            canvas.width = 1;
+                            canvas.height = 1;
+                            const ctx = canvas.getContext("2d");
+                            if (ctx) {
+                              ctx.drawImage(img, 0, 0, 1, 1);
+                              const pixel = ctx.getImageData(0, 0, 1, 1).data;
+                              const r = pixel[0];
+                              const g = pixel[1];
+                              const b = pixel[2];
+                              
+                              const extracted = getColorsFromRgb(r, g, b);
+                              setHoverColors(prev => ({
+                                ...prev,
+                                [card.id]: { overlay: extracted.overlayBg, line: extracted.lineColor }
+                              }));
+                            }
+                          } catch (err) {
+                            console.warn("Color extraction failed for marquee card", card.id, err);
                           }
-                        } catch (err) {
-                          console.warn("Color extraction failed for marquee card", card.id, err);
-                        }
-                      }}
+                        }}
+                        style={{ 
+                          width: "100%", 
+                          height: "100%", 
+                          objectFit: "cover", 
+                          position: "absolute", 
+                          inset: 0, 
+                          zIndex: 1,
+                          opacity: 1
+                        }} 
+                      />
+                    ) : (
+                      <div className="card-bg-design" style={{ position: "absolute", inset: 0, zIndex: 1, overflow: "hidden" }}>
+                        {getSvgForCase(card.id)}
+                      </div>
+                    )}
+                    
+                    {/* Black gradient overlay */}
+                    <div 
+                      className="card-gradient-overlay" 
                       style={{ 
-                        width: "100%", 
-                        height: "100%", 
-                        objectFit: "cover", 
                         position: "absolute", 
                         inset: 0, 
-                        zIndex: 1
+                        zIndex: 2, 
+                        background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)", 
+                        pointerEvents: "none" 
                       }} 
                     />
-                  ) : (
-                    <div className="card-bg-design" style={{ position: "absolute", inset: 0, zIndex: 1, overflow: "hidden" }}>
-                      {getSvgForCase(card.id)}
-                    </div>
-                  )}
+                  </div>
                   
                   {/* Decorative Hover SVGs */}
                   <div className="card-hover-decor top-left">
@@ -1585,6 +1692,7 @@ export default function Home() {
                 </div>
                 <div>
                   <hd-button 
+                    suppressHydrationWarning
                     onClick={() => {
                       document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
                     }}
@@ -1593,9 +1701,7 @@ export default function Home() {
                     data-thickness="3px"
                     data-color="#083F39"
                     data-text-color="#fff"
-                  >
-                    {t('home', 'contact_btn', 'Կապնվել')}
-                  </hd-button>
+                  >{t('home', 'contact_btn', 'Կապնվել')}</hd-button>
                 </div>
               </div>
             </hd-reveal>
@@ -1634,12 +1740,11 @@ export default function Home() {
             <div style={{ display: "flex", justifyContent: "center", marginTop: "36px" }}>
               <Link href="/works?category=design">
                 <hd-button 
+                  suppressHydrationWarning
                   data-width="160px"
                   data-height="52px"
                   data-thickness="3px"
-                >
-                  {t('home', 'more_btn', 'Ավելի')}
-                </hd-button>
+                >{t('home', 'more_btn', 'Ավելի')}</hd-button>
               </Link>
             </div>
           </hd-reveal>
@@ -1749,7 +1854,7 @@ export default function Home() {
               fontWeight: "900",
               textAlign: "center",
               color: "var(--text)",
-              marginBottom: "24px",
+              marginBottom: "32px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -1758,6 +1863,56 @@ export default function Home() {
               {t('home', 'design_system', 'Դիզայնի Համակարգը')}
               <sup style={{ fontSize: "0.9rem", color: "var(--primary-color)", fontWeight: "bold", marginLeft: "4px" }}>ԲԵՏԱ</sup>
             </h2>
+          </hd-reveal>
+
+          {/* ══ DEDICATED VIDEO PLAYER SECTION ══ */}
+          <hd-reveal data-direction="up" data-duration="900" data-delay="100">
+            <div style={{
+              maxWidth: "1500px",
+              margin: "0 auto 60px auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: "20px",
+              alignItems: "center",
+              padding: "0 20px"
+            }}>
+              <div style={{ textAlign: "center", maxWidth: "700px" }}>
+                <h3 style={{
+                  fontSize: "1.5rem",
+                  fontWeight: "800",
+                  color: "var(--text)",
+                  marginBottom: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "10px"
+                }}>
+                  <span className="icon-Play" style={{ color: "var(--primary-color)", fontSize: "1.3rem" }} />
+                  Անհատականացված Տեսանյութի Նվագարկիչ
+                </h3>
+                <p style={{ fontSize: "0.95rem", opacity: 0.75, color: "var(--text)", margin: 0, lineHeight: "1.5" }}>
+                  HDesign դիզայնի համակարգի հատուկ ոճավորված ինտերակտիվ տեսանյութի նվագարկիչ՝ ղեկավարման վահանակով, անիմացիաներով և HD որակով (16:9 ֆորմատ):
+                </p>
+              </div>
+
+              <div style={{ width: "100%", maxWidth: "1500px", aspectRatio: "16 / 9", height: "auto", borderRadius: "24px", overflow: "hidden", boxShadow: "0 20px 40px rgba(0, 0, 0, 0.4)" }}>
+                <HdVideoPlayer
+                  src={locale === 'en' ? (dsVideoSettings.video_en || dsVideoSettings.video_hy) : (dsVideoSettings.video_hy || dsVideoSettings.video_en)}
+                  poster={locale === 'en' ? (dsVideoSettings.poster_en || dsVideoSettings.poster_hy) : (dsVideoSettings.poster_hy || dsVideoSettings.poster_en)}
+                  width="100%"
+                  height="auto"
+                  thickness="3px"
+                  color="var(--primary-color)"
+                  radius="24px"
+                  autoplay={false}
+                  loop={true}
+                  showControls={true}
+                />
+              </div>
+            </div>
+          </hd-reveal>
+          
+          <hd-reveal data-direction="up" data-duration="800">
             <h3 style={{
               fontSize: "1.4rem",
               fontWeight: "700",
@@ -1765,7 +1920,6 @@ export default function Home() {
               letterSpacing: "1px",
               textAlign: "center",
               color: "var(--text)",
-              marginTop: "-16px",
               marginBottom: "40px"
             }}>
               {t('home', 'components_title', 'Բաղադրիչներ')}
@@ -1995,6 +2149,27 @@ export default function Home() {
                   {/* Component Specific Settings */}
                   <div style={{ display: "flex", flexDirection: "column", gap: "12px", borderTop: "1px solid var(--panel-border)", paddingTop: "12px" }}>
                     
+                    {playgroundActiveTab === "hd-video" && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                        <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.8rem", opacity: 0.85, cursor: "pointer" }}>
+                          <span>Ավտոնվագարկում (Autoplay)</span>
+                          <hd-switch checked={playgroundVideoAutoplay} onChange={(e: any) => setPlaygroundVideoAutoplay(e.target.checked)} data-size="18px" />
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.8rem", opacity: 0.85, cursor: "pointer" }}>
+                          <span>Կրկնել (Loop)</span>
+                          <hd-switch checked={playgroundVideoLoop} onChange={(e: any) => setPlaygroundVideoLoop(e.target.checked)} data-size="18px" />
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.8rem", opacity: 0.85, cursor: "pointer" }}>
+                          <span>Առանց ձայնի (Muted)</span>
+                          <hd-switch checked={playgroundVideoMuted} onChange={(e: any) => setPlaygroundVideoMuted(e.target.checked)} data-size="18px" />
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.8rem", opacity: 0.85, cursor: "pointer" }}>
+                          <span>Ղեկավարում (Controls)</span>
+                          <hd-switch checked={playgroundVideoControls} onChange={(e: any) => setPlaygroundVideoControls(e.target.checked)} data-size="18px" />
+                        </label>
+                      </div>
+                    )}
+
                     {playgroundActiveTab === "hd-button" && (
                       <>
                         <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -2419,6 +2594,7 @@ export default function Home() {
                   justifyContent: "center"
                 }}>
                   <hd-button
+                    suppressHydrationWarning
                     onClick={() => downloadSvg(selectedIconDetail)}
                     data-width="50%"
                     data-height="40px"
@@ -2432,6 +2608,7 @@ export default function Home() {
                     SVG
                   </hd-button>
                   <hd-button
+                    suppressHydrationWarning
                     onClick={() => downloadPng(selectedIconDetail)}
                     data-width="50%"
                     data-height="40px"
@@ -2459,7 +2636,7 @@ export default function Home() {
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
                             <span style={{ fontSize: "0.68rem", color: "var(--muted)" }}>HD Logo Horizontal</span>
                             <span 
-                              onClick={() => handleCopySnippet(`<i class="hd-icon hd-icon-hd-logo-horizontal"></i>`, "html1")}
+                              onClick={() => handleCopySnippet(htmlLogo1, "html1")}
                               style={{ background: "transparent", border: "none", color: copiedSnippet === "html1" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
                             >
                               <span className={copiedSnippet === "html1" ? "icon-Check" : "icon-Copy"} style={{ fontSize: "0.8rem" }} />
@@ -2467,7 +2644,7 @@ export default function Home() {
                             </span>
                           </div>
                           <div style={{ background: "var(--input-bg)", border: "1px solid var(--panel-border)", borderRadius: "6px", padding: "6px 10px", fontSize: "0.75rem", color: "var(--text)", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
-                            {`<i class="hd-icon hd-icon-hd-logo-horizontal"></i>`}
+                            {htmlLogo1}
                           </div>
                         </div>
 
@@ -2479,7 +2656,7 @@ export default function Home() {
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
                             <span style={{ fontSize: "0.68rem", color: "var(--muted)" }}>Hamburger Menu</span>
                             <span 
-                              onClick={() => handleCopySnippet(`<i class="hd-icon hd-icon-hamburger-menu"></i>`, "html2")}
+                              onClick={() => handleCopySnippet(htmlLogo2, "html2")}
                               style={{ background: "transparent", border: "none", color: copiedSnippet === "html2" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
                             >
                               <span className={copiedSnippet === "html2" ? "icon-Check" : "icon-Copy"} style={{ fontSize: "0.8rem" }} />
@@ -2487,7 +2664,7 @@ export default function Home() {
                             </span>
                           </div>
                           <div style={{ background: "var(--input-bg)", border: "1px solid var(--panel-border)", borderRadius: "6px", padding: "6px 10px", fontSize: "0.75rem", color: "var(--text)", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
-                            {`<i class="hd-icon hd-icon-hamburger-menu"></i>`}
+                            {htmlLogo2}
                           </div>
                         </div>
                       </div>
@@ -2520,7 +2697,7 @@ export default function Home() {
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
                             <span style={{ fontSize: "0.68rem", color: "var(--muted)" }}>HD Logo Horizontal</span>
                             <span 
-                              onClick={() => handleCopySnippet(`<i className="hd-icon hd-icon-hd-logo-horizontal" />`, "react1")}
+                              onClick={() => handleCopySnippet(reactLogo1, "react1")}
                               style={{ background: "transparent", border: "none", color: copiedSnippet === "react1" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
                             >
                               <span className={copiedSnippet === "react1" ? "icon-Check" : "icon-Copy"} style={{ fontSize: "0.8rem" }} />
@@ -2528,7 +2705,7 @@ export default function Home() {
                             </span>
                           </div>
                           <div style={{ background: "var(--input-bg)", border: "1px solid var(--panel-border)", borderRadius: "6px", padding: "6px 10px", fontSize: "0.75rem", color: "var(--text)", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
-                            {`<i className="hd-icon hd-icon-hd-logo-horizontal" />`}
+                            {reactLogo1}
                           </div>
                         </div>
 
@@ -2540,7 +2717,7 @@ export default function Home() {
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
                             <span style={{ fontSize: "0.68rem", color: "var(--muted)" }}>Hamburger Menu</span>
                             <span 
-                              onClick={() => handleCopySnippet(`<i className="hd-icon hd-icon-hamburger-menu" />`, "react2")}
+                              onClick={() => handleCopySnippet(reactLogo2, "react2")}
                               style={{ background: "transparent", border: "none", color: copiedSnippet === "react2" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
                             >
                               <span className={copiedSnippet === "react2" ? "icon-Check" : "icon-Copy"} style={{ fontSize: "0.8rem" }} />
@@ -2548,7 +2725,7 @@ export default function Home() {
                             </span>
                           </div>
                           <div style={{ background: "var(--input-bg)", border: "1px solid var(--panel-border)", borderRadius: "6px", padding: "6px 10px", fontSize: "0.75rem", color: "var(--text)", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
-                            {`<i className="hd-icon hd-icon-hamburger-menu" />`}
+                            {reactLogo2}
                           </div>
                         </div>
                       </div>
@@ -2581,7 +2758,7 @@ export default function Home() {
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
                             <span style={{ fontSize: "0.68rem", color: "var(--muted)" }}>HD Logo Horizontal</span>
                             <span 
-                              onClick={() => handleCopySnippet(`.hd-icon-hd-logo-horizontal`, "css1")}
+                              onClick={() => handleCopySnippet(cssLogo1, "css1")}
                               style={{ background: "transparent", border: "none", color: copiedSnippet === "css1" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
                             >
                               <span className={copiedSnippet === "css1" ? "icon-Check" : "icon-Copy"} style={{ fontSize: "0.8rem" }} />
@@ -2589,11 +2766,11 @@ export default function Home() {
                             </span>
                           </div>
                           <div style={{ background: "var(--input-bg)", border: "1px solid var(--panel-border)", borderRadius: "6px", padding: "6px 10px", fontSize: "0.75rem", color: "var(--text)", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
-                            {`.hd-icon-hd-logo-horizontal`}
+                            {cssLogo1}
                           </div>
                         </div>
 
-                        <div style={{ textAlign: "center", fontSize: "0.75rem", color: "var(--primary-color)", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", margin: "2px 0" }}>
+-                       <div style={{ textAlign: "center", fontSize: "0.75rem", color: "var(--primary-color)", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", margin: "2px 0" }}>
                           {t('home', 'or', 'Կամ')}
                         </div>
 
@@ -2601,7 +2778,7 @@ export default function Home() {
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2px" }}>
                             <span style={{ fontSize: "0.68rem", color: "var(--muted)" }}>Hamburger Menu</span>
                             <span 
-                              onClick={() => handleCopySnippet(`.hd-icon-hamburger-menu`, "css2")}
+                              onClick={() => handleCopySnippet(cssLogo2, "css2")}
                               style={{ background: "transparent", border: "none", color: copiedSnippet === "css2" ? "var(--primary-color)" : "var(--muted)", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", gap: "2px" }}
                             >
                               <span className={copiedSnippet === "css2" ? "icon-Check" : "icon-Copy"} style={{ fontSize: "0.8rem" }} />
@@ -2609,7 +2786,7 @@ export default function Home() {
                             </span>
                           </div>
                           <div style={{ background: "var(--input-bg)", border: "1px solid var(--panel-border)", borderRadius: "6px", padding: "6px 10px", fontSize: "0.75rem", color: "var(--text)", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
-                            {`.hd-icon-hamburger-menu`}
+                            {cssLogo2}
                           </div>
                         </div>
                       </div>
@@ -3109,7 +3286,7 @@ export default function Home() {
 
                   <div style={{ marginTop: "auto", paddingTop: "12px", display: "flex", gap: "12px" }}>
                     <Link href={`/works/${selectedCase.id.includes('local-b-') ? ['pasta', 'eleven', 'posters', 'teal-lines', 'mobile-ui'][parseInt(selectedCase.id.replace('local-b-', '')) - 1] || selectedCase.id : selectedCase.id}`} style={{ textDecoration: "none" }}>
-                      <hd-button data-height="40px" data-thickness="3px" style={{ background: "var(--accent)", color: "#000", fontWeight: "bold" }}>
+                      <hd-button suppressHydrationWarning data-height="40px" data-thickness="3px" style={{ background: "var(--accent)", color: "#000", fontWeight: "bold" }}>
                         {locale === "en" ? "View Full Case Study" : "Տեսնել Ամբողջական Քեյսը"}
                       </hd-button>
                     </Link>

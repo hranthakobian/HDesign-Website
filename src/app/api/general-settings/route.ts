@@ -33,7 +33,14 @@ export async function GET() {
         contact_email: generalSettings?.contact_email || 'hrant@hakobian.am',
         contact_tel: generalSettings?.contact_tel || '+374 00 000000',
         contact_address_hy: generalSettings?.contact_address_hy || 'Երևան, Հայաստան',
-        contact_address_en: generalSettings?.contact_address_en || 'Yerevan, Armenia'
+        contact_address_en: generalSettings?.contact_address_en || 'Yerevan, Armenia',
+        site_font_url: generalSettings?.site_font_url || 'https://api.hakobian.am/libs/v1/fonts/hdesign.ttf',
+        site_font_name: generalSettings?.site_font_name || 'HDesign',
+        site_font_weights: generalSettings?.site_font_weights || {},
+        design_system_video_hy: generalSettings?.design_system_video_hy || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        design_system_video_en: generalSettings?.design_system_video_en || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        design_system_poster_hy: generalSettings?.design_system_poster_hy || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
+        design_system_poster_en: generalSettings?.design_system_poster_en || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80'
       },
       {
         headers: {
@@ -131,6 +138,27 @@ export async function POST(request: Request) {
     if (body.contact_address_en !== undefined) {
       updatedSettings.contact_address_en = body.contact_address_en;
     }
+    if (body.site_font_url !== undefined) {
+      updatedSettings.site_font_url = body.site_font_url;
+    }
+    if (body.site_font_name !== undefined) {
+      updatedSettings.site_font_name = body.site_font_name;
+    }
+    if (body.site_font_weights !== undefined) {
+      updatedSettings.site_font_weights = body.site_font_weights;
+    }
+    if (body.design_system_video_hy !== undefined) {
+      updatedSettings.design_system_video_hy = body.design_system_video_hy;
+    }
+    if (body.design_system_video_en !== undefined) {
+      updatedSettings.design_system_video_en = body.design_system_video_en;
+    }
+    if (body.design_system_poster_hy !== undefined) {
+      updatedSettings.design_system_poster_hy = body.design_system_poster_hy;
+    }
+    if (body.design_system_poster_en !== undefined) {
+      updatedSettings.design_system_poster_en = body.design_system_poster_en;
+    }
 
     // 4. Save to database/fallback
     const result = await saveSiteSetting('general_settings', updatedSettings);
@@ -155,6 +183,12 @@ export async function POST(request: Request) {
       contact_tel: updatedSettings.contact_tel,
       contact_address_hy: updatedSettings.contact_address_hy,
       contact_address_en: updatedSettings.contact_address_en,
+      site_font_url: updatedSettings.site_font_url,
+      site_font_name: updatedSettings.site_font_name,
+      design_system_video_hy: updatedSettings.design_system_video_hy,
+      design_system_video_en: updatedSettings.design_system_video_en,
+      design_system_poster_hy: updatedSettings.design_system_poster_hy,
+      design_system_poster_en: updatedSettings.design_system_poster_en,
       newToken: passcodeChanged ? updatedSettings.admin_passcode : undefined
     });
   } catch (error: any) {

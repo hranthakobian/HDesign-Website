@@ -6,66 +6,7 @@ import { useI18n } from "@/lib/i18n";
 import { useEffect, useState } from "react";
 import { saveSettingsToSupabase } from "@/lib/settingsSync";
 
-function hexToRgb(hex: string) {
-  const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-  const fullHex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
-  return result ? {
-    r: parseInt(result[1], 16),
-    g: parseInt(result[2], 16),
-    b: parseInt(result[3], 16)
-  } : null;
-}
 
-function applyCustomThemeColor(hexColor: string) {
-  if (typeof window === 'undefined') return;
-  const rgb = hexToRgb(hexColor);
-  if (!rgb) return;
-  const { r, g, b } = rgb;
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  const isLight = luminance > 0.5;
-
-  const root = document.documentElement;
-  root.style.setProperty('--custom-bg', hexColor);
-  
-  if (isLight) {
-    root.style.setProperty('--custom-text', '#083f39');
-    root.style.setProperty('--custom-muted', 'rgba(8, 63, 57, 0.6)');
-    root.style.setProperty('--custom-panel', 'rgba(255, 255, 255, 0.7)');
-    root.style.setProperty('--custom-panel-border', 'rgba(8, 63, 57, 0.08)');
-    root.style.setProperty('--custom-primary', '#083f39');
-    root.style.setProperty('--custom-btn-bg', 'rgba(8, 63, 57, 0.04)');
-    root.style.setProperty('--custom-btn-hover-bg', 'rgba(8, 63, 57, 0.08)');
-    root.style.setProperty('--custom-input-bg', 'rgba(8, 63, 57, 0.03)');
-    root.style.setProperty('--custom-input-border', 'rgba(8, 63, 57, 0.12)');
-    root.style.setProperty('--custom-switcher-bg', 'rgba(8, 63, 57, 0.06)');
-    root.style.setProperty('--custom-switcher-border', 'rgba(8, 63, 57, 0.15)');
-    root.style.setProperty('--custom-switcher-capsule-bg', '#083f39');
-    root.style.setProperty('--custom-switcher-text-active', '#ffffff');
-    root.style.setProperty('--custom-switcher-text-inactive', 'rgba(8, 63, 57, 0.8)');
-    root.style.setProperty('--custom-lang-active', '#ffffff');
-    root.style.setProperty('--custom-lang-inactive', 'rgba(8, 63, 57, 0.75)');
-    root.style.setProperty('--custom-nav-bg', 'rgba(255, 255, 255, 0.85)');
-  } else {
-    root.style.setProperty('--custom-text', '#ffffff');
-    root.style.setProperty('--custom-muted', 'rgba(255, 255, 255, 0.45)');
-    root.style.setProperty('--custom-panel', 'rgba(255, 255, 255, 0.05)');
-    root.style.setProperty('--custom-panel-border', 'rgba(255, 255, 255, 0.05)');
-    root.style.setProperty('--custom-primary', '#ffffff');
-    root.style.setProperty('--custom-btn-bg', 'rgba(255, 255, 255, 0.05)');
-    root.style.setProperty('--custom-btn-hover-bg', 'rgba(255, 255, 255, 0.1)');
-    root.style.setProperty('--custom-input-bg', 'rgba(255, 255, 255, 0.04)');
-    root.style.setProperty('--custom-input-border', 'rgba(255, 255, 255, 0.08)');
-    root.style.setProperty('--custom-switcher-bg', 'rgba(0, 0, 0, 0.25)');
-    root.style.setProperty('--custom-switcher-border', 'rgba(255, 255, 255, 0.08)');
-    root.style.setProperty('--custom-switcher-capsule-bg', 'rgba(255, 255, 255, 0.15)');
-    root.style.setProperty('--custom-switcher-text-active', '#ffffff');
-    root.style.setProperty('--custom-switcher-text-inactive', 'rgba(255, 255, 255, 0.5)');
-    root.style.setProperty('--custom-lang-active', '#0f172a');
-    root.style.setProperty('--custom-lang-inactive', 'rgba(255, 255, 255, 0.55)');
-    root.style.setProperty('--custom-nav-bg', 'rgba(255, 255, 255, 0.1)');
-  }
-}
 
 const LogoLegacy = () => (
   <img 
@@ -78,8 +19,7 @@ const LogoLegacy = () => (
 export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: string } }) {
   const { locale, setLocale, t } = useI18n();
   const pathname = usePathname();
-  const [theme, setTheme] = useState<'light' | 'dark' | 'green' | 'custom'>('light');
-  const [customColor, setCustomColor] = useState<string>('#7c3aed');
+  const [theme, setTheme] = useState<'light' | 'dark' | 'green'>('light');
 
   // Portfolio Page Header States
   const [isScrolled, setIsScrolled] = useState(false);
@@ -106,38 +46,31 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
 
   // Track theme changes
   useEffect(() => {
-    const savedTheme = localStorage.getItem('hdesign-theme') as 'light' | 'dark' | 'green' | 'custom';
-    const savedCustomColor = localStorage.getItem('hdesign-custom-color') || '#7c3aed';
-    setCustomColor(savedCustomColor);
+    const savedTheme = localStorage.getItem('hdesign-theme') as 'light' | 'dark' | 'green';
 
-    if (savedTheme) {
+    if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'green')) {
       setTheme(savedTheme);
       document.documentElement.setAttribute('data-theme', savedTheme);
-      if (savedTheme === 'custom') {
-        applyCustomThemeColor(savedCustomColor);
-      } else {
-        document.documentElement.setAttribute('data-color', savedTheme === 'light' ? '#083f39' : '#ffffff');
-        document.documentElement.classList.remove('light', 'dark', 'green', 'custom');
-        document.documentElement.classList.add(savedTheme);
-      }
+      document.documentElement.setAttribute('data-color', savedTheme === 'light' ? '#083f39' : '#ffffff');
+      document.documentElement.classList.remove('light', 'dark', 'green', 'custom');
+      document.documentElement.classList.add(savedTheme);
     } else {
       setTheme('light');
       document.documentElement.setAttribute('data-theme', 'light');
       document.documentElement.setAttribute('data-color', '#083f39');
       document.documentElement.classList.remove('light', 'dark', 'green', 'custom');
       document.documentElement.classList.add('light');
+      if (savedTheme === 'custom') {
+        localStorage.setItem('hdesign-theme', 'light');
+      }
     }
 
     const handleThemeChange = () => {
-      const currentTheme = localStorage.getItem('hdesign-theme') as 'light' | 'dark' | 'green' | 'custom';
-      if (currentTheme) {
+      const currentTheme = localStorage.getItem('hdesign-theme') as 'light' | 'dark' | 'green';
+      if (currentTheme && (currentTheme === 'light' || currentTheme === 'dark' || currentTheme === 'green')) {
         setTheme(currentTheme);
         document.documentElement.classList.remove('light', 'dark', 'green', 'custom');
         document.documentElement.classList.add(currentTheme);
-        if (currentTheme === 'custom') {
-          const col = localStorage.getItem('hdesign-custom-color') || '#7c3aed';
-          applyCustomThemeColor(col);
-        }
       }
     };
 
@@ -161,49 +94,18 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
     return () => window.removeEventListener("scroll", handleScroll);
   }, [pathname]);
 
-  const changeTheme = (newTheme: 'light' | 'dark' | 'green' | 'custom') => {
+  const changeTheme = (newTheme: 'light' | 'dark' | 'green') => {
     setTheme(newTheme);
     localStorage.setItem('hdesign-theme', newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
     
-    if (newTheme === 'custom') {
-      applyCustomThemeColor(customColor);
-    } else {
-      document.documentElement.setAttribute('data-color', newTheme === 'light' ? '#083f39' : '#ffffff');
-      document.documentElement.classList.remove('light', 'dark', 'green', 'custom');
-      document.documentElement.classList.add(newTheme);
-      // clean style attributes for custom color
-      document.documentElement.style.removeProperty('--custom-bg');
-      document.documentElement.style.removeProperty('--custom-text');
-      document.documentElement.style.removeProperty('--custom-muted');
-      document.documentElement.style.removeProperty('--custom-panel');
-      document.documentElement.style.removeProperty('--custom-panel-border');
-      document.documentElement.style.removeProperty('--custom-primary');
-      document.documentElement.style.removeProperty('--custom-btn-bg');
-      document.documentElement.style.removeProperty('--custom-btn-hover-bg');
-      document.documentElement.style.removeProperty('--custom-input-bg');
-      document.documentElement.style.removeProperty('--custom-input-border');
-      document.documentElement.style.removeProperty('--custom-switcher-bg');
-      document.documentElement.style.removeProperty('--custom-switcher-border');
-      document.documentElement.style.removeProperty('--custom-switcher-capsule-bg');
-      document.documentElement.style.removeProperty('--custom-switcher-text-active');
-      document.documentElement.style.removeProperty('--custom-switcher-text-inactive');
-      document.documentElement.style.removeProperty('--custom-lang-active');
-      document.documentElement.style.removeProperty('--custom-lang-inactive');
-      document.documentElement.style.removeProperty('--custom-nav-bg');
-    }
+    document.documentElement.setAttribute('data-color', newTheme === 'light' ? '#083f39' : '#ffffff');
+    document.documentElement.classList.remove('light', 'dark', 'green', 'custom');
+    document.documentElement.classList.add(newTheme);
 
     // Save settings to Supabase
     const currentLang = localStorage.getItem('hdesign_locale') || 'hy';
     saveSettingsToSupabase(newTheme, currentLang);
-  };
-
-  const handleCustomColorChange = (newColor: string) => {
-    setCustomColor(newColor);
-    localStorage.setItem('hdesign-custom-color', newColor);
-    if (theme === 'custom') {
-      applyCustomThemeColor(newColor);
-    }
   };
 
 
@@ -294,7 +196,7 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
                    {renderNavLinkText("works-branding", t('nav', 'works_branding', 'Բրենդինգներ'))}
                  </Link>
                  <Link href="/works?category=design" className={`header-dropdown-item ${pathname === "/works" && currentCategory === "design" ? "active" : ""}`}>
-                   {renderNavLinkText("works-design", t('nav', 'works_design', 'Դիզայն'))}
+                   {renderNavLinkText("works-design", t('nav', 'works_design', 'Պատկերասրահ'))}
                  </Link>
                </div>
              </div>
@@ -403,19 +305,7 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
               <span value="light" {...(theme === 'light' ? { selected: true } : {})}>{t('nav', 'theme_light', 'Բաց')}</span>
               <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>{t('nav', 'theme_dark', 'Մութ')}</span>
               <span value="green" {...(theme === 'green' ? { selected: true } : {})}>{t('nav', 'theme_green', 'Կանաչ')}</span>
-              <span value="custom" {...(theme === 'custom' ? { selected: true } : {})}>{t('nav', 'theme_custom', 'Գույն')}</span>
             </hd-select>
-            
-            {theme === 'custom' && (
-              <div className="custom-color-picker-wrapper">
-                <hd-color-picker
-                  data-color={customColor}
-                  onChange={(e: any) => handleCustomColorChange(e.target.value)}
-                  data-width="34px"
-                  data-height="34px"
-                />
-              </div>
-            )}
           </div>
         </div>
 
@@ -492,17 +382,7 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
                       <span value="light" {...(theme === 'light' ? { selected: true } : {})}>{t('nav', 'theme_light', 'Բաց')}</span>
                       <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>{t('nav', 'theme_dark', 'Մութ')}</span>
                       <span value="green" {...(theme === 'green' ? { selected: true } : {})}>{t('nav', 'theme_green', 'Կանաչ')}</span>
-                      <span value="custom" {...(theme === 'custom' ? { selected: true } : {})}>{t('nav', 'theme_custom', 'Գույն')}</span>
                     </hd-select>
-                    
-                    {theme === 'custom' && (
-                      <hd-color-picker
-                        data-color={customColor}
-                        onChange={(e: any) => handleCustomColorChange(e.target.value)}
-                        data-width="36px"
-                        data-height="36px"
-                      />
-                    )}
                   </div>
                 </div>
               </div>
@@ -571,17 +451,7 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
             <span value="light" {...(theme === 'light' ? { selected: true } : {})}>{t('nav', 'theme_light', 'Բաց')}</span>
             <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>{t('nav', 'theme_dark', 'Մութ')}</span>
             <span value="green" {...(theme === 'green' ? { selected: true } : {})}>{t('nav', 'theme_green', 'Կանաչ')}</span>
-            <span value="custom" {...(theme === 'custom' ? { selected: true } : {})}>{t('nav', 'theme_custom', 'Գույն')}</span>
           </hd-select>
-          
-          {theme === 'custom' && (
-            <hd-color-picker
-              data-color={customColor}
-              onChange={(e: any) => handleCustomColorChange(e.target.value)}
-              data-width="36px"
-              data-height="36px"
-            />
-          )}
         </div>
       </div>
 

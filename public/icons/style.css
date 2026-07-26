@@ -525,3 +525,49 @@
 .hd-icon-earth:before {
   content: "\e042";
 }
+.icon-Volume-Mute:before,
+.hd-icon-Volume-Mute:before,
+.icon-volume-mute:before,
+.hd-icon-volume-mute:before {
+  content: "\e043";
+}
+.icon-Low-Volume:before,
+.hd-icon-Low-Volume:before,
+.icon-low-volume:before,
+.hd-icon-low-volume:before {
+  content: "\e044";
+}
+.icon-Medium-Volume:before,
+.hd-icon-Medium-Volume:before,
+.icon-medium-volume:before,
+.hd-icon-medium-volume:before {
+  content: "\e045";
+}
+.icon-High-Volume:before,
+.hd-icon-High-Volume:before,
+.icon-high-Volume:before,
+.hd-icon-high-Volume:before,
+.icon-high-volume:before,
+.hd-icon-high-volume:before,
+.icon-Volume:before,
+.hd-icon-Volume:before,
+.icon-volume:before,
+.hd-icon-volume:before {
+  content: "\e046";
+}
+.icon-Full-Screen:before,
+.hd-icon-Full-Screen:before,
+.icon-full-screen:before,
+.hd-icon-full-screen:before,
+.icon-Fullscreen:before,
+.hd-icon-Fullscreen:before,
+.icon-fullscreen:before,
+.hd-icon-fullscreen:before {
+  content: "\e047";
+}
+.icon-Expand:before,
+.hd-icon-Expand:before,
+.icon-expand:before,
+.hd-icon-expand:before {
+  content: "\e048";
+}

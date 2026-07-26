@@ -14,6 +14,8 @@ import { getSiteSetting } from "@/lib/db";
 import SmoothScroll from "@/components/SmoothScroll";
 import Preloader from "@/components/Preloader";
 import HDesignRevealInit from "@/components/HDesignRevealInit";
+import HdVideoInit from "@/components/HdVideoInit";
+import GlobalFontInjector from "@/components/GlobalFontInjector";
 
 
 export const revalidate = 0;
@@ -82,8 +84,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       "--lightness": themeLightness + "%"
     } as any}>
       <head>
+        <GlobalFontInjector 
+          initialFontUrl={generalSettings?.site_font_url} 
+          initialFontName={generalSettings?.site_font_name} 
+        />
         <link rel="stylesheet" href="https://api.hakobian.am/libs/v1/style.css" />
-        <link rel="stylesheet" href="/icons/style.css" />
 
         {/* Google Analytics Script */}
         {apiSettings.google_analytics_enabled && apiSettings.google_analytics_id && (
@@ -112,6 +117,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <Preloader />
         <SmoothScroll />
         <HDesignRevealInit />
+        <HdVideoInit />
         <CustomCursor />
         <AnalyticsTracker />
         <I18nProvider>

@@ -238,16 +238,16 @@ function WorksContent() {
         const actCat = activeCategory.toLowerCase();
         
         if (actCat === 'branding') {
-          return !c.id.startsWith('port-') && !c.id.startsWith('local-g-');
+          return !c.id.startsWith('port-') && !c.id.startsWith('local-g-') && cat !== 'design';
         }
         
-        if (actCat === 'design') {
-          return c.id.startsWith('port-') || c.id.startsWith('local-g-');
+        if (actCat === 'design' || actCat === 'gallery') {
+          return c.id.startsWith('port-') || c.id.startsWith('local-g-') || cat === 'design';
         }
         
         return cat === actCat;
       })
-    : cases;
+    : cases.filter(c => !c.id.startsWith('port-') && !c.id.startsWith('local-g-') && c.category?.toLowerCase() !== 'design');
 
   // Keyboard navigation & Slideshow for Gallery Lightbox
   useEffect(() => {
@@ -363,7 +363,9 @@ function WorksContent() {
     <main className="shell" style={{ marginTop: "140px", minHeight: "80vh" }}>
       <div style={{ textAlign: "center", marginBottom: "48px" }}>
         <h1 style={{ fontSize: "2.8rem", fontWeight: "900", color: "var(--text)", margin: "0 0 12px 0" }}>
-          {t('works_page', 'title', 'Աշխատանքներ')}
+          {activeCategory?.toLowerCase() === 'design' || activeCategory?.toLowerCase() === 'gallery'
+            ? (locale === 'en' ? 'Gallery' : 'Պատկերասրահ')
+            : t('works_page', 'title', 'Աշխատանքներ')}
         </h1>
         <p style={{ color: "var(--text)", opacity: 0.8, fontSize: "1.1rem", maxWidth: "600px", margin: "0 auto" }}>
           {t('works_page', 'subtitle', 'Յուրաքանչյուր նախագիծ յուրահատուկ պատմություն է՝ ստեղծված մաթեմատիկական ճշգրտությամբ և գեղարվեստական կրքով։')}
@@ -376,9 +378,9 @@ function WorksContent() {
         </div>
       )}
 
-      {/* Two-Column Grid for Branding Cases */}
+      {/* Two-Column Grid for Branding Cases vs Gallery Grid */}
       {!loading && (
-        activeCategory?.toLowerCase() === 'design' ? (
+        (activeCategory?.toLowerCase() === 'design' || activeCategory?.toLowerCase() === 'gallery') ? (
           <div className="gallery-grid" style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "24px", paddingBottom: "60px" }}>
             {filteredCases.map((work, index) => {
               const aspectRatio = aspectRatios[work.id] || (work.image_url ? 1.5 : 4/3);
@@ -500,26 +502,6 @@ function WorksContent() {
                     border: "1px solid var(--panel-border)"
                   }}
                 >
-                  {/* Branding Image */}
-                  {work.image_url ? (
-                    <img 
-                      src={work.image_url} 
-                      alt={work.title} 
-                      className="branding-card-img"
-                      style={{ 
-                        width: "100%", 
-                        height: "100%", 
-                        objectFit: "cover", 
-                        opacity: 0.9,
-                        transition: "transform 0.5s ease, opacity 0.5s ease"
-                      }} 
-                    />
-                  ) : (
-                    <div className="branding-card-img" style={{ width: "100%", height: "100%", overflow: "hidden", position: "absolute", inset: 0, borderRadius: "24px" }}>
-                      {getSvgForCase(work.id)}
-                    </div>
-                  )}
-                  
                   {/* Decorative Hover SVGs */}
                   <div className="card-hover-decor top-left">
                     <svg width="64" height="260" viewBox="0 0 64 260" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -534,58 +516,79 @@ function WorksContent() {
                     </svg>
                   </div>
 
-                  {/* Hover overlay with detail */}
-                  <div 
-                    className="branding-card-overlay"
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0) 100%)",
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "flex-end",
-                      padding: "40px",
-                      boxSizing: "border-box"
-                    }}
-                  >
-                    <span 
-                      className="icon-Chevrolt-Arrow-Right" 
-                      style={{ 
-                        position: "absolute",
-                        top: "40px",
-                        right: "40px",
-                        color: "#ffffff", 
-                        fontSize: "1.2rem", 
-                        background: "rgba(255,255,255,0.15)",
-                        padding: "10px",
-                        borderRadius: "50%",
-                        transition: "all 0.3s"
-                      }} 
-                    />
+                  {/* Unified Media Wrapper */}
+                  <div className="card-media-wrapper">
+                    {work.image_url ? (
+                      <img 
+                        src={work.image_url} 
+                        alt={work.title} 
+                        className="branding-card-img"
+                        style={{ 
+                          width: "100%", 
+                          height: "100%", 
+                          objectFit: "cover", 
+                          opacity: 1
+                        }} 
+                      />
+                    ) : (
+                      <div className="branding-card-img" style={{ width: "100%", height: "100%", overflow: "hidden", position: "absolute", inset: 0, borderRadius: "24px" }}>
+                        {getSvgForCase(work.id)}
+                      </div>
+                    )}
 
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", width: "100%" }}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <span style={{ 
-                            fontSize: "0.85rem", 
-                            fontWeight: 700, 
-                            textTransform: "uppercase", 
-                            letterSpacing: "2px", 
-                            color: "#ffffff", 
-                            opacity: 0.7 
-                          }}>
-                            {parseLangText(work.category || "", locale === 'en' ? 'en' : 'hy') || t('works_page', 'cat_branding', 'Բրենդավորում')}
-                          </span>
-                          {renderCardRating(work.id)}
-                        </div>
-                        <h2 style={{ 
-                          fontSize: "1.6rem", 
-                          fontWeight: "900", 
+                    {/* Hover overlay with detail */}
+                    <div 
+                      className="branding-card-overlay"
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0) 100%)",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "flex-end",
+                        padding: "40px",
+                        boxSizing: "border-box"
+                      }}
+                    >
+                      <span 
+                        className="icon-Chevrolt-Arrow-Right" 
+                        style={{ 
+                          position: "absolute",
+                          top: "40px",
+                          right: "40px",
                           color: "#ffffff", 
-                          margin: 0 
-                        }}>
-                          {parseLangText(work.title, locale === 'en' ? 'en' : 'hy')}
-                        </h2>
+                          fontSize: "1.2rem", 
+                          background: "rgba(255,255,255,0.15)",
+                          padding: "10px",
+                          borderRadius: "50%",
+                          transition: "all 0.3s"
+                        }} 
+                      />
+
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", width: "100%" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <span style={{ 
+                              fontSize: "0.85rem", 
+                              fontWeight: 700, 
+                              textTransform: "uppercase", 
+                              letterSpacing: "2px", 
+                              color: "#ffffff", 
+                              opacity: 0.7 
+                            }}>
+                              {parseLangText(work.category || "", locale === 'en' ? 'en' : 'hy') || t('works_page', 'cat_branding', 'Բրենդավորում')}
+                            </span>
+                            {renderCardRating(work.id)}
+                          </div>
+                          <h2 style={{ 
+                            fontSize: "1.6rem", 
+                            fontWeight: "900", 
+                            color: "#ffffff", 
+                            margin: 0 
+                          }}>
+                            {parseLangText(work.title, locale === 'en' ? 'en' : 'hy')}
+                          </h2>
+                        </div>
                       </div>
                     </div>
                   </div>

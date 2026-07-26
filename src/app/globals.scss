@@ -1450,15 +1450,29 @@ html[data-theme="custom"] .portfolio-header-wrapper.scrolled .portfolio-header-c
   flex-shrink: 0;
   margin-right: 24px;
 
-  &:hover {
-    transform: scale(1.02);
-  }
-
-  .card-bg-design {
+  .card-media-wrapper {
     position: absolute;
     inset: 0;
     z-index: 1;
     border-radius: 16px;
+    overflow: hidden;
+    will-change: transform;
+    transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+
+  .card-bg-design, .card-gradient-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  &:hover {
+    transform: scale(1.02);
+
+    .card-media-wrapper {
+      transform: scale(1.06);
+    }
   }
 
   .card-content {
@@ -1686,6 +1700,17 @@ html[data-theme="dark"] .gallery-card .gallery-overlay {
   min-height: 320px;
 }
 
+/* Icon Thickness Utilities */
+.icon-thin, .hd-icon-thin             { font-weight: 100; font-variation-settings: 'wght' 100; }
+.icon-extralight, .hd-icon-extralight { font-weight: 200; font-variation-settings: 'wght' 200; }
+.icon-light, .hd-icon-light           { font-weight: 300; font-variation-settings: 'wght' 300; }
+.icon-regular, .hd-icon-regular       { font-weight: 400; font-variation-settings: 'wght' 400; }
+.icon-medium, .hd-icon-medium         { font-weight: 500; font-variation-settings: 'wght' 500; }
+.icon-semibold, .hd-icon-semibold     { font-weight: 600; font-variation-settings: 'wght' 600; }
+.icon-bold, .hd-icon-bold             { font-weight: 700; font-variation-settings: 'wght' 700; }
+.icon-extrabold, .hd-icon-extrabold   { font-weight: 800; font-variation-settings: 'wght' 800; }
+.icon-black, .hd-icon-black           { font-weight: 900; font-variation-settings: 'wght' 900; }
+
 /* Icon Explorer Grid */
 .icon-explorer-grid {
   display: grid;
@@ -1902,12 +1927,29 @@ body {
 }
 
 .branding-case-card {
+  .card-media-wrapper {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: 24px;
+    overflow: hidden;
+    will-change: transform;
+    transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
   .branding-card-img, .branding-card-overlay {
     border-radius: 24px;
+    width: 100%;
+    height: 100%;
+  }
+  .branding-card-img {
+    opacity: 1 !important;
   }
 }
 
 .branding-case-card:hover {
+  .card-media-wrapper {
+    transform: scale(1.06);
+  }
   .branding-card-img {
     opacity: 1 !important;
   }

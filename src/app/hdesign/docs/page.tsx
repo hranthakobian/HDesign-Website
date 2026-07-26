@@ -79,6 +79,23 @@ export default function HDesignDocsPage() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: "40px", marginBottom: "80px" }}>
         
+        {/* Video Player example */}
+        <CodeExample 
+          title="Տեսանյութի նվագարկիչ (<hd-video>)"
+          description="Անհատականացված տեսանյութի նվագարկիչ HDesign դիզայնի համակարգի ոճավորմամբ, ղեկավարման վահանակով, անիմացիաներով և HD բեջով:"
+          code={`<hd-video 
+  src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" 
+  poster="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80" 
+  data-width="100%" 
+  data-height="320px" 
+  data-thickness="3px" 
+  data-color="#083f39" 
+  data-radius="16px" 
+  controls 
+  loop 
+></hd-video>`}
+        />
+
         {/* Button example */}
         <CodeExample 
           title="Կոճակ (<hd-button>)"

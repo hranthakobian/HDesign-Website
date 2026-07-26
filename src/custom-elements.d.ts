@@ -98,6 +98,34 @@ declare module 'react' {
         name?: string;
         onChange?: (event: any) => void;
       };
+      'hd-video': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        src?: string;
+        poster?: string;
+        controls?: boolean;
+        autoplay?: boolean;
+        loop?: boolean;
+        muted?: boolean;
+        'data-thickness'?: string;
+        'data-color'?: string;
+        'data-text-color'?: string;
+        'data-radius'?: string;
+        'data-width'?: string;
+        'data-height'?: string;
+      };
+      'hd-video-player': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+        src?: string;
+        poster?: string;
+        controls?: boolean;
+        autoplay?: boolean;
+        loop?: boolean;
+        muted?: boolean;
+        'data-thickness'?: string;
+        'data-color'?: string;
+        'data-text-color'?: string;
+        'data-radius'?: string;
+        'data-width'?: string;
+        'data-height'?: string;
+      };
     }
   }
 }

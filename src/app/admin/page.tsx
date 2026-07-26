@@ -255,7 +255,7 @@ export default function AdminDashboard() {
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   // Dashboard state
-  const [activeTab, setActiveTab] = useState<'analytics' | 'cases' | 'fonts' | 'messages' | 'translations' | 'about' | 'apis' | 'personalization' | 'settings' | 'subscribers'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'cases' | 'fonts' | 'icons' | 'messages' | 'translations' | 'about' | 'apis' | 'personalization' | 'settings' | 'subscribers'>('analytics');
   const [isSavingAbout, setIsSavingAbout] = useState(false);
   const [aboutTranslations, setAboutTranslations] = useState<AboutTranslations>({
     title_hy: '',
@@ -919,6 +919,48 @@ export default function AdminDashboard() {
   const [contactTel, setContactTel] = useState('+374 00 000000');
   const [contactAddressHy, setContactAddressHy] = useState('Երևան, Հայաստան');
   const [contactAddressEn, setContactAddressEn] = useState('Yerevan, Armenia');
+  
+  // Custom Site Font & Design System Videos State
+  const [siteFontUrl, setSiteFontUrl] = useState('https://api.hakobian.am/libs/v1/fonts/hdesign.ttf');
+  const [siteFontName, setSiteFontName] = useState('HDesign');
+  const [siteFontWeights, setSiteFontWeights] = useState<Record<number, string>>({});
+  const [isUploadingFont, setIsUploadingFont] = useState(false);
+
+  const [designSystemVideoHy, setDesignSystemVideoHy] = useState('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4');
+  const [designSystemVideoEn, setDesignSystemVideoEn] = useState('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4');
+  const [designSystemPosterHy, setDesignSystemPosterHy] = useState('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80');
+  const [designSystemPosterEn, setDesignSystemPosterEn] = useState('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80');
+  
+  const [isUploadingDsVideoHy, setIsUploadingDsVideoHy] = useState(false);
+  const [isUploadingDsVideoEn, setIsUploadingDsVideoEn] = useState(false);
+  const [isUploadingDsPosterHy, setIsUploadingDsPosterHy] = useState(false);
+  const [isUploadingDsPosterEn, setIsUploadingDsPosterEn] = useState(false);
+
+  // Custom Icons & Package State
+  const [customIconsList, setCustomIconsList] = useState<any[]>([]);
+  const [iconFontCssUrl, setIconFontCssUrl] = useState('https://api.hakobian.am/libs/v1/icons/style.css');
+  const [iconFontWeights, setIconFontWeights] = useState<Record<number, string>>({});
+  const [selectionJsonData, setSelectionJsonData] = useState<any | null>(null);
+  const [customIconCss, setCustomIconCss] = useState('');
+  const [hdIconRules, setHdIconRules] = useState<Array<{ id: string; content: string; font_family?: string }>>([]);
+  const [newHdIconRule, setNewHdIconRule] = useState({ id: '', content: '\\e900', font_family: 'icomoon' });
+
+  // Single-Row Visual Icon Editor state
+  const [visualIconRows, setVisualIconRows] = useState<Array<{ id: string; category: string; unicode: string }>>([]);
+  const [newVisualIconRow, setNewVisualIconRow] = useState({ id: '', category: 'Հիմնական և Գործիքներ', unicode: '\\e900' });
+
+  const [newIconForm, setNewIconForm] = useState({
+    id: '',
+    name_hy: '',
+    name_en: '',
+    category_hy: 'Հիմնական և Գործիքներ',
+    category_en: 'General & Tools',
+    svg_content: '',
+    image_url: ''
+  });
+  const [isSavingIcons, setIsSavingIcons] = useState(false);
+  const [isUploadingIconSvg, setIsUploadingIconSvg] = useState(false);
+
   const [savingSettings, setSavingSettings] = useState(false);
 
   // Password Change Form State
@@ -930,20 +972,21 @@ export default function AdminDashboard() {
   const [changingPassword, setChangingPassword] = useState(false);
 
   // Transition States
-  const [prevTab, setPrevTab] = useState<'analytics' | 'cases' | 'fonts' | 'messages' | 'translations' | 'about' | 'apis' | 'personalization' | 'settings' | 'subscribers'>('analytics');
+  const [prevTab, setPrevTab] = useState<'analytics' | 'cases' | 'fonts' | 'icons' | 'messages' | 'translations' | 'about' | 'apis' | 'personalization' | 'settings' | 'subscribers'>('analytics');
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
 
   const tabIndices = useMemo(() => ({
     analytics: 0,
     cases: 1,
     fonts: 2,
-    messages: 3,
-    translations: 4,
-    about: 5,
-    apis: 6,
-    personalization: 7,
-    settings: 8,
-    subscribers: 9
+    icons: 3,
+    messages: 4,
+    translations: 5,
+    about: 6,
+    apis: 7,
+    personalization: 8,
+    settings: 9,
+    subscribers: 10
   }), []);
 
   useEffect(() => {
@@ -1227,6 +1270,35 @@ export default function AdminDashboard() {
         setContactTel(generalSettingsData.contact_tel || '+374 00 000000');
         setContactAddressHy(generalSettingsData.contact_address_hy || 'Երևան, Հայաստան');
         setContactAddressEn(generalSettingsData.contact_address_en || 'Yerevan, Armenia');
+
+        if (generalSettingsData.site_font_url) setSiteFontUrl(generalSettingsData.site_font_url);
+        if (generalSettingsData.site_font_name) setSiteFontName(generalSettingsData.site_font_name);
+        if (generalSettingsData.site_font_weights) setSiteFontWeights(generalSettingsData.site_font_weights);
+        if (generalSettingsData.design_system_video_hy) setDesignSystemVideoHy(generalSettingsData.design_system_video_hy);
+        if (generalSettingsData.design_system_video_en) setDesignSystemVideoEn(generalSettingsData.design_system_video_en);
+        if (generalSettingsData.design_system_poster_hy) setDesignSystemPosterHy(generalSettingsData.design_system_poster_hy);
+        if (generalSettingsData.design_system_poster_en) setDesignSystemPosterEn(generalSettingsData.design_system_poster_en);
+
+        try {
+          const iconsRes = await fetch('/api/icons-settings', { headers });
+          if (iconsRes.ok) {
+            const iconsData = await iconsRes.json();
+            setCustomIconsList(iconsData.custom_icons || []);
+            if (iconsData.icon_font_css_url) setIconFontCssUrl(iconsData.icon_font_css_url);
+            if (iconsData.icon_font_weights) setIconFontWeights(iconsData.icon_font_weights);
+            if (iconsData.selection_json) setSelectionJsonData(iconsData.selection_json);
+            if (iconsData.custom_icon_css) {
+              setCustomIconCss(iconsData.custom_icon_css);
+              parseCssRulesIntoHdIconRules(iconsData.custom_icon_css);
+            }
+            if (Array.isArray(iconsData.visual_icon_items) && iconsData.visual_icon_items.length > 0) {
+              setVisualIconRows(iconsData.visual_icon_items);
+            }
+            if (Array.isArray(iconsData.hd_icon_rules)) setHdIconRules(iconsData.hd_icon_rules);
+          }
+        } catch (iconsErr) {
+          console.warn('Failed to fetch dynamic icons:', iconsErr);
+        }
       } catch (err: any) {
         setDataError(err.message || 'Տվյալների բեռնումը ձախողվեց:');
       } finally {
@@ -2644,11 +2716,23 @@ export default function AdminDashboard() {
           contact_email: contactEmail,
           contact_tel: contactTel,
           contact_address_hy: contactAddressHy,
-          contact_address_en: contactAddressEn
+          contact_address_en: contactAddressEn,
+          site_font_url: siteFontUrl,
+          site_font_name: siteFontName,
+          site_font_weights: siteFontWeights,
+          design_system_video_hy: designSystemVideoHy,
+          design_system_video_en: designSystemVideoEn,
+          design_system_poster_hy: designSystemPosterHy,
+          design_system_poster_en: designSystemPosterEn
         })
       });
 
       if (res.ok) {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('site-font-updated', { 
+            detail: { fontUrl: siteFontUrl, fontName: siteFontName, fontWeights: siteFontWeights } 
+          }));
+        }
         alert('Կայքի կարգավորումները հաջողությամբ պահպանվեցին։');
       } else {
         const data = await res.json();
@@ -2717,6 +2801,388 @@ export default function AdminDashboard() {
       setPasswordError('Կապի սխալ։ Չհաջողվեց փոխել գաղտնաբառը։');
     } finally {
       setChangingPassword(false);
+    }
+  };
+
+  // Custom Icon Handlers
+  const handleAddCustomIcon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    if (!newIconForm.id || !newIconForm.name_hy) {
+      alert('Խնդրում ենք լրացնել պատկերակի ID-ն և հայերեն անվանումը։');
+      return;
+    }
+
+    setIsSavingIcons(true);
+    try {
+      const cleanId = newIconForm.id.startsWith('icon-') ? newIconForm.id : `icon-${newIconForm.id}`;
+      const payload = {
+        ...newIconForm,
+        id: cleanId
+      };
+      const res = await fetch('/api/icons-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token
+        },
+        body: JSON.stringify({ action: 'add', icon: payload })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCustomIconsList(data.custom_icons);
+        setNewIconForm({
+          id: '',
+          name_hy: '',
+          name_en: '',
+          category_hy: 'Հիմնական և Գործիքներ',
+          category_en: 'General & Tools',
+          svg_content: '',
+          image_url: ''
+        });
+        alert('Պատկերակը հաջողությամբ ավելացվեց/թարմացվեց։');
+      } else {
+        alert('Սխալ՝ ' + (data.error || 'Չհաջողվեց պահպանել պատկերակը:'));
+      }
+    } catch (err) {
+      alert('Սխալ պատկերակի պահպանման ընթացքում:');
+    } finally {
+      setIsSavingIcons(false);
+    }
+  };
+
+  const handleDeleteCustomIcon = async (id: string) => {
+    if (!token || !confirm('Ուզու՞մ եք ջնջել այս պատկերակը։')) return;
+    try {
+      const res = await fetch('/api/icons-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token
+        },
+        body: JSON.stringify({ action: 'delete', id })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCustomIconsList(data.custom_icons);
+      } else {
+        alert('Սխալ՝ ' + (data.error || 'Չհաջողվեց ջնջել պատկերակը։'));
+      }
+    } catch (err) {
+      alert('Սխալ պատկերակի ջնջման ընթացքում։');
+    }
+  };
+
+  // Upload Handlers
+  const handleUploadSiteFont = async (file: File) => {
+    if (!token || !file) return;
+    setIsUploadingFont(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Authorization': token },
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setSiteFontUrl(data.url);
+        alert('Տառատեսակի ֆայլը հաջողությամբ վերբեռնվեց։ Սեղմեք «Պահպանել» կայքի կարգավորումներում։');
+      } else {
+        alert('Սխալ՝ ' + (data.error || 'Ֆայլի վերբեռնումը ձախողվեց։'));
+      }
+    } catch (err) {
+      alert('Սխալ վերբեռնման ընթացքում։');
+    } finally {
+      setIsUploadingFont(false);
+    }
+  };
+
+  const handleUploadVideo = async (file: File, target: 'video_hy' | 'video_en' | 'poster_hy' | 'poster_en') => {
+    if (!token || !file) return;
+    if (target === 'video_hy') setIsUploadingDsVideoHy(true);
+    if (target === 'video_en') setIsUploadingDsVideoEn(true);
+    if (target === 'poster_hy') setIsUploadingDsPosterHy(true);
+    if (target === 'poster_en') setIsUploadingDsPosterEn(true);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Authorization': token },
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        if (target === 'video_hy') setDesignSystemVideoHy(data.url);
+        if (target === 'video_en') setDesignSystemVideoEn(data.url);
+        if (target === 'poster_hy') setDesignSystemPosterHy(data.url);
+        if (target === 'poster_en') setDesignSystemPosterEn(data.url);
+        alert('Ֆայլը հաջողությամբ վերբեռնվեց։');
+      } else {
+        alert('Սխալ՝ ' + (data.error || 'Ֆայլի վերբեռնումը ձախողվեց։'));
+      }
+    } catch (err) {
+      alert('Սխալ վերբեռնման ընթացքում։');
+    } finally {
+      if (target === 'video_hy') setIsUploadingDsVideoHy(false);
+      if (target === 'video_en') setIsUploadingDsVideoEn(false);
+      if (target === 'poster_hy') setIsUploadingDsPosterHy(false);
+      if (target === 'poster_en') setIsUploadingDsPosterEn(false);
+    }
+  };
+
+  const handleUploadWeightFont = async (file: File, weight: number, isIconFont: boolean = false) => {
+    if (!token || !file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Authorization': token },
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        if (isIconFont) {
+          setIconFontWeights(prev => ({ ...prev, [weight]: data.url }));
+        } else {
+          setSiteFontWeights(prev => ({ ...prev, [weight]: data.url }));
+        }
+        alert(`${weight} հաստության ֆայլը հաջողությամբ վերբեռնվեց։`);
+      } else {
+        alert('Սխալ՝ ' + (data.error || 'Վերբեռնումը ձախողվեց։'));
+      }
+    } catch (err) {
+      alert('Սխալ վերբեռնման ընթացքում։');
+    }
+  };
+
+  const handleAddHdIconRule = () => {
+    if (!newHdIconRule.id.trim()) {
+      alert('Խնդրում ենք մուտքագրել պատկերակի ID/Class-ը (օր. hd-icon-star):');
+      return;
+    }
+    const cleanId = newHdIconRule.id.trim().replace(/^\./, '');
+    const newRule = {
+      id: cleanId,
+      content: newHdIconRule.content.trim() || '\\e900',
+      font_family: newHdIconRule.font_family || 'icomoon'
+    };
+    setHdIconRules(prev => {
+      const existing = prev.filter(r => r.id !== cleanId);
+      return [...existing, newRule];
+    });
+    setNewHdIconRule({ id: '', content: '\\e900', font_family: 'icomoon' });
+  };
+
+  const handleDeleteHdIconRule = (idToDelete: string) => {
+    setHdIconRules(prev => prev.filter(r => r.id !== idToDelete));
+  };
+
+  const parseCssRulesIntoHdIconRules = (cssText: string) => {
+    if (!cssText) return;
+    const regex = /\.([a-zA-Z0-9_-]+):before\s*\{\s*content:\s*["']([^"']+)["']/g;
+    let match;
+    const parsedRules: Array<{ id: string; content: string; font_family?: string }> = [];
+    const parsedVisualRows: Array<{ id: string; category: string; unicode: string }> = [];
+    while ((match = regex.exec(cssText)) !== null) {
+      const className = match[1];
+      const content = match[2];
+      if (!parsedRules.some(r => r.id === className)) {
+        parsedRules.push({ id: className, content, font_family: 'icomoon' });
+        parsedVisualRows.push({ id: className, category: 'Հիմնական և Գործիքներ', unicode: content });
+      }
+    }
+    if (parsedRules.length > 0) {
+      setHdIconRules(prev => {
+        const merged = [...prev];
+        parsedRules.forEach(r => {
+          if (!merged.some(m => m.id === r.id)) merged.push(r);
+        });
+        return merged;
+      });
+      setVisualIconRows(prev => {
+        const merged = [...prev];
+        parsedVisualRows.forEach(v => {
+          if (!merged.some(m => m.id === v.id)) merged.push(v);
+        });
+        return merged;
+      });
+    }
+  };
+
+  const saveCustomCssToApi = async (cssToSave: string, updatedRows: Array<{ id: string; category: string; unicode: string }>) => {
+    if (!token) return;
+    setIsSavingIcons(true);
+    try {
+      const hdRules = updatedRows.map(r => ({ id: r.id, content: r.unicode }));
+      const res = await fetch('/api/icons-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token
+        },
+        body: JSON.stringify({
+          icon_font_css_url: iconFontCssUrl,
+          custom_icon_css: cssToSave,
+          hd_icon_rules: hdRules,
+          visual_icon_items: updatedRows
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCustomIconCss(cssToSave);
+        setHdIconRules(hdRules);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('site-font-updated', {
+            detail: { iconFontCssUrl, customIconCss: cssToSave, hdIconRules: hdRules }
+          }));
+        }
+      }
+    } catch (err) {
+      console.error('Auto-save visual rows failed:', err);
+    } finally {
+      setIsSavingIcons(false);
+    }
+  };
+
+  const handleAddVisualIconRow = async () => {
+    const rawInput = newVisualIconRow.id.trim();
+    if (!rawInput) {
+      alert('Խնդրում ենք մուտքագրել պատկերակի անունը (օր. Earth կամ Star):');
+      return;
+    }
+    
+    // Extract base name without any leading icon-, hd-icon-, or dots
+    const baseName = rawInput.replace(/^(\.|\/|hd-icon-|icon-)/i, '');
+    const capName = baseName.charAt(0).toUpperCase() + baseName.slice(1);
+    const lowerName = baseName.toLowerCase();
+    const content = newVisualIconRow.unicode.trim();
+    const formattedContent = content.startsWith('\\') ? content : `\\${content}`;
+
+    // Construct 4-selector block
+    const selector1 = `.icon-${capName}:before`;
+    const selector2 = `.hd-icon-${capName}:before`;
+    const selector3 = `.icon-${lowerName}:before`;
+    const selector4 = `.hd-icon-${lowerName}:before`;
+    const selectors = Array.from(new Set([selector1, selector2, selector3, selector4]));
+    const newCssBlock = `${selectors.join(',\n')} {\n  content: "${formattedContent}";\n}`;
+
+    // Append block to existing customIconCss!
+    const updatedCss = customIconCss && customIconCss.trim() ? `${customIconCss.trim()}\n\n${newCssBlock}` : newCssBlock;
+
+    const displayId = `icon-${capName}`;
+    const newRow = {
+      id: displayId,
+      category: newVisualIconRow.category,
+      unicode: formattedContent
+    };
+    const updatedRows = [...visualIconRows.filter(r => r.id !== displayId), newRow];
+
+    setVisualIconRows(updatedRows);
+    setNewVisualIconRow({ id: '', category: 'Հիմնական և Գործիքներ', unicode: '\\e900' });
+    await saveCustomCssToApi(updatedCss, updatedRows);
+  };
+
+  const handleDeleteVisualIconRow = async (idToDelete: string) => {
+    const rawId = idToDelete.trim().replace(/^(\.|\/)/, '');
+    const baseName = rawId.replace(/^(hd-icon-|icon-)/i, '');
+
+    // Remove block from customIconCss if present
+    const regex = new RegExp(`(\\.(icon|hd-icon)-${baseName}:before[^{]*\\{[^}]*\\}\\n?)`, 'gi');
+    const updatedCss = customIconCss.replace(regex, '').trim();
+
+    const updatedRows = visualIconRows.filter(r => r.id !== idToDelete);
+    setVisualIconRows(updatedRows);
+    await saveCustomCssToApi(updatedCss, updatedRows);
+  };
+
+  const handleUpdateVisualIconRow = (id: string, key: 'id' | 'category' | 'unicode', val: string) => {
+    setVisualIconRows(prev => {
+      const updated = prev.map(r => r.id === id ? { ...r, [key]: val } : r);
+      const generatedCss = generateStyleCssFromVisualRows(updated);
+      saveCustomCssToApi(generatedCss, updated);
+      return updated;
+    });
+  };
+
+  const generateStyleCssFromVisualRows = (rows: Array<{ id: string; category: string; unicode: string }>) => {
+    return rows.map(r => {
+      const rawId = r.id.trim().replace(/^(\.|\/)/, '');
+      const baseName = rawId.replace(/^(hd-icon-|icon-)/i, '');
+      const capName = baseName.charAt(0).toUpperCase() + baseName.slice(1);
+      const lowerName = baseName.toLowerCase();
+      const content = r.unicode.trim();
+      const formattedContent = content.startsWith('\\') ? content : `\\${content}`;
+
+      const selector1 = `.icon-${capName}:before`;
+      const selector2 = `.hd-icon-${capName}:before`;
+      const selector3 = `.icon-${lowerName}:before`;
+      const selector4 = `.hd-icon-${lowerName}:before`;
+
+      const selectors = Array.from(new Set([selector1, selector2, selector3, selector4]));
+
+      return `${selectors.join(',\n')} {\n  content: "${formattedContent}";\n}`;
+    }).join('\n\n');
+  };
+
+  const handleFetchApiIconCss = async () => {
+    try {
+      const targetUrl = iconFontCssUrl || 'https://api.hakobian.am/libs/v1/icons/style.css';
+      const res = await fetch(targetUrl, { cache: 'no-store' });
+      if (res.ok) {
+        const cssText = await res.text();
+        setCustomIconCss(cssText);
+        parseCssRulesIntoHdIconRules(cssText);
+        alert('style.css-ը հաջողությամբ բեռնվեց ' + targetUrl + '-ից։');
+      } else {
+        alert('Չհաջողվեց բեռնել style.css-ը API-ից։');
+      }
+    } catch (err) {
+      console.error('Failed to fetch API Icon CSS:', err);
+      alert('Սխալ API-ից CSS բեռնելիս։');
+    }
+  };
+
+  const handleSaveIconPackageSettings = async () => {
+    if (!token) return;
+    setIsSavingIcons(true);
+    try {
+      const generatedCss = generateStyleCssFromVisualRows(visualIconRows);
+      const res = await fetch('/api/icons-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token
+        },
+        body: JSON.stringify({
+          icon_font_css_url: iconFontCssUrl,
+          icon_font_weights: iconFontWeights,
+          selection_json: selectionJsonData,
+          hd_icon_rules: hdIconRules,
+          custom_icon_css: generatedCss || customIconCss,
+          visual_icon_items: visualIconRows
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCustomIconCss(generatedCss || customIconCss);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('site-font-updated', {
+            detail: { iconFontCssUrl, iconFontWeights, customIconCss: generatedCss || customIconCss, hdIconRules }
+          }));
+        }
+        alert('Պատկերակների style.css-ը և ցուցակը հաջողությամբ պահպանվեցին։');
+      } else {
+        alert('Սխալ՝ ' + (data.error || 'Պահպանումը ձախողվեց։'));
+      }
+    } catch (err) {
+      alert('Սխալ պահպանման ընթացքում։');
+    } finally {
+      setIsSavingIcons(false);
     }
   };
 
@@ -4104,8 +4570,287 @@ export default function AdminDashboard() {
             )}
 
             {/* ══════════════════════════════════════════════════════════════════════════
-                TAB 3: MESSAGES INBOX
+                TAB: ICONS LIBRARY - Single-Row Visual Icon Editor
                 ══════════════════════════════════════════════════════════════════════════ */}
+            {activeTab === 'icons' && (
+              <div className={getTabClass('icons')} style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                  <div>
+                    <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0 }}>Պատկերակների Տեսողական Խմբագրիչ (style.css Visual Editor)</h2>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: '4px' }}>
+                      Ավելացրեք, խմբագրեք կամ ջնջեք պատկերակները մեկ տողում — ավտոմատ ակնթարթային պահպանմամբ
+                    </p>
+                  </div>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const blob = new Blob([customIconCss], { type: 'text/css;charset=utf-8;' });
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.setAttribute('download', 'style.css');
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                      style={{
+                        background: 'rgba(0, 196, 159, 0.15)',
+                        border: '1px solid rgba(0, 196, 159, 0.4)',
+                        color: '#00C49F',
+                        borderRadius: '10px',
+                        padding: '10px 16px',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}
+                    >
+                      📥 Ներբեռնել style.css Hostinger-ի համար
+                    </button>
+                  </div>
+                </div>
+
+                {/* Card Container for Single-Row Visual Editor */}
+                <div style={{
+                  background: 'var(--panel)',
+                  border: '1px solid var(--panel-border)',
+                  borderRadius: '20px',
+                  padding: '24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '24px',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.15)'
+                }}>
+                  {/* Top Row: Add New Icon (+ Button) */}
+                  <div style={{
+                    background: 'rgba(0, 196, 159, 0.04)',
+                    border: '1px solid rgba(0, 196, 159, 0.25)',
+                    borderRadius: '16px',
+                    padding: '18px 20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px'
+                  }}>
+                    <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#00C49F', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      + Ավելացնել Նոր Պատկերակ (Single-Row Creation)
+                    </h4>
+
+                    {/* Single Creation Line */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '46px 200px 1fr 140px 140px',
+                      gap: '14px',
+                      alignItems: 'center'
+                    }}>
+                      {/* 1. Preview */}
+                      <div style={{
+                        width: '46px',
+                        height: '42px',
+                        borderRadius: '10px',
+                        background: 'rgba(0, 196, 159, 0.15)',
+                        border: '1px solid rgba(0, 196, 159, 0.3)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#00C49F',
+                        fontSize: '1.4rem'
+                      }}>
+                        <span className={newVisualIconRow.id || 'icon-Star'} />
+                      </div>
+
+                      {/* 2. Category Select Dropdown */}
+                      <select
+                        value={newVisualIconRow.category}
+                        onChange={(e) => setNewVisualIconRow(prev => ({ ...prev, category: e.target.value }))}
+                        style={{
+                          width: '100%',
+                          height: '40px',
+                          background: 'rgba(255, 255, 255, 0.05)',
+                          border: '1px solid var(--panel-border)',
+                          borderRadius: '10px',
+                          color: 'var(--text)',
+                          padding: '0 12px',
+                          fontSize: '14pt',
+                          outline: 'none'
+                        }}
+                      >
+                        <option value="Հիմնական և Գործիքներ">Հիմնական և Գործիքներ</option>
+                        <option value="Լոգո և Մենյու">Լոգո և Մենյու</option>
+                        <option value="Սլաքներ">Սլաքներ</option>
+                        <option value="Փականներ և Անվտանգություն">Փականներ և Անվտանգություն</option>
+                        <option value="Հաղորդակցություն">Հաղորդակցություն</option>
+                        <option value="Մեդիա">Մեդիա</option>
+                      </select>
+
+                      {/* 3. Icon Name Input */}
+                      <hd-input 
+                        placeholder="Earth..."
+                        value={newVisualIconRow.id}
+                        onInput={(e: any) => setNewVisualIconRow(prev => ({ ...prev, id: e.target.value }))}
+                        data-width="100%"
+                        data-height="40px"
+                        data-font-size="14pt"
+                      />
+
+                      {/* 4. Unicode Input */}
+                      <hd-input 
+                        placeholder="\e900"
+                        value={newVisualIconRow.unicode}
+                        onInput={(e: any) => setNewVisualIconRow(prev => ({ ...prev, unicode: e.target.value }))}
+                        data-width="100%"
+                        data-height="40px"
+                        data-font-size="14pt"
+                      />
+
+                      {/* 5. Plus (+) Add Button */}
+                      <button
+                        type="button"
+                        onClick={handleAddVisualIconRow}
+                        style={{
+                          width: '100%',
+                          height: '40px',
+                          background: 'linear-gradient(135deg, #00C49F 0%, #0088FE 100%)',
+                          border: 'none',
+                          color: '#ffffff',
+                          borderRadius: '10px',
+                          fontWeight: 700,
+                          fontSize: '1rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          boxShadow: '0 4px 14px rgba(0, 196, 159, 0.3)'
+                        }}
+                      >
+                        + Ավելացնել
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Section: List of Icons (Each in a Single Row) */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h4 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text)', fontWeight: 700 }}>
+                        Պատկերակների Ցանկ ({visualIconRows.length})
+                      </h4>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
+                        Տեղադրեք պատկերակի անունը, կատեգորիան, ունիկոդը (`\e900`) և ջնջեք (-) կոճակով
+                      </span>
+                    </div>
+
+                    {visualIconRows.length === 0 ? (
+                      <p style={{ fontSize: '0.85rem', color: 'var(--muted)', fontStyle: 'italic', margin: 0, padding: '20px', textAlign: 'center', background: 'rgba(255,255,255,0.01)', borderRadius: '14px', border: '1px dashed var(--panel-border)' }}>
+                        Դեռևս պատկերակներ չկան: Սեղմեք «📥 Բեռնել style.css API-ից» կամ ավելացրեք առաջին պատկերակը վերևի (+) տողով:
+                      </p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {visualIconRows.map((row) => (
+                          <div
+                            key={row.id}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '46px 200px 1fr 140px 46px',
+                              gap: '14px',
+                              alignItems: 'center',
+                              background: 'rgba(255, 255, 255, 0.02)',
+                              border: '1px solid var(--panel-border)',
+                              borderRadius: '12px',
+                              padding: '10px 14px',
+                              transition: 'border-color 0.2s, background 0.2s'
+                            }}
+                          >
+                            {/* 1. Live Icon Preview Badge */}
+                            <div style={{
+                              width: '46px',
+                              height: '40px',
+                              borderRadius: '8px',
+                              background: 'rgba(255, 255, 255, 0.04)',
+                              border: '1px solid var(--panel-border)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'var(--primary-color)',
+                              fontSize: '1.4rem'
+                            }}>
+                              <span className={row.id} />
+                            </div>
+
+                            {/* 2. Category Select Dropdown */}
+                            <select
+                              value={row.category}
+                              onChange={(e) => handleUpdateVisualIconRow(row.id, 'category', e.target.value)}
+                              style={{
+                                width: '100%',
+                                height: '38px',
+                                background: 'rgba(0, 0, 0, 0.2)',
+                                border: '1px solid var(--panel-border)',
+                                borderRadius: '8px',
+                                color: 'var(--text)',
+                                padding: '0 10px',
+                                fontSize: '14pt',
+                                outline: 'none'
+                              }}
+                            >
+                              <option value="Հիմնական և Գործիքներ">Հիմնական և Գործիքներ</option>
+                              <option value="Լոգո և Մենյու">Լոգո և Մենյու</option>
+                              <option value="Սլաքներ">Սլաքներ</option>
+                              <option value="Փականներ և Անվտանգություն">Փականներ և Անվտանգություն</option>
+                              <option value="Հաղորդակցություն">Հաղորդակցություն</option>
+                              <option value="Մեդիա">Մեդիա</option>
+                            </select>
+
+                            {/* 3. Icon Name Input */}
+                            <hd-input 
+                              value={row.id}
+                              onInput={(e: any) => handleUpdateVisualIconRow(row.id, 'id', e.target.value)}
+                              data-width="100%"
+                              data-height="38px"
+                              data-font-size="14pt"
+                            />
+
+                            {/* 4. Unicode Input */}
+                            <hd-input 
+                              value={row.unicode}
+                              onInput={(e: any) => handleUpdateVisualIconRow(row.id, 'unicode', e.target.value)}
+                              data-width="100%"
+                              data-height="38px"
+                              data-font-size="14pt"
+                            />
+
+                            {/* 5. Minus (-) Delete Button */}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteVisualIconRow(row.id)}
+                              style={{
+                                width: '46px',
+                                height: '38px',
+                                background: 'rgba(244, 67, 54, 0.12)',
+                                border: '1px solid rgba(244, 67, 54, 0.35)',
+                                color: '#f44336',
+                                borderRadius: '8px',
+                                fontWeight: 700,
+                                fontSize: '1.2rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                              title="Ջնջել (-)"
+                            >
+                              -
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* ══════════════════════════════════════════════════════════════════════════
                 TAB 3: MESSAGES INBOX
@@ -7394,6 +8139,238 @@ export default function AdminDashboard() {
                       </form>
                     </div>
 
+                    {/* Card: General Font Management */}
+                    <div style={{
+                      background: 'var(--panel)',
+                      border: '1px solid var(--panel-border)',
+                      borderRadius: '16px',
+                      padding: '24px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '20px'
+                    }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className="icon-Pencil" style={{ color: '#00C49F' }} />
+                        Ընդհանուր Տառատեսակ (General Site Font)
+                      </h3>
+
+                      <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: 0, lineHeight: 1.5 }}>
+                        Փոխեք կայքի ընդհանուր տառատեսակը՝ վերբեռնելով նոր `.ttf`, `.otf`, `.woff`, `.woff2` ֆայլ կամ տեղադրելով արտաքին հղում (URL)։
+                      </p>
+
+                      <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Տառատեսակի Ֆայլի Վերբեռնում (.ttf, .otf, .woff, .woff2)</label>
+                          <input 
+                            type="file" 
+                            accept=".ttf,.otf,.woff,.woff2" 
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                handleUploadSiteFont(e.target.files[0]);
+                              }
+                            }}
+                            style={{ fontSize: '0.85rem', color: 'var(--muted)' }}
+                          />
+                          {isUploadingFont && <span style={{ fontSize: '0.78rem', color: 'var(--primary-color)', marginLeft: '10px' }}>Վերբեռնվում է...</span>}
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Տառատեսակի URL</label>
+                          <hd-input 
+                            placeholder="https://..."
+                            value={siteFontUrl}
+                            onInput={(e: any) => setSiteFontUrl(e.target.value)}
+                            data-width="100%"
+                            data-height="38px"
+                          />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                          <button 
+                            type="button"
+                            onClick={() => {
+                              setSiteFontUrl('https://api.hakobian.am/libs/v1/fonts/hdesign.ttf');
+                              setSiteFontName('HDesign');
+                            }}
+                            style={{
+                              background: 'rgba(255, 255, 255, 0.05)',
+                              border: '1px solid var(--panel-border)',
+                              borderRadius: '8px',
+                              padding: '8px 14px',
+                              color: 'var(--muted)',
+                              fontSize: '0.8rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Վերականգնել Լռելյայն Տառատեսակը
+                          </button>
+                        </div>
+
+                        {/* Dynamic Font Preview Box */}
+                        <div style={{
+                          background: 'rgba(0, 0, 0, 0.2)',
+                          border: '1px solid var(--panel-border)',
+                          borderRadius: '12px',
+                          padding: '16px',
+                          marginTop: '8px'
+                        }}>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--muted)', display: 'block', marginBottom: '8px', textTransform: 'uppercase' }}>Նախադիտում (Live Font Preview)</span>
+                          <style dangerouslySetInnerHTML={{
+                            __html: `@font-face { font-family: 'AdminFontPreview'; src: url('${siteFontUrl}'); }`
+                          }} />
+                          <div style={{ fontFamily: "'AdminFontPreview', sans-serif", fontSize: '1.2rem', color: 'var(--text)', lineHeight: 1.4 }}>
+                            Հրանտ Հակոբյան Դիզայն Ստուդիա — HDesign Design System & Studio Font 2026. 1234567890
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                          <hd-button 
+                            type="submit" 
+                            data-thickness="3px"
+                            data-width="180px"
+                            data-height="40px"
+                            data-font-size="0.85rem"
+                            disabled={savingSettings}
+                          >
+                            {savingSettings ? 'Պահպանվում է...' : 'Պահպանել Տառատեսակը'}
+                          </hd-button>
+                        </div>
+                      </form>
+                    </div>
+
+                    {/* Card: Design System Video per language */}
+                    <div style={{
+                      background: 'var(--panel)',
+                      border: '1px solid var(--panel-border)',
+                      borderRadius: '16px',
+                      padding: '24px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '20px'
+                    }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className="icon-Play" style={{ color: '#ff4081' }} />
+                        Դիզայնի Համակարգի Տեսանյութ (Design System Video)
+                      </h3>
+
+                      <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: 0, lineHeight: 1.5 }}>
+                        Կարգավորեք «Դիզայնի համակարգ» բաժնի տեսանյութերը և պաստառները ըստ կայքի լեզուների (Հայերեն և Անգլերեն)։
+                      </p>
+
+                      <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        {/* Armenian Video & Poster */}
+                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--panel-border)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--primary-color)', fontWeight: 700 }}>🇦🇲 Հայերեն (Armenian) Տեսանյութ</h4>
+                          
+                          <div>
+                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Տեսանյութի URL (.mp4)</label>
+                            <hd-input 
+                              placeholder="https://... video.mp4"
+                              value={designSystemVideoHy}
+                              onInput={(e: any) => setDesignSystemVideoHy(e.target.value)}
+                              data-width="100%"
+                              data-height="36px"
+                            />
+                            <input 
+                              type="file" 
+                              accept="video/*" 
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  handleUploadVideo(e.target.files[0], 'video_hy');
+                                }
+                              }}
+                              style={{ fontSize: '0.8rem', marginTop: '6px', color: 'var(--muted)' }}
+                            />
+                            {isUploadingDsVideoHy && <span style={{ fontSize: '0.75rem', color: 'var(--primary-color)' }}> Վերբեռնվում է...</span>}
+                          </div>
+
+                          <div>
+                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Պաստառի Նկարի URL (Poster Image)</label>
+                            <hd-input 
+                              placeholder="https://... poster.jpg"
+                              value={designSystemPosterHy}
+                              onInput={(e: any) => setDesignSystemPosterHy(e.target.value)}
+                              data-width="100%"
+                              data-height="36px"
+                            />
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  handleUploadVideo(e.target.files[0], 'poster_hy');
+                                }
+                              }}
+                              style={{ fontSize: '0.8rem', marginTop: '6px', color: 'var(--muted)' }}
+                            />
+                            {isUploadingDsPosterHy && <span style={{ fontSize: '0.75rem', color: 'var(--primary-color)' }}> Վերբեռնվում է...</span>}
+                          </div>
+                        </div>
+
+                        {/* English Video & Poster */}
+                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--panel-border)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--primary-color)', fontWeight: 700 }}>🇬🇧 Անգլերեն (English) Տեսանյութ</h4>
+                          
+                          <div>
+                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Video URL (.mp4)</label>
+                            <hd-input 
+                              placeholder="https://... video.mp4"
+                              value={designSystemVideoEn}
+                              onInput={(e: any) => setDesignSystemVideoEn(e.target.value)}
+                              data-width="100%"
+                              data-height="36px"
+                            />
+                            <input 
+                              type="file" 
+                              accept="video/*" 
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  handleUploadVideo(e.target.files[0], 'video_en');
+                                }
+                              }}
+                              style={{ fontSize: '0.8rem', marginTop: '6px', color: 'var(--muted)' }}
+                            />
+                            {isUploadingDsVideoEn && <span style={{ fontSize: '0.75rem', color: 'var(--primary-color)' }}> Վերբեռնվում է...</span>}
+                          </div>
+
+                          <div>
+                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Poster Image URL</label>
+                            <hd-input 
+                              placeholder="https://... poster.jpg"
+                              value={designSystemPosterEn}
+                              onInput={(e: any) => setDesignSystemPosterEn(e.target.value)}
+                              data-width="100%"
+                              data-height="36px"
+                            />
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  handleUploadVideo(e.target.files[0], 'poster_en');
+                                }
+                              }}
+                              style={{ fontSize: '0.8rem', marginTop: '6px', color: 'var(--muted)' }}
+                            />
+                            {isUploadingDsPosterEn && <span style={{ fontSize: '0.75rem', color: 'var(--primary-color)' }}> Վերբեռնվում է...</span>}
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                          <hd-button 
+                            type="submit" 
+                            data-thickness="3px"
+                            data-width="200px"
+                            data-height="40px"
+                            data-font-size="0.85rem"
+                            disabled={savingSettings}
+                          >
+                            {savingSettings ? 'Պահպանվում է...' : 'Պահպանել Տեսանյութերը'}
+                          </hd-button>
+                        </div>
+                      </form>
+                    </div>
+
                     {/* Card 2: Coming Soon Texts Section */}
                     <div style={{
                       background: 'var(--panel)',
@@ -8115,6 +9092,31 @@ export default function AdminDashboard() {
           <span className="icon-Image" style={{ fontSize: '1.4rem' }} />
           <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
             Քեյսեր
+          </div>
+        </div>
+
+        <div 
+          onClick={() => {
+            if (hasDraggedRef.current) return;
+            setActiveTab('icons');
+          }}
+          className="nav-btn"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: activeTab === 'icons' ? 'var(--switcher-capsule-bg)' : 'transparent',
+            color: activeTab === 'icons' ? '#fff' : 'var(--muted)',
+            borderRadius: '16px',
+            width: '50px',
+            height: '50px',
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          <span className="icon-Pattern" style={{ fontSize: '1.4rem' }} />
+          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
+            Պատկերակներ
           </div>
         </div>
 
