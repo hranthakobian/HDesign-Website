@@ -84,7 +84,7 @@ export default function HDesignDocsPage() {
           title="Տեսանյութի նվագարկիչ (<hd-video>)"
           description="Անհատականացված տեսանյութի նվագարկիչ HDesign դիզայնի համակարգի ոճավորմամբ, ղեկավարման վահանակով, անիմացիաներով և HD բեջով:"
           code={`<hd-video 
-  src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" 
+  src="https://api.hakobian.am/libs/v1/promo/promo.mp4" 
   poster="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80" 
   data-width="100%" 
   data-height="320px" 

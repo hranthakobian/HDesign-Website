@@ -926,8 +926,8 @@ export default function AdminDashboard() {
   const [siteFontWeights, setSiteFontWeights] = useState<Record<number, string>>({});
   const [isUploadingFont, setIsUploadingFont] = useState(false);
 
-  const [designSystemVideoHy, setDesignSystemVideoHy] = useState('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4');
-  const [designSystemVideoEn, setDesignSystemVideoEn] = useState('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4');
+  const [designSystemVideoHy, setDesignSystemVideoHy] = useState('https://api.hakobian.am/libs/v1/promo/promo.mp4');
+  const [designSystemVideoEn, setDesignSystemVideoEn] = useState('https://api.hakobian.am/libs/v1/promo/promo.mp4');
   const [designSystemPosterHy, setDesignSystemPosterHy] = useState('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80');
   const [designSystemPosterEn, setDesignSystemPosterEn] = useState('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80');
   
@@ -1274,8 +1274,14 @@ export default function AdminDashboard() {
         if (generalSettingsData.site_font_url) setSiteFontUrl(generalSettingsData.site_font_url);
         if (generalSettingsData.site_font_name) setSiteFontName(generalSettingsData.site_font_name);
         if (generalSettingsData.site_font_weights) setSiteFontWeights(generalSettingsData.site_font_weights);
-        if (generalSettingsData.design_system_video_hy) setDesignSystemVideoHy(generalSettingsData.design_system_video_hy);
-        if (generalSettingsData.design_system_video_en) setDesignSystemVideoEn(generalSettingsData.design_system_video_en);
+        const sanitizeVideoUrl = (url?: string) => {
+          if (!url || url.includes('/uploads/') || url.includes('1784817997323')) {
+            return 'https://api.hakobian.am/libs/v1/promo/promo.mp4';
+          }
+          return url;
+        };
+        if (generalSettingsData.design_system_video_hy) setDesignSystemVideoHy(sanitizeVideoUrl(generalSettingsData.design_system_video_hy));
+        if (generalSettingsData.design_system_video_en) setDesignSystemVideoEn(sanitizeVideoUrl(generalSettingsData.design_system_video_en));
         if (generalSettingsData.design_system_poster_hy) setDesignSystemPosterHy(generalSettingsData.design_system_poster_hy);
         if (generalSettingsData.design_system_poster_en) setDesignSystemPosterEn(generalSettingsData.design_system_poster_en);
 
@@ -1350,8 +1356,10 @@ export default function AdminDashboard() {
     setUploading(true);
     setUploadError(null);
 
+    const isGallery = casesSubTab === 'gallery' || caseForm.id?.startsWith('port-') || caseForm.category?.toLowerCase() === 'gallery' || caseForm.category?.toLowerCase() === 'design';
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('bucket', isGallery ? 'gallery' : 'branding');
 
     try {
       const res = await fetch('/api/upload', {
@@ -1470,6 +1478,7 @@ export default function AdminDashboard() {
 
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('bucket', 'fonts');
 
     try {
       const res = await fetch('/api/upload', {
@@ -2879,6 +2888,7 @@ export default function AdminDashboard() {
     setIsUploadingFont(true);
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('bucket', 'fonts');
     try {
       const res = await fetch('/api/upload', {
         method: 'POST',
@@ -2908,6 +2918,7 @@ export default function AdminDashboard() {
 
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('bucket', target.startsWith('video') ? 'videos' : 'branding');
     try {
       const res = await fetch('/api/upload', {
         method: 'POST',
@@ -2938,6 +2949,7 @@ export default function AdminDashboard() {
     if (!token || !file) return;
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('bucket', 'fonts');
     try {
       const res = await fetch('/api/upload', {
         method: 'POST',

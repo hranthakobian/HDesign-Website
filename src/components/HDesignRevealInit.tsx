@@ -51,7 +51,7 @@ export default function HDesignRevealInit() {
             );
 
             this.observer.observe(this);
-          }, 0);
+          }, 100);
         }
 
         disconnectedCallback() {
@@ -64,7 +64,13 @@ export default function HDesignRevealInit() {
         }
       }
 
-      customElements.define("hd-reveal", HdReveal);
+      const timer = setTimeout(() => {
+        if (!customElements.get("hd-reveal")) {
+          customElements.define("hd-reveal", HdReveal);
+        }
+      }, 50);
+
+      return () => clearTimeout(timer);
     }
   }, []);
 

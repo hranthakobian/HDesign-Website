@@ -69,7 +69,7 @@ html[data-custom-cursor="true"] {
   --text: hsl(var(--hue), var(--saturation), var(--text-lightness));
   --muted: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.6);
   --accent: hsl(var(--hue), var(--saturation), var(--text-lightness));
-  --shadow: 0 10px 40px hsla(var(--hue), var(--saturation), var(--text-lightness), 0.06);
+  --shadow: 0 0 30px hsla(var(--hue), var(--saturation), var(--text-lightness), 0.06);
 
   /* Open-Border System Overrides */
   --primary-color: hsl(var(--hue), var(--saturation), var(--text-lightness));
@@ -108,7 +108,7 @@ html[data-theme="green"] {
   --text: #ffffff;
   --muted: rgba(255, 255, 255, 0.45);
   --accent: #ffffff;
-  --shadow: 0 28px 90px rgba(0, 0, 0, 0.26);
+  --shadow: 0 0 30px rgba(0, 0, 0, 0.08);
 
   --hue: 172;
   --primary-color: #ffffff;
@@ -142,7 +142,7 @@ html[data-theme="dark"] {
   --text: #f8fafc;
   --muted: rgba(255, 255, 255, 0.45);
   --accent: #dbdbdb;
-  --shadow: 0 28px 90px rgba(0, 0, 0, 0.45);
+  --shadow: 0 0 30px rgba(0, 0, 0, 0.08);
 
   --hue: 0;
   --primary-color: #973939;
@@ -176,7 +176,7 @@ html[data-theme="light"] {
   --text: hsl(var(--hue), var(--saturation), var(--text-lightness));
   --muted: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.6);
   --accent: hsl(var(--hue), var(--saturation), var(--text-lightness));
-  --shadow: 0 10px 40px hsla(var(--hue), var(--saturation), var(--text-lightness), 0.06);
+  --shadow: 0 0 30px hsla(var(--hue), var(--saturation), var(--text-lightness), 0.06);
 
   --hue: 172;
   --saturation: 77%;
@@ -212,7 +212,7 @@ html[data-theme="custom"] {
   --text: var(--custom-text, #ffffff);
   --muted: var(--custom-muted, rgba(255, 255, 255, 0.45));
   --accent: var(--custom-text, #ffffff);
-  --shadow: 0 28px 90px rgba(0, 0, 0, 0.3);
+  --shadow: 0 0 30px rgba(0, 0, 0, 0.08);
 
   --hue: 260;
   --primary-color: var(--custom-primary, #ffffff);

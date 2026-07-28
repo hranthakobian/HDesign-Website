@@ -574,7 +574,12 @@ export default function CaseEditor() {
       console.warn("Failed to compress image, uploading original:", compressErr);
     }
 
-    const fd = new FormData(); fd.append("file", fileToUpload);
+    const isGallery = id.startsWith('port-') || form.category?.toLowerCase() === 'gallery' || form.category?.toLowerCase() === 'design';
+    const targetBucket = isGallery ? 'gallery' : 'branding';
+
+    const fd = new FormData();
+    fd.append("file", fileToUpload);
+    fd.append("bucket", targetBucket);
     try {
       const r = await fetch("/api/upload", { method: "POST", headers: { Authorization: token }, body: fd });
       const d = await r.json(); return r.ok ? d.url : null;

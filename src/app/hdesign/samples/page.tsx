@@ -181,7 +181,7 @@ export default function HDesignSamplesPage() {
     
     switch(activeTab) {
       case "hd-video":
-        return `<hd-video\n  src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"\n  poster="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80"\n  ${commonData}\n></hd-video>`;
+        return `<hd-video\n  src="https://api.hakobian.am/libs/v1/promo/promo.mp4"\n  poster="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80"\n  ${commonData}\n></hd-video>`;
       case "hd-button":
         return `<hd-button${isDisabled ? " disabled" : ""}${commonData}>\n  ${btnText}\n</hd-button>`;
       case "hd-input":
@@ -465,7 +465,7 @@ export default function HDesignSamplesPage() {
           border: 1px solid var(--panel-border);
           border-radius: 20px;
           padding: 20px;
-          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+          box-shadow: 0 0 30px rgba(0, 0, 0, 0.08);
           max-height: 500px;
           height: 500px;
           overflow: hidden;
@@ -487,7 +487,7 @@ export default function HDesignSamplesPage() {
           border: 1px solid var(--panel-border);
           border-radius: 20px;
           padding: 20px;
-          box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+          box-shadow: 0 0 30px rgba(0, 0, 0, 0.08);
           max-height: 500px;
           height: 500px;
           overflow: hidden;
@@ -577,7 +577,7 @@ export default function HDesignSamplesPage() {
             backdropFilter: "blur(20px)",
             border: "1px solid var(--panel-border)",
             borderRadius: "20px",
-            boxShadow: "0 12px 30px rgba(0, 0, 0, 0.25)",
+            boxShadow: "0 0 30px rgba(0, 0, 0, 0.08)",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
@@ -626,7 +626,7 @@ export default function HDesignSamplesPage() {
             backdropFilter: "blur(20px)",
             border: "1px solid var(--panel-border)",
             borderRadius: "20px",
-            boxShadow: "0 12px 30px rgba(0, 0, 0, 0.25)",
+            boxShadow: "0 0 30px rgba(0, 0, 0, 0.08)",
             overflow: "hidden",
             height: "180px",
             display: "flex",

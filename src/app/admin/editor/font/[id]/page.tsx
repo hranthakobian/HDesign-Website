@@ -212,6 +212,7 @@ export default function FontWysiwygEditor() {
     setUploadingFontFile(true);
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('bucket', 'fonts');
 
     try {
       const res = await fetch('/api/upload', {

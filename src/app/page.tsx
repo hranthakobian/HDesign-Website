@@ -593,8 +593,8 @@ export default function Home() {
     poster_hy: string;
     poster_en: string;
   }>({
-    video_hy: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-    video_en: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    video_hy: "https://api.hakobian.am/libs/v1/promo/promo.mp4",
+    video_en: "https://api.hakobian.am/libs/v1/promo/promo.mp4",
     poster_hy: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80",
     poster_en: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80"
   });
@@ -986,6 +986,7 @@ export default function Home() {
         return (
           <hd-input
             key={playgroundComponentKey}
+            suppressHydrationWarning
             {...commonProps}
             type={playgroundInputType}
             placeholder={playgroundInputPlaceholder}
@@ -998,6 +999,7 @@ export default function Home() {
         return (
           <hd-textarea
             key={playgroundComponentKey}
+            suppressHydrationWarning
             {...commonProps}
             placeholder={playgroundTextareaPlaceholder}
             value={playgroundInputValue}
@@ -1009,6 +1011,7 @@ export default function Home() {
         return (
           <hd-slider
             key={playgroundComponentKey}
+            suppressHydrationWarning
             {...commonProps}
             min={playgroundSliderMin}
             max={playgroundSliderMax}
@@ -1022,6 +1025,7 @@ export default function Home() {
         return (
           <hd-checkbox
             key={playgroundComponentKey}
+            suppressHydrationWarning
             checked={playgroundCheckedState}
             disabled={playgroundIsDisabled}
             data-size={playgroundCheckboxSize}
@@ -1034,6 +1038,7 @@ export default function Home() {
         return (
           <hd-radio
             key={playgroundComponentKey}
+            suppressHydrationWarning
             checked={playgroundRadioState}
             disabled={playgroundIsDisabled}
             data-size={playgroundRadioSize}
@@ -1045,6 +1050,7 @@ export default function Home() {
         return (
           <hd-switch
             key={playgroundComponentKey}
+            suppressHydrationWarning
             checked={playgroundSwitchState}
             disabled={playgroundIsDisabled}
             data-size={playgroundSwitchSize}
@@ -1057,6 +1063,7 @@ export default function Home() {
         return (
           <hd-select
             key={playgroundComponentKey}
+            suppressHydrationWarning
             {...commonProps}
             placeholder={playgroundSelectPlaceholder}
             value={playgroundSelectVal}
@@ -1073,6 +1080,7 @@ export default function Home() {
         return (
           <hd-segment
             key={playgroundComponentKey}
+            suppressHydrationWarning
             {...commonProps}
             value={playgroundSegmentVal}
             onChange={(e: any) => setPlaygroundSegmentVal(e.target.value)}
@@ -1088,6 +1096,7 @@ export default function Home() {
         return (
           <hd-color-picker
             key={playgroundComponentKey}
+            suppressHydrationWarning
             {...commonProps}
             data-color={playgroundColorPickerVal}
             onChange={(e: any) => setPlaygroundColorPickerVal(e.target.value)}
@@ -1097,6 +1106,7 @@ export default function Home() {
         return (
           <hd-color-panel
             key={playgroundComponentKey}
+            suppressHydrationWarning
             value={playgroundColorPanelVal}
             data-width={playgroundWidth}
             data-height={playgroundHeight}
@@ -1105,7 +1115,7 @@ export default function Home() {
         );
       case "hd-scrollbar":
         return (
-          <hd-scrollbar key={playgroundComponentKey} style={{ width: playgroundWidth || "100%", height: playgroundHeight || "150px", overflow: "auto", border: "1px solid var(--panel-border)", borderRadius: "8px", background: "rgba(0,0,0,0.1)" }}>
+          <hd-scrollbar key={playgroundComponentKey} suppressHydrationWarning style={{ width: playgroundWidth || "100%", height: playgroundHeight || "150px", overflow: "auto", border: "1px solid var(--panel-border)", borderRadius: "8px", background: "rgba(0,0,0,0.1)" }}>
             <div style={{ padding: "16px", height: `${playgroundScrollContentHeight}px`, color: "inherit", boxSizing: "border-box" }}>
               <p style={{ margin: "0 0 12px 0", fontSize: "0.9rem", fontWeight: "bold" }}>HDesign Կոմպակտ Սքրոլբար</p>
               <p style={{ margin: "0 0 12px 0", fontSize: "0.8rem", opacity: 0.7, lineHeight: "1.4" }}>Սքրոլ արեք ներքև՝ շարունակությունը կարդալու համար:</p>
@@ -1256,9 +1266,15 @@ export default function Home() {
       .then(res => res.json())
       .then(data => {
         if (data) {
+          const sanitizeVideoUrl = (url?: string) => {
+            if (!url || url.includes('/uploads/') || url.includes('1784817997323')) {
+              return "https://api.hakobian.am/libs/v1/promo/promo.mp4";
+            }
+            return url;
+          };
           setDsVideoSettings({
-            video_hy: data.design_system_video_hy || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-            video_en: data.design_system_video_en || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+            video_hy: sanitizeVideoUrl(data.design_system_video_hy),
+            video_en: sanitizeVideoUrl(data.design_system_video_en),
             poster_hy: data.design_system_poster_hy || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80",
             poster_en: data.design_system_poster_en || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80"
           });
@@ -1876,32 +1892,14 @@ export default function Home() {
               alignItems: "center",
               padding: "0 20px"
             }}>
-              <div style={{ textAlign: "center", maxWidth: "700px" }}>
-                <h3 style={{
-                  fontSize: "1.5rem",
-                  fontWeight: "800",
-                  color: "var(--text)",
-                  marginBottom: "8px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "10px"
-                }}>
-                  <span className="icon-Play" style={{ color: "var(--primary-color)", fontSize: "1.3rem" }} />
-                  Անհատականացված Տեսանյութի Նվագարկիչ
-                </h3>
-                <p style={{ fontSize: "0.95rem", opacity: 0.75, color: "var(--text)", margin: 0, lineHeight: "1.5" }}>
-                  HDesign դիզայնի համակարգի հատուկ ոճավորված ինտերակտիվ տեսանյութի նվագարկիչ՝ ղեկավարման վահանակով, անիմացիաներով և HD որակով (16:9 ֆորմատ):
-                </p>
-              </div>
 
-              <div style={{ width: "100%", maxWidth: "1500px", aspectRatio: "16 / 9", height: "auto", borderRadius: "24px", overflow: "hidden", boxShadow: "0 20px 40px rgba(0, 0, 0, 0.4)" }}>
+              <div style={{ width: "100%", maxWidth: "1500px", aspectRatio: "16 / 9", height: "auto", borderRadius: "24px", overflow: "hidden", boxShadow: "0 0 30px rgba(0, 0, 0, 0.08)" }}>
                 <HdVideoPlayer
                   src={locale === 'en' ? (dsVideoSettings.video_en || dsVideoSettings.video_hy) : (dsVideoSettings.video_hy || dsVideoSettings.video_en)}
                   poster={locale === 'en' ? (dsVideoSettings.poster_en || dsVideoSettings.poster_hy) : (dsVideoSettings.poster_hy || dsVideoSettings.poster_en)}
                   width="100%"
                   height="auto"
-                  thickness="3px"
+                  thickness="0px"
                   color="var(--primary-color)"
                   radius="24px"
                   autoplay={false}

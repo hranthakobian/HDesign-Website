@@ -20,6 +20,13 @@ export async function GET() {
       contact_address_en: 'Yerevan, Armenia'
     });
     
+    const sanitizeVideoUrl = (url?: string) => {
+      if (!url || url.includes('/uploads/') || url.includes('1784817997323')) {
+        return 'https://api.hakobian.am/libs/v1/promo/promo.mp4';
+      }
+      return url;
+    };
+
     // Return only public fields without caching
     return NextResponse.json(
       { 
@@ -37,8 +44,8 @@ export async function GET() {
         site_font_url: generalSettings?.site_font_url || 'https://api.hakobian.am/libs/v1/fonts/hdesign.ttf',
         site_font_name: generalSettings?.site_font_name || 'HDesign',
         site_font_weights: generalSettings?.site_font_weights || {},
-        design_system_video_hy: generalSettings?.design_system_video_hy || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-        design_system_video_en: generalSettings?.design_system_video_en || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        design_system_video_hy: sanitizeVideoUrl(generalSettings?.design_system_video_hy),
+        design_system_video_en: sanitizeVideoUrl(generalSettings?.design_system_video_en),
         design_system_poster_hy: generalSettings?.design_system_poster_hy || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
         design_system_poster_en: generalSettings?.design_system_poster_en || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80'
       },

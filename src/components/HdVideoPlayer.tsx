@@ -20,7 +20,7 @@ export interface HdVideoPlayerProps {
 }
 
 export default function HdVideoPlayer({
-  src = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+  src = "https://api.hakobian.am/libs/v1/promo/promo.mp4",
   poster = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80",
   width = "100%",
   height = "auto",
@@ -39,6 +39,7 @@ export default function HdVideoPlayer({
   const containerRef = useRef<HTMLDivElement | null>(null);
   
   const [isPlaying, setIsPlaying] = useState(false);
+  const [hasStarted, setHasStarted] = useState(autoplay);
   const [isMuted, setIsMuted] = useState(muted);
   const [volume, setVolume] = useState(0.8);
   const [progress, setProgress] = useState(0);
@@ -48,6 +49,8 @@ export default function HdVideoPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isHoveringControls, setIsHoveringControls] = useState(false);
+  const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -58,7 +61,10 @@ export default function HdVideoPlayer({
     video.playbackRate = playbackRate;
 
     if (autoplay) {
-      video.play().then(() => setIsPlaying(true)).catch(() => {});
+      video.play().then(() => {
+        setIsPlaying(true);
+        setHasStarted(true);
+      }).catch(() => {});
     }
   }, [autoplay, isMuted, volume, playbackRate]);
 
@@ -80,8 +86,26 @@ export default function HdVideoPlayer({
       video.pause();
       setIsPlaying(false);
     } else {
-      video.play().then(() => setIsPlaying(true)).catch(() => {});
+      setHasStarted(true);
+      video.play().then(() => {
+        setIsPlaying(true);
+      }).catch(() => {});
     }
+  };
+
+  const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.closest(".hd-video-controls")) return;
+    togglePlay();
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    setCursorPos({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    });
   };
 
   const handleTimeUpdate = () => {
@@ -156,8 +180,12 @@ export default function HdVideoPlayer({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
         setIsHovered(false);
+        setIsHoveringControls(false);
         setShowSpeedMenu(false);
+        setCursorPos(null);
       }}
+      onMouseMove={handleMouseMove}
+      onClick={handleContainerClick}
       className={`hd-video-container ${className}`}
       style={{
         position: "relative",
@@ -166,16 +194,17 @@ export default function HdVideoPlayer({
         aspectRatio: "16 / 9",
         height: height === "auto" || !height ? "auto" : height,
         borderRadius: radius,
-        border: `${thickness} solid ${color}`,
+        border: "none",
         overflow: "hidden",
         backgroundColor: "#060909",
-        boxShadow: `0 16px 45px rgba(0, 0, 0, 0.45), 0 0 20px ${color}33`,
+        boxShadow: "0 0 30px rgba(0, 0, 0, 0.08)",
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
         alignItems: "center",
         userSelect: "none",
         transition: "all 0.3s ease",
+        cursor: isHovered && !isHoveringControls ? "none" : "default",
         ...style
       }}
     >
@@ -184,71 +213,77 @@ export default function HdVideoPlayer({
         src={src}
         poster={poster}
         loop={loop}
+        onPlay={() => {
+          setIsPlaying(true);
+          setHasStarted(true);
+        }}
+        onPause={() => setIsPlaying(false)}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleTimeUpdate}
-        onClick={togglePlay}
         onEnded={() => setIsPlaying(false)}
         style={{
           width: "100%",
           height: "100%",
           objectFit: "cover",
-          cursor: "pointer",
           display: "block"
         }}
       />
 
+      {/* Dynamic Cursor / Central Play/Pause Button */}
+      <div
+        style={{
+          position: "absolute",
+          left: isHovered && cursorPos ? `${cursorPos.x}px` : "50%",
+          top: isHovered && cursorPos ? `${cursorPos.y}px` : "50%",
+          transform: "translate(-50%, -50%)",
+          width: "72px",
+          height: "72px",
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${color} 0%, rgba(10,20,20,0.85) 100%)`,
+          border: "none",
+          color: "#ffffff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: "0 0 20px rgba(0, 0, 0, 0.15)",
+          backdropFilter: "blur(10px)",
+          pointerEvents: "none",
+          zIndex: 8,
+          opacity: isHoveringControls ? 0 : (!isPlaying || isHovered) ? 1 : 0,
+          transition: isHovered
+            ? "transform 0.05s ease-out, opacity 0.2s ease"
+            : "left 0.3s ease, top 0.3s ease, transform 0.25s ease, opacity 0.25s ease"
+        }}
+      >
+        {isPlaying ? (
+          <span className="icon-Pause" style={{ fontSize: "28px", color: "#ffffff" }} />
+        ) : (
+          <span className="icon-Play" style={{ fontSize: "28px", color: "#ffffff" }} />
+        )}
+      </div>
 
-
-      {/* Center Big Play/Pause Button (HDIcons icon-Play / icon-Pause) */}
-      {(!isPlaying || isHovered) && (
-        <button
-          onClick={togglePlay}
-          style={{
-            position: "absolute",
-            width: "72px",
-            height: "72px",
-            borderRadius: "50%",
-            background: `radial-gradient(circle, ${color} 0%, rgba(10,20,20,0.85) 100%)`,
-            border: `2px solid ${color}`,
-            color: "#ffffff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            boxShadow: `0 0 30px ${color}aa`,
-            backdropFilter: "blur(10px)",
-            transition: "all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-            transform: isHovered ? "scale(1.1)" : "scale(1)",
-            zIndex: 6
-          }}
-          title={isPlaying ? "Դադարեցնել" : "Նվագարկել"}
-        >
-          {isPlaying ? (
-            <span className="icon-Pause" style={{ fontSize: "28px", color: "#ffffff" }} />
-          ) : (
-            <span className="icon-Play" style={{ fontSize: "28px", color: "#ffffff", marginLeft: "4px" }} />
-          )}
-        </button>
-      )}
-
-      {/* Bottom Controls Bar */}
-      {showControls && (
+      {/* Bottom Controls Bar (Only rendered/shown after video has started) */}
+      {showControls && hasStarted && (
         <div
+          className="hd-video-controls"
+          onMouseEnter={() => setIsHoveringControls(true)}
+          onMouseLeave={() => setIsHoveringControls(false)}
           style={{
             position: "absolute",
             bottom: "0",
             left: "0",
             right: "0",
-            background: "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.65) 70%, transparent 100%)",
-            backdropFilter: "blur(14px)",
+            background: "linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.2) 60%, rgba(0,0,0,0) 100%)",
+            backdropFilter: "blur(12px)",
             padding: "16px 20px 14px 20px",
             display: "flex",
             flexDirection: "column",
             gap: "10px",
             zIndex: 10,
-            opacity: isHovered || !isPlaying ? 1 : 0,
+            opacity: isHovered ? 1 : 0,
             transition: "opacity 0.3s ease",
-            pointerEvents: isHovered || !isPlaying ? "auto" : "none"
+            pointerEvents: isHovered ? "auto" : "none",
+            cursor: "default"
           }}
         >
           {/* Custom Timeline Progress Slider */}
@@ -336,7 +371,7 @@ export default function HdVideoPlayer({
                     height: "4px",
                     appearance: "none",
                     WebkitAppearance: "none",
-                    background: `linear-gradient(to right, ${color} ${ (isMuted ? 0 : volume) * 100 }%, rgba(255,255,255,0.2) 0%)`,
+                    background: `linear-gradient(to right, ${color} ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.2) 0%)`,
                     borderRadius: "2px",
                     outline: "none",
                     cursor: "pointer"
@@ -374,19 +409,21 @@ export default function HdVideoPlayer({
               </button>
 
               {showSpeedMenu && (
-                <div style={{
-                  position: "absolute",
-                  bottom: "36px",
-                  right: "40px",
-                  background: "rgba(15, 22, 22, 0.95)",
-                  border: `1px solid ${color}88`,
-                  borderRadius: "8px",
-                  padding: "4px 0",
-                  display: "flex",
-                  flexDirection: "column",
-                  zIndex: 20,
-                  boxShadow: "0 6px 16px rgba(0,0,0,0.5)"
-                }}>
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: "36px",
+                    right: "40px",
+                    background: "rgba(15, 22, 22, 0.95)",
+                    border: `1px solid ${color}88`,
+                    borderRadius: "8px",
+                    padding: "4px 0",
+                    display: "flex",
+                    flexDirection: "column",
+                    zIndex: 20,
+                    boxShadow: "0 6px 16px rgba(0,0,0,0.5)"
+                  }}
+                >
                   {[0.5, 1, 1.25, 1.5, 2].map((rate) => (
                     <button
                       key={rate}

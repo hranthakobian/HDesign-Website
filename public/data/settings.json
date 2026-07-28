@@ -43,7 +43,9 @@
     "upcoming_desc_hy": "Մեր կորպորատիվ կայքը ժամանակավորապես անցանց է ստեղծարար փոփոխությունների և նորացման պատճառով։ Շուտով կվերադառնանք նորացված տեսքով։",
     "upcoming_desc_en": "Our website is temporarily offline for maintenance and creative updates. We will be back soon with a fresh experience.",
     "upcoming_email": "info@hdesign.am",
-    "upcoming_tel": "+374 99 00 00 00"
+    "upcoming_tel": "+374 99 00 00 00",
+    "design_system_video_hy": "https://api.hakobian.am/libs/v1/promo/promo.mp4",
+    "design_system_video_en": "https://api.hakobian.am/libs/v1/promo/promo.mp4"
   },
   "ratings": {
     "seed-1": {

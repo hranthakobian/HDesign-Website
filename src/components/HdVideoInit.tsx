@@ -16,7 +16,7 @@ export default function HdVideoInit() {
             if (this.root) return;
             this.root = this.attachShadow({ mode: "open" });
 
-            const src = this.getAttribute("src") || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
+            const src = this.getAttribute("src") || "https://api.hakobian.am/libs/v1/promo/promo.mp4";
             const poster = this.getAttribute("poster") || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80";
             const thickness = this.getAttribute("data-thickness") || "3px";
             const color = this.getAttribute("data-color") || "var(--primary-color, #083f39)";
@@ -91,8 +91,12 @@ export default function HdVideoInit() {
       }
     };
 
-    registerHdVideo("hd-video");
-    registerHdVideo("hd-video-player");
+    const timer = setTimeout(() => {
+      registerHdVideo("hd-video");
+      registerHdVideo("hd-video-player");
+    }, 50);
+
+    return () => clearTimeout(timer);
   }, []);
 
   return null;

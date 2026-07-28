@@ -88,7 +88,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           initialFontUrl={generalSettings?.site_font_url} 
           initialFontName={generalSettings?.site_font_name} 
         />
-        <link rel="stylesheet" href="https://api.hakobian.am/libs/v1/style.css" />
+        <link rel="stylesheet" href="https://api.hakobian.am/libs/v1/components/style.css" />
 
         {/* Google Analytics Script */}
         {apiSettings.google_analytics_enabled && apiSettings.google_analytics_id && (
@@ -146,7 +146,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             />
           </UpcomingCheck>
         </I18nProvider>
-        <Script src="https://api.hakobian.am/libs/v1/script.js" strategy="afterInteractive" />
+        <Script src="https://api.hakobian.am/libs/v1/components/script.js" strategy="afterInteractive" />
 
         {/* Tidio Chat (Tildo) script */}
         {apiSettings.tildo_enabled && apiSettings.tildo_widget_id && (

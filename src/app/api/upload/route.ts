@@ -21,6 +21,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No file uploaded.' }, { status: 400 });
     }
 
+    const requestedBucket = (formData.get('bucket') || formData.get('folder') || formData.get('type') || '').toString().trim().toLowerCase();
+    
+    // Determine target bucket name for Supabase storage (and folder locally)
+    let targetBucket = 'branding';
+    if (requestedBucket === 'gallery' || requestedBucket.includes('gallery') || requestedBucket.includes('port')) {
+      targetBucket = 'gallery';
+    } else if (requestedBucket === 'font' || requestedBucket === 'fonts') {
+      targetBucket = 'fonts';
+    } else if (requestedBucket === 'video' || requestedBucket === 'videos') {
+      targetBucket = 'videos';
+    } else if (requestedBucket) {
+      targetBucket = requestedBucket.replace(/[^a-z0-9_-]/g, '');
+    } else if (file.name.toLowerCase().includes('gallery') || file.name.toLowerCase().startsWith('port_')) {
+      targetBucket = 'gallery';
+    }
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
@@ -33,7 +49,7 @@ export async function POST(request: Request) {
     if (storageClient) {
       try {
         let uploadResult = await storageClient.storage
-          .from('branding')
+          .from(targetBucket)
           .upload(filename, buffer, {
             contentType: file.type || 'application/octet-stream',
             cacheControl: '3600',
@@ -45,37 +61,37 @@ export async function POST(request: Request) {
           uploadResult.error.message?.toLowerCase().includes('bucket not found') ||
           uploadResult.error.message?.toLowerCase().includes('does not exist')
         )) {
-          console.warn("Bucket 'branding' not found. Attempting to create it...");
+          console.warn(`Bucket '${targetBucket}' not found. Attempting to create it...`);
           try {
-            const createRes = await storageClient.storage.createBucket('branding', {
+            const createRes = await storageClient.storage.createBucket(targetBucket, {
               public: true,
               fileSizeLimit: 52428800 // 50MB
             });
 
             if (!createRes.error) {
-              console.log("Bucket 'branding' created successfully. Retrying upload...");
+              console.log(`Bucket '${targetBucket}' created successfully. Retrying upload...`);
               uploadResult = await storageClient.storage
-                .from('branding')
+                .from(targetBucket)
                 .upload(filename, buffer, {
                   contentType: file.type || 'application/octet-stream',
                   cacheControl: '3600',
                   upsert: false
                 });
             } else {
-              console.warn("Failed to create bucket 'branding':", createRes.error);
+              console.warn(`Failed to create bucket '${targetBucket}':`, createRes.error);
             }
           } catch (createErr) {
-            console.error("Exception during bucket creation:", createErr);
+            console.error(`Exception during '${targetBucket}' bucket creation:`, createErr);
           }
         }
 
         if (!uploadResult.error && uploadResult.data) {
           const { data: publicUrlData } = storageClient.storage
-            .from('branding')
+            .from(targetBucket)
             .getPublicUrl(filename);
           
           if (publicUrlData?.publicUrl) {
-            return NextResponse.json({ url: publicUrlData.publicUrl });
+            return NextResponse.json({ url: publicUrlData.publicUrl, bucket: targetBucket });
           }
         } else if (uploadResult.error) {
           console.warn('Supabase storage upload returned error:', uploadResult.error);
@@ -85,15 +101,15 @@ export async function POST(request: Request) {
       }
     }
 
-    // 2. Local fallback - write to public/uploads/
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+    // 2. Local fallback - write to public/uploads/[targetBucket]/
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', targetBucket);
     await fs.mkdir(uploadDir, { recursive: true });
     
     const filePath = path.join(uploadDir, filename);
     await fs.writeFile(filePath, buffer);
 
-    const publicUrl = `/uploads/${filename}`;
-    return NextResponse.json({ url: publicUrl });
+    const publicUrl = `/uploads/${targetBucket}/${filename}`;
+    return NextResponse.json({ url: publicUrl, bucket: targetBucket });
   } catch (error: any) {
     console.error('File upload API error:', error);
     return NextResponse.json(
