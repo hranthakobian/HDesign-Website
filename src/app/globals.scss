@@ -300,7 +300,8 @@ body {
   max-width: 1500px;
   width: 100%;
   margin: 0 auto;
-  padding: 24px 24px 0;
+  padding: 24px 100px 0;
+  box-sizing: border-box;
 }
 
 .poster {
@@ -796,14 +797,18 @@ html[data-theme="green"] .hero-signature {
   position: fixed;
   top: 0;
   left: 0;
+  right: 0;
+  max-width: 1500px;
+  margin: 0 auto;
   width: 100%;
   z-index: 1000;
-  padding: 0;
+  padding: 16px 100px;
+  box-sizing: border-box;
   transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67), gap 0.4s ease;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 0;
+  gap: 16px;
 }
 
 .portfolio-logo-panel {
@@ -811,21 +816,25 @@ html[data-theme="green"] .hero-signature {
   display: flex;
   align-items: center;
   gap: 12px;
-  height: 80px;
-  padding: 0 36px 0 72px;
+  height: 64px;
+  padding: 0 30px;
+  border-radius: 32px;
   flex: 0 0 auto;
   text-decoration: none;
   color: var(--text);
   transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67);
+  backdrop-filter: blur(20px);
 
   &::before {
     content: '';
     position: absolute;
     inset: 0;
     z-index: -1;
-    background: rgba(255, 255, 255, 0.95);
+    border-radius: 32px;
+    background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+    box-shadow: var(--shadow);
     transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67);
     pointer-events: none;
   }
@@ -838,95 +847,96 @@ html[data-theme="green"] .hero-signature {
 }
 
 html[data-theme="dark"] .portfolio-logo-panel::before {
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(15, 23, 42, 0.85);
 }
 
 html[data-theme="green"] .portfolio-logo-panel::before {
-  background: rgba(11, 74, 65, 0.95);
+  background: rgba(11, 74, 65, 0.85);
 }
 
 html[data-theme="custom"] .portfolio-logo-panel::before {
   background: var(--custom-bg, #7c3aed);
-  opacity: 0.95;
+  opacity: 0.85;
 }
 
 .portfolio-header {
-  position: relative; // Ensure positioning context for ::before
+  position: relative;
   flex: 1;
-  width: auto;
+  width: 100%;
   max-width: 100%;
-  height: 80px;
-  background: transparent !important; // Handled by ::before
-  border: none !important; // Handled by ::before
-  box-shadow: none !important; // Handled by ::before
+  height: 64px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0 72px;
+  justify-content: space-between;
+  padding: 0 36px;
+  border-radius: 32px;
   transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67), flex 0.4s ease, max-width 0.4s ease;
 
-  // Background and backdrop filter are placed here to prevent stacking context nesting issues with child dropdowns
   &::before {
     content: '';
     position: absolute;
     inset: 0;
     z-index: -1;
-    background: rgba(255, 255, 255, 0.95);
+    border-radius: 32px;
+    background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02);
+    box-shadow: var(--shadow);
     transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67);
     pointer-events: none;
   }
 }
 
 html[data-theme="dark"] .portfolio-header::before {
-  background: rgba(15, 23, 42, 0.95);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+  background: rgba(15, 23, 42, 0.85);
+  box-shadow: var(--shadow);
 }
 
 html[data-theme="green"] .portfolio-header::before {
-  background: rgba(11, 74, 65, 0.95);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+  background: rgba(11, 74, 65, 0.85);
+  box-shadow: var(--shadow);
 }
 
 html[data-theme="custom"] .portfolio-header::before {
   background: var(--custom-bg, #7c3aed);
-  opacity: 0.95;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+  opacity: 0.85;
+  box-shadow: var(--shadow);
 }
 
 /* Scrolled state of Header */
 .portfolio-header-wrapper.scrolled {
-  padding: 16px 24px;
+  padding: 16px 100px;
   gap: 16px;
   
   .portfolio-logo-panel {
     height: 64px;
     padding: 0 30px;
     border-radius: 32px;
-    box-shadow: 0 10px 40px rgba(8, 63, 57, 0.08);
+    backdrop-filter: blur(20px);
 
     &::before {
       border-radius: 32px;
       background: rgba(255, 255, 255, 0.85);
       backdrop-filter: blur(20px);
-      box-shadow: 0 10px 40px rgba(8, 63, 57, 0.08);
+      box-shadow: var(--shadow);
     }
   }
 
   .portfolio-header {
-    flex: 0 1 auto;
-    width: auto;
-    max-width: fit-content;
+    flex: 1;
+    width: 100%;
+    max-width: 100%;
     height: 64px;
-    padding: 0 42px;
+    padding: 0 36px;
 
     &::before {
       border-radius: 32px;
       background: rgba(255, 255, 255, 0.85);
       backdrop-filter: blur(20px);
-      box-shadow: 0 10px 40px rgba(8, 63, 57, 0.08);
+      box-shadow: var(--shadow);
     }
   }
 }
@@ -968,9 +978,13 @@ html[data-theme="custom"] .portfolio-header-wrapper.scrolled {
 .portfolio-nav {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  width: 100%;
   gap: 15px;
-  margin: 0 auto; // Center it!
+  margin: 0;
   height: 100%;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 
   // Set distinct hover colors for each slot in the navigation
   & > * {
@@ -1011,8 +1025,9 @@ html[data-theme="custom"] .portfolio-header-wrapper.scrolled {
   display: flex;
   align-items: center;
   gap: 16px;
-  height: 80px;
-  padding: 0 72px 0 36px;
+  height: 64px;
+  padding: 0 30px;
+  border-radius: 32px;
   flex: 0 0 auto;
   transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67);
 
@@ -1021,9 +1036,11 @@ html[data-theme="custom"] .portfolio-header-wrapper.scrolled {
     position: absolute;
     inset: 0;
     z-index: -1;
-    background: rgba(255, 255, 255, 0.95);
+    border-radius: 32px;
+    background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+    box-shadow: var(--shadow);
     transition: all 0.4s cubic-bezier(0.99, -0.67, 0.04, 1.67);
     pointer-events: none;
   }
@@ -2338,6 +2355,7 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     text-decoration: none !important;
     color: var(--text) !important;
     transition: all 0.3s ease !important;
+    backdrop-filter: blur(20px);
 
     &::before {
       display: none !important;
@@ -2383,17 +2401,19 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     }
   }
 
-  /* Fixed Navigation Header at the top center */
+  /* Navigation Header matching page content width with 100px left-right padding */
   .portfolio-header {
     position: fixed !important;
-    top: 20px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
+    top: 16px !important;
+    left: 0 !important;
+    right: 0 !important;
+    margin: 0 auto !important;
+    transform: none !important;
     pointer-events: auto !important;
     height: 64px !important;
-    width: auto !important;
-    max-width: fit-content !important;
-    padding: 0 42px !important;
+    width: calc(100% - 200px) !important;
+    max-width: 1500px !important;
+    padding: 0 100px !important;
     border-radius: 32px !important;
     border: 1px solid var(--panel-border) !important;
     background: rgba(255, 255, 255, 0.85) !important;
@@ -2402,7 +2422,9 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     z-index: 1000 !important;
     display: flex !important;
     align-items: center !important;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.1) !important;
+    justify-content: center !important;
+    box-shadow: var(--shadow) !important;
+    box-sizing: border-box !important;
     
     &::before {
       display: none !important;
@@ -2410,10 +2432,10 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
   }
 
   .portfolio-nav {
-    gap: 12px !important;
-    background: transparent !important;
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
+    background: none !important;
+    gap: 12px !important;
   }
   
   .portfolio-nav-item {
@@ -2463,6 +2485,7 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
 
   .portfolio-nav {
     display: none !important; /* Hide standard desktop navigation links */
+    backdrop-filter: blur(20px);
   }
 
   /* Floating top-right hamburger pill capsule on mobile phone */
@@ -2490,6 +2513,7 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     left: auto !important;
     right: auto !important;
     position: static !important;
+    backdrop-filter: blur(20px);
     
     .logo-text {
       display: none !important; /* show only icon mark to fit */
@@ -2538,6 +2562,7 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
   .landing-about-grid {
     grid-template-columns: 1fr !important;
     gap: 32px !important;
+    padding: 40px 24px !important;
     text-align: center;
     
     & > div:first-child {
@@ -2975,6 +3000,7 @@ hd-switch, hd-checkbox {
 @media (min-width: 768.1px) and (max-width: 1150px) {
   .portfolio-logo-panel {
     padding: 0 16px 0 24px !important;
+    backdrop-filter: blur(20px);
   }
   .portfolio-header-controls {
     padding: 0 24px 0 16px !important;
@@ -2985,6 +3011,7 @@ hd-switch, hd-checkbox {
   }
   .portfolio-nav {
     gap: 12px !important;
+    backdrop-filter: blur(20px);
   }
   .portfolio-nav-item {
     padding: 4px 6px !important;
