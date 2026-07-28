@@ -1680,7 +1680,7 @@ export default function Home() {
             </svg>
           </div>
 
-          <div className="landing-about-grid" style={{ maxWidth: "1500px", margin: "0 auto", padding: "80px 0 40px", display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: "48px", alignItems: "center", position: "relative", zIndex: 5 }}>
+          <div className="landing-about-grid" style={{ maxWidth: "1500px", margin: "0 auto", padding: "80px 100px 40px", boxSizing: "border-box", display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: "48px", alignItems: "center", position: "relative", zIndex: 5 }}>
             {/* Profile Image container */}
             <hd-reveal data-direction="right" data-duration="1000">
               <div style={{ position: "relative", borderRadius: "20px", overflow: "hidden", aspectRatio: "1" }}>
@@ -1884,13 +1884,13 @@ export default function Home() {
           {/* ══ DEDICATED VIDEO PLAYER SECTION ══ */}
           <hd-reveal data-direction="up" data-duration="900" data-delay="100">
             <div style={{
+              width: "100%",
               maxWidth: "1500px",
               margin: "0 auto 60px auto",
               display: "flex",
               flexDirection: "column",
               gap: "20px",
-              alignItems: "center",
-              padding: "0 20px"
+              alignItems: "center"
             }}>
 
               <div style={{ width: "100%", maxWidth: "1500px", aspectRatio: "16 / 9", height: "auto", borderRadius: "24px", overflow: "hidden", boxShadow: "0 0 30px rgba(0, 0, 0, 0.08)" }}>
@@ -2347,7 +2347,7 @@ export default function Home() {
           </div>
         </section>
         {/* ══ SECTION 6: ICONS (Պատկերակներ) ══ */}
-        <section>
+        <section id="icons" style={{ maxWidth: "1500px", margin: "0 auto", width: "100%" }}>
           <hd-reveal data-direction="up" data-duration="800">
             <h2 style={{ fontSize: "1.4rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "20px", textAlign: "center", color: "var(--text)" }}>
               {t('home', 'icons_title', 'Պատկերներ')} ({iconsList.length})
