@@ -136,6 +136,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               upcoming_title_en: generalSettings?.upcoming_title_en,
               upcoming_desc_hy: generalSettings?.upcoming_desc_hy,
               upcoming_desc_en: generalSettings?.upcoming_desc_en,
+              page_upcoming_title_hy: generalSettings?.page_upcoming_title_hy,
+              page_upcoming_title_en: generalSettings?.page_upcoming_title_en,
+              page_upcoming_desc_hy: generalSettings?.page_upcoming_desc_hy,
+              page_upcoming_desc_en: generalSettings?.page_upcoming_desc_en,
               upcoming_email: generalSettings?.upcoming_email,
               upcoming_tel: generalSettings?.upcoming_tel
             }}

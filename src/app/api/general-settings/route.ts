@@ -53,6 +53,10 @@ export async function GET() {
         upcoming_title_en: generalSettings?.upcoming_title_en || 'Coming Soon',
         upcoming_desc_hy: generalSettings?.upcoming_desc_hy || 'Մեր կորպորատիվ կայքը ժամանակավորապես անցանց է ստեղծարար փոփոխությունների և նորացման պատճառով։ Շուտով կվերադառնանք նորացված տեսքով։',
         upcoming_desc_en: generalSettings?.upcoming_desc_en || 'Our website is temporarily offline for maintenance and creative updates. We will be back soon with a fresh experience.',
+        page_upcoming_title_hy: generalSettings?.page_upcoming_title_hy || 'Շուտով',
+        page_upcoming_title_en: generalSettings?.page_upcoming_title_en || 'Coming Soon',
+        page_upcoming_desc_hy: generalSettings?.page_upcoming_desc_hy || 'Այս էջը ժամանակավորապես գտնվում է մշակման և նորացման փուլում։ Շուտով հասանելի կլինի։',
+        page_upcoming_desc_en: generalSettings?.page_upcoming_desc_en || 'This page is temporarily under development and maintenance. It will be available soon.',
         upcoming_email: generalSettings?.upcoming_email || 'info@hdesign.am',
         upcoming_tel: generalSettings?.upcoming_tel || '+374 99 00 00 00',
         contact_email: generalSettings?.contact_email || 'hrant@hakobian.am',
@@ -151,6 +155,18 @@ export async function POST(request: Request) {
     if (body.upcoming_desc_en !== undefined) {
       updatedSettings.upcoming_desc_en = body.upcoming_desc_en;
     }
+    if (body.page_upcoming_title_hy !== undefined) {
+      updatedSettings.page_upcoming_title_hy = body.page_upcoming_title_hy;
+    }
+    if (body.page_upcoming_title_en !== undefined) {
+      updatedSettings.page_upcoming_title_en = body.page_upcoming_title_en;
+    }
+    if (body.page_upcoming_desc_hy !== undefined) {
+      updatedSettings.page_upcoming_desc_hy = body.page_upcoming_desc_hy;
+    }
+    if (body.page_upcoming_desc_en !== undefined) {
+      updatedSettings.page_upcoming_desc_en = body.page_upcoming_desc_en;
+    }
     if (body.upcoming_email !== undefined) {
       updatedSettings.upcoming_email = body.upcoming_email;
     }
@@ -210,6 +226,10 @@ export async function POST(request: Request) {
       upcoming_title_en: updatedSettings.upcoming_title_en,
       upcoming_desc_hy: updatedSettings.upcoming_desc_hy,
       upcoming_desc_en: updatedSettings.upcoming_desc_en,
+      page_upcoming_title_hy: updatedSettings.page_upcoming_title_hy,
+      page_upcoming_title_en: updatedSettings.page_upcoming_title_en,
+      page_upcoming_desc_hy: updatedSettings.page_upcoming_desc_hy,
+      page_upcoming_desc_en: updatedSettings.page_upcoming_desc_en,
       upcoming_email: updatedSettings.upcoming_email,
       upcoming_tel: updatedSettings.upcoming_tel,
       contact_email: updatedSettings.contact_email,

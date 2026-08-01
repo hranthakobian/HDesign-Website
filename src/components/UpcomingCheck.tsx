@@ -15,6 +15,10 @@ type UpcomingCheckProps = {
     upcoming_title_en?: string;
     upcoming_desc_hy?: string;
     upcoming_desc_en?: string;
+    page_upcoming_title_hy?: string;
+    page_upcoming_title_en?: string;
+    page_upcoming_desc_hy?: string;
+    page_upcoming_desc_en?: string;
     upcoming_email?: string;
     upcoming_tel?: string;
   };
@@ -32,6 +36,12 @@ export default function UpcomingCheck({ initialUpcomingMode, initialUpcomingHdes
   const [upcomingTitleEn, setUpcomingTitleEn] = useState(initialSettings?.upcoming_title_en || 'Coming Soon');
   const [upcomingDescHy, setUpcomingDescHy] = useState(initialSettings?.upcoming_desc_hy || 'Մեր կորպորատիվ կայքը ժամանակավորապես անցանց է ստեղծարար փոփոխությունների և նորացման պատճառով։ Շուտով կվերադառնանք նորացված տեսքով։');
   const [upcomingDescEn, setUpcomingDescEn] = useState(initialSettings?.upcoming_desc_en || 'Our website is temporarily offline for maintenance and creative updates. We will be back soon with a fresh experience.');
+  
+  const [pageUpcomingTitleHy, setPageUpcomingTitleHy] = useState(initialSettings?.page_upcoming_title_hy || 'Շուտով');
+  const [pageUpcomingTitleEn, setPageUpcomingTitleEn] = useState(initialSettings?.page_upcoming_title_en || 'Coming Soon');
+  const [pageUpcomingDescHy, setPageUpcomingDescHy] = useState(initialSettings?.page_upcoming_desc_hy || 'Այս էջը ժամանակավորապես գտնվում է մշակման և նորացման փուլում։ Շուտով հասանելի կլինի։');
+  const [pageUpcomingDescEn, setPageUpcomingDescEn] = useState(initialSettings?.page_upcoming_desc_en || 'This page is temporarily under development and maintenance. It will be available soon.');
+
   const [upcomingEmail, setUpcomingEmail] = useState(initialSettings?.upcoming_email || 'info@hdesign.am');
   const [upcomingTel, setUpcomingTel] = useState(initialSettings?.upcoming_tel || '+374 99 00 00 00');
 
@@ -84,6 +94,12 @@ export default function UpcomingCheck({ initialUpcomingMode, initialUpcomingHdes
           setUpcomingTitleEn(data.upcoming_title_en || 'Coming Soon');
           setUpcomingDescHy(data.upcoming_desc_hy || 'Մեր կորպորատիվ կայքը ժամանակավորապես անցանց է ստեղծարար փոփոխությունների և նորացման պատճառով։ Շուտով կվերադառնանք նորացված տեսքով։');
           setUpcomingDescEn(data.upcoming_desc_en || 'Our website is temporarily offline for maintenance and creative updates. We will be back soon with a fresh experience.');
+          
+          setPageUpcomingTitleHy(data.page_upcoming_title_hy || 'Շուտով');
+          setPageUpcomingTitleEn(data.page_upcoming_title_en || 'Coming Soon');
+          setPageUpcomingDescHy(data.page_upcoming_desc_hy || 'Այս էջը ժամանակավորապես գտնվում է մշակման և նորացման փուլում։ Շուտով հասանելի կլինի։');
+          setPageUpcomingDescEn(data.page_upcoming_desc_en || 'This page is temporarily under development and maintenance. It will be available soon.');
+
           setUpcomingEmail(data.upcoming_email || 'info@hdesign.am');
           setUpcomingTel(data.upcoming_tel || '+374 99 00 00 00');
         }
@@ -290,17 +306,19 @@ export default function UpcomingCheck({ initialUpcomingMode, initialUpcomingHdes
     );
   }
 
-  // Case 2: Per-Page Upcoming Mode (Inline view with Header and Footer visible)
+  // Case 2: Per-Page Upcoming Mode (Centered inline view with Header and Footer visible, NO contact info or language selector)
   if (isPageUpcoming) {
     return (
       <div style={{
-        minHeight: '75vh',
+        minHeight: '78vh',
+        width: '100%',
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '120px 24px 80px',
+        padding: '100px 24px 60px',
+        boxSizing: 'border-box',
         overflow: 'hidden'
       }}>
         {/* Animating vertical colorful lines in background */}
@@ -382,33 +400,34 @@ export default function UpcomingCheck({ initialUpcomingMode, initialUpcomingHdes
           }
         `}</style>
 
-        {/* Central visual card */}
+        {/* Central visual card - Centered perfectly */}
         <div className="upcoming-content" style={{
           position: 'relative',
           zIndex: 10,
           textAlign: 'center',
-          maxWidth: '560px',
+          maxWidth: '540px',
           width: '100%',
-          padding: '40px 30px',
+          padding: '48px 36px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '24px',
+          justifyContent: 'center',
+          gap: '20px',
           background: 'rgba(255, 255, 255, 0.85)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderRadius: '24px',
-          border: '1px solid rgba(8, 63, 57, 0.1)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          borderRadius: '28px',
+          border: '1px solid rgba(8, 63, 57, 0.12)',
           boxShadow: '0 20px 50px rgba(0, 0, 0, 0.06)'
         }}>
           {/* HDesign Logo */}
-          <div style={{ marginBottom: '8px' }}>
+          <div>
             <img 
               src="/logo.png" 
               alt="HDesign Logo" 
               style={{ 
-                width: '80px', 
-                height: '80px', 
+                width: '85px', 
+                height: '85px', 
                 objectFit: 'contain', 
                 filter: 'drop-shadow(0 6px 16px rgba(8, 63, 57, 0.12))' 
               }} 
@@ -420,62 +439,23 @@ export default function UpcomingCheck({ initialUpcomingMode, initialUpcomingHdes
               fontFamily: 'HDesign, sans-serif',
               fontSize: '2.2rem',
               fontWeight: 800,
-              margin: '0 0 14px',
+              margin: '0 0 12px',
               color: '#083f39',
               background: 'linear-gradient(135deg, #083f39 0%, #156257 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent'
             }}>
-              {locale === 'hy' ? upcomingTitleHy : upcomingTitleEn}
+              {locale === 'hy' ? pageUpcomingTitleHy : pageUpcomingTitleEn}
             </h1>
             <p style={{
               fontFamily: 'HDesign, sans-serif',
-              fontSize: '0.95rem',
+              fontSize: '0.96rem',
               lineHeight: '1.6',
               color: '#4a4a4a',
               margin: 0
             }}>
-              {locale === 'hy' ? upcomingDescHy : upcomingDescEn}
+              {locale === 'hy' ? pageUpcomingDescHy : pageUpcomingDescEn}
             </p>
-          </div>
-
-          <div style={{
-            width: '50px',
-            height: '1px',
-            background: 'rgba(8, 63, 57, 0.15)',
-            margin: '8px 0'
-          }} />
-
-          <div style={{
-            fontFamily: 'HDesign, sans-serif',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-            fontSize: '0.85rem',
-            color: '#666666'
-          }}>
-            <div>
-              Email: <a href={`mailto:${upcomingEmail}`} style={{ color: '#083f39', fontWeight: 600, textDecoration: 'none' }}>{upcomingEmail}</a>
-            </div>
-            <div>
-              Tel: <a href={`tel:${upcomingTel.replaceAll(' ', '')}`} style={{ color: '#083f39', fontWeight: 600, textDecoration: 'none' }}>{upcomingTel}</a>
-            </div>
-          </div>
-
-          <div style={{ marginTop: '12px' }}>
-            <hd-segment
-              id="langSelectorPage"
-              value={locale}
-              onChange={(e: any) => setLocale(e.target.value)}
-              data-color="#083f39"
-              data-inactive-color="rgba(8, 63, 57, 0.4)"
-              data-width="130px"
-              data-height="36px"
-              data-thickness="3px"
-            >
-              <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
-              <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
-            </hd-segment>
           </div>
         </div>
       </div>

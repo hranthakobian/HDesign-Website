@@ -924,6 +924,11 @@ export default function AdminDashboard() {
   const [upcomingTitleEn, setUpcomingTitleEn] = useState('Coming Soon');
   const [upcomingDescHy, setUpcomingDescHy] = useState('Մեր կորպորատիվ կայքը ժամանակավորապես անցանց է ստեղծարար փոփոխությունների և նորացման պատճառով։ Շուտով կվերադառնանք նորացված տեսքով։');
   const [upcomingDescEn, setUpcomingDescEn] = useState('Our website is temporarily offline for maintenance and creative updates. We will be back soon with a fresh experience.');
+  
+  const [pageUpcomingTitleHy, setPageUpcomingTitleHy] = useState('Շուտով');
+  const [pageUpcomingTitleEn, setPageUpcomingTitleEn] = useState('Coming Soon');
+  const [pageUpcomingDescHy, setPageUpcomingDescHy] = useState('Այս էջը ժամանակավորապես գտնվում է մշակման և նորացման փուլում։ Շուտով հասանելի կլինի։');
+  const [pageUpcomingDescEn, setPageUpcomingDescEn] = useState('This page is temporarily under development and maintenance. It will be available soon.');
   const [upcomingEmail, setUpcomingEmail] = useState('info@hdesign.am');
   const [upcomingTel, setUpcomingTel] = useState('+374 99 00 00 00');
   const [contactEmail, setContactEmail] = useState('hrant@hakobian.am');
@@ -1288,6 +1293,11 @@ export default function AdminDashboard() {
         setUpcomingTitleEn(generalSettingsData.upcoming_title_en || 'Coming Soon');
         setUpcomingDescHy(generalSettingsData.upcoming_desc_hy || 'Մեր կորպորատիվ կայքը ժամանակավորապես անցանց է ստեղծարար փոփոխությունների և նորացման պատճառով։ Շուտով կվերադառնանք նորացված տեսքով։');
         setUpcomingDescEn(generalSettingsData.upcoming_desc_en || 'Our website is temporarily offline for maintenance and creative updates. We will be back soon with a fresh experience.');
+        
+        setPageUpcomingTitleHy(generalSettingsData.page_upcoming_title_hy || 'Շուտով');
+        setPageUpcomingTitleEn(generalSettingsData.page_upcoming_title_en || 'Coming Soon');
+        setPageUpcomingDescHy(generalSettingsData.page_upcoming_desc_hy || 'Այս էջը ժամանակավորապես գտնվում է մշակման և նորացման փուլում։ Շուտով հասանելի կլինի։');
+        setPageUpcomingDescEn(generalSettingsData.page_upcoming_desc_en || 'This page is temporarily under development and maintenance. It will be available soon.');
         setUpcomingEmail(generalSettingsData.upcoming_email || 'info@hdesign.am');
         setUpcomingTel(generalSettingsData.upcoming_tel || '+374 99 00 00 00');
         setContactEmail(generalSettingsData.contact_email || 'hrant@hakobian.am');
@@ -2803,6 +2813,10 @@ export default function AdminDashboard() {
           upcoming_title_en: upcomingTitleEn,
           upcoming_desc_hy: upcomingDescHy,
           upcoming_desc_en: upcomingDescEn,
+          page_upcoming_title_hy: pageUpcomingTitleHy,
+          page_upcoming_title_en: pageUpcomingTitleEn,
+          page_upcoming_desc_hy: pageUpcomingDescHy,
+          page_upcoming_desc_en: pageUpcomingDescEn,
           upcoming_email: upcomingEmail,
           upcoming_tel: upcomingTel,
           contact_email: contactEmail,
@@ -8675,43 +8689,29 @@ export default function AdminDashboard() {
 
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Կայքի Նկարագրություն (Հայերեն)</label>
-                          <textarea
+                          <hd-textarea 
                             placeholder="Մուտքագրեք կայքի նկարագրությունը..."
                             value={personalization.site_desc_hy}
-                            onChange={(e) => setPersonalization(prev => ({ ...prev, site_desc_hy: e.target.value }))}
-                            style={{
-                              width: '100%',
-                              minHeight: '80px',
-                              background: 'rgba(255,255,255,0.02)',
-                              border: '1px solid rgba(255,255,255,0.08)',
-                              borderRadius: '12px',
-                              padding: '12px',
-                              color: '#fff',
-                              fontSize: '0.85rem',
-                              outline: 'none',
-                              resize: 'vertical'
-                            }}
+                            onInput={(e: any) => setPersonalization(prev => ({ ...prev, site_desc_hy: e.target.value }))}
+                            data-width="100%"
+                            data-disable-horizontal-resize="true"
+                            style={{ minHeight: '80px' }}
+                            data-font-size="14pt"
+                            data-height="160pt"
                           />
                         </div>
 
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Site Description (English)</label>
-                          <textarea
+                          <hd-textarea 
                             placeholder="Enter English site description..."
                             value={personalization.site_desc_en}
-                            onChange={(e) => setPersonalization(prev => ({ ...prev, site_desc_en: e.target.value }))}
-                            style={{
-                              width: '100%',
-                              minHeight: '80px',
-                              background: 'rgba(255,255,255,0.02)',
-                              border: '1px solid rgba(255,255,255,0.08)',
-                              borderRadius: '12px',
-                              padding: '12px',
-                              color: '#fff',
-                              fontSize: '0.85rem',
-                              outline: 'none',
-                              resize: 'vertical'
-                            }}
+                            onInput={(e: any) => setPersonalization(prev => ({ ...prev, site_desc_en: e.target.value }))}
+                            data-width="100%"
+                            data-disable-horizontal-resize="true"
+                            style={{ minHeight: '80px' }}
+                            data-font-size="14pt"
+                            data-height="160pt"
                           />
                         </div>
 
@@ -8724,6 +8724,91 @@ export default function AdminDashboard() {
                             data-font-size="0.85rem"
                           >
                             Պահպանել Վերնագիրը
+                          </hd-button>
+                        </div>
+                      </form>
+                    </div>
+
+                    {/* Card 1.4: Page Upcoming Texts Settings */}
+                    <div style={{
+                      background: 'var(--panel)',
+                      border: '1px solid var(--panel-border)',
+                      borderRadius: '16px',
+                      padding: '24px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '20px'
+                    }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className="icon-Document" style={{ color: '#FFBB28' }} />
+                        Էջերի Upcoming Տեքստեր (Page Upcoming Texts)
+                      </h3>
+
+                      <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Վերնագիր (Հայերեն)</label>
+                          <hd-input 
+                            type="text"
+                            placeholder="Շուտով..."
+                            value={pageUpcomingTitleHy}
+                            onInput={(e: any) => setPageUpcomingTitleHy(e.target.value)}
+                            data-width="100%"
+                            data-height="40px"
+                            data-font-size="14pt" 
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Title (English)</label>
+                          <hd-input 
+                            type="text"
+                            placeholder="Coming Soon..."
+                            value={pageUpcomingTitleEn}
+                            onInput={(e: any) => setPageUpcomingTitleEn(e.target.value)}
+                            data-width="100%"
+                            data-height="40px"
+                            data-font-size="14pt" 
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Նկարագրություն (Հայերեն)</label>
+                          <hd-textarea 
+                            placeholder="Այս էջը ժամանակավորապես գտնվում է մշակման..."
+                            value={pageUpcomingDescHy}
+                            onInput={(e: any) => setPageUpcomingDescHy(e.target.value)}
+                            data-width="100%"
+                            data-disable-horizontal-resize="true"
+                            style={{ minHeight: '80px' }}
+                            data-font-size="14pt"
+                            data-height="160pt"
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Description (English)</label>
+                          <hd-textarea 
+                            placeholder="This page is temporarily under development..."
+                            value={pageUpcomingDescEn}
+                            onInput={(e: any) => setPageUpcomingDescEn(e.target.value)}
+                            data-width="100%"
+                            data-disable-horizontal-resize="true"
+                            style={{ minHeight: '80px' }}
+                            data-font-size="14pt"
+                            data-height="160pt"
+                          />
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                          <hd-button 
+                            type="submit" 
+                            data-thickness="3px"
+                            data-width="210px"
+                            data-height="40px"
+                            data-font-size="0.85rem"
+                            disabled={savingSettings}
+                          >
+                            {savingSettings ? 'Պահպանվում է...' : 'Պահպանել Էջի Upcoming Տեքստերը'}
                           </hd-button>
                         </div>
                       </form>

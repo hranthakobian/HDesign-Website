@@ -362,14 +362,11 @@ function WorksContent() {
   return (
     <main className="shell" style={{ marginTop: "140px", minHeight: "80vh" }}>
       <div style={{ textAlign: "center", marginBottom: "48px" }}>
-        <h1 style={{ fontSize: "2.8rem", fontWeight: "900", color: "var(--text)", margin: "0 0 12px 0" }}>
+        <h1 style={{ fontSize: "2.8rem", fontWeight: "900", color: "var(--text)", margin: "0" }}>
           {activeCategory?.toLowerCase() === 'design' || activeCategory?.toLowerCase() === 'gallery'
             ? (locale === 'en' ? 'Gallery' : 'Պատկերասրահ')
             : t('works_page', 'title', 'Աշխատանքներ')}
         </h1>
-        <p style={{ color: "var(--text)", opacity: 0.8, fontSize: "1.1rem", maxWidth: "600px", margin: "0 auto" }}>
-          {t('works_page', 'subtitle', 'Յուրաքանչյուր նախագիծ յուրահատուկ պատմություն է՝ ստեղծված մաթեմատիկական ճշգրտությամբ և գեղարվեստական կրքով։')}
-        </p>
       </div>
 
       {loading && (
