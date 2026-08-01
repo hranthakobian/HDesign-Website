@@ -6,6 +6,12 @@ interface InteractiveWaveTextProps {
   lines: string[];
   className?: string;
   style?: React.CSSProperties;
+  minWeight?: number;
+  maxWeight?: number;
+  minSlant?: number;
+  maxSlant?: number;
+  minItal?: number;
+  maxItal?: number;
 }
 
 interface CharRefData {
@@ -14,9 +20,21 @@ interface CharRefData {
   centerX: number;
   centerY: number;
   currentWeight: number;
+  currentSlant: number;
+  currentItal: number;
 }
 
-export default function InteractiveWaveText({ lines, className, style }: InteractiveWaveTextProps) {
+export default function InteractiveWaveText({
+  lines,
+  className,
+  style,
+  minWeight = 200,
+  maxWeight = 800,
+  minSlant = 0,
+  maxSlant = -15,
+  minItal = 0,
+  maxItal = 1
+}: InteractiveWaveTextProps) {
   const containerRef = useRef<HTMLHeadingElement>(null);
   const charRefs = useRef<CharRefData[]>([]);
 
@@ -74,8 +92,6 @@ export default function InteractiveWaveText({ lines, className, style }: Interac
     window.addEventListener("mousemove", handleMouseMove);
 
     // Animation constants
-    const minWeight = 200; // narrowed range to reduce horizontal shift jitter
-    const maxWeight = 800; // narrowed range to reduce horizontal shift jitter
     const speed = 3; // continuous wave speed (a balanced, natural tempo)
     const waveSpacing = 0.15; // delay spacing between letters (closer spacing for smoother wave)
     const radius = 220; // mouse influence radius (in pixels)
@@ -97,13 +113,17 @@ export default function InteractiveWaveText({ lines, className, style }: Interac
       charRefs.current.forEach((char) => {
         if (!char || !char.element) return;
 
-        // 1. Calculate wave weight
-        const angle = timeSec * speed + char.index * waveSpacing;
+        // 1. Calculate wave weight (starts thickening from 1st letter and flows left-to-right)
+        const angle = timeSec * speed - char.index * waveSpacing;
         const waveValue = (Math.sin(angle) + 1) / 2; // 0 to 1
         const waveWeight = minWeight + waveValue * (maxWeight - minWeight);
+        const waveSlant = minSlant;
+        const waveItal = minItal;
 
-        // 2. Calculate mouse proximity weight
+        // 2. Calculate mouse proximity weight, slant and italic
         let mouseWeight = minWeight;
+        let mouseSlant = minSlant;
+        let mouseItal = minItal;
         if (isNearContainer) {
           const dx = mouseX - char.centerX;
           const dy = mouseY - char.centerY;
@@ -113,19 +133,29 @@ export default function InteractiveWaveText({ lines, className, style }: Interac
             // Power factor of 1.5 gives a beautiful smooth exponential curve
             const influence = Math.pow(1 - dist / radius, 1.5);
             mouseWeight = minWeight + influence * (maxWeight - minWeight);
+            mouseSlant = minSlant + influence * (maxSlant - minSlant);
+            mouseItal = minItal + influence * (maxItal - minItal);
           }
         }
 
-        // 3. Blend waveWeight and mouseWeight
+        // 3. Blend wave and mouse targets
         const targetWeight = (1 - currentHoverFactor) * waveWeight + currentHoverFactor * mouseWeight;
+        const targetSlant = (1 - currentHoverFactor) * waveSlant + currentHoverFactor * mouseSlant;
+        const targetItal = (1 - currentHoverFactor) * waveItal + currentHoverFactor * mouseItal;
 
-        // 4. Smoothly lerp towards target weight
+        // 4. Smoothly lerp towards target values
         char.currentWeight += (targetWeight - char.currentWeight) * lerpFactor;
+        char.currentSlant += (targetSlant - char.currentSlant) * lerpFactor;
+        char.currentItal += (targetItal - char.currentItal) * lerpFactor;
 
         // 5. Apply style directly (bypassing React re-renders)
         const roundedWeight = Math.round(char.currentWeight);
+        const roundedSlant = Math.round(char.currentSlant * 10) / 10;
+        const roundedItal = Math.round(char.currentItal * 100) / 100;
+        
         char.element.style.fontWeight = roundedWeight.toString();
-        char.element.style.fontVariationSettings = `'wght' ${roundedWeight}`;
+        char.element.style.fontVariationSettings = `'wght' ${roundedWeight}, 'slnt' ${roundedSlant}, 'ital' ${roundedItal}`;
+        char.element.style.transform = `skewX(${roundedSlant}deg)`;
       });
 
       animationFrameId = requestAnimationFrame(animate);
@@ -169,7 +199,9 @@ export default function InteractiveWaveText({ lines, className, style }: Interac
                       index: currentIndex,
                       centerX: 0,
                       centerY: 0,
-                      currentWeight: 400
+                      currentWeight: minWeight,
+                      currentSlant: minSlant,
+                      currentItal: minItal
                     });
                   }
                 }}
@@ -178,7 +210,9 @@ export default function InteractiveWaveText({ lines, className, style }: Interac
                   fontFamily: "HDesign",
                   transition: "color 0.3s ease",
                   userSelect: "none",
-                  lineHeight: "0"
+                  lineHeight: "0",
+                  transformOrigin: "bottom center",
+                  willChange: "font-weight, font-variation-settings, transform"
                 }}
               >
                 {char}

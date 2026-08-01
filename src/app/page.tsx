@@ -746,6 +746,7 @@ export default function Home() {
     : `${weightCssBlock}.hd-icon-${lowercaseIconName}`;
 
   const [hdesignFontWeight, setHdesignFontWeight] = useState<number>(400);
+  const [hdesignFontSlant, setHdesignFontSlant] = useState<number>(0);
   const [copiedChar, setCopiedChar] = useState<string | null>(null);
 
   // Gallery states
@@ -1882,7 +1883,7 @@ export default function Home() {
           </hd-reveal>
 
           {/* ══ DEDICATED VIDEO PLAYER SECTION ══ */}
-          <hd-reveal data-direction="up" data-duration="900" data-delay="100">
+          <hd-reveal suppressHydrationWarning data-direction="up" data-duration="900" data-delay="100">
             <div style={{
               width: "100%",
               maxWidth: "1500px",
@@ -1910,7 +1911,7 @@ export default function Home() {
             </div>
           </hd-reveal>
           
-          <hd-reveal data-direction="up" data-duration="800">
+          <hd-reveal suppressHydrationWarning data-direction="up" data-duration="800">
             <h3 style={{
               fontSize: "1.4rem",
               fontWeight: "700",
@@ -1926,12 +1927,12 @@ export default function Home() {
           
           <div className="homepage-playground-container">
             {/* Sidebar List of 12 components */}
-            <hd-reveal className="playground-sidebar-wrapper" data-direction="up" data-duration="900" data-delay="0">
+            <hd-reveal suppressHydrationWarning className="playground-sidebar-wrapper" data-direction="up" data-duration="900" data-delay="0">
               <div className="playground-sidebar-column">
               <span style={{ fontSize: "0.75rem", fontWeight: "800", opacity: 0.5, letterSpacing: "1px", padding: "6px 8px 12px 8px" }}>
                 {t('home', 'components_label', 'ԿՈՄՊՈՆԵՆՏՆԵՐ')}
               </span>
-              <hd-scrollbar style={{ height: "420px", overflow: "auto", overscrollBehavior: "contain" }}>
+              <hd-scrollbar suppressHydrationWarning style={{ height: "420px", overflow: "auto", overscrollBehavior: "contain" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px", paddingRight: "10px" }}>
                   {playgroundComponentsList.map((comp) => {
                     const isActive = playgroundActiveTab === comp.id;
@@ -1965,7 +1966,7 @@ export default function Home() {
             </hd-reveal>
 
             {/* Central Canvas Preview & Code */}
-            <hd-reveal className="playground-preview-wrapper" data-direction="up" data-duration="900" data-delay="150">
+            <hd-reveal suppressHydrationWarning className="playground-preview-wrapper" data-direction="up" data-duration="900" data-delay="150">
               <div className="playground-preview-column">
               {/* Checkered preview box */}
               <div style={{
@@ -2033,7 +2034,7 @@ export default function Home() {
                     <span>{playgroundCopied ? "ՊԱՏՃԵՆՎԱԾ Է!" : "ՊԱՏՃԵՆԵԼ"}</span>
                   </button>
                 </div>
-                <hd-scrollbar style={{ flex: 1, overflow: "auto", overscrollBehavior: "contain", background: "#121817" }}>
+                <hd-scrollbar suppressHydrationWarning style={{ flex: 1, overflow: "auto", overscrollBehavior: "contain", background: "#121817" }}>
                   <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "2px" }}>
                     {highlightPlaygroundHTML(generatePlaygroundCode()).split("\n").map((line, idx) => (
                       <div key={idx} style={{ display: "flex", alignItems: "start", fontFamily: "Consolas, monospace !important", fontSize: "0.82rem", lineHeight: "1.5" }}>
@@ -2067,12 +2068,12 @@ export default function Home() {
             </hd-reveal>
 
             {/* Right configuration controls */}
-            <hd-reveal className="playground-controls-wrapper" data-direction="up" data-duration="900" data-delay="300">
+            <hd-reveal suppressHydrationWarning className="playground-controls-wrapper" data-direction="up" data-duration="900" data-delay="300">
               <div className="playground-controls-column">
               <span style={{ fontSize: "0.75rem", fontWeight: "800", opacity: 0.5, letterSpacing: "1px", paddingBottom: "8px" }}>
                 ԿԱՐԳԱՎՈՐՈՒՄՆԵՐ
               </span>
-              <hd-scrollbar style={{ height: "420px", overflow: "auto", overscrollBehavior: "contain" }}>
+              <hd-scrollbar suppressHydrationWarning style={{ height: "420px", overflow: "auto", overscrollBehavior: "contain" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px", paddingRight: "10px" }}>
                   {/* Stylistic attributes */}
                   <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -2080,7 +2081,7 @@ export default function Home() {
                     {playgroundWidth !== "auto" && (
                       <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <span style={{ fontSize: "0.8rem", opacity: 0.7 }}>Լայնություն (Width)</span>
-                        <hd-select value={playgroundWidth} onChange={(e: any) => setPlaygroundWidth(e.target.value)} data-height="34px" data-thickness="2px">
+                        <hd-select suppressHydrationWarning value={playgroundWidth} onChange={(e: any) => setPlaygroundWidth(e.target.value)} data-height="34px" data-thickness="2px">
                           <span value="100%">100%</span>
                           <span value="240px">240px</span>
                           <span value="180px">180px</span>
@@ -2091,7 +2092,7 @@ export default function Home() {
                     {playgroundHeight !== "auto" && playgroundActiveTab !== "hd-scrollbar" && (
                       <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <span style={{ fontSize: "0.8rem", opacity: 0.7 }}>Բարձրություն (Height)</span>
-                        <hd-select value={playgroundHeight} onChange={(e: any) => setPlaygroundHeight(e.target.value)} data-height="34px" data-thickness="2px">
+                        <hd-select suppressHydrationWarning value={playgroundHeight} onChange={(e: any) => setPlaygroundHeight(e.target.value)} data-height="34px" data-thickness="2px">
                           <span value="38px">38px</span>
                           <span value="50px">50px</span>
                           <span value="62px">62px</span>
@@ -2151,19 +2152,19 @@ export default function Home() {
                       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                         <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.8rem", opacity: 0.85, cursor: "pointer" }}>
                           <span>Ավտոնվագարկում (Autoplay)</span>
-                          <hd-switch checked={playgroundVideoAutoplay} onChange={(e: any) => setPlaygroundVideoAutoplay(e.target.checked)} data-size="18px" />
+                          <hd-switch suppressHydrationWarning checked={playgroundVideoAutoplay} onChange={(e: any) => setPlaygroundVideoAutoplay(e.target.checked)} data-size="18px" />
                         </label>
                         <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.8rem", opacity: 0.85, cursor: "pointer" }}>
                           <span>Կրկնել (Loop)</span>
-                          <hd-switch checked={playgroundVideoLoop} onChange={(e: any) => setPlaygroundVideoLoop(e.target.checked)} data-size="18px" />
+                          <hd-switch suppressHydrationWarning checked={playgroundVideoLoop} onChange={(e: any) => setPlaygroundVideoLoop(e.target.checked)} data-size="18px" />
                         </label>
                         <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.8rem", opacity: 0.85, cursor: "pointer" }}>
                           <span>Առանց ձայնի (Muted)</span>
-                          <hd-switch checked={playgroundVideoMuted} onChange={(e: any) => setPlaygroundVideoMuted(e.target.checked)} data-size="18px" />
+                          <hd-switch suppressHydrationWarning checked={playgroundVideoMuted} onChange={(e: any) => setPlaygroundVideoMuted(e.target.checked)} data-size="18px" />
                         </label>
                         <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.8rem", opacity: 0.85, cursor: "pointer" }}>
                           <span>Ղեկավարում (Controls)</span>
-                          <hd-switch checked={playgroundVideoControls} onChange={(e: any) => setPlaygroundVideoControls(e.target.checked)} data-size="18px" />
+                          <hd-switch suppressHydrationWarning checked={playgroundVideoControls} onChange={(e: any) => setPlaygroundVideoControls(e.target.checked)} data-size="18px" />
                         </label>
                       </div>
                     )}
@@ -2188,7 +2189,7 @@ export default function Home() {
                           />
                         </label>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                          <hd-checkbox checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          <hd-checkbox suppressHydrationWarning checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
                           <span style={{ fontSize: "0.8rem" }}>Պասիվ (Disabled)</span>
                         </label>
                       </>
@@ -2214,7 +2215,7 @@ export default function Home() {
                           />
                         </label>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                          <hd-checkbox checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          <hd-checkbox suppressHydrationWarning checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
                           <span style={{ fontSize: "0.8rem" }}>Պասիվ (Disabled)</span>
                         </label>
                       </>
@@ -2222,7 +2223,7 @@ export default function Home() {
 
                     {playgroundActiveTab === "hd-textarea" && (
                       <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                        <hd-checkbox checked={playgroundTextareaDisableResize} onChange={(e: any) => setPlaygroundTextareaDisableResize(e.target.checked)} />
+                        <hd-checkbox suppressHydrationWarning checked={playgroundTextareaDisableResize} onChange={(e: any) => setPlaygroundTextareaDisableResize(e.target.checked)} />
                         <span style={{ fontSize: "0.8rem" }}>Արգելել չափափոխումը</span>
                       </label>
                     )}
@@ -2241,7 +2242,7 @@ export default function Home() {
                           />
                         </label>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                          <hd-checkbox checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          <hd-checkbox suppressHydrationWarning checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
                           <span style={{ fontSize: "0.8rem" }}>{t('home', 'disabled_label', 'Պասիվ')}</span>
                         </label>
                       </>
@@ -2250,11 +2251,11 @@ export default function Home() {
                     {playgroundActiveTab === "hd-checkbox" && (
                       <>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                          <hd-checkbox checked={playgroundCheckedState} onChange={(e: any) => setPlaygroundCheckedState(e.target.checked)} />
+                          <hd-checkbox suppressHydrationWarning checked={playgroundCheckedState} onChange={(e: any) => setPlaygroundCheckedState(e.target.checked)} />
                           <span style={{ fontSize: "0.8rem" }}>{t('home', 'checked_state', 'Ընտրված (Checked)')}</span>
                         </label>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                          <hd-checkbox checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          <hd-checkbox suppressHydrationWarning checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
                           <span style={{ fontSize: "0.8rem" }}>{t('home', 'disabled_label', 'Պասիվ')}</span>
                         </label>
                       </>
@@ -2263,11 +2264,11 @@ export default function Home() {
                     {playgroundActiveTab === "hd-radio" && (
                       <>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                          <hd-checkbox checked={playgroundRadioState} onChange={(e: any) => setPlaygroundRadioState(e.target.checked)} />
+                          <hd-checkbox suppressHydrationWarning checked={playgroundRadioState} onChange={(e: any) => setPlaygroundRadioState(e.target.checked)} />
                           <span style={{ fontSize: "0.8rem" }}>{t('home', 'checked_state', 'Ընտրված (Checked)')}</span>
                         </label>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                          <hd-checkbox checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          <hd-checkbox suppressHydrationWarning checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
                           <span style={{ fontSize: "0.8rem" }}>{t('home', 'disabled_label', 'Պասիվ')}</span>
                         </label>
                       </>
@@ -2276,11 +2277,11 @@ export default function Home() {
                     {playgroundActiveTab === "hd-switch" && (
                       <>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                          <hd-checkbox checked={playgroundSwitchState} onChange={(e: any) => setPlaygroundSwitchState(e.target.checked)} />
+                          <hd-checkbox suppressHydrationWarning checked={playgroundSwitchState} onChange={(e: any) => setPlaygroundSwitchState(e.target.checked)} />
                           <span style={{ fontSize: "0.8rem" }}>{t('home', 'active_label', 'Միացված (Active)')}</span>
                         </label>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                          <hd-checkbox checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          <hd-checkbox suppressHydrationWarning checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
                           <span style={{ fontSize: "0.8rem" }}>{t('home', 'disabled_label', 'Պասիվ')}</span>
                         </label>
                       </>
@@ -2335,7 +2336,7 @@ export default function Home() {
                     {playgroundActiveTab === "hd-scrollbar" && (
                       <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>{t('home', 'content_height', 'Պարունակության բարձրություն:')} {playgroundScrollContentHeight}px</span>
-                        <hd-slider min="150" max="500" value={playgroundScrollContentHeight} onInput={(e: any) => setPlaygroundScrollContentHeight(Number(e.target.value))} />
+                        <hd-slider suppressHydrationWarning min="150" max="500" value={playgroundScrollContentHeight} onInput={(e: any) => setPlaygroundScrollContentHeight(Number(e.target.value))} />
                       </label>
                     )}
 
@@ -2491,6 +2492,7 @@ export default function Home() {
                   </span>
                 </div>
                 <hd-slider 
+                  suppressHydrationWarning
                   min="100" 
                   max="900" 
                   step="100" 
@@ -2891,24 +2893,45 @@ export default function Home() {
               flex: "0 1 360px",
               display: "flex",
               flexDirection: "column",
-              gap: "8px"
+              gap: "12px"
             }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: "0.8rem", fontWeight: "600", color: "var(--muted)" }}>
-                  {t('home', 'font_weight_label', 'Հաստություն (Font Weight)')}
-                </span>
-                <span style={{ fontSize: "0.85rem", fontWeight: "700", color: "var(--primary-color)" }}>
-                  {hdesignFontWeight}
-                </span>
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                  <span style={{ fontSize: "0.8rem", fontWeight: "600", color: "var(--muted)" }}>
+                    {t('home', 'font_weight_label', 'Հաստություն (Font Weight)')}
+                  </span>
+                  <span style={{ fontSize: "0.85rem", fontWeight: "700", color: "var(--primary-color)" }}>
+                    {hdesignFontWeight}
+                  </span>
+                </div>
+                <hd-slider 
+                  min="100" 
+                  max="900" 
+                  step="10" 
+                  value={hdesignFontWeight}
+                  onInput={(e: any) => setHdesignFontWeight(Number(e.target.value))}
+                  data-width="100%"
+                />
               </div>
-              <hd-slider 
-                min="100" 
-                max="900" 
-                step="10" 
-                value={hdesignFontWeight}
-                onInput={(e: any) => setHdesignFontWeight(Number(e.target.value))}
-                data-width="100%"
-              />
+
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                  <span style={{ fontSize: "0.8rem", fontWeight: "600", color: "var(--muted)" }}>
+                    {t('home', 'font_slant_label', 'Թեքություն (Font Slant / Italic)')}
+                  </span>
+                  <span style={{ fontSize: "0.85rem", fontWeight: "700", color: "var(--primary-color)" }}>
+                    {hdesignFontSlant.toFixed(2)}
+                  </span>
+                </div>
+                <hd-slider 
+                  min="0" 
+                  max="1" 
+                  step="0.01" 
+                  value={hdesignFontSlant}
+                  onInput={(e: any) => setHdesignFontSlant(Number(e.target.value))}
+                  data-width="100%"
+                />
+              </div>
             </div>
           </div>
 
@@ -2930,7 +2953,6 @@ export default function Home() {
                     style={{
                       fontFamily: "'HDesign', sans-serif",
                       fontWeight: hdesignFontWeight,
-                      fontVariationSettings: `'wght' ${hdesignFontWeight}`,
                       height: "40px",
                       background: "rgba(255, 255, 255, 0.02)",
                       border: "1px solid var(--panel-border)",
@@ -2944,14 +2966,25 @@ export default function Home() {
                       transition: "all 0.15s ease",
                     }}
                   >
-                    {c}
+                    <span style={{
+                      display: "inline-block",
+                      fontFamily: "'HDesign', sans-serif",
+                      fontWeight: hdesignFontWeight,
+                      fontVariationSettings: `'wght' ${hdesignFontWeight}, 'slnt' ${-hdesignFontSlant * 15}, 'ital' ${hdesignFontSlant}`,
+                      transform: `skewX(${-hdesignFontSlant * 14}deg)`,
+                      transformOrigin: "bottom center"
+                    }}>
+                      {c}
+                    </span>
                     <div className="character-tooltip">
                       <div 
                         className="tooltip-large-char"
                         style={{
                           fontFamily: "'HDesign', sans-serif",
                           fontWeight: hdesignFontWeight,
-                          fontVariationSettings: `'wght' ${hdesignFontWeight}`
+                          fontVariationSettings: `'wght' ${hdesignFontWeight}, 'slnt' ${-hdesignFontSlant * 15}, 'ital' ${hdesignFontSlant}`,
+                          transform: `skewX(${-hdesignFontSlant * 14}deg)`,
+                          transformOrigin: "bottom center"
                         }}
                       >
                         {c}
@@ -2984,7 +3017,6 @@ export default function Home() {
                     style={{
                       fontFamily: "'HDesign', sans-serif",
                       fontWeight: hdesignFontWeight,
-                      fontVariationSettings: `'wght' ${hdesignFontWeight}`,
                       height: "40px",
                       background: "rgba(255, 255, 255, 0.02)",
                       border: "1px solid var(--panel-border)",
@@ -2998,14 +3030,25 @@ export default function Home() {
                       transition: "all 0.15s ease",
                     }}
                   >
-                    {c}
+                    <span style={{
+                      display: "inline-block",
+                      fontFamily: "'HDesign', sans-serif",
+                      fontWeight: hdesignFontWeight,
+                      fontVariationSettings: `'wght' ${hdesignFontWeight}, 'slnt' ${-hdesignFontSlant * 15}, 'ital' ${hdesignFontSlant}`,
+                      transform: `skewX(${-hdesignFontSlant * 14}deg)`,
+                      transformOrigin: "bottom center"
+                    }}>
+                      {c}
+                    </span>
                     <div className="character-tooltip">
                       <div 
                         className="tooltip-large-char"
                         style={{
                           fontFamily: "'HDesign', sans-serif",
                           fontWeight: hdesignFontWeight,
-                          fontVariationSettings: `'wght' ${hdesignFontWeight}`
+                          fontVariationSettings: `'wght' ${hdesignFontWeight}, 'slnt' ${-hdesignFontSlant * 15}, 'ital' ${hdesignFontSlant}`,
+                          transform: `skewX(${-hdesignFontSlant * 14}deg)`,
+                          transformOrigin: "bottom center"
                         }}
                       >
                         {c}
@@ -3038,7 +3081,6 @@ export default function Home() {
                     style={{
                       fontFamily: "'HDesign', sans-serif",
                       fontWeight: hdesignFontWeight,
-                      fontVariationSettings: `'wght' ${hdesignFontWeight}`,
                       height: "40px",
                       background: "rgba(255, 255, 255, 0.02)",
                       border: "1px solid var(--panel-border)",
@@ -3052,14 +3094,25 @@ export default function Home() {
                       transition: "all 0.15s ease",
                     }}
                   >
-                    {c}
+                    <span style={{
+                      display: "inline-block",
+                      fontFamily: "'HDesign', sans-serif",
+                      fontWeight: hdesignFontWeight,
+                      fontVariationSettings: `'wght' ${hdesignFontWeight}, 'slnt' ${-hdesignFontSlant * 15}, 'ital' ${hdesignFontSlant}`,
+                      transform: `skewX(${-hdesignFontSlant * 14}deg)`,
+                      transformOrigin: "bottom center"
+                    }}>
+                      {c}
+                    </span>
                     <div className="character-tooltip">
                       <div 
                         className="tooltip-large-char"
                         style={{
                           fontFamily: "'HDesign', sans-serif",
                           fontWeight: hdesignFontWeight,
-                          fontVariationSettings: `'wght' ${hdesignFontWeight}`
+                          fontVariationSettings: `'wght' ${hdesignFontWeight}, 'slnt' ${-hdesignFontSlant * 15}, 'ital' ${hdesignFontSlant}`,
+                          transform: `skewX(${-hdesignFontSlant * 14}deg)`,
+                          transformOrigin: "bottom center"
                         }}
                       >
                         {c}
