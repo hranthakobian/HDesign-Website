@@ -8,6 +8,15 @@ export async function GET() {
   try {
     const generalSettings = await getSiteSetting('general_settings', {
       upcoming_mode: false,
+      upcoming_hdesign_mode: false,
+      upcoming_pages: {
+        home: false,
+        works: false,
+        about: false,
+        contact: false,
+        fonts: false,
+        hdesign: false
+      },
       upcoming_title_hy: 'Շուտով',
       upcoming_title_en: 'Coming Soon',
       upcoming_desc_hy: 'Մեր կորպորատիվ կայքը ժամանակավորապես անցանց է ստեղծարար փոփոխությունների և նորացման պատճառով։ Շուտով կվերադառնանք նորացված տեսքով։',
@@ -31,6 +40,15 @@ export async function GET() {
     return NextResponse.json(
       { 
         upcoming_mode: !!generalSettings?.upcoming_mode,
+        upcoming_hdesign_mode: !!generalSettings?.upcoming_hdesign_mode,
+        upcoming_pages: generalSettings?.upcoming_pages || {
+          home: false,
+          works: false,
+          about: false,
+          contact: false,
+          fonts: false,
+          hdesign: false
+        },
         upcoming_title_hy: generalSettings?.upcoming_title_hy || 'Շուտով',
         upcoming_title_en: generalSettings?.upcoming_title_en || 'Coming Soon',
         upcoming_desc_hy: generalSettings?.upcoming_desc_hy || 'Մեր կորպորատիվ կայքը ժամանակավորապես անցանց է ստեղծարար փոփոխությունների և նորացման պատճառով։ Շուտով կվերադառնանք նորացված տեսքով։',
@@ -115,6 +133,12 @@ export async function POST(request: Request) {
     if (body.upcoming_mode !== undefined) {
       updatedSettings.upcoming_mode = !!body.upcoming_mode;
     }
+    if (body.upcoming_hdesign_mode !== undefined) {
+      updatedSettings.upcoming_hdesign_mode = !!body.upcoming_hdesign_mode;
+    }
+    if (body.upcoming_pages !== undefined) {
+      updatedSettings.upcoming_pages = body.upcoming_pages;
+    }
     if (body.upcoming_title_hy !== undefined) {
       updatedSettings.upcoming_title_hy = body.upcoming_title_hy;
     }
@@ -180,6 +204,8 @@ export async function POST(request: Request) {
       success: true,
       passcodeChanged,
       upcoming_mode: updatedSettings.upcoming_mode,
+      upcoming_hdesign_mode: updatedSettings.upcoming_hdesign_mode,
+      upcoming_pages: updatedSettings.upcoming_pages,
       upcoming_title_hy: updatedSettings.upcoming_title_hy,
       upcoming_title_en: updatedSettings.upcoming_title_en,
       upcoming_desc_hy: updatedSettings.upcoming_desc_hy,

@@ -194,7 +194,7 @@ export default function ContactPage() {
           {/* Right Column: Contact Details */}
           <div style={{ display: "flex", flexDirection: "column", gap: "32px", paddingLeft: "24px", borderLeft: "1px solid var(--panel-border)" }} className="contact-details-col">
             <div>
-              <h3 style={{ fontSize: "1.3rem", fontWeight: "bold", color: "var(--text)", margin: "0 0 16px 0" }}>{t('contact_page', 'details_title', 'Կոնտակտներ')}</h3>
+              <h2 style={{ fontSize: "2.5rem", fontWeight: "900", color: "var(--text)", margin: "0 0 8px 0" }}>{t('contact_page', 'details_title', 'Կապորդներ')}</h2>
               <p style={{ color: "var(--text)", opacity: 0.8, fontSize: "0.95rem", lineHeight: "1.6", margin: 0 }}>
                 {t('contact_page', 'details_desc', 'Ազատ զգացեք կապվելու ցանկացած հարցով կամ համագործակցության առաջարկներով:')}
               </p>

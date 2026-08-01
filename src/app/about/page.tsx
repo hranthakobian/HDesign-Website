@@ -36,9 +36,9 @@ export default function AboutPage() {
           </svg>
         </div>
  
-        <div style={{ position: "relative", zIndex: 10, display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: "56px", alignItems: "center" }} className="about-grid">
+        <div style={{ position: "relative", zIndex: 10, display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: "56px", alignItems: "stretch" }} className="about-grid">
           {/* Profile Photo */}
-          <div style={{ position: "relative", borderRadius: "20px", overflow: "hidden", aspectRatio: "1", boxShadow: "0 10px 40px rgba(0,0,0,0.15)" }}>
+          <div style={{ position: "relative", borderRadius: "20px", overflow: "hidden", height: "100%", minHeight: "300px", boxShadow: "0 10px 40px rgba(0,0,0,0.15)" }}>
             <img 
               src="/profile_hrant.jpg" 
               alt="Hrant Hakobyan" 
@@ -48,12 +48,12 @@ export default function AboutPage() {
  
           {/* Bio Content */}
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            <h1 style={{ fontSize: "2.5rem", fontWeight: "900", color: "var(--text)", margin: 0 }}>{t('about', 'title', 'Մասին')}</h1>
-            <div style={{ display: "flex", flexDirection: "column", gap: "18px", color: "var(--text)", opacity: 0.95, fontSize: "1.08rem", lineHeight: "1.75" }}>
-              <p>
+            <h1 style={{ fontSize: "2.5rem", fontWeight: "900", color: "var(--text)", margin: 0, lineHeight: 1.1, marginTop: "-10px" }}>{t('about', 'title', 'Մասին')}</h1>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.75em", color: "var(--text)", opacity: 0.95, fontSize: "18pt", lineHeight: "1.6" }}>
+              <p style={{ margin: 0 }}>
                 {t('about', 'bio_p1', 'Ողջույն, ես Հրանտ Հակոբյանն եմ և Ճարտարապետության և շինարարության Հայաստանի Ազգային Համալսարանի ճարտարապետության ֆակուլտետի 4-րդ կուրսի ուսանող եմ։ Ես մասնագիտանում եմ տառաստեղծության և բրենդինգի մեջ։')}
               </p>
-              <p>
+              <p style={{ margin: 0 }}>
                 {t('about', 'bio_p2', 'Իմ նախագծերում ես համատեղում եմ ճարտարապետական կառուցվածքայնությունն ու գրաֆիկական դիզայնի ճկունությունը: Յուրաքանչյուր տառատեսակ և տարբերանշան ինձ համար կառույց է, որն ունի իր սեփական հիմքերը, համամասնությունն ու գեղագիտական արժեքը:')}
               </p>
             </div>

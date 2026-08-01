@@ -154,8 +154,8 @@ export default function InteractiveWaveText({
         const roundedItal = Math.round(char.currentItal * 100) / 100;
         
         char.element.style.fontWeight = roundedWeight.toString();
-        char.element.style.fontVariationSettings = `'wght' ${roundedWeight}, 'slnt' ${roundedSlant}, 'ital' ${roundedItal}`;
-        char.element.style.transform = `skewX(${roundedSlant}deg)`;
+        char.element.style.fontStyle = "normal";
+        char.element.style.fontVariationSettings = `'wght' ${roundedWeight}, 'ital' ${roundedItal}`;
       });
 
       animationFrameId = requestAnimationFrame(animate);

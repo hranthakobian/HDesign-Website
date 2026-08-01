@@ -38,6 +38,15 @@
   "general_settings": {
     "admin_passcode": "admin123",
     "upcoming_mode": false,
+    "upcoming_hdesign_mode": false,
+    "upcoming_pages": {
+      "home": false,
+      "works": false,
+      "about": false,
+      "contact": false,
+      "fonts": false,
+      "hdesign": false
+    },
     "upcoming_title_hy": "Շուտով",
     "upcoming_title_en": "Coming Soon",
     "upcoming_desc_hy": "Մեր կորպորատիվ կայքը ժամանակավորապես անցանց է ստեղծարար փոփոխությունների և նորացման պատճառով։ Շուտով կվերադառնանք նորացված տեսքով։",

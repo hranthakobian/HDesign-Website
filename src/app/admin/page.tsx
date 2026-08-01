@@ -909,6 +909,17 @@ export default function AdminDashboard() {
 
   // General Settings State
   const [upcomingMode, setUpcomingMode] = useState(false);
+  const [upcomingHdesignMode, setUpcomingHdesignMode] = useState(false);
+  const [togglingHdesignUpcoming, setTogglingHdesignUpcoming] = useState(false);
+  const [upcomingPages, setUpcomingPages] = useState<Record<string, boolean>>({
+    home: false,
+    works: false,
+    about: false,
+    contact: false,
+    fonts: false,
+    hdesign: false
+  });
+  const [togglingPageKey, setTogglingPageKey] = useState<string | null>(null);
   const [upcomingTitleHy, setUpcomingTitleHy] = useState('Շուտով');
   const [upcomingTitleEn, setUpcomingTitleEn] = useState('Coming Soon');
   const [upcomingDescHy, setUpcomingDescHy] = useState('Մեր կորպորատիվ կայքը ժամանակավորապես անցանց է ստեղծարար փոփոխությունների և նորացման պատճառով։ Շուտով կվերադառնանք նորացված տեսքով։');
@@ -1260,6 +1271,19 @@ export default function AdminDashboard() {
           cursors: DEFAULT_CURSORS
         });
         setUpcomingMode(generalSettingsData.upcoming_mode || false);
+        setUpcomingHdesignMode(generalSettingsData.upcoming_hdesign_mode || false);
+        if (generalSettingsData.upcoming_pages) {
+          setUpcomingPages({
+            home: false,
+            works: false,
+            about: false,
+            contact: false,
+            fonts: false,
+            hdesign: false,
+            pattern: false,
+            ...generalSettingsData.upcoming_pages
+          });
+        }
         setUpcomingTitleHy(generalSettingsData.upcoming_title_hy || 'Շուտով');
         setUpcomingTitleEn(generalSettingsData.upcoming_title_en || 'Coming Soon');
         setUpcomingDescHy(generalSettingsData.upcoming_desc_hy || 'Մեր կորպորատիվ կայքը ժամանակավորապես անցանց է ստեղծարար փոփոխությունների և նորացման պատճառով։ Շուտով կվերադառնանք նորացված տեսքով։');
@@ -2615,8 +2639,8 @@ export default function AdminDashboard() {
           hero_line1: aboutTranslations.home_hero_line1_hy,
           hero_line2: aboutTranslations.home_hero_line2_hy,
           hero_quote: aboutTranslations.home_hero_quote_hy,
-          about_title: aboutTranslations.home_about_title_hy,
-          about_p1: aboutTranslations.home_about_p1_hy,
+          about_title: aboutTranslations.title_hy || aboutTranslations.home_about_title_hy,
+          about_p1: aboutTranslations.bio_p1_hy || aboutTranslations.home_about_p1_hy,
           about_p2: aboutTranslations.home_about_p2_hy,
           contact_btn: aboutTranslations.home_contact_btn_hy,
           other_works: aboutTranslations.home_other_works_hy,
@@ -2644,8 +2668,8 @@ export default function AdminDashboard() {
           hero_line1: aboutTranslations.home_hero_line1_en,
           hero_line2: aboutTranslations.home_hero_line2_en,
           hero_quote: aboutTranslations.home_hero_quote_en,
-          about_title: aboutTranslations.home_about_title_en,
-          about_p1: aboutTranslations.home_about_p1_en,
+          about_title: aboutTranslations.title_en || aboutTranslations.home_about_title_en,
+          about_p1: aboutTranslations.bio_p1_en || aboutTranslations.home_about_p1_en,
           about_p2: aboutTranslations.home_about_p2_en,
           contact_btn: aboutTranslations.home_contact_btn_en,
           other_works: aboutTranslations.home_other_works_en,
@@ -2702,6 +2726,63 @@ export default function AdminDashboard() {
     }
   };
 
+  const toggleHdesignUpcomingQuick = async (newValue: boolean) => {
+    if (!token) return;
+    setTogglingHdesignUpcoming(true);
+    try {
+      const res = await fetch('/api/general-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token
+        },
+        body: JSON.stringify({ 
+          upcoming_hdesign_mode: newValue 
+        })
+      });
+      if (res.ok) {
+        setUpcomingHdesignMode(newValue);
+      } else {
+        const data = await res.json();
+        alert('Սխալ՝ ' + data.error);
+      }
+    } catch (err) {
+      alert('Չհաջողվեց փոխել HDesign Upcoming ռեժիմը։');
+    } finally {
+      setTogglingHdesignUpcoming(false);
+    }
+  };
+
+  const togglePageUpcomingQuick = async (pageKey: string, newValue: boolean) => {
+    if (!token) return;
+    setTogglingPageKey(pageKey);
+    const updatedPages = { ...upcomingPages, [pageKey]: newValue };
+    try {
+      const res = await fetch('/api/general-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token
+        },
+        body: JSON.stringify({ 
+          upcoming_pages: updatedPages,
+          ...(pageKey === 'hdesign' ? { upcoming_hdesign_mode: newValue } : {})
+        })
+      });
+      if (res.ok) {
+        setUpcomingPages(updatedPages);
+        if (pageKey === 'hdesign') setUpcomingHdesignMode(newValue);
+      } else {
+        const data = await res.json();
+        alert('Սխալ՝ ' + data.error);
+      }
+    } catch (err) {
+      alert('Չհաջողվեց փոխել էջի Upcoming ռեժիմը։');
+    } finally {
+      setTogglingPageKey(null);
+    }
+  };
+
   const handleSaveGeneralSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
@@ -2716,6 +2797,8 @@ export default function AdminDashboard() {
         },
         body: JSON.stringify({ 
           upcoming_mode: upcomingMode,
+          upcoming_hdesign_mode: upcomingHdesignMode,
+          upcoming_pages: upcomingPages,
           upcoming_title_hy: upcomingTitleHy,
           upcoming_title_en: upcomingTitleEn,
           upcoming_desc_hy: upcomingDescHy,
@@ -7050,46 +7133,26 @@ export default function AdminDashboard() {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                       <div>
                         <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Կենսագրություն Պարբերություն 1 (Հայերեն)</label>
-                        <textarea
+                        <hd-textarea
                           placeholder="Ողջույն, ես Հրանտ Հակոբյանն եմ..."
                           value={aboutTranslations.bio_p1_hy}
-                          onChange={(e) => setAboutTranslations(prev => ({ ...prev, bio_p1_hy: e.target.value }))}
-                          style={{
-                            width: '100%',
-                            minHeight: '100px',
-                            background: 'rgba(255,255,255,0.02)',
-                            border: '1px solid rgba(255,255,255,0.08)',
-                            borderRadius: '12px',
-                            padding: '12px',
-                            color: '#fff',
-                            fontSize: '0.85rem',
-                            outline: 'none',
-                            resize: 'vertical',
-                            fontFamily: 'inherit',
-                            lineHeight: '1.5'
-                          }}
+                          onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, bio_p1_hy: e.target.value }))}
+                          data-width="100%"
+                          data-disable-horizontal-resize="true"
+                          data-font-size="14pt"
+                          data-height="120px"
                         />
                       </div>
                       <div>
                         <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Bio Paragraph 1 (English)</label>
-                        <textarea
+                        <hd-textarea
                           placeholder="Hello, I'm Hrant Hakobyan..."
                           value={aboutTranslations.bio_p1_en}
-                          onChange={(e) => setAboutTranslations(prev => ({ ...prev, bio_p1_en: e.target.value }))}
-                          style={{
-                            width: '100%',
-                            minHeight: '100px',
-                            background: 'rgba(255,255,255,0.02)',
-                            border: '1px solid rgba(255,255,255,0.08)',
-                            borderRadius: '12px',
-                            padding: '12px',
-                            color: '#fff',
-                            fontSize: '0.85rem',
-                            outline: 'none',
-                            resize: 'vertical',
-                            fontFamily: 'inherit',
-                            lineHeight: '1.5'
-                          }}
+                          onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, bio_p1_en: e.target.value }))}
+                          data-width="100%"
+                          data-disable-horizontal-resize="true"
+                          data-font-size="14pt"
+                          data-height="120px"
                         />
                       </div>
                     </div>
@@ -7098,46 +7161,26 @@ export default function AdminDashboard() {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                       <div>
                         <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Կենսագրություն Պարբերություն 2 (Հայերեն)</label>
-                        <textarea
+                        <hd-textarea
                           placeholder="Իմ նախագծերում ես համատեղում եմ..."
                           value={aboutTranslations.bio_p2_hy}
-                          onChange={(e) => setAboutTranslations(prev => ({ ...prev, bio_p2_hy: e.target.value }))}
-                          style={{
-                            width: '100%',
-                            minHeight: '100px',
-                            background: 'rgba(255,255,255,0.02)',
-                            border: '1px solid rgba(255,255,255,0.08)',
-                            borderRadius: '12px',
-                            padding: '12px',
-                            color: '#fff',
-                            fontSize: '0.85rem',
-                            outline: 'none',
-                            resize: 'vertical',
-                            fontFamily: 'inherit',
-                            lineHeight: '1.5'
-                          }}
+                          onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, bio_p2_hy: e.target.value }))}
+                          data-width="100%"
+                          data-disable-horizontal-resize="true"
+                          data-font-size="14pt"
+                          data-height="120px"
                         />
                       </div>
                       <div>
                         <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Bio Paragraph 2 (English)</label>
-                        <textarea
+                        <hd-textarea
                           placeholder="In my projects, I combine..."
                           value={aboutTranslations.bio_p2_en}
-                          onChange={(e) => setAboutTranslations(prev => ({ ...prev, bio_p2_en: e.target.value }))}
-                          style={{
-                            width: '100%',
-                            minHeight: '100px',
-                            background: 'rgba(255,255,255,0.02)',
-                            border: '1px solid rgba(255,255,255,0.08)',
-                            borderRadius: '12px',
-                            padding: '12px',
-                            color: '#fff',
-                            fontSize: '0.85rem',
-                            outline: 'none',
-                            resize: 'vertical',
-                            fontFamily: 'inherit',
-                            lineHeight: '1.5'
-                          }}
+                          onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, bio_p2_en: e.target.value }))}
+                          data-width="100%"
+                          data-disable-horizontal-resize="true"
+                          data-font-size="14pt"
+                          data-height="120px"
                         />
                       </div>
                     </div>
@@ -7292,46 +7335,26 @@ export default function AdminDashboard() {
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Նկարագրություն (Հայերեն)</label>
-                          <textarea
+                          <hd-textarea
                             placeholder="Յուրահատուկ հայկական և լատինական..."
                             value={aboutTranslations.spec1_desc_hy}
-                            onChange={(e) => setAboutTranslations(prev => ({ ...prev, spec1_desc_hy: e.target.value }))}
-                            style={{
-                              width: '100%',
-                              minHeight: '80px',
-                              background: 'rgba(255,255,255,0.02)',
-                              border: '1px solid rgba(255,255,255,0.08)',
-                              borderRadius: '12px',
-                              padding: '12px',
-                              color: '#fff',
-                              fontSize: '0.85rem',
-                              outline: 'none',
-                              resize: 'vertical',
-                              fontFamily: 'inherit',
-                              lineHeight: '1.5'
-                            }}
+                            onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, spec1_desc_hy: e.target.value }))}
+                            data-width="100%"
+                            data-disable-horizontal-resize="true"
+                            data-font-size="14pt"
+                            data-height="100px"
                           />
                         </div>
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Description (English)</label>
-                          <textarea
+                          <hd-textarea
                             placeholder="Design of unique Armenian..."
                             value={aboutTranslations.spec1_desc_en}
-                            onChange={(e) => setAboutTranslations(prev => ({ ...prev, spec1_desc_en: e.target.value }))}
-                            style={{
-                              width: '100%',
-                              minHeight: '80px',
-                              background: 'rgba(255,255,255,0.02)',
-                              border: '1px solid rgba(255,255,255,0.08)',
-                              borderRadius: '12px',
-                              padding: '12px',
-                              color: '#fff',
-                              fontSize: '0.85rem',
-                              outline: 'none',
-                              resize: 'vertical',
-                              fontFamily: 'inherit',
-                              lineHeight: '1.5'
-                            }}
+                            onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, spec1_desc_en: e.target.value }))}
+                            data-width="100%"
+                            data-disable-horizontal-resize="true"
+                            data-font-size="14pt"
+                            data-height="100px"
                           />
                         </div>
                       </div>
@@ -7371,46 +7394,26 @@ export default function AdminDashboard() {
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Նկարագրություն (Հայերեն)</label>
-                          <textarea
+                          <hd-textarea
                             placeholder="Տեսողական ինքնության մշակում..."
                             value={aboutTranslations.spec2_desc_hy}
-                            onChange={(e) => setAboutTranslations(prev => ({ ...prev, spec2_desc_hy: e.target.value }))}
-                            style={{
-                              width: '100%',
-                              minHeight: '80px',
-                              background: 'rgba(255,255,255,0.02)',
-                              border: '1px solid rgba(255,255,255,0.08)',
-                              borderRadius: '12px',
-                              padding: '12px',
-                              color: '#fff',
-                              fontSize: '0.85rem',
-                              outline: 'none',
-                              resize: 'vertical',
-                              fontFamily: 'inherit',
-                              lineHeight: '1.5'
-                            }}
+                            onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, spec2_desc_hy: e.target.value }))}
+                            data-width="100%"
+                            data-disable-horizontal-resize="true"
+                            data-font-size="14pt"
+                            data-height="100px"
                           />
                         </div>
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Description (English)</label>
-                          <textarea
+                          <hd-textarea
                             placeholder="Visual identity development..."
                             value={aboutTranslations.spec2_desc_en}
-                            onChange={(e) => setAboutTranslations(prev => ({ ...prev, spec2_desc_en: e.target.value }))}
-                            style={{
-                              width: '100%',
-                              minHeight: '80px',
-                              background: 'rgba(255,255,255,0.02)',
-                              border: '1px solid rgba(255,255,255,0.08)',
-                              borderRadius: '12px',
-                              padding: '12px',
-                              color: '#fff',
-                              fontSize: '0.85rem',
-                              outline: 'none',
-                              resize: 'vertical',
-                              fontFamily: 'inherit',
-                              lineHeight: '1.5'
-                            }}
+                            onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, spec2_desc_en: e.target.value }))}
+                            data-width="100%"
+                            data-disable-horizontal-resize="true"
+                            data-font-size="14pt"
+                            data-height="100px"
                           />
                         </div>
                       </div>
@@ -7450,46 +7453,26 @@ export default function AdminDashboard() {
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Նկարագրություն (Հայերեն)</label>
-                          <textarea
+                          <hd-textarea
                             placeholder="Օգտագործողի փորձի (UX)..."
                             value={aboutTranslations.spec3_desc_hy}
-                            onChange={(e) => setAboutTranslations(prev => ({ ...prev, spec3_desc_hy: e.target.value }))}
-                            style={{
-                              width: '100%',
-                              minHeight: '80px',
-                              background: 'rgba(255,255,255,0.02)',
-                              border: '1px solid rgba(255,255,255,0.08)',
-                              borderRadius: '12px',
-                              padding: '12px',
-                              color: '#fff',
-                              fontSize: '0.85rem',
-                              outline: 'none',
-                              resize: 'vertical',
-                              fontFamily: 'inherit',
-                              lineHeight: '1.5'
-                            }}
+                            onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, spec3_desc_hy: e.target.value }))}
+                            data-width="100%"
+                            data-disable-horizontal-resize="true"
+                            data-font-size="14pt"
+                            data-height="100px"
                           />
                         </div>
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Description (English)</label>
-                          <textarea
+                          <hd-textarea
                             placeholder="Designing user experience (UX)..."
                             value={aboutTranslations.spec3_desc_en}
-                            onChange={(e) => setAboutTranslations(prev => ({ ...prev, spec3_desc_en: e.target.value }))}
-                            style={{
-                              width: '100%',
-                              minHeight: '80px',
-                              background: 'rgba(255,255,255,0.02)',
-                              border: '1px solid rgba(255,255,255,0.08)',
-                              borderRadius: '12px',
-                              padding: '12px',
-                              color: '#fff',
-                              fontSize: '0.85rem',
-                              outline: 'none',
-                              resize: 'vertical',
-                              fontFamily: 'inherit',
-                              lineHeight: '1.5'
-                            }}
+                            onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, spec3_desc_en: e.target.value }))}
+                            data-width="100%"
+                            data-disable-horizontal-resize="true"
+                            data-font-size="14pt"
+                            data-height="100px"
                           />
                         </div>
                       </div>
@@ -7565,42 +7548,26 @@ export default function AdminDashboard() {
                         </div>
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Կայքի Նկարագրություն (Հայերեն)</label>
-                          <textarea
+                          <hd-textarea
                             placeholder="Մուտքագրեք կայքի նկարագրությունը..."
                             value={personalization.site_desc_hy}
-                            onChange={(e) => setPersonalization(prev => ({ ...prev, site_desc_hy: e.target.value }))}
-                            style={{
-                              width: '100%',
-                              minHeight: '80px',
-                              background: 'rgba(255,255,255,0.02)',
-                              border: '1px solid rgba(255,255,255,0.08)',
-                              borderRadius: '12px',
-                              padding: '12px',
-                              color: '#fff',
-                              fontSize: '0.85rem',
-                              outline: 'none',
-                              resize: 'vertical'
-                            }}
+                            onInput={(e: any) => setPersonalization(prev => ({ ...prev, site_desc_hy: e.target.value }))}
+                            data-width="100%"
+                            data-disable-horizontal-resize="true"
+                            data-font-size="14pt"
+                            data-height="100px"
                           />
                         </div>
                         <div>
                           <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Site Description (English)</label>
-                          <textarea
+                          <hd-textarea
                             placeholder="Enter English site description..."
                             value={personalization.site_desc_en}
-                            onChange={(e) => setPersonalization(prev => ({ ...prev, site_desc_en: e.target.value }))}
-                            style={{
-                              width: '100%',
-                              minHeight: '80px',
-                              background: 'rgba(255,255,255,0.02)',
-                              border: '1px solid rgba(255,255,255,0.08)',
-                              borderRadius: '12px',
-                              padding: '12px',
-                              color: '#fff',
-                              fontSize: '0.85rem',
-                              outline: 'none',
-                              resize: 'vertical'
-                            }}
+                            onInput={(e: any) => setPersonalization(prev => ({ ...prev, site_desc_en: e.target.value }))}
+                            data-width="100%"
+                            data-disable-horizontal-resize="true"
+                            data-font-size="14pt"
+                            data-height="100px"
                           />
                         </div>
                       </div>
@@ -8123,7 +8090,7 @@ export default function AdminDashboard() {
                           border: '1px solid var(--panel-border)'
                         }}>
                           <div>
-                            <span style={{ fontSize: '0.9rem', fontWeight: 600, display: 'block' }}>Upcoming Mode Ռեժիմ</span>
+                            <span style={{ fontSize: '0.9rem', fontWeight: 600, display: 'block' }}>Upcoming Mode Ռեժիմ (Ամբողջ Կայքը)</span>
                             <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
                               {upcomingMode ? 'Ակտիվացված է (սպասման էջը միացված է)' : 'Անջատված է (կայքը բաց է բոլորի համար)'}
                             </span>
@@ -8149,6 +8116,179 @@ export default function AdminDashboard() {
                           </hd-button>
                         </div>
                       </form>
+                    </div>
+
+                    {/* Card 1.5: HDesign Pages Upcoming Mode */}
+                    <div style={{
+                      background: 'var(--panel)',
+                      border: '1px solid var(--panel-border)',
+                      borderRadius: '16px',
+                      padding: '24px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '20px'
+                    }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className="icon-Layers" style={{ color: '#ab47bc' }} />
+                        HDesign Էջերի Upcoming Ռեժիմ (HDesign Pages Mode)
+                      </h3>
+
+                      <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: 0, lineHeight: 1.5 }}>
+                        Առանձին կոճակ HDesign էջերի (/hdesign, /hdesign/docs, /hdesign/samples) համար։ Միացնելով այս ռեժիմը՝ միայն HDesign-ի էջերը կանցնեն Upcoming (Coming Soon) ռեժիմի, իսկ կայքի մյուս էջերը կմնան հանրությանը հասանելի։
+                      </p>
+
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '16px',
+                        background: 'rgba(255,255,255,0.02)',
+                        borderRadius: '12px',
+                        border: '1px solid var(--panel-border)'
+                      }}>
+                        <div>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 600, display: 'block' }}>HDesign Էջերի Upcoming Mode</span>
+                          <span style={{ fontSize: '0.78rem', color: upcomingHdesignMode ? '#ab47bc' : 'var(--muted)' }}>
+                            {upcomingHdesignMode ? 'Ակտիվացված է (/hdesign էջերը փակ են)' : 'Անջատված է (/hdesign էջերը բաց են)'}
+                          </span>
+                        </div>
+                        
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <button
+                            type="button"
+                            onClick={() => toggleHdesignUpcomingQuick(!upcomingHdesignMode)}
+                            disabled={togglingHdesignUpcoming}
+                            style={{
+                              background: upcomingHdesignMode ? 'linear-gradient(135deg, #ab47bc 0%, #7b1fa2 100%)' : 'rgba(255, 255, 255, 0.06)',
+                              color: upcomingHdesignMode ? '#ffffff' : 'var(--muted)',
+                              border: '1px solid ' + (upcomingHdesignMode ? '#ab47bc' : 'var(--panel-border)'),
+                              borderRadius: '20px',
+                              padding: '6px 14px',
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                              cursor: togglingHdesignUpcoming ? 'wait' : 'pointer',
+                              transition: 'all 0.2s ease',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px'
+                            }}
+                          >
+                            <span style={{
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              background: upcomingHdesignMode ? '#ffffff' : '#888888',
+                              display: 'inline-block'
+                            }} />
+                            {togglingHdesignUpcoming 
+                              ? 'Փոխվում է...' 
+                              : (upcomingHdesignMode ? 'HDesign: Upcoming' : 'HDesign: Ակտիվ')}
+                          </button>
+
+                          <hd-switch 
+                            checked={upcomingHdesignMode} 
+                            data-thickness="4px"
+                            onChange={(e: any) => toggleHdesignUpcomingQuick(e.target.checked)} 
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card 1.6: Per-Page Maintenance Mode */}
+                    <div style={{
+                      background: 'var(--panel)',
+                      border: '1px solid var(--panel-border)',
+                      borderRadius: '16px',
+                      padding: '24px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '20px'
+                    }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className="icon-Grid" style={{ color: '#0088FE' }} />
+                        Էջերի Առանձին Upcoming Ռեժիմներ (Per-Page Upcoming Mode)
+                      </h3>
+
+                      <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: 0, lineHeight: 1.5 }}>
+                        Կառավարեք յուրաքանչյուր էջի աշխատանքային ռեժիմն առանձին։ Միացնելով կոնկրետ էջի կոճակը՝ տվյալ էջի այցելուներին կցուցադրվի Upcoming (Coming Soon) սպասման էջը։
+                      </p>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {[
+                          { key: 'home', title: 'Գլխավոր էջ (Home)', path: '/', icon: '🏠' },
+                          { key: 'works', title: 'Աշխատանքներ (Works)', path: '/works', icon: '💼' },
+                          { key: 'about', title: 'Մեր մասին (About)', path: '/about', icon: 'ℹ️' },
+                          { key: 'contact', title: 'Կապ (Contact)', path: '/contact', icon: '📞' },
+                          { key: 'fonts', title: 'Տառատեսակներ (Fonts)', path: '/fonts', icon: '🔤' },
+                          { key: 'hdesign', title: 'HDesign', path: '/hdesign', icon: '🎨' }
+                        ].map((page) => {
+                          const isUpcoming = !!upcomingPages[page.key];
+                          const isUpdating = togglingPageKey === page.key;
+
+                          return (
+                            <div 
+                              key={page.key}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '12px 16px',
+                                background: isUpcoming ? 'rgba(0, 136, 254, 0.05)' : 'rgba(255,255,255,0.02)',
+                                borderRadius: '12px',
+                                border: '1px solid ' + (isUpcoming ? 'rgba(0, 136, 254, 0.3)' : 'var(--panel-border)'),
+                                transition: 'all 0.2s ease'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <span style={{ fontSize: '1.2rem' }}>{page.icon}</span>
+                                <div>
+                                  <span style={{ fontSize: '0.88rem', fontWeight: 600, display: 'block' }}>{page.title}</span>
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
+                                    {page.path} • {isUpcoming ? 'Upcoming ռեժիմ (Փակ է)' : 'Ակտիվ (Բաց է)'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => togglePageUpcomingQuick(page.key, !isUpcoming)}
+                                  disabled={isUpdating}
+                                  style={{
+                                    background: isUpcoming ? 'linear-gradient(135deg, #0088FE 0%, #0055b3 100%)' : 'rgba(255, 255, 255, 0.05)',
+                                    color: isUpcoming ? '#ffffff' : 'var(--muted)',
+                                    border: '1px solid ' + (isUpcoming ? '#0088FE' : 'var(--panel-border)'),
+                                    borderRadius: '20px',
+                                    padding: '5px 12px',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 600,
+                                    cursor: isUpdating ? 'wait' : 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                  }}
+                                >
+                                  <span style={{
+                                    width: '7px',
+                                    height: '7px',
+                                    borderRadius: '50%',
+                                    background: isUpcoming ? '#ffffff' : '#888888',
+                                    display: 'inline-block'
+                                  }} />
+                                  {isUpdating ? 'Փոխվում է...' : (isUpcoming ? 'Upcoming' : 'Ակտիվ')}
+                                </button>
+
+                                <hd-switch 
+                                  checked={isUpcoming} 
+                                  data-thickness="4px"
+                                  onChange={(e: any) => togglePageUpcomingQuick(page.key, e.target.checked)} 
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
 
                     {/* Card: General Font Management */}

@@ -747,6 +747,11 @@ export default function Home() {
 
   const [hdesignFontWeight, setHdesignFontWeight] = useState<number>(400);
   const [hdesignFontSlant, setHdesignFontSlant] = useState<number>(0);
+  const [hdesignControlMode, setHdesignControlMode] = useState<"sliders" | "matrix">("sliders");
+  const [showMatrixGrid, setShowMatrixGrid] = useState<boolean>(true);
+  const [showMatrixWatermark, setShowMatrixWatermark] = useState<boolean>(true);
+  const [matrixWatermarkChar, setMatrixWatermarkChar] = useState<string>("Ա");
+  const [isDraggingMatrix, setIsDraggingMatrix] = useState<boolean>(false);
   const [copiedChar, setCopiedChar] = useState<string | null>(null);
 
   // Gallery states
@@ -1699,11 +1704,11 @@ export default function Home() {
                 <h2 style={{ fontSize: "2rem", fontWeight: "800", color: "#ffffff", margin: 0 }}>
                   {t('home', 'about_title', 'Մասին')}
                 </h2>
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px", color: "#ffffff", opacity: 0.9, fontSize: "1.05rem", lineHeight: "1.7" }}>
-                  <p>
-                    {t('home', 'about_p1', 'Ողջույն, ես Հրանտ Հակոբյանն եմ և Ճարտարապետության և շինարարության Հայաստանի Ազգային Համալսարանի ճարտարապետության ֆակուլտետի 4-րդ կուրսի ուսանող եմ։')}
+                <div style={{ display: "flex", flexDirection: "column", gap: "1.7em", color: "#ffffff", opacity: 0.9, fontSize: "1.05rem", lineHeight: "1.7" }}>
+                  <p style={{ margin: 0 }}>
+                    {t('about', 'bio_p1', t('home', 'about_p1', 'Ողջույն, ես Հրանտ Հակոբյանն եմ և Ճարտարապետության և շինարարության Հայաստանի Ազգային Համալսարանի ճարտարապետության ֆակուլտետի 4-րդ կուրսի ուսանող եմ։'))}
                   </p>
-                  <p style={{ fontWeight: 700 }}>
+                  <p style={{ fontWeight: 700, margin: 0 }}>
                     {t('home', 'about_p2', 'Ես մասնագիտանում եմ տառաստեղծության և բրենդինգի մեջ։')}
                   </p>
                 </div>
@@ -2857,275 +2862,645 @@ export default function Home() {
           <h2 style={{ fontSize: "1.4rem", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginTop: "60px", marginBottom: "20px", textAlign: "center", color: "var(--text)" }}>
           {t('home', 'font_title', 'Տառատեսակ')}
         </h2>
-        <div style={{
-          background: "var(--panel)",
-          border: "1px solid var(--panel-border)",
-          borderRadius: "24px",
-          padding: "32px",
-          boxShadow: "var(--shadow)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "28px"
-        }}>
-          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" }}>
-            <div>
-              <h3 style={{ fontSize: "1.25rem", fontWeight: "800", color: "var(--text)", margin: "0 0 6px 0" }}>
-                {t('home', 'font_glyphs', 'HDesign Տառատեսակի Գլիֆներ')}
-              </h3>
-              <p style={{ fontSize: "0.85rem", color: "var(--muted)", margin: 0, minHeight: "20px" }}>
-                {copiedChar ? (
-                  <span style={{ color: "var(--primary-color)", fontWeight: "bold" }}>
-                    {t('home', 'char_copied', '«{char}» նիշը պատճենվեց:').replace('{char}', copiedChar)}
-                  </span>
-                ) : (
-                  t('home', 'click_copy_char', 'Կտտացրեք նիշի վրա՝ այն պատճենելու համար')
-                )}
-              </p>
-            </div>
-
-            {/* Variability Slider Card */}
+          {/* 2-Column Flex Layout: Left Glyphs Panel + Right Controls Sidebar (Պատկերակների նման) */}
+          <div style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "28px",
+            width: "100%",
+            alignItems: "flex-start"
+          }}>
+            {/* Left Column: Glyph Grids Card (Հետևի ետնաշերտը պատկանում է միայն գլիֆներին) */}
             <div style={{
-              background: "rgba(255, 255, 255, 0.02)",
+              flex: "1 1 500px",
+              minWidth: "300px",
+              background: "var(--panel)",
               border: "1px solid var(--panel-border)",
-              borderRadius: "16px",
-              padding: "16px 20px",
-              minWidth: "280px",
-              flex: "0 1 360px",
+              borderRadius: "24px",
+              padding: "32px",
+              boxShadow: "var(--shadow)",
               display: "flex",
               flexDirection: "column",
-              gap: "12px"
+              gap: "28px"
             }}>
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                  <span style={{ fontSize: "0.8rem", fontWeight: "600", color: "var(--muted)" }}>
-                    {t('home', 'font_weight_label', 'Հաստություն (Font Weight)')}
-                  </span>
-                  <span style={{ fontSize: "0.85rem", fontWeight: "700", color: "var(--primary-color)" }}>
-                    {hdesignFontWeight}
-                  </span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <h3 style={{ fontSize: "1.25rem", fontWeight: "800", color: "var(--text)", margin: "0 0 6px 0" }}>
+                    {t('home', 'font_glyphs', 'HDesign Տառատեսակի Գլիֆներ')}
+                  </h3>
+                  <p style={{ fontSize: "0.85rem", color: "var(--muted)", margin: 0, minHeight: "20px" }}>
+                    {copiedChar ? (
+                      <span style={{ color: "var(--primary-color)", fontWeight: "bold" }}>
+                        {t('home', 'char_copied', '«{char}» նիշը պատճենվեց:').replace('{char}', copiedChar)}
+                      </span>
+                    ) : (
+                      t('home', 'click_copy_char', 'Կտտացրեք նիշի վրա՝ այն պատճենելու համար')
+                    )}
+                  </p>
                 </div>
-                <hd-slider 
-                  min="100" 
-                  max="900" 
-                  step="10" 
-                  value={hdesignFontWeight}
-                  onInput={(e: any) => setHdesignFontWeight(Number(e.target.value))}
-                  data-width="100%"
-                />
               </div>
 
-              <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                  <span style={{ fontSize: "0.8rem", fontWeight: "600", color: "var(--muted)" }}>
-                    {t('home', 'font_slant_label', 'Թեքություն (Font Slant / Italic)')}
-                  </span>
-                  <span style={{ fontSize: "0.85rem", fontWeight: "700", color: "var(--primary-color)" }}>
-                    {hdesignFontSlant.toFixed(2)}
-                  </span>
+              {/* Glyph Grids */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                {/* Armenian Character Grid */}
+                <div>
+                  <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Հայերեն (Armenian)</span>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))", gap: "8px" }}>
+                    {CHARS_AM.map((c, i) => (
+                      <div
+                        key={i}
+                        onClick={() => {
+                          navigator.clipboard.writeText(c);
+                          setCopiedChar(c);
+                          setMatrixWatermarkChar(c);
+                          setTimeout(() => setCopiedChar(null), 1500);
+                        }}
+                        className="character-cell"
+                        style={{
+                          fontFamily: "'HDesign', sans-serif",
+                          fontWeight: 400,
+                          height: "40px",
+                          background: "rgba(255, 255, 255, 0.02)",
+                          border: "1px solid var(--panel-border)",
+                          borderRadius: "8px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "1.3rem",
+                          lineHeight: 1,
+                          cursor: "pointer",
+                          userSelect: "none",
+                          transition: "all 0.15s ease",
+                        }}
+                      >
+                        <span style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          lineHeight: 1,
+                          fontFamily: "'HDesign', sans-serif",
+                          fontWeight: 400,
+                          fontStyle: "normal",
+                          fontVariationSettings: `'wght' ${hdesignFontWeight}, 'ital' ${hdesignFontSlant}`
+                        }}>
+                          {c}
+                        </span>
+                        <div className="character-tooltip">
+                          <div 
+                            className="tooltip-large-char"
+                            style={{
+                              fontFamily: "'HDesign', sans-serif",
+                              fontWeight: 400,
+                              fontStyle: "normal",
+                              lineHeight: 1,
+                              fontVariationSettings: `'wght' ${hdesignFontWeight}, 'ital' ${hdesignFontSlant}`
+                            }}
+                          >
+                            {c}
+                          </div>
+                          <div className="tooltip-name">
+                            {getCharacterName(c)}
+                          </div>
+                          <div className="tooltip-code">
+                            U+{c.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <hd-slider 
-                  min="0" 
-                  max="1" 
-                  step="0.01" 
-                  value={hdesignFontSlant}
-                  onInput={(e: any) => setHdesignFontSlant(Number(e.target.value))}
-                  data-width="100%"
-                />
-              </div>
-            </div>
-          </div>
 
-          {/* Glyph Grids */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            {/* Armenian Character Grid */}
-            <div>
-              <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Հայերեն (Armenian)</span>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))", gap: "8px" }}>
-                {CHARS_AM.map((c, i) => (
-                  <div
-                    key={i}
-                    onClick={() => {
-                      navigator.clipboard.writeText(c);
-                      setCopiedChar(c);
-                      setTimeout(() => setCopiedChar(null), 1500);
-                    }}
-                    className="character-cell"
-                    style={{
-                      fontFamily: "'HDesign', sans-serif",
-                      fontWeight: hdesignFontWeight,
-                      height: "40px",
-                      background: "rgba(255, 255, 255, 0.02)",
-                      border: "1px solid var(--panel-border)",
-                      borderRadius: "8px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "1.3rem",
-                      cursor: "pointer",
-                      userSelect: "none",
-                      transition: "all 0.15s ease",
-                    }}
-                  >
-                    <span style={{
-                      display: "inline-block",
-                      fontFamily: "'HDesign', sans-serif",
-                      fontWeight: hdesignFontWeight,
-                      fontVariationSettings: `'wght' ${hdesignFontWeight}, 'slnt' ${-hdesignFontSlant * 15}, 'ital' ${hdesignFontSlant}`,
-                      transform: `skewX(${-hdesignFontSlant * 14}deg)`,
-                      transformOrigin: "bottom center"
-                    }}>
-                      {c}
-                    </span>
-                    <div className="character-tooltip">
-                      <div 
-                        className="tooltip-large-char"
+                {/* English Character Grid */}
+                <div>
+                  <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Անգլերեն (English)</span>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))", gap: "8px" }}>
+                    {CHARS_EN.map((c, i) => (
+                      <div
+                        key={i}
+                        onClick={() => {
+                          navigator.clipboard.writeText(c);
+                          setCopiedChar(c);
+                          setMatrixWatermarkChar(c);
+                          setTimeout(() => setCopiedChar(null), 1500);
+                        }}
+                        className="character-cell"
                         style={{
                           fontFamily: "'HDesign', sans-serif",
-                          fontWeight: hdesignFontWeight,
-                          fontVariationSettings: `'wght' ${hdesignFontWeight}, 'slnt' ${-hdesignFontSlant * 15}, 'ital' ${hdesignFontSlant}`,
-                          transform: `skewX(${-hdesignFontSlant * 14}deg)`,
-                          transformOrigin: "bottom center"
+                          fontWeight: 400,
+                          height: "40px",
+                          background: "rgba(255, 255, 255, 0.02)",
+                          border: "1px solid var(--panel-border)",
+                          borderRadius: "8px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "1.3rem",
+                          lineHeight: 1,
+                          cursor: "pointer",
+                          userSelect: "none",
+                          transition: "all 0.15s ease",
                         }}
                       >
-                        {c}
+                        <span style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          lineHeight: 1,
+                          fontFamily: "'HDesign', sans-serif",
+                          fontWeight: 400,
+                          fontStyle: "normal",
+                          fontVariationSettings: `'wght' ${hdesignFontWeight}, 'ital' ${hdesignFontSlant}`
+                        }}>
+                          {c}
+                        </span>
+                        <div className="character-tooltip">
+                          <div 
+                            className="tooltip-large-char"
+                            style={{
+                              fontFamily: "'HDesign', sans-serif",
+                              fontWeight: 400,
+                              fontStyle: "normal",
+                              lineHeight: 1,
+                              fontVariationSettings: `'wght' ${hdesignFontWeight}, 'ital' ${hdesignFontSlant}`
+                            }}
+                          >
+                            {c}
+                          </div>
+                          <div className="tooltip-name">
+                            {getCharacterName(c)}
+                          </div>
+                          <div className="tooltip-code">
+                            U+{c.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')}
+                          </div>
+                        </div>
                       </div>
-                      <div className="tooltip-name">
-                        {getCharacterName(c)}
-                      </div>
-                      <div className="tooltip-code">
-                        U+{c.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')}
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
 
-            {/* English Character Grid */}
-            <div>
-              <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Անգլերեն (English)</span>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))", gap: "8px" }}>
-                {CHARS_EN.map((c, i) => (
-                  <div
-                    key={i}
-                    onClick={() => {
-                      navigator.clipboard.writeText(c);
-                      setCopiedChar(c);
-                      setTimeout(() => setCopiedChar(null), 1500);
-                    }}
-                    className="character-cell"
-                    style={{
-                      fontFamily: "'HDesign', sans-serif",
-                      fontWeight: hdesignFontWeight,
-                      height: "40px",
-                      background: "rgba(255, 255, 255, 0.02)",
-                      border: "1px solid var(--panel-border)",
-                      borderRadius: "8px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "1.3rem",
-                      cursor: "pointer",
-                      userSelect: "none",
-                      transition: "all 0.15s ease",
-                    }}
-                  >
-                    <span style={{
-                      display: "inline-block",
-                      fontFamily: "'HDesign', sans-serif",
-                      fontWeight: hdesignFontWeight,
-                      fontVariationSettings: `'wght' ${hdesignFontWeight}, 'slnt' ${-hdesignFontSlant * 15}, 'ital' ${hdesignFontSlant}`,
-                      transform: `skewX(${-hdesignFontSlant * 14}deg)`,
-                      transformOrigin: "bottom center"
-                    }}>
-                      {c}
-                    </span>
-                    <div className="character-tooltip">
-                      <div 
-                        className="tooltip-large-char"
+                {/* Numbers & Symbols Grid */}
+                <div>
+                  <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Թվեր և Նշաններ (Numbers & Symbols)</span>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))", gap: "8px" }}>
+                    {[...CHARS_NUM, ...CHARS_SYM].map((c, i) => (
+                      <div
+                        key={i}
+                        onClick={() => {
+                          navigator.clipboard.writeText(c);
+                          setCopiedChar(c);
+                          setMatrixWatermarkChar(c);
+                          setTimeout(() => setCopiedChar(null), 1500);
+                        }}
+                        className="character-cell"
                         style={{
                           fontFamily: "'HDesign', sans-serif",
-                          fontWeight: hdesignFontWeight,
-                          fontVariationSettings: `'wght' ${hdesignFontWeight}, 'slnt' ${-hdesignFontSlant * 15}, 'ital' ${hdesignFontSlant}`,
-                          transform: `skewX(${-hdesignFontSlant * 14}deg)`,
-                          transformOrigin: "bottom center"
+                          fontWeight: 400,
+                          height: "40px",
+                          background: "rgba(255, 255, 255, 0.02)",
+                          border: "1px solid var(--panel-border)",
+                          borderRadius: "8px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "1.3rem",
+                          lineHeight: 1,
+                          cursor: "pointer",
+                          userSelect: "none",
+                          transition: "all 0.15s ease",
                         }}
                       >
-                        {c}
+                        <span style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          lineHeight: 1,
+                          fontFamily: "'HDesign', sans-serif",
+                          fontWeight: 400,
+                          fontStyle: "normal",
+                          fontVariationSettings: `'wght' ${hdesignFontWeight}, 'ital' ${hdesignFontSlant}`
+                        }}>
+                          {c}
+                        </span>
+                        <div className="character-tooltip">
+                          <div 
+                            className="tooltip-large-char"
+                            style={{
+                              fontFamily: "'HDesign', sans-serif",
+                              fontWeight: 400,
+                              fontStyle: "normal",
+                              lineHeight: 1,
+                              fontVariationSettings: `'wght' ${hdesignFontWeight}, 'ital' ${hdesignFontSlant}`
+                            }}
+                          >
+                            {c}
+                          </div>
+                          <div className="tooltip-name">
+                            {getCharacterName(c)}
+                          </div>
+                          <div className="tooltip-code">
+                            U+{c.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')}
+                          </div>
+                        </div>
                       </div>
-                      <div className="tooltip-name">
-                        {getCharacterName(c)}
-                      </div>
-                      <div className="tooltip-code">
-                        U+{c.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')}
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
             </div>
 
-            {/* Numbers & Symbols Grid */}
-            <div>
-              <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>Թվեր և Նշաններ (Numbers & Symbols)</span>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(40px, 1fr))", gap: "8px" }}>
-                {[...CHARS_NUM, ...CHARS_SYM].map((c, i) => (
-                  <div
-                    key={i}
-                    onClick={() => {
-                      navigator.clipboard.writeText(c);
-                      setCopiedChar(c);
-                      setTimeout(() => setCopiedChar(null), 1500);
-                    }}
-                    className="character-cell"
+            {/* Right Column: Sticky Controls Sidebar (Առանձին Փեղկ) */}
+            <div style={{
+              flex: "1 1 350px",
+              maxWidth: "420px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "24px",
+              position: "sticky",
+              top: "100px"
+            }}>
+              {/* Variability Controls Card matching Icons section */}
+              <div style={{
+                backgroundColor: "var(--panel)",
+                border: "1px solid var(--panel-border)",
+                borderRadius: "24px",
+                padding: "24px",
+                boxShadow: "var(--shadow)",
+                display: "flex",
+                flexDirection: "column",
+                gap: "20px"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--panel-border)", paddingBottom: "14px" }}>
+                  <span style={{ fontSize: "0.95rem", fontWeight: "700", color: "var(--text)" }}>
+                    {t('home', 'font_variability_panel', 'Տառատեսակի Փոփոխականություն')}
+                  </span>
+                  <button
+                    onClick={() => { setHdesignFontWeight(400); setHdesignFontSlant(0); }}
                     style={{
-                      fontFamily: "'HDesign', sans-serif",
-                      fontWeight: hdesignFontWeight,
-                      height: "40px",
-                      background: "rgba(255, 255, 255, 0.02)",
-                      border: "1px solid var(--panel-border)",
-                      borderRadius: "8px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "1.3rem",
-                      cursor: "pointer",
-                      userSelect: "none",
-                      transition: "all 0.15s ease",
+                      background: "transparent",
+                      border: "none",
+                      color: "var(--muted)",
+                      fontSize: "0.8rem",
+                      fontWeight: "600",
+                      cursor: "pointer"
                     }}
                   >
-                    <span style={{
-                      display: "inline-block",
-                      fontFamily: "'HDesign', sans-serif",
-                      fontWeight: hdesignFontWeight,
-                      fontVariationSettings: `'wght' ${hdesignFontWeight}, 'slnt' ${-hdesignFontSlant * 15}, 'ital' ${hdesignFontSlant}`,
-                      transform: `skewX(${-hdesignFontSlant * 14}deg)`,
-                      transformOrigin: "bottom center"
-                    }}>
-                      {c}
+                    {t('home', 'reset_btn', 'Վերականգնել')}
+                  </button>
+                </div>
+
+                {/* Mode Switcher Segment using <hd-segment> */}
+                <div style={{ width: "100%" }}>
+                  <hd-segment
+                    suppressHydrationWarning
+                    value={hdesignControlMode}
+                    onChange={(e: any) => setHdesignControlMode(e.target.value)}
+                    data-height="36px"
+                    data-thickness="2px"
+                    data-width="100%"
+                  >
+                    <span value="sliders" {...(hdesignControlMode === "sliders" ? { selected: true } : {})}>
+                      {t('home', 'mode_sliders', 'Սահիչներ')}
                     </span>
-                    <div className="character-tooltip">
-                      <div 
-                        className="tooltip-large-char"
-                        style={{
+                    <span value="matrix" {...(hdesignControlMode === "matrix" ? { selected: true } : {})}>
+                      {t('home', 'mode_matrix', '2D Տիրույթ (Masters)')}
+                    </span>
+                  </hd-segment>
+                </div>
+
+                {hdesignControlMode === "sliders" ? (
+                  <>
+                    {/* Weight Slider */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "var(--text)" }}>
+                          {t('home', 'font_weight_label', 'Հաստություն (Font Weight)')}
+                        </span>
+                        <span style={{ fontSize: "0.85rem", fontWeight: "700", color: "var(--primary-color)" }}>
+                          {hdesignFontWeight}
+                        </span>
+                      </div>
+                      <hd-slider 
+                        suppressHydrationWarning
+                        min="100" 
+                        max="900" 
+                        step="10" 
+                        value={hdesignFontWeight}
+                        onInput={(e: any) => setHdesignFontWeight(Number(e.target.value))}
+                        data-width="100%"
+                      />
+                    </div>
+
+                    {/* Slant / Italic Slider */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "var(--text)" }}>
+                          {t('home', 'font_slant_label', 'Թեքություն (Font Slant / Italic)')}
+                        </span>
+                        <span style={{ fontSize: "0.85rem", fontWeight: "700", color: "var(--primary-color)" }}>
+                          {hdesignFontSlant.toFixed(2)}
+                        </span>
+                      </div>
+                      <hd-slider 
+                        suppressHydrationWarning
+                        min="0" 
+                        max="1" 
+                        step="0.01" 
+                        value={hdesignFontSlant}
+                        onInput={(e: any) => setHdesignFontSlant(Number(e.target.value))}
+                        data-width="100%"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  /* 2D Master Space Matrix Graph (Near-White Light Background Canvas) */
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div 
+                      onMouseDown={(e) => {
+                        setIsDraggingMatrix(false);
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const update = (me: MouseEvent, isMove: boolean = false) => {
+                          if (isMove) setIsDraggingMatrix(true);
+                          const px = Math.max(0, Math.min(1, (me.clientX - rect.left) / rect.width));
+                          const py = Math.max(0, Math.min(1, (me.clientY - rect.top) / rect.height));
+                          const normX = Math.max(0, Math.min(1, (px - 0.12) / 0.76));
+                          const normY = Math.max(0, Math.min(1, (0.85 - py) / 0.70));
+                          const w = Math.round(100 + normX * 800);
+                          const s = Number(normY.toFixed(2));
+                          setHdesignFontWeight(Math.min(900, Math.max(100, w)));
+                          setHdesignFontSlant(Math.min(1, Math.max(0, s)));
+                        };
+                        update(e.nativeEvent, false);
+                        const onMove = (me: MouseEvent) => update(me, true);
+                        const onUp = () => {
+                          setIsDraggingMatrix(false);
+                          window.removeEventListener("mousemove", onMove);
+                          window.removeEventListener("mouseup", onUp);
+                        };
+                        window.addEventListener("mousemove", onMove);
+                        window.addEventListener("mouseup", onUp);
+                      }}
+                      onTouchStart={(e) => {
+                        setIsDraggingMatrix(false);
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const touch = e.touches[0];
+                        const px = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
+                        const py = Math.max(0, Math.min(1, (touch.clientY - rect.top) / rect.height));
+                        const normX = Math.max(0, Math.min(1, (px - 0.12) / 0.76));
+                        const normY = Math.max(0, Math.min(1, (0.85 - py) / 0.70));
+                        const w = Math.round(100 + normX * 800);
+                        const s = Number(normY.toFixed(2));
+                        setHdesignFontWeight(Math.min(900, Math.max(100, w)));
+                        setHdesignFontSlant(Math.min(1, Math.max(0, s)));
+                      }}
+                      onTouchMove={(e) => {
+                        setIsDraggingMatrix(true);
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const touch = e.touches[0];
+                        const px = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
+                        const py = Math.max(0, Math.min(1, (touch.clientY - rect.top) / rect.height));
+                        const normX = Math.max(0, Math.min(1, (px - 0.12) / 0.76));
+                        const normY = Math.max(0, Math.min(1, (0.85 - py) / 0.70));
+                        const w = Math.round(100 + normX * 800);
+                        const s = Number(normY.toFixed(2));
+                        setHdesignFontWeight(Math.min(900, Math.max(100, w)));
+                        setHdesignFontSlant(Math.min(1, Math.max(0, s)));
+                      }}
+                      onTouchEnd={() => setIsDraggingMatrix(false)}
+                      style={{
+                        position: "relative",
+                        height: "260px",
+                        width: "100%",
+                        borderRadius: "16px",
+                        background: "#fafafa",
+                        border: "1px solid rgba(0, 0, 0, 0.12)",
+                        boxShadow: "inset 0 2px 6px rgba(0, 0, 0, 0.04)",
+                        userSelect: "none",
+                        cursor: "crosshair",
+                        overflow: "hidden"
+                      }}
+                    >
+                      {/* Dashed Grid Lines & Diagonal Arrow Line */}
+                      {showMatrixGrid && (
+                        <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
+                          <line x1="12%" y1="15%" x2="12%" y2="85%" stroke="rgba(0, 0, 0, 0.18)" strokeDasharray="3 3" />
+                          <line x1="88%" y1="15%" x2="88%" y2="85%" stroke="rgba(0, 0, 0, 0.18)" strokeDasharray="3 3" />
+                          <line x1="12%" y1="15%" x2="88%" y2="15%" stroke="rgba(0, 0, 0, 0.18)" strokeDasharray="3 3" />
+                          <line x1="12%" y1="85%" x2="88%" y2="85%" stroke="rgba(0, 0, 0, 0.18)" strokeDasharray="3 3" />
+                          <line x1="12%" y1="85%" x2="88%" y2="15%" stroke="#083f39" strokeDasharray="4 4" opacity="0.4" />
+                        </svg>
+                      )}
+
+                      {/* Background Watermark Glyph */}
+                      {showMatrixWatermark && (
+                        <div style={{
+                          position: "absolute",
+                          inset: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: "7.5rem",
+                          lineHeight: 1,
+                          color: "#000",
+                          opacity: 0.07,
                           fontFamily: "'HDesign', sans-serif",
-                          fontWeight: hdesignFontWeight,
-                          fontVariationSettings: `'wght' ${hdesignFontWeight}, 'slnt' ${-hdesignFontSlant * 15}, 'ital' ${hdesignFontSlant}`,
-                          transform: `skewX(${-hdesignFontSlant * 14}deg)`,
-                          transformOrigin: "bottom center"
-                        }}
+                          fontWeight: 400,
+                          fontStyle: "normal",
+                          fontVariationSettings: `'wght' ${hdesignFontWeight}, 'ital' ${hdesignFontSlant}`,
+                          pointerEvents: "none"
+                        }}>
+                          {matrixWatermarkChar}
+                        </div>
+                      )}
+
+                      {/* Axis Labels */}
+                      <div style={{ position: "absolute", bottom: "4px", left: "50%", transform: "translateX(-50%)", fontSize: "0.7rem", fontWeight: "700", color: "#475569", textTransform: "uppercase", letterSpacing: "1px", pointerEvents: "none" }}>
+                        Weight
+                      </div>
+                      <div style={{ position: "absolute", left: "6px", top: "50%", transform: "translateY(-50%) rotate(-90deg)", fontSize: "0.7rem", fontWeight: "700", color: "#475569", textTransform: "uppercase", letterSpacing: "1px", pointerEvents: "none" }}>
+                        Italic
+                      </div>
+
+                      {/* 4 Master Corner Nodes (wt100,it0 / wt900,it0 / wt100,it1 / wt900,it1) */}
+                      {/* Bottom Left: wt100,it0 */}
+                      <div 
+                        onClick={(e) => { e.stopPropagation(); setIsDraggingMatrix(false); setHdesignFontWeight(100); setHdesignFontSlant(0); }}
+                        style={{ position: "absolute", left: "12%", top: "85%", transform: "translate(-50%, -50%)", cursor: "pointer", textAlign: "center", zIndex: 10 }}
+                        title="Master: Thin (wt100, it0)"
                       >
-                        {c}
+                        <span style={{ color: "#d97706", fontSize: "0.85rem" }}>◆</span>
+                        <div style={{ fontSize: "0.62rem", color: "#475569", fontFamily: "monospace", marginTop: "-2px", fontWeight: "600" }}>wt100,it0</div>
+                        <div style={{ fontSize: "0.8rem", fontFamily: "'HDesign', sans-serif", fontWeight: 100, color: "#0f172a" }}>A</div>
                       </div>
-                      <div className="tooltip-name">
-                        {getCharacterName(c)}
+
+                      {/* Bottom Right: wt900,it0 */}
+                      <div 
+                        onClick={(e) => { e.stopPropagation(); setIsDraggingMatrix(false); setHdesignFontWeight(900); setHdesignFontSlant(0); }}
+                        style={{ position: "absolute", left: "88%", top: "85%", transform: "translate(-50%, -50%)", cursor: "pointer", textAlign: "center", zIndex: 10 }}
+                        title="Master: Black (wt900, it0)"
+                      >
+                        <span style={{ color: "#d97706", fontSize: "0.85rem" }}>◆</span>
+                        <div style={{ fontSize: "0.62rem", color: "#475569", fontFamily: "monospace", marginTop: "-2px", fontWeight: "600" }}>wt900,it0</div>
+                        <div style={{ fontSize: "0.8rem", fontFamily: "'HDesign', sans-serif", fontWeight: 900, color: "#0f172a" }}>A</div>
                       </div>
-                      <div className="tooltip-code">
-                        U+{c.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')}
+
+                      {/* Top Left: wt100,it1 */}
+                      <div 
+                        onClick={(e) => { e.stopPropagation(); setIsDraggingMatrix(false); setHdesignFontWeight(100); setHdesignFontSlant(1); }}
+                        style={{ position: "absolute", left: "12%", top: "15%", transform: "translate(-50%, -50%)", cursor: "pointer", textAlign: "center", zIndex: 10 }}
+                        title="Master: ThinItalic (wt100, it1)"
+                      >
+                        <div style={{ fontSize: "0.8rem", fontFamily: "'HDesign', sans-serif", fontWeight: 100, fontStyle: "normal", fontVariationSettings: "'wght' 100, 'ital' 1", color: "#0f172a" }}>A</div>
+                        <span style={{ color: "#d97706", fontSize: "0.85rem" }}>◆</span>
+                        <div style={{ fontSize: "0.62rem", color: "#475569", fontFamily: "monospace", marginTop: "-2px", fontWeight: "600" }}>wt100,it1</div>
+                      </div>
+
+                      {/* Top Right: wt900,it1 */}
+                      <div 
+                        onClick={(e) => { e.stopPropagation(); setIsDraggingMatrix(false); setHdesignFontWeight(900); setHdesignFontSlant(1); }}
+                        style={{ position: "absolute", left: "88%", top: "15%", transform: "translate(-50%, -50%)", cursor: "pointer", textAlign: "center", zIndex: 10 }}
+                        title="Master: BlackItalic (wt900, it1)"
+                      >
+                        <div style={{ fontSize: "0.8rem", fontFamily: "'HDesign', sans-serif", fontWeight: 900, fontStyle: "normal", fontVariationSettings: "'wght' 900, 'ital' 1", color: "#0f172a" }}>A</div>
+                        <span style={{ color: "#d97706", fontSize: "0.85rem" }}>◆</span>
+                        <div style={{ fontSize: "0.62rem", color: "#475569", fontFamily: "monospace", marginTop: "-2px", fontWeight: "600" }}>wt900,it1</div>
+                      </div>
+
+                      {/* Draggable Active Handle Target (Crosshair Plus Icon) */}
+                      <div style={{
+                        position: "absolute",
+                        left: `${12 + ((hdesignFontWeight - 100) / 800) * 76}%`,
+                        top: `${85 - hdesignFontSlant * 70}%`,
+                        transform: "translate(-50%, -50%)",
+                        transition: isDraggingMatrix ? "none" : "left 0.35s cubic-bezier(0.16, 1, 0.3, 1), top 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
+                        pointerEvents: "none",
+                        zIndex: 20,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                      }}>
+                        <div style={{
+                          width: "24px",
+                          height: "24px",
+                          borderRadius: "50%",
+                          border: "2px solid #083f39",
+                          background: "rgba(8, 63, 57, 0.85)",
+                          boxShadow: "0 2px 8px rgba(8, 63, 57, 0.4)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#fff",
+                          fontSize: "15px",
+                          fontWeight: "bold"
+                        }}>
+                          +
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Live Coordinates Readout */}
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", fontWeight: "600", color: "var(--muted)", background: "rgba(255, 255, 255, 0.02)", padding: "6px 12px", borderRadius: "8px", border: "1px solid var(--panel-border)" }}>
+                      <span>wght: <strong style={{ color: "var(--primary-color)" }}>{hdesignFontWeight}</strong></span>
+                      <span>ital / slnt: <strong style={{ color: "var(--primary-color)" }}>{hdesignFontSlant.toFixed(2)}</strong></span>
+                    </div>
+
+                    {/* Options Toggles using <hd-checkbox> */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingTop: "8px", borderTop: "1px dashed var(--panel-border)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }} onClick={() => setShowMatrixGrid(!showMatrixGrid)}>
+                        <hd-checkbox 
+                          suppressHydrationWarning 
+                          checked={showMatrixGrid} 
+                          onChange={(e: any) => setShowMatrixGrid(e.target.checked)} 
+                        />
+                        <span style={{ fontSize: "0.8rem", color: "var(--text)", fontWeight: "600" }}>
+                          {t('home', 'show_grid_lines', 'Ցուցադրել ցանցի կետագծերը')}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }} onClick={() => setShowMatrixWatermark(!showMatrixWatermark)}>
+                        <hd-checkbox 
+                          suppressHydrationWarning 
+                          checked={showMatrixWatermark} 
+                          onChange={(e: any) => setShowMatrixWatermark(e.target.checked)} 
+                        />
+                        <span style={{ fontSize: "0.8rem", color: "var(--text)", fontWeight: "600" }}>
+                          {t('home', 'show_watermark', 'Ցուցադրել ֆոնային տառը (Watermark)')}
+                        </span>
                       </div>
                     </div>
                   </div>
-                ))}
+                )}
+
+                {/* Presets */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", paddingTop: "14px", borderTop: "1px dashed var(--panel-border)" }}>
+                  <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    {t('home', 'font_presets', 'Արագ Ոճեր (Presets)')}
+                  </span>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                    <button
+                      onClick={() => { setHdesignFontWeight(400); setHdesignFontSlant(0); }}
+                      style={{
+                        background: hdesignFontWeight === 400 && hdesignFontSlant === 0 ? "var(--primary-color)" : "var(--input-bg)",
+                        color: hdesignFontWeight === 400 && hdesignFontSlant === 0 ? "#fff" : "var(--text)",
+                        border: "1px solid var(--panel-border)",
+                        borderRadius: "12px",
+                        padding: "8px 12px",
+                        fontSize: "0.8rem",
+                        fontWeight: "600",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease"
+                      }}
+                    >
+                      Regular
+                    </button>
+                    <button
+                      onClick={() => { setHdesignFontWeight(100); setHdesignFontSlant(1); }}
+                      style={{
+                        background: hdesignFontWeight === 100 && hdesignFontSlant === 1 ? "var(--primary-color)" : "var(--input-bg)",
+                        color: hdesignFontWeight === 100 && hdesignFontSlant === 1 ? "#fff" : "var(--text)",
+                        border: "1px solid var(--panel-border)",
+                        borderRadius: "12px",
+                        padding: "8px 12px",
+                        fontSize: "0.8rem",
+                        fontWeight: "600",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease"
+                      }}
+                    >
+                      ThinItalic
+                    </button>
+                    <button
+                      onClick={() => { setHdesignFontWeight(900); setHdesignFontSlant(0); }}
+                      style={{
+                        background: hdesignFontWeight === 900 && hdesignFontSlant === 0 ? "var(--primary-color)" : "var(--input-bg)",
+                        color: hdesignFontWeight === 900 && hdesignFontSlant === 0 ? "#fff" : "var(--text)",
+                        border: "1px solid var(--panel-border)",
+                        borderRadius: "12px",
+                        padding: "8px 12px",
+                        fontSize: "0.8rem",
+                        fontWeight: "600",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease"
+                      }}
+                    >
+                      Black
+                    </button>
+                    <button
+                      onClick={() => { setHdesignFontWeight(900); setHdesignFontSlant(1); }}
+                      style={{
+                        background: hdesignFontWeight === 900 && hdesignFontSlant === 1 ? "var(--primary-color)" : "var(--input-bg)",
+                        color: hdesignFontWeight === 900 && hdesignFontSlant === 1 ? "#fff" : "var(--text)",
+                        border: "1px solid var(--panel-border)",
+                        borderRadius: "12px",
+                        padding: "8px 12px",
+                        fontSize: "0.8rem",
+                        fontWeight: "600",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease"
+                      }}
+                    >
+                      BlackItalic
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -3200,7 +3575,6 @@ export default function Home() {
               margin-top: 2px;
             }
           `}</style>
-        </div>
         </hd-reveal>
       </section>
         {/* Close shell container */}

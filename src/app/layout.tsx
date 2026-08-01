@@ -74,8 +74,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const host = headersList.get('host') || '';
   const isLocalhost = host.startsWith('localhost') || host.startsWith('127.0.0.1') || host.endsWith('.local');
 
-  const generalSettings = await getSiteSetting('general_settings', { upcoming_mode: false });
-  const upcomingMode = isLocalhost ? false : !!generalSettings?.upcoming_mode;
+  const generalSettings = await getSiteSetting('general_settings', { upcoming_mode: false, upcoming_hdesign_mode: false, upcoming_pages: {} });
+  const upcomingMode = !!generalSettings?.upcoming_mode;
+  const upcomingHdesignMode = !!generalSettings?.upcoming_hdesign_mode;
+  const upcomingPages = generalSettings?.upcoming_pages || {};
 
   return (
     <html lang="en" data-theme="light" data-color="#083f39" style={{
@@ -121,9 +123,15 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <CustomCursor />
         <AnalyticsTracker />
         <I18nProvider>
+          <Header siteTitle={{ hy: personalization.site_title_hy || "HDesign", en: personalization.site_title_en || "HDesign" }} />
+          <GlobalBackground />
           <UpcomingCheck 
             initialUpcomingMode={upcomingMode}
+            initialUpcomingHdesignMode={upcomingHdesignMode}
+            initialUpcomingPages={upcomingPages}
             initialSettings={{
+              upcoming_hdesign_mode: upcomingHdesignMode,
+              upcoming_pages: upcomingPages,
               upcoming_title_hy: generalSettings?.upcoming_title_hy,
               upcoming_title_en: generalSettings?.upcoming_title_en,
               upcoming_desc_hy: generalSettings?.upcoming_desc_hy,
@@ -132,19 +140,17 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
               upcoming_tel: generalSettings?.upcoming_tel
             }}
           >
-            <Header siteTitle={{ hy: personalization.site_title_hy || "HDesign", en: personalization.site_title_en || "HDesign" }} />
-            <GlobalBackground />
             <PageTransition>
               {children}
             </PageTransition>
-            <Footer 
-              siteTitle={{ hy: personalization.site_title_hy || "HDesign", en: personalization.site_title_en || "HDesign" }} 
-              contactEmail={generalSettings?.contact_email}
-              contactTel={generalSettings?.contact_tel}
-              contactAddressHy={generalSettings?.contact_address_hy}
-              contactAddressEn={generalSettings?.contact_address_en}
-            />
           </UpcomingCheck>
+          <Footer 
+            siteTitle={{ hy: personalization.site_title_hy || "HDesign", en: personalization.site_title_en || "HDesign" }} 
+            contactEmail={generalSettings?.contact_email}
+            contactTel={generalSettings?.contact_tel}
+            contactAddressHy={generalSettings?.contact_address_hy}
+            contactAddressEn={generalSettings?.contact_address_en}
+          />
         </I18nProvider>
         <Script src="https://api.hakobian.am/libs/v1/components/script.js" strategy="afterInteractive" />
 

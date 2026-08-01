@@ -120,6 +120,7 @@ export default function GlobalFontInjector({ initialFontUrl, initialFontName }: 
           @font-face {
             font-family: 'HDesign';
             src: url('${fontUrl}') format('truetype'), url('${fontUrl}');
+            font-weight: 100 900;
             font-style: normal;
             font-display: swap;
             unicode-range: U+0000-001F, U+0021-009F, U+00A1-E8FF, U+EA00-10FFFF;
