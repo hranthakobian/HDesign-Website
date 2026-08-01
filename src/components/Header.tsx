@@ -25,6 +25,8 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentCategory, setCurrentCategory] = useState<string | null>(null);
+  const [mobileWorksOpen, setMobileWorksOpen] = useState(false);
+  const [mobileHdesignOpen, setMobileHdesignOpen] = useState(false);
 
   // Track search parameters (for dynamic active states like works categories)
   useEffect(() => {
@@ -259,13 +261,12 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
             </div>
           </nav>
 
-          {/* 4-Line Hamburger Button & Label */}
+          {/* 4-Line Hamburger Button */}
           <div 
             className="hamburger-wrapper"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             style={{ cursor: 'pointer' }}
           >
-            <span className="hamburger-text">{t('nav', 'menu', 'Ցանկ')}</span>
             <div 
               className={`hamburger-btn ${isMobileMenuOpen ? "open" : ""}`} 
               aria-label="Toggle navigation menu"
@@ -313,34 +314,94 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
         <div className={`mobile-menu-drawer ${isMobileMenuOpen ? "open" : ""}`}>
           <nav className="mobile-nav-links">
             <Link href="/" className={`mobile-nav-item ${activeNav === "home" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
-              {t('nav', 'home', 'Տուն')}
+              {renderNavLinkText("mobile-home", t('nav', 'home', 'Տուն'))}
             </Link>
-            <Link href="/about" className={`mobile-nav-item ${activeNav === "about" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
-              {t('nav', 'about', 'Մասին')}
-            </Link>
-             <Link href="/works" className={`mobile-nav-item ${activeNav === "works" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
-              {t('nav', 'works', 'Աշխատանքներ')}
-            </Link>
-            <Link href="/fonts" className={`mobile-nav-item ${activeNav === "fonts" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
-              {t('nav', 'fonts', 'Տառատեսակներ')}
-            </Link>
-            <div className="mobile-nav-divider" />
             
-            <span className="mobile-nav-section-title">HDesign</span>
-            <Link href="/hdesign" className={`mobile-nav-subitem ${pathname === "/hdesign" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
-              {t('nav', 'general', 'Ընդհանուր')}
+            <Link href="/about" className={`mobile-nav-item ${activeNav === "about" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
+              {renderNavLinkText("mobile-about", t('nav', 'about', 'Մասին'))}
             </Link>
-            <Link href="/hdesign/docs" className={`mobile-nav-subitem ${pathname === "/hdesign/docs" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
-              {t('nav', 'docs', 'Փաստաթղթեր')}
+
+            {/* Աշխատանքներ Dropdown Section */}
+            <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <Link href="/works" className={`mobile-nav-item ${activeNav === "works" ? "active" : ""}`} style={{ flex: 1, borderBottom: 'none' }} onClick={() => setIsMobileMenuOpen(false)}>
+                  {renderNavLinkText("mobile-works", t('nav', 'works', 'Աշխատանքներ'))}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setMobileWorksOpen(!mobileWorksOpen)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--text)',
+                    fontSize: '0.9rem',
+                    padding: '8px 12px',
+                    cursor: 'pointer'
+                  }}
+                  aria-label="Toggle Works dropdown"
+                >
+                  <span className="hd-icon hd-icon-chevrolt-arrow-bottom" style={{ display: 'inline-block', transform: (mobileWorksOpen || activeNav === "works") ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }} />
+                </button>
+              </div>
+
+              {(mobileWorksOpen || activeNav === "works") && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingLeft: '16px', marginBottom: '8px' }}>
+                  <Link href="/works?category=branding" className={`mobile-nav-subitem ${pathname === "/works" && currentCategory === "branding" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
+                    {renderNavLinkText("mobile-works-branding", t('nav', 'works_branding', 'Բրենդինգներ'))}
+                  </Link>
+                  <Link href="/works?category=design" className={`mobile-nav-subitem ${pathname === "/works" && currentCategory === "design" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
+                    {renderNavLinkText("mobile-works-design", t('nav', 'works_design', 'Պատկերասրահ'))}
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            <Link href="/fonts" className={`mobile-nav-item ${activeNav === "fonts" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
+              {renderNavLinkText("mobile-fonts", t('nav', 'fonts', 'Տառատեսակներ'))}
             </Link>
-             <Link href="/hdesign/samples" className={`mobile-nav-subitem ${pathname === "/hdesign/samples" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
-              {t('nav', 'samples', 'Փորձանմուշներ')}
-            </Link>
+
+            {/* HDesign Dropdown Section */}
+            <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <Link href="/hdesign" className={`mobile-nav-item ${activeNav === "hdesign" ? "active" : ""}`} style={{ flex: 1, borderBottom: 'none' }} onClick={() => setIsMobileMenuOpen(false)}>
+                  {renderNavLinkText("mobile-hdesign", "HDesign")}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setMobileHdesignOpen(!mobileHdesignOpen)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--text)',
+                    fontSize: '0.9rem',
+                    padding: '8px 12px',
+                    cursor: 'pointer'
+                  }}
+                  aria-label="Toggle HDesign dropdown"
+                >
+                  <span className="hd-icon hd-icon-chevrolt-arrow-bottom" style={{ display: 'inline-block', transform: (mobileHdesignOpen || activeNav === "hdesign") ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }} />
+                </button>
+              </div>
+
+              {(mobileHdesignOpen || activeNav === "hdesign") && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingLeft: '16px', marginBottom: '8px' }}>
+                  <Link href="/hdesign" className={`mobile-nav-subitem ${pathname === "/hdesign" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
+                    {renderNavLinkText("mobile-hdesign-general", t('nav', 'general', 'Ընդհանուր'))}
+                  </Link>
+                  <Link href="/hdesign/docs" className={`mobile-nav-subitem ${pathname === "/hdesign/docs" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
+                    {renderNavLinkText("mobile-hdesign-docs", t('nav', 'docs', 'Փաստաթղթեր'))}
+                  </Link>
+                  <Link href="/hdesign/samples" className={`mobile-nav-subitem ${pathname === "/hdesign/samples" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
+                    {renderNavLinkText("mobile-hdesign-samples", t('nav', 'samples', 'Փորձանմուշներ'))}
+                  </Link>
+                </div>
+              )}
+            </div>
 
             <div className="mobile-nav-divider" />
 
             <Link href="/contact" className={`mobile-nav-item ${activeNav === "contact" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
-              {t('nav', 'contact', 'Կապ')}
+              {renderNavLinkText("mobile-contact", t('nav', 'contact', 'Կապ'))}
             </Link>
 
             <div className="mobile-nav-divider" />

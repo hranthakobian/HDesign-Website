@@ -1215,19 +1215,25 @@ html[data-theme="custom"] .portfolio-header-wrapper.scrolled .portfolio-header-c
 }
 
 .portfolio-nav-item:hover,
-.portfolio-nav-item.active {
+.portfolio-nav-item.active,
+.mobile-nav-item:hover,
+.mobile-nav-item.active,
+.mobile-nav-subitem:hover,
+.mobile-nav-subitem.active,
+.header-dropdown-item:hover,
+.header-dropdown-item.active {
   .nav-double-lines {
     .nav-line {
       path {
-        stroke: var(--hover-color);
+        stroke: var(--hover-color, var(--accent, #4a897c));
       }
       
       &.line-top {
-        transform: translateY(-4px) scale(1);
+        transform: translateY(-2px) scale(0.75);
       }
 
       &.line-bottom {
-        transform: translateY(4px) scale(1);
+        transform: translateY(2px) scale(0.75);
       }
     }
   }
@@ -1696,6 +1702,17 @@ html[data-theme="dark"] .gallery-card .gallery-overlay {
 @media (max-width: 800px) {
   .playground-wrapper {
     grid-template-columns: 1fr;
+    padding: 20px;
+    gap: 20px;
+    border-radius: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .playground-wrapper {
+    padding: 14px;
+    gap: 14px;
+    border-radius: 14px;
   }
 }
 
@@ -1727,6 +1744,13 @@ html[data-theme="dark"] .gallery-card .gallery-overlay {
   border-radius: 16px;
   border: 1px dashed var(--panel-border);
   min-height: 320px;
+}
+
+@media (max-width: 480px) {
+  .playground-preview {
+    padding: 16px;
+    min-height: 240px;
+  }
 }
 
 /* Icon Thickness Utilities */
@@ -2315,25 +2339,19 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
   .portfolio-header-wrapper {
     position: fixed !important;
     top: 0 !important;
-    bottom: auto !important;
     left: 0 !important;
     right: 0 !important;
-    margin: 0 auto !important;
-    transform: none !important;
-    z-index: 1000 !important;
-    display: flex !important;
-    flex-direction: row !important;
-    justify-content: center !important;
-    align-items: center !important;
-    gap: 16px !important;
+    bottom: 0 !important;
     width: 100% !important;
-    max-width: 1500px !important;
+    height: 100% !important;
+    pointer-events: none !important;
+    z-index: 1000 !important;
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
-    padding: 16px 100px !important;
-    box-sizing: border-box !important;
-    pointer-events: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
   }
 
   /* Completely disable all desktop/scrolled pseudo-element layers to force capsule transparency and blur */
@@ -2347,19 +2365,23 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     content: none !important;
   }
 
-  /* Top capsules */
+  /* Left panel (Logo) drops down to Bottom-Left dock */
   .portfolio-logo-panel {
-    position: relative !important;
+    position: fixed !important;
+    bottom: 24px !important;
+    left: 32px !important;
+    top: auto !important;
+    right: auto !important;
     transform: none !important;
     pointer-events: auto !important;
-    height: 64px !important;
-    padding: 0 30px !important;
-    border-radius: 32px !important;
+    height: 56px !important;
+    padding: 0 24px !important;
+    border-radius: 28px !important;
     border: 1px solid var(--panel-border) !important;
     background: rgba(255, 255, 255, 0.85) !important;
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
-    z-index: 1000 !important;
+    z-index: 1001 !important;
     display: flex !important;
     align-items: center !important;
     gap: 8px !important;
@@ -2373,18 +2395,23 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     }
   }
 
+  /* Right panel (Controls) drops down to Bottom-Right dock */
   .portfolio-header-controls {
-    position: relative !important;
+    position: fixed !important;
+    bottom: 24px !important;
+    right: 32px !important;
+    top: auto !important;
+    left: auto !important;
     transform: none !important;
     pointer-events: auto !important;
-    height: 64px !important;
-    padding: 0 30px !important;
-    border-radius: 32px !important;
+    height: 56px !important;
+    padding: 0 24px !important;
+    border-radius: 28px !important;
     border: 1px solid var(--panel-border) !important;
     background: rgba(255, 255, 255, 0.85) !important;
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
-    z-index: 1000 !important;
+    z-index: 1001 !important;
     display: flex !important;
     align-items: center !important;
     box-shadow: var(--shadow) !important;
@@ -2412,28 +2439,29 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     }
   }
 
+  /* Center panel (Nav Links) stays at Top-Center */
   .portfolio-header {
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
+    position: fixed !important;
+    top: 20px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    bottom: auto !important;
     right: auto !important;
     margin: 0 !important;
-    transform: none !important;
     pointer-events: auto !important;
-    height: 64px !important;
-    flex: 1 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    padding: 0 36px !important;
-    border-radius: 32px !important;
+    height: 56px !important;
+    width: auto !important;
+    max-width: calc(100% - 64px) !important;
+    padding: 0 28px !important;
+    border-radius: 28px !important;
     border: 1px solid var(--panel-border) !important;
     background: rgba(255, 255, 255, 0.85) !important;
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
-    z-index: 1000 !important;
+    z-index: 1001 !important;
     display: flex !important;
     align-items: center !important;
-    justify-content: space-between !important;
+    justify-content: center !important;
     box-shadow: var(--shadow) !important;
     box-sizing: border-box !important;
     
@@ -2453,7 +2481,7 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     padding: 4px 6px !important;
   }
 
-  /* Theme overrides for floating bottom docks to look extra premium */
+  /* Theme overrides for floating bottom/top docks */
   html[data-theme="dark"] & {
     .portfolio-logo-panel, .portfolio-header-controls, .portfolio-header {
       background: rgba(15, 23, 42, 0.65) !important;
@@ -2474,6 +2502,11 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
 
 /* Media Query Adaptations for Mobile/Phone Pages */
 @media (max-width: 768px) {
+  .portfolio-header-wrapper {
+    padding: 0 !important;
+    pointer-events: none !important;
+  }
+
   .hamburger-wrapper {
     display: flex !important;
     align-items: center !important;
@@ -2483,11 +2516,7 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
   }
 
   .hamburger-text {
-    display: inline-block !important;
-    font-size: 0.95rem !important;
-    font-weight: 500 !important;
-    color: var(--text) !important;
-    user-select: none !important;
+    display: none !important;
   }
 
   .hamburger-btn {
@@ -2499,7 +2528,7 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     backdrop-filter: blur(20px);
   }
 
-  /* Floating top-right hamburger pill capsule on mobile phone */
+  /* Header panel becomes Top-Center or Top-Right floating Hamburger menu pill on mobile phone */
   .portfolio-header {
     position: fixed !important;
     top: 20px !important;
@@ -2508,27 +2537,59 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     transform: none !important;
     pointer-events: auto !important;
     width: auto !important;
-    height: 64px !important;
-    padding: 0 20px !important;
-    border-radius: 32px !important;
+    height: 56px !important;
+    padding: 0 18px !important;
+    border-radius: 28px !important;
     border: 1px solid var(--panel-border) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     box-shadow: 0 8px 32px rgba(0,0,0,0.15) !important;
+    z-index: 1005 !important;
   }
 
+  /* Floating Bottom-Left logo pill capsule on mobile phone */
   .portfolio-logo-panel {
-    padding: 0 16px !important;
-    transform: none !important;
-    left: auto !important;
+    position: fixed !important;
+    bottom: 20px !important;
+    left: 20px !important;
+    top: auto !important;
     right: auto !important;
-    position: static !important;
-    backdrop-filter: blur(20px);
+    height: 56px !important;
+    padding: 0 16px !important;
+    border-radius: 28px !important;
+    border: 1px solid var(--panel-border) !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15) !important;
+    pointer-events: auto !important;
+    z-index: 1004 !important;
+    transform: none !important;
     
     .logo-text {
       display: none !important; /* show only icon mark to fit */
     }
+  }
+
+  /* Floating Bottom-Right controls pill capsule on mobile phone */
+  .portfolio-header-controls {
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    top: auto !important;
+    left: auto !important;
+    height: 56px !important;
+    padding: 0 16px !important;
+    border-radius: 28px !important;
+    border: 1px solid var(--panel-border) !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15) !important;
+    pointer-events: auto !important;
+    z-index: 1004 !important;
+    display: flex !important;
   }
 
   /* Mobile Drawer settings hide redundant lang select since it's already in the bottom controls capsule */
@@ -2536,7 +2597,7 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     display: none !important;
   }
 
-  /* Normal top-down slide mobile drawer */
+  /* Normal top-down slide mobile drawer with full pointer interactivity */
   .mobile-menu-drawer {
     top: 0 !important;
     left: 0 !important;
@@ -2545,69 +2606,164 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     transform: translateY(-20px) !important;
     padding: 100px 32px 40px !important;
     border-bottom: 1px solid rgba(8, 63, 57, 0.08) !important;
+    pointer-events: auto !important;
+    z-index: 1003 !important;
     
     &.open {
       transform: translateY(0) !important;
       opacity: 1 !important;
       visibility: visible !important;
+      pointer-events: auto !important;
+    }
+
+    .mobile-nav-links,
+    .mobile-nav-links *,
+    a,
+    button {
+      pointer-events: auto !important;
+      cursor: pointer !important;
     }
   }
 }
 
+/* Mobile Phone Mode Spacing & Content Bounds (768px and below) */
 @media (max-width: 768px) {
-  /* Legacy fixed panel on mobile (for /pattern etc.) */
-  .legacy-header-panel {
-    position: static !important;
-    margin: 20px auto !important;
-    width: min(100% - 32px, 480px) !important;
-    flex-wrap: wrap !important;
-    justify-content: center !important;
-    left: auto !important;
-    top: auto !important;
-    transform: none !important;
-    box-sizing: border-box;
+  html, body {
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    padding-top: 0px !important;
+    padding-bottom: 90px !important; /* Bottom clearance for floating logo & control pills */
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box !important;
+  }
+
+  /* Main content shells use dynamic padding so the content area is exactly 400px */
+  main,
+  .shell,
+  main.shell,
+  div.shell {
+    margin-top: 80px !important;
+    padding-top: 0px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: max(16px, calc((100% - 400px) / 2)) !important;
+    padding-right: max(16px, calc((100% - 400px) / 2)) !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Exception for Case Detail pages where hero background reaches top edge */
+  main.case-detail-main {
+    margin-top: 0px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .works-detail-hero-header {
+    margin-top: 0px !important;
+    padding-top: 0px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .works-detail-hero-title-container {
+    padding-top: 90px !important;
+    padding-bottom: 24px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-left: max(16px, calc((100% - 400px) / 2)) !important;
+    padding-right: max(16px, calc((100% - 400px) / 2)) !important;
+  }
+
+  /* About section: profile image on TOP, text BELOW on mobile */
+  .landing-about-grid,
+  .about-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 28px !important;
+
+    & > *:first-child,
+    & > hd-reveal:first-child {
+      order: 1 !important; /* Image goes on TOP */
+      width: 100% !important;
+      max-width: 280px !important;
+      margin: 0 auto !important;
+    }
+
+    & > *:last-child,
+    & > hd-reveal:last-child {
+      order: 2 !important; /* Text goes BELOW image */
+      width: 100% !important;
+      text-align: center !important;
+    }
+  }
+
+  /* Playground Panels & Shells (Փեղկեր) 400px Mobile Fitting Without Clipping */
+  .homepage-playground-container,
+  .playground-dashboard-grid,
+  .playground-wrapper,
+  .playground-sidebar-column,
+  .playground-preview-column,
+  .playground-controls-column,
+  .font-playground-grid,
+  .font-details-sandbox-canvas,
+  .samples-showcase-grid {
+    width: 100% !important;
+    max-width: 400px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+
+  .playground-preview-column {
+    height: 500px !important;
+    max-height: 500px !important;
+    min-height: 500px !important;
+  }
+
+  .playground-dashboard-grid {
+    grid-template-columns: 1fr !important;
     gap: 16px !important;
   }
 
-  /* Landing page grids stacking overrides */
-  .landing-about-grid {
-    grid-template-columns: 1fr !important;
-    gap: 32px !important;
-    padding: 40px 24px !important;
-    text-align: center;
-    
-    & > div:first-child {
-      max-width: 320px;
-      margin: 0 auto;
-    }
+  .playground-components-list {
+    display: flex !important;
+    flex-direction: row !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    padding-bottom: 8px !important;
+    gap: 8px !important;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .footer-content-container {
-    padding: 40px 16px 20px !important;
+  .playground-preview,
+  .playground-preview-box,
+  .playground-controls {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 12px !important;
+    overflow-x: auto !important;
   }
 
-  /* General details case page responsive fixes */
-  .case-grid {
-    grid-template-columns: 1fr !important;
-    gap: 32px !important;
+  /* Prevent code snippets, pre/code blocks, inputs from overflowing or clipping */
+  pre, code, .code-snippet, .playground-code-viewer {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    box-sizing: border-box !important;
   }
-}
 
-@media (max-width: 480px) {
-  .mobile-settings-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-  
-  .mobile-theme-switcher {
-    width: 100%;
-    justify-content: space-between;
-    
-    button {
-      flex: 1;
-      text-align: center;
-    }
+  /* Custom Web Components max width cap inside preview */
+  .playground-preview *,
+  .playground-controls * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 }
 

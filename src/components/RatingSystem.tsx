@@ -162,6 +162,7 @@ export default function RatingSystem({ id, locale, bgColor, noShadow }: RatingSy
 
   return (
     <div
+      className="hd-rating-system-card"
       style={{
         display: "flex",
         flexDirection: "column",

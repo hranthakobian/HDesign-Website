@@ -1279,15 +1279,31 @@ export default function FontDetailPage() {
         @media (max-width: 992px) {
           .font-playground-grid {
             grid-template-columns: 1fr !important;
+            gap: 24px !important;
           }
         }
         @media (max-width: 768px) {
           .font-details-sandbox-canvas {
-            padding: 30px 16px 16px 16px !important;
+            padding: 44px 16px 20px 16px !important;
+            min-height: 250px !important;
+            border-radius: 18px !important;
           }
           .font-details-canvas-color-switcher {
-            top: 10px !important;
-            right: 10px !important;
+            top: 12px !important;
+            right: 12px !important;
+            gap: 6px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .font-playground-grid {
+            gap: 16px !important;
+          }
+          .font-details-sandbox-canvas {
+            padding: 48px 12px 16px 12px !important;
+            border-radius: 14px !important;
+          }
+          .preview-font-container {
+            font-size: clamp(24px, 8vw, 48px) !important;
           }
         }
       `}</style>

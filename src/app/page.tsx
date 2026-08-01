@@ -1819,8 +1819,9 @@ export default function Home() {
               flex-direction: column;
               gap: 24px;
               min-width: 0;
-              height: 500px;
-              max-height: 500px;
+              height: 500px !important;
+              max-height: 500px !important;
+              min-height: 500px !important;
             }
             .playground-controls-column {
               display: flex;
@@ -1851,21 +1852,79 @@ export default function Home() {
             @media (max-width: 768px) {
               .homepage-playground-container {
                 grid-template-columns: 1fr;
+                gap: 16px;
+              }
+              .playground-sidebar-wrapper {
+                width: 100%;
               }
               .playground-controls-wrapper {
                 grid-column: span 1;
               }
               .playground-sidebar-column {
-                max-height: 300px;
-                height: 300px;
+                max-height: none;
+                height: auto;
+                padding: 12px 14px;
+                border-radius: 16px;
+              }
+              .playground-sidebar-column hd-scrollbar {
+                height: auto !important;
+                max-height: none !important;
+              }
+              .playground-components-list {
+                flex-direction: row !important;
+                overflow-x: auto !important;
+                padding-right: 0 !important;
+                padding-bottom: 6px !important;
+                gap: 8px !important;
+                -webkit-overflow-scrolling: touch;
+              }
+              .playground-tab-btn {
+                width: auto !important;
+                flex-shrink: 0 !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                padding: 8px 14px !important;
+                border-radius: 20px !important;
+              }
+              .playground-tab-desc {
+                display: none !important;
               }
               .playground-preview-column {
-                height: auto;
-                max-height: none;
+                height: 500px !important;
+                max-height: 500px !important;
+                min-height: 500px !important;
+                gap: 16px;
               }
               .playground-controls-column {
-                max-height: 400px;
-                height: 400px;
+                max-height: 480px;
+                height: auto;
+                padding: 16px;
+                border-radius: 16px;
+              }
+              .playground-controls-column hd-scrollbar {
+                height: auto !important;
+                max-height: 380px !important;
+              }
+            }
+            @media (max-width: 480px) {
+              .homepage-playground-container {
+                gap: 12px;
+              }
+              .playground-sidebar-column {
+                padding: 10px 12px;
+              }
+              .playground-tab-btn {
+                padding: 6px 12px !important;
+              }
+              .playground-tab-btn span {
+                font-size: 0.8rem !important;
+              }
+              .playground-controls-column {
+                padding: 12px;
+                max-height: 420px;
+              }
+              .playground-controls-column hd-scrollbar {
+                max-height: 340px !important;
               }
             }
           `}</style>
@@ -1938,13 +1997,14 @@ export default function Home() {
                 {t('home', 'components_label', 'ԿՈՄՊՈՆԵՆՏՆԵՐ')}
               </span>
               <hd-scrollbar suppressHydrationWarning style={{ height: "420px", overflow: "auto", overscrollBehavior: "contain" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px", paddingRight: "10px" }}>
+                <div className="playground-components-list" style={{ display: "flex", flexDirection: "column", gap: "6px", paddingRight: "10px" }}>
                   {playgroundComponentsList.map((comp) => {
                     const isActive = playgroundActiveTab === comp.id;
                     return (
                       <button
                         key={comp.id}
                         onClick={() => handlePlaygroundTabChange(comp.id)}
+                        className={`playground-tab-btn ${isActive ? 'active' : ''}`}
                         style={{
                           display: "flex",
                           flexDirection: "column",
@@ -1961,7 +2021,7 @@ export default function Home() {
                         }}
                       >
                         <span style={{ fontWeight: "bold", fontSize: "0.85rem" }}>{comp.name}</span>
-                        <span style={{ fontSize: "0.7rem", opacity: 0.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", width: "100%" }}>{comp.desc}</span>
+                        <span className="playground-tab-desc" style={{ fontSize: "0.7rem", opacity: 0.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", width: "100%" }}>{comp.desc}</span>
                       </button>
                     );
                   })}

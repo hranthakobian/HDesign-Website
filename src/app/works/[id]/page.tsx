@@ -329,7 +329,7 @@ export default function BrandingDetailPage() {
   const lastImageIdx = imageBlockIndices.length > 0 ? imageBlockIndices[imageBlockIndices.length - 1] : -1;
 
   return (
-    <main style={{ marginTop: "80px", minHeight: "100vh" }}>
+    <main className="case-detail-main" style={{ marginTop: "0px", minHeight: "100vh" }}>
 
       {/* Huge Case Hero Header */}
       <div 
@@ -390,19 +390,19 @@ export default function BrandingDetailPage() {
             flexWrap: "wrap"
           }}
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px", flex: "1 1 500px", minWidth: 0 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", flex: "1 1 320px", minWidth: 0 }}>
             <span style={{ 
-              fontSize: "0.9rem", 
+              fontSize: "clamp(0.72rem, 1.5vw, 0.9rem)", 
               fontWeight: 800, 
               textTransform: "uppercase", 
-              letterSpacing: "3px", 
+              letterSpacing: "2px", 
               color: "#ffffff",
               opacity: 0.8
             }}>
               {lang === 'en' ? "Branding Case" : "Բրենդավորման Քեյս"}
             </span>
             <h1 style={{ 
-              fontSize: "clamp(2.5rem, 6vw, 4rem)", 
+              fontSize: "clamp(1.8rem, 5vw, 4rem)", 
               fontWeight: "900", 
               color: "#ffffff", 
               margin: 0,
@@ -411,7 +411,7 @@ export default function BrandingDetailPage() {
               {parseLangText(work.title, lang)}
             </h1>
             <p style={{ 
-              fontSize: "clamp(1rem, 2vw, 1.25rem)", 
+              fontSize: "clamp(0.88rem, 2vw, 1.25rem)", 
               color: "#ffffff", 
               opacity: 0.9, 
               margin: 0,
@@ -427,22 +427,22 @@ export default function BrandingDetailPage() {
       </div>
 
       {/* Horizontal Metadata Bar */}
-      <div style={{ borderBottom: "1px solid var(--panel-border)", background: "var(--panel)", padding: "24px 0" }}>
+      <div className="works-detail-metadata-bar" style={{ borderBottom: "1px solid var(--panel-border)", background: "var(--panel)", padding: "24px 0" }}>
         <div className="shell" style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-around", gap: "24px", textAlign: "center" }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>{lang === 'en' ? "Category" : "Կարգ"}</span>
-            <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{parseLangText(work.category || "", lang) || (lang === 'en' ? "Branding" : "Բրենդավորում")}</span>
+            <span style={{ fontSize: "0.78rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>{lang === 'en' ? "Category" : "Կարգ"}</span>
+            <span style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{parseLangText(work.category || "", lang) || (lang === 'en' ? "Branding" : "Բրենդավորում")}</span>
           </div>
           {work.client && (
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>{lang === 'en' ? "Client" : "Հաճախորդ"}</span>
-              <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{parseLangText(work.client, lang)}</span>
+              <span style={{ fontSize: "0.78rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>{lang === 'en' ? "Client" : "Հաճախորդ"}</span>
+              <span style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{parseLangText(work.client, lang)}</span>
             </div>
           )}
           {work.year && (
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>{lang === 'en' ? "Year" : "Տարեթիվ"}</span>
-              <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{work.year}</span>
+              <span style={{ fontSize: "0.78rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>{lang === 'en' ? "Year" : "Տարեթիվ"}</span>
+              <span style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{work.year}</span>
             </div>
           )}
         </div>
