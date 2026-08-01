@@ -161,8 +161,8 @@ export default function Footer({
                     data-width="100%"
                     data-height="42px"
                     data-thickness="3px"
-                    data-color="#6A3E73"
-                    style={{ '--text-color': '#1a202c', '--primary-color': '#6A3E73' } as any}
+                    data-color="#472c4d"
+                    style={{ '--text-color': '#1a202c', '--primary-color': '#472c4d' } as any}
                   data-font-size="14pt" />
                 </div>
 
@@ -185,13 +185,15 @@ export default function Footer({
                   data-width="100%" 
                   data-height="44px"
                   data-thickness="3px"
+                  data-color="#472c4d"
                   disabled={submittingSubscribe}
                   style={{ 
                     opacity: submittingSubscribe ? 0.7 : 1,
-                    background: "linear-gradient(135deg, #6A3E73 0%, #ab47bc 100%)",
+                    background: "#472c4d",
                     color: "#fff",
-                    border: "none",
-                    boxShadow: "0 4px 12px rgba(106, 62, 115, 0.3)"
+                    border: "2px solid #472c4d",
+                    borderColor: "#472c4d",
+                    boxShadow: "0 4px 12px rgba(71, 44, 77, 0.35)"
                   }}
                 >
                   {submittingSubscribe ? t('contact', 'submitting_btn', 'Ուղարկվում է...') : t('contact', 'subscribe_btn', 'Բաժանորդագրվել')}

@@ -2543,7 +2543,7 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     pointer-events: auto !important;
     width: auto !important;
     height: 56px !important;
-    padding: 0 18px !important;
+    padding: 0 20px 0 15px !important;
     border-radius: 28px !important;
     border: 1px solid var(--panel-border) !important;
     display: flex !important;
@@ -2551,6 +2551,17 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     justify-content: center !important;
     box-shadow: 0 8px 32px rgba(0,0,0,0.15) !important;
     z-index: 1005 !important;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+
+    &.open,
+    &.menu-open {
+      top: 20px !important;
+      left: 50% !important;
+      right: auto !important;
+      transform: translateX(-50%) !important;
+      padding: 0 18px !important;
+      z-index: 1006 !important;
+    }
   }
 
   /* Floating Bottom-Left logo pill capsule on mobile phone */

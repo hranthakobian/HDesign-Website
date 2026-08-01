@@ -177,7 +177,7 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
           </div>
         </Link>
 
-        <header className="portfolio-header">
+        <header className={`portfolio-header ${isScrolled ? "scrolled" : ""} ${isMobileMenuOpen ? "open menu-open" : ""}`}>
 
           {/* Navigation Links */}
           <nav className="portfolio-nav">
