@@ -298,7 +298,7 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
               id="themeSelectorDesktop"
               value={theme}
               onChange={(e: any) => changeTheme(e.target.value)}
-              data-width="120px"
+              data-width="125px"
               data-height="34px"
               data-thickness="3px"
               placeholder={t('nav', 'theme', 'Թեմա')}

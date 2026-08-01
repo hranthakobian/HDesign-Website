@@ -2404,8 +2404,10 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     left: auto !important;
     transform: none !important;
     pointer-events: auto !important;
+    width: 250px !important;
+    min-width: 250px !important;
     height: 56px !important;
-    padding: 0 24px !important;
+    padding: 0 16px !important;
     border-radius: 28px !important;
     border: 1px solid var(--panel-border) !important;
     background: rgba(255, 255, 255, 0.85) !important;
@@ -2414,6 +2416,7 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     z-index: 1001 !important;
     display: flex !important;
     align-items: center !important;
+    justify-content: space-between !important;
     box-shadow: var(--shadow) !important;
     transition: all 0.3s ease !important;
 
@@ -2424,17 +2427,19 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     #langSelectorDesktop {
       --width: 90px !important;
       width: 90px !important;
-      height: 30px !important;
+      height: 34px !important;
     }
 
     .desktop-theme-select-wrapper {
-      display: block !important;
-      width: 90px !important;
+      display: flex !important;
+      flex: 1 !important;
+      width: 125px !important;
+      min-width: 120px !important;
       
-      hd-select {
-        --width: 90px !important;
-        width: 90px !important;
-        height: 30px !important;
+      hd-select, #themeSelectorDesktop {
+        --width: 125px !important;
+        width: 125px !important;
+        height: 34px !important;
       }
     }
   }
@@ -2633,7 +2638,7 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     max-width: 100vw !important;
     overflow-x: hidden !important;
     padding-top: 0px !important;
-    padding-bottom: 90px !important; /* Bottom clearance for floating logo & control pills */
+    padding-bottom: 0px !important; /* Remove empty space at the bottom of the site */
   }
 
   *, *::before, *::after {
@@ -2759,10 +2764,13 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     box-sizing: border-box !important;
   }
 
-  /* Custom Web Components max width cap inside preview */
-  .playground-preview *,
-  .playground-controls * {
-    max-width: 100% !important;
+  /* Footer Content Fitting 400px */
+  .footer-content-container {
+    width: 100% !important;
+    max-width: 400px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding: 40px 16px 20px !important;
     box-sizing: border-box !important;
   }
 }
