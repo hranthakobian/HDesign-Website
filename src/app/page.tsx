@@ -1708,22 +1708,18 @@ export default function Home() {
                   <p style={{ margin: 0 }}>
                     {t('about', 'bio_p1', t('home', 'about_p1', 'Ողջույն, ես Հրանտ Հակոբյանն եմ և Ճարտարապետության և շինարարության Հայաստանի Ազգային Համալսարանի ճարտարապետության ֆակուլտետի 4-րդ կուրսի ուսանող եմ։'))}
                   </p>
-                  <p style={{ fontWeight: 700, margin: 0 }}>
-                    {t('home', 'about_p2', 'Ես մասնագիտանում եմ տառաստեղծության և բրենդինգի մեջ։')}
-                  </p>
                 </div>
                 <div>
-                  <hd-button 
-                    suppressHydrationWarning
-                    onClick={() => {
-                      document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
-                    }}
-                    data-width="160px"
-                    data-height="52px"
-                    data-thickness="3px"
-                    data-color="#083F39"
-                    data-text-color="#fff"
-                  >{t('home', 'contact_btn', 'Կապնվել')}</hd-button>
+                  <Link href="/about">
+                    <hd-button 
+                      suppressHydrationWarning
+                      data-width="160px"
+                      data-height="52px"
+                      data-thickness="3px"
+                      data-color="#083F39"
+                      data-text-color="#fff"
+                    >{t('home', 'more_about_btn', 'Ավելին')}</hd-button>
+                  </Link>
                 </div>
               </div>
             </hd-reveal>
