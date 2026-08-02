@@ -1441,6 +1441,8 @@ export default function AdminDashboard() {
     }
 
     try {
+      const originalId = drawerCaseOriginal?.id || drawerCaseId;
+
       const mergedCase = {
         ...drawerCaseOriginal,
         id: drawerCaseId,
@@ -1453,7 +1455,7 @@ export default function AdminDashboard() {
         image_url: drawerCaseImageUrl,
       };
 
-      const res = await fetch(`/api/cases/${drawerCaseId}`, {
+      const res = await fetch(`/api/cases/${originalId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -1464,7 +1466,7 @@ export default function AdminDashboard() {
 
       const data = await res.json();
       if (res.ok) {
-        setCases(prev => prev.map(x => x.id === drawerCaseId ? data.case : x));
+        setCases(prev => prev.map(x => (x.id === originalId || x.id === drawerCaseId) ? data.case : x));
         alert('Քեյսը հաջողությամբ թարմացվեց:');
         setDrawerType(null);
       } else {
@@ -4274,10 +4276,14 @@ export default function AdminDashboard() {
                       {drawerType && drawerType.startsWith('case_') && drawerCaseOriginal && (
                         <div style={{ background: 'var(--panel)', border: '1px solid var(--panel-border)', borderRadius: '24px', padding: '24px', position: 'sticky', top: '80px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 8px 30px rgba(0,0,0,0.1)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--panel-border)', paddingBottom: '12px' }}>
-                            <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#fff' }}>
-                              {drawerType === 'case_preview' ? '👁 Արագ Դիտում' : '⚙ Արագ Խմբագրում'}
+                            <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              {drawerType === 'case_preview' ? (
+                                <><span className="hd-icon icon-Search" style={{ fontSize: '0.9rem' }} /> Արագ Դիտում</>
+                              ) : (
+                                <><span className="hd-icon icon-Pencil" style={{ fontSize: '0.9rem' }} /> Արագ Խմբագրում</>
+                              )}
                             </h4>
-                            <button onClick={() => setDrawerType(null)} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '1.1rem', cursor: 'pointer' }}>✕</button>
+                            <button onClick={() => setDrawerType(null)} style={{ background: 'transparent', border: 'none', color: 'var(--muted)', fontSize: '1rem', cursor: 'pointer' }} title="Փակել"><span className="hd-icon icon-Close" style={{ fontSize: '0.85rem' }} /></button>
                           </div>
 
                           {drawerType === 'case_preview' && (
@@ -4307,7 +4313,7 @@ export default function AdminDashboard() {
                               </div>
                               <div style={{ borderTop: '1px solid var(--panel-border)', paddingTop: '16px', marginTop: '8px' }}>
                                 <a href={`/admin/editor/case/${drawerCaseId}`} style={{ textDecoration: 'none' }}>
-                                  <hd-button data-width="100%" data-height="36px" data-thickness="3px">✏ Բացել WYSIWYG խմբագրիչը</hd-button>
+                                  <hd-button data-width="100%" data-height="36px" data-thickness="3px"><span className="hd-icon icon-Pencil" style={{ marginRight: 6 }} /> Բացել WYSIWYG խմբագրիչը</hd-button>
                                 </a>
                               </div>
                             </div>
@@ -4315,6 +4321,31 @@ export default function AdminDashboard() {
 
                           {drawerType === 'case_edit' && (
                             <form onSubmit={handleSaveCaseDrawer} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                              <div>
+                                <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Էջի Հղում (URL Slug)*</label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '8px', padding: '2px 8px' }}>
+                                  <span style={{ fontSize: '0.78rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>/works/</span>
+                                  <input
+                                    type="text"
+                                    value={drawerCaseId}
+                                    onChange={e => {
+                                      const val = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '-').replace(/-+/g, '-');
+                                      setDrawerCaseId(val);
+                                    }}
+                                    placeholder="seed-2"
+                                    style={{
+                                      width: '100%',
+                                      background: 'transparent',
+                                      border: 'none',
+                                      color: 'var(--accent)',
+                                      fontWeight: 'bold',
+                                      fontSize: '0.85rem',
+                                      outline: 'none',
+                                      height: '32px'
+                                    }}
+                                  />
+                                </div>
+                              </div>
                               <div>
                                 <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Վերնագիր*</label>
                                 <hd-input value={drawerCaseTitle} onInput={(e: any) => setDrawerCaseTitle(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
@@ -4538,10 +4569,14 @@ export default function AdminDashboard() {
                           ` }} />
                           
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--panel-border)', paddingBottom: '12px' }}>
-                            <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#fff' }}>
-                              {drawerType === 'font_preview' ? '👁 Արագ Դիտում' : '⚙ Արագ Խմբագրում'}
+                            <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              {drawerType === 'font_preview' ? (
+                                <><span className="hd-icon icon-Search" style={{ fontSize: '0.9rem' }} /> Արագ Դիտում</>
+                              ) : (
+                                <><span className="hd-icon icon-Pencil" style={{ fontSize: '0.9rem' }} /> Արագ Խմբագրում</>
+                              )}
                             </h4>
-                            <button onClick={() => setDrawerType(null)} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '1.1rem', cursor: 'pointer' }}>✕</button>
+                            <button onClick={() => setDrawerType(null)} style={{ background: 'transparent', border: 'none', color: 'var(--muted)', fontSize: '1rem', cursor: 'pointer' }} title="Փակել"><span className="hd-icon icon-Close" style={{ fontSize: '0.85rem' }} /></button>
                           </div>
 
                           {drawerType === 'font_preview' && (
