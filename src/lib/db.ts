@@ -846,8 +846,8 @@ export const defaultSeededFonts: Font[] = [
     description_en: 'HDesign\'s proprietary geometric and minimalist font, designed specifically to match the design system requirements.',
     downloadable: true,
     paid: false,
-    font_file_url: 'https://api.hakobian.am/libs/v1/fonts/hdesign.ttf',
-    download_url: 'https://api.hakobian.am/libs/v1/fonts/hdesign.ttf',
+    font_file_url: '/HDesign.ttf',
+    download_url: '/HDesign.ttf',
     created_at: '2026-06-27T00:00:00.000Z'
   }
 ];

@@ -305,9 +305,12 @@ export default function FontWysiwygEditor() {
         <style dangerouslySetInnerHTML={{ __html: `
           @font-face {
             font-family: 'wysiwyg-preview-font-${fontForm.id}';
-            src: url('${fontForm.font_file_url}') format('truetype');
-            font-weight: 100 900;
-            font-style: normal;
+            src: url('${fontForm.font_file_url}') format('woff2'),
+                 url('${fontForm.font_file_url}') format('woff'),
+                 url('${fontForm.font_file_url}') format('opentype'),
+                 url('${fontForm.font_file_url}') format('truetype'),
+                 url('${fontForm.font_file_url}');
+            font-display: swap;
           }
         ` }} />
       )}

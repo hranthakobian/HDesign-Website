@@ -135,17 +135,11 @@ export default function FontsListingPage() {
             __html: `
               @font-face {
                 font-family: 'preview-font-${f.id}';
-                src: url('${f.font_file_url}') format('${
-              f.font_file_url.endsWith(".otf")
-                ? "opentype"
-                : f.font_file_url.endsWith(".woff")
-                ? "woff"
-                : f.font_file_url.endsWith(".woff2")
-                ? "woff2"
-                : "truetype"
-            }');
-                font-weight: 100 900;
-                font-style: normal;
+                src: url('${f.font_file_url}') format('woff2'),
+                     url('${f.font_file_url}') format('woff'),
+                     url('${f.font_file_url}') format('opentype'),
+                     url('${f.font_file_url}') format('truetype'),
+                     url('${f.font_file_url}');
                 font-display: swap;
               }
             `,

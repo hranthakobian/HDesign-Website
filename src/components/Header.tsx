@@ -80,10 +80,9 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
     return () => window.removeEventListener('hdesign-theme-change', handleThemeChange);
   }, []);
 
-  // Track scrolling on the portfolio page
+  // Track scrolling on all public pages
   useEffect(() => {
-    const isPortfolioPage = pathname === "/" || pathname === "/about" || pathname.startsWith("/works") || pathname === "/contact" || pathname.startsWith("/hdesign");
-    if (!isPortfolioPage) return;
+    if (pathname?.startsWith("/admin")) return;
 
     const handleScroll = () => {
       const sy = window.scrollY;
@@ -145,7 +144,7 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
   };
 
   // ══════ RENDER PORTFOLIO HOME HEADER ══════
-  const isPortfolioPage = pathname === "/" || pathname === "/about" || pathname.startsWith("/works") || pathname === "/contact" || pathname.startsWith("/hdesign") || pathname.startsWith("/fonts");
+  const isPortfolioPage = !pathname?.startsWith("/admin");
   const getActiveNav = () => {
     if (pathname === "/about") return "about";
     if (pathname.startsWith("/works")) return "works";

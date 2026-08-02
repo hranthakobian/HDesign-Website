@@ -257,20 +257,26 @@ export default function FontDetailPage() {
   // Waterfall sizes helper
   const waterfallSizes = [72, 48, 36, 24, 18, 14, 12];
 
-  // Generated CSS font face and rules
-  const cssFontFace = useMemo(() => {
-    if (!font) return "";
-    let format = "truetype";
-    if (font.font_file_url.endsWith(".otf")) format = "opentype";
-    else if (font.font_file_url.endsWith(".woff")) format = "woff";
-    else if (font.font_file_url.endsWith(".woff2")) format = "woff2";
-    return `@font-face {\n  font-family: '${font.name_en}';\n  src: url('${font.font_file_url}') format('${format}');\n  font-weight: 100 900;\n  font-style: normal;\n}`;
+  // Filter valid specimen presentation blocks
+  const specimenBlocks = useMemo(() => {
+    if (!font?.description_am || !font.description_am.startsWith("[")) return [];
+    try {
+      const parsed = JSON.parse(font.description_am);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((block: any) => {
+        if (!block || typeof block !== "object") return false;
+        if (block.type === "text" && (block.content_am || block.content_en)) return true;
+        if (block.type === "specimen_banner" && block.previewText) return true;
+        if (block.type === "weights_comparison" && block.previewText) return true;
+        if (block.type === "glyph_showcase" && block.letters) return true;
+        if (block.type === "image" && block.image_url) return true;
+        return false;
+      });
+    } catch (e) {
+      return [];
+    }
   }, [font]);
 
-  const cssRules = useMemo(() => {
-    if (!font) return "";
-    return `font-family: '${font.name_en}', sans-serif;\nfont-size: ${fontSize}px;\nline-height: ${lineHeight};\nfont-variation-settings: 'wght' ${wght}, 'slnt' ${slnt}, 'wdth' ${wdth}, 'ital' ${ital};\nfont-variant-ligatures: ${ligatures ? "common-ligatures" : "none"};\nfont-kerning: ${kerning ? "normal" : "none"};\nfont-variant-caps: ${smallCaps ? "small-caps" : "normal"};\nfont-variant-numeric: ${oldstyleNums ? "oldstyle-nums" : "normal"};`;
-  }, [font, fontSize, lineHeight, wght, slnt, wdth, ital, ligatures, kerning, smallCaps, oldstyleNums]);
 
 
   // Loading indicator
@@ -307,17 +313,12 @@ export default function FontDetailPage() {
           __html: `
             @font-face {
               font-family: 'playground-font-${font.id}';
-              src: url('${font.font_file_url}') format('${
-            font.font_file_url.endsWith(".otf")
-              ? "opentype"
-              : font.font_file_url.endsWith(".woff")
-              ? "woff"
-              : font.font_file_url.endsWith(".woff2")
-              ? "woff2"
-              : "truetype"
-          }');
-              font-weight: 100 900;
-              font-style: normal;
+              src: url('${font.font_file_url}') format('woff2'),
+                   url('${font.font_file_url}') format('woff'),
+                   url('${font.font_file_url}') format('opentype'),
+                   url('${font.font_file_url}') format('truetype'),
+                   url('${font.font_file_url}');
+              font-display: swap;
             }
           `,
         }}
@@ -478,7 +479,7 @@ export default function FontDetailPage() {
                     <div
                       key={i}
                       onClick={() => setText((prev) => prev + c)}
-                      className="character-cell"
+                      className="character-cell preview-font-container"
                       style={{
                         fontFamily: `playground-font-${font.id}, sans-serif`,
                         height: "36px",
@@ -527,7 +528,7 @@ export default function FontDetailPage() {
                     <div
                       key={i}
                       onClick={() => setText((prev) => prev + c)}
-                      className="character-cell"
+                      className="character-cell preview-font-container"
                       style={{
                         fontFamily: `playground-font-${font.id}, sans-serif`,
                         height: "36px",
@@ -576,7 +577,7 @@ export default function FontDetailPage() {
                     <div
                       key={i}
                       onClick={() => setText((prev) => prev + c)}
-                      className="character-cell"
+                      className="character-cell preview-font-container"
                       style={{
                         fontFamily: `playground-font-${font.id}, sans-serif`,
                         height: "36px",
@@ -624,6 +625,8 @@ export default function FontDetailPage() {
         {/* Right Area: Control Panel Sidebar */}
         <div style={{ display: "flex", flexDirection: "column", gap: "30px", minWidth: 0 }}>
           
+          <RatingSystem id={font.id} locale={locale === 'hy' ? 'hy' : 'en'} />
+
           {/* Main Controls Panel */}
           <div
             style={{
@@ -1061,41 +1064,45 @@ export default function FontDetailPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "8px", background: "rgba(255,255,255,0.01)", padding: "12px", borderRadius: "8px", border: "1px solid var(--panel-border)" }}>
                 
                 {/* Ligatures */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
                   <span style={{ fontSize: "0.8rem" }}>{t("fonts", "ligatures", "Կապագիր (Ligatures)")}</span>
                   <hd-switch 
                     checked={ligatures} 
                     data-thickness="4px"
+                    style={{ flexShrink: 0 }}
                     onChange={(e: any) => setLigatures(e.target.checked)} 
                   />
                 </div>
 
                 {/* Kerning */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
                   <span style={{ fontSize: "0.8rem" }}>{t("fonts", "kerning", "Միջտառային տարածություն (Kerning)")}</span>
                   <hd-switch 
                     checked={kerning} 
                     data-thickness="4px"
+                    style={{ flexShrink: 0 }}
                     onChange={(e: any) => setKerning(e.target.checked)} 
                   />
                 </div>
 
                 {/* Small Caps */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
                   <span style={{ fontSize: "0.8rem" }}>{t("fonts", "small_caps", "Փոքրատառ գլխատառեր (Small Caps)")}</span>
                   <hd-switch 
                     checked={smallCaps} 
                     data-thickness="4px"
+                    style={{ flexShrink: 0 }}
                     onChange={(e: any) => setSmallCaps(e.target.checked)} 
                   />
                 </div>
 
                 {/* Oldstyle Figures */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
                   <span style={{ fontSize: "0.8rem" }}>{t("fonts", "oldstyle_figures", "Հին ոճի թվեր (Oldstyle Figures)")}</span>
                   <hd-switch 
                     checked={oldstyleNums} 
                     data-thickness="4px"
+                    style={{ flexShrink: 0 }}
                     onChange={(e: any) => setOldstyleNums(e.target.checked)} 
                   />
                 </div>
@@ -1131,34 +1138,32 @@ export default function FontDetailPage() {
             </div>
 
             {/* Reset controls button */}
-            <div style={{ border: "1px solid var(--panel-border)", borderRadius: "var(--border-radius, 12px)", overflow: "hidden" }}>
-              <hd-button
-                onClick={() => {
-                  setFontSize(48);
-                  setLetterSpacing(0);
-                  setLineHeight(1.4);
-                  setTextAlign("left");
-                  setIsBold(false);
-                  setIsItalic(false);
-                  setTextCase("none");
-                  setTextColor("#ffffff");
-                  setBgColor("#0b4a41");
-                  setWght(400);
-                  setSlnt(0);
-                  setWdth(100);
-                  setItal(0);
-                  setLigatures(true);
-                  setKerning(true);
-                  setSmallCaps(false);
-                  setOldstyleNums(false);
-                }}
-                data-width="100%"
-                data-height="38px"
-                data-thickness="3px"
-              >
-                {t("fonts", "reset", "Վերականգնել")}
-              </hd-button>
-            </div>
+            <hd-button
+              onClick={() => {
+                setFontSize(48);
+                setLetterSpacing(0);
+                setLineHeight(1.4);
+                setTextAlign("left");
+                setIsBold(false);
+                setIsItalic(false);
+                setTextCase("none");
+                setTextColor("#ffffff");
+                setBgColor("#0b4a41");
+                setWght(400);
+                setSlnt(0);
+                setWdth(100);
+                setItal(0);
+                setLigatures(true);
+                setKerning(true);
+                setSmallCaps(false);
+                setOldstyleNums(false);
+              }}
+              data-width="100%"
+              data-height="38px"
+              data-thickness="3px"
+            >
+              {t("fonts", "reset", "Վերականգնել")}
+            </hd-button>
 
           </div>
 
@@ -1229,173 +1234,108 @@ export default function FontDetailPage() {
             </div>
           </div>
 
-          <RatingSystem id={font.id} locale={locale === 'hy' ? 'hy' : 'en'} />
-
-          {/* CSS Usage Code Panel */}
-          <div
-            style={{
-              background: "var(--panel)",
-              border: "1px solid var(--panel-border)",
-              borderRadius: "24px",
-              padding: "28px",
-              boxShadow: "var(--shadow)",
-              display: "flex",
-              flexDirection: "column",
-              gap: "14px",
-            }}
-          >
-            <h4 style={{ fontSize: "1rem", fontWeight: "700", margin: 0 }}>
-              {t("fonts", "css_use", "Օգտագործումը CSS-ում")}
-            </h4>
-            
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>@font-face definition</span>
-              <pre
-                style={{
-                  background: "rgba(0,0,0,0.2)",
-                  border: "1px solid var(--panel-border)",
-                  borderRadius: "10px",
-                  padding: "12px",
-                  fontSize: "0.75rem",
-                  color: "#a7f3d0",
-                  fontFamily: "monospace",
-                  overflowX: "auto",
-                  margin: 0,
-                }}
-              >
-                {cssFontFace}
-              </pre>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>Font rules styling</span>
-              <pre
-                style={{
-                  background: "rgba(0,0,0,0.2)",
-                  border: "1px solid var(--panel-border)",
-                  borderRadius: "10px",
-                  padding: "12px",
-                  fontSize: "0.75rem",
-                  color: "#93c5fd",
-                  fontFamily: "monospace",
-                  overflowX: "auto",
-                  margin: 0,
-                }}
-              >
-                {cssRules}
-              </pre>
-            </div>
-          </div>
-
       </div>
 
       {/* Behance-Style Font Specimen Presentation Blocks */}
-      {font.description_am && font.description_am.startsWith('[') && (
+      {specimenBlocks.length > 0 && (
         <div style={{ maxWidth: "1500px", margin: "60px auto 0 auto", display: "flex", flexDirection: "column", gap: "50px", borderTop: "1px solid var(--panel-border)", paddingTop: "60px" }}>
           <h3 style={{ fontSize: "1.6rem", fontWeight: "900", color: "var(--text)", margin: 0 }}>
             {t("fonts", "specimen_showcase", "Տառատեսակի Շնորհանդես (Font Specimen Showcase)")}
           </h3>
           
           <div style={{ display: "flex", flexDirection: "column", gap: "40px" }}>
-            {(() => {
-              try {
-                const parsedBlocks = JSON.parse(font.description_am);
-                return parsedBlocks.map((block: any, idx: number) => {
-                  if (block.type === "text") {
-                    return (
-                      <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "12px", maxWidth: "800px" }}>
-                        {(block.title_am || block.title_en) && (
-                          <h4 style={{ fontSize: "1.3rem", fontWeight: "800", color: "var(--text)", margin: 0 }}>
-                            {locale === "hy" ? block.title_am : block.title_en}
-                          </h4>
-                        )}
-                        <p style={{ fontSize: "1.05rem", lineHeight: "1.7", opacity: 0.85, margin: 0, whiteSpace: "pre-line" }}>
-                          {locale === "hy" ? block.content_am : block.content_en}
-                        </p>
-                      </div>
-                    );
-                  }
-
-                  if (block.type === "specimen_banner" && block.previewText) {
-                    return (
-                      <div key={idx} style={{ padding: "40px", background: "var(--panel)", borderRadius: "20px", border: "1px solid var(--panel-border)", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                        <span style={{ fontSize: "0.75rem", color: "var(--muted)", textTransform: "uppercase", marginBottom: "16px", display: "block" }}>Specimen Banner ({block.size || 72}px)</span>
-                        <div className="preview-font-container" style={{ fontFamily: `playground-font-${font.id}, sans-serif`, fontSize: `${block.size || 72}px`, color: "var(--text)", lineHeight: "1.2", wordBreak: "break-word" }}>
-                          {block.previewText}
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  if (block.type === "weights_comparison" && block.previewText) {
-                    const weightList = block.weights || [300, 400, 700];
-                    return (
-                      <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                        <h4 style={{ fontSize: "1.1rem", fontWeight: "700", margin: 0 }}>
-                          {locale === "hy" 
-                            ? (block.title_am || t("fonts", "weights_showcase", "Հաստության ցուցադրում")) 
-                            : (block.title_en || t("fonts", "weights_showcase", "Weights Comparison"))
-                          }
-                        </h4>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                          {weightList.map((w: number, wIdx: number) => (
-                            <div key={wIdx} style={{ display: "flex", gap: "20px", alignItems: "baseline", borderBottom: "1px solid var(--panel-border)", paddingBottom: "12px" }}>
-                              <span style={{ fontSize: "0.75rem", color: "var(--muted)", width: "60px", flexShrink: 0 }}>Weight {w}</span>
-                              <div className="preview-font-container" style={{ fontFamily: `playground-font-${font.id}, sans-serif`, fontSize: "2rem", color: "var(--text)", fontWeight: w, flex: 1 }}>
-                                {block.previewText}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  if (block.type === "glyph_showcase" && block.letters) {
-                    const lettersList = block.letters.split(" ").filter((s: string) => s.length > 0);
-                    return (
-                      <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                        <h4 style={{ fontSize: "1.1rem", fontWeight: "700", margin: 0 }}>
-                          {locale === "hy" 
-                            ? (block.title_am || t("fonts", "glyphs_showcase", "Գլիֆների ցուցադրում")) 
-                            : (block.title_en || t("fonts", "glyphs_showcase", "Key Glyphs Detail"))
-                          }
-                        </h4>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: "16px" }}>
-                          {lettersList.map((letter: string, lIdx: number) => (
-                            <div key={lIdx} style={{ height: "140px", background: "var(--panel)", border: "1px solid var(--panel-border)", borderRadius: "16px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative" }}>
-                              <div className="preview-font-container" style={{ fontFamily: `playground-font-${font.id}, sans-serif`, fontSize: "4.5rem", color: "var(--text)", lineHeight: 1 }}>
-                                {letter}
-                              </div>
-                              <span style={{ fontSize: "0.7rem", color: "var(--muted)", position: "absolute", bottom: "8px" }}>char code: {letter.charCodeAt(0)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  if (block.type === "image" && block.image_url) {
-                    return (
-                      <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
-                        <div style={{ borderRadius: "16px", overflow: "hidden", border: "1px solid var(--panel-border)", width: "100%" }}>
-                          <img src={block.image_url} alt="Specimen Graphic" style={{ width: "100%", display: "block" }} />
-                        </div>
-                        {(block.caption_am || block.caption_en) && (
-                          <span style={{ fontSize: "0.82rem", color: "var(--muted)", fontStyle: "italic", textAlign: "center" }}>
-                            {locale === "hy" ? block.caption_am : block.caption_en}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  }
-
-                  return null;
-                });
-              } catch (e) {
-                return null;
+            {specimenBlocks.map((block: any, idx: number) => {
+              if (block.type === "text") {
+                return (
+                  <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "12px", maxWidth: "800px" }}>
+                    {(block.title_am || block.title_en) && (
+                      <h4 style={{ fontSize: "1.3rem", fontWeight: "800", color: "var(--text)", margin: 0 }}>
+                        {locale === "hy" ? block.title_am : block.title_en}
+                      </h4>
+                    )}
+                    <p style={{ fontSize: "1.05rem", lineHeight: "1.7", opacity: 0.85, margin: 0, whiteSpace: "pre-line" }}>
+                      {locale === "hy" ? block.content_am : block.content_en}
+                    </p>
+                  </div>
+                );
               }
-            })()}
+
+              if (block.type === "specimen_banner" && block.previewText) {
+                return (
+                  <div key={idx} style={{ padding: "40px", background: "var(--panel)", borderRadius: "20px", border: "1px solid var(--panel-border)", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                    <span style={{ fontSize: "0.75rem", color: "var(--muted)", textTransform: "uppercase", marginBottom: "16px", display: "block" }}>Specimen Banner ({block.size || 72}px)</span>
+                    <div className="preview-font-container" style={{ fontFamily: `playground-font-${font.id}, sans-serif`, fontSize: `${block.size || 72}px`, color: "var(--text)", lineHeight: "1.2", wordBreak: "break-word" }}>
+                      {block.previewText}
+                    </div>
+                  </div>
+                );
+              }
+
+              if (block.type === "weights_comparison" && block.previewText) {
+                const weightList = block.weights || [300, 400, 700];
+                return (
+                  <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    <h4 style={{ fontSize: "1.1rem", fontWeight: "700", margin: 0 }}>
+                      {locale === "hy" 
+                        ? (block.title_am || t("fonts", "weights_showcase", "Հաստության ցուցադրում")) 
+                        : (block.title_en || t("fonts", "weights_showcase", "Weights Comparison"))
+                      }
+                    </h4>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                      {weightList.map((w: number, wIdx: number) => (
+                        <div key={wIdx} style={{ display: "flex", gap: "20px", alignItems: "baseline", borderBottom: "1px solid var(--panel-border)", paddingBottom: "12px" }}>
+                          <span style={{ fontSize: "0.75rem", color: "var(--muted)", width: "60px", flexShrink: 0 }}>Weight {w}</span>
+                          <div className="preview-font-container" style={{ fontFamily: `playground-font-${font.id}, sans-serif`, fontSize: "2rem", color: "var(--text)", fontWeight: w, flex: 1 }}>
+                            {block.previewText}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+
+              if (block.type === "glyph_showcase" && block.letters) {
+                const lettersList = block.letters.split(" ").filter((s: string) => s.length > 0);
+                return (
+                  <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    <h4 style={{ fontSize: "1.1rem", fontWeight: "700", margin: 0 }}>
+                      {locale === "hy" 
+                        ? (block.title_am || t("fonts", "glyphs_showcase", "Գլիֆների ցուցադրում")) 
+                        : (block.title_en || t("fonts", "glyphs_showcase", "Key Glyphs Detail"))
+                      }
+                    </h4>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: "16px" }}>
+                      {lettersList.map((letter: string, lIdx: number) => (
+                        <div key={lIdx} style={{ height: "140px", background: "var(--panel)", border: "1px solid var(--panel-border)", borderRadius: "16px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                          <div className="preview-font-container" style={{ fontFamily: `playground-font-${font.id}, sans-serif`, fontSize: "4.5rem", color: "var(--text)", lineHeight: 1 }}>
+                            {letter}
+                          </div>
+                          <span style={{ fontSize: "0.7rem", color: "var(--muted)", position: "absolute", bottom: "8px" }}>char code: {letter.charCodeAt(0)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+
+              if (block.type === "image" && block.image_url) {
+                return (
+                  <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
+                    <div style={{ borderRadius: "16px", overflow: "hidden", border: "1px solid var(--panel-border)", width: "100%" }}>
+                      <img src={block.image_url} alt="Specimen Graphic" style={{ width: "100%", display: "block" }} />
+                    </div>
+                    {(block.caption_am || block.caption_en) && (
+                      <span style={{ fontSize: "0.82rem", color: "var(--muted)", fontStyle: "italic", textAlign: "center" }}>
+                        {locale === "hy" ? block.caption_am : block.caption_en}
+                      </span>
+                    )}
+                  </div>
+                );
+              }
+
+              return null;
+            })}
           </div>
         </div>
       )}
