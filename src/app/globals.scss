@@ -719,14 +719,42 @@ hd-input.custom-input-wrapper,
   white-space: nowrap !important;
 }
 
-/* Page Transition — Slide + Fade In (matches admin dashboard style) */
-.page-slide-in {
-  animation: pageSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+/* Page Transition — Smooth Fade In & Fade Out */
+.page-transition-wrapper {
+  will-change: opacity, transform;
+  transition: opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1), transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.page-fade-out {
+    opacity: 0 !important;
+    transform: translateY(-8px) scale(0.995);
+    pointer-events: none;
+  }
+
+  &.page-fade-in {
+    animation: pageFadeIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
 }
 
-@keyframes pageSlideIn {
-  0%   { transform: translateX(30px); opacity: 0; }
-  100% { transform: translateX(0);    opacity: 1; }
+@keyframes pageFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pageFadeOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
 }
 
 
