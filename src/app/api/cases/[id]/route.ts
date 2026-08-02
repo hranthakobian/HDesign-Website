@@ -17,9 +17,11 @@ export async function PATCH(
     }
 
     const body = await request.json();
+    const newId = body.id || id;
+
     const updated = await saveCase({
       ...body,
-      id // force id to match url
+      id: newId
     });
 
     if (!updated) {
@@ -27,6 +29,10 @@ export async function PATCH(
         { error: 'Failed to update case.' },
         { status: 500 }
       );
+    }
+
+    if (newId !== id) {
+      await deleteCase(id);
     }
 
     return NextResponse.json({ success: true, case: updated });

@@ -638,7 +638,7 @@ export default function CaseEditor() {
 
       if (r.ok) {
         alert("Պահպանվեց!");
-        if (isNew) {
+        if (isNew || (form.id && form.id !== id)) {
           router.replace(`/admin/editor/case/${form.id}`);
         }
       } else {
@@ -776,7 +776,7 @@ export default function CaseEditor() {
             </button>
           </div>
 
-          <Link href={`/works/${id}`} target="_blank" style={{ textDecoration: "none" }}>
+          <Link href={`/works/${form.id || id}`} target="_blank" style={{ textDecoration: "none" }}>
             <div style={{ background: "transparent", color: "var(--muted)" }}>
               <hd-button data-width="110px" data-height="34px" data-thickness="3px">
                 Տեսնել <span className="hd-icon icon-Chevrolt-Arrow-Right" style={{ marginLeft: 4, fontSize: "0.7rem" }} />
@@ -1263,6 +1263,36 @@ export default function CaseEditor() {
           <div style={{ padding: 18, borderBottom: "1px solid var(--panel-border)" }}>
             <SectionLabel>{editorLang === "en" ? "Metadata (EN)" : "Մետատվյալներ (AM)"}</SectionLabel>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontSize: "0.72rem", color: "var(--muted)" }}>
+                  {editorLang === "en" ? "URL Slug (e.g. /works/seed-2)" : "Էջի Հղում (URL Slug, օր. seed-2)"}
+                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, background: "var(--input-bg)", border: "1px solid var(--input-border)", borderRadius: 8, padding: "2px 8px" }}>
+                  <span style={{ fontSize: "0.78rem", color: "var(--muted)", whiteSpace: "nowrap" }}>/works/</span>
+                  <input
+                    type="text"
+                    value={form.id || ""}
+                    onChange={e => {
+                      const val = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "-").replace(/-+/g, "-");
+                      setForm(p => ({ ...p, id: val }));
+                    }}
+                    placeholder="seed-2"
+                    style={{
+                      width: "100%",
+                      background: "transparent",
+                      border: "none",
+                      color: "var(--accent)",
+                      fontWeight: "bold",
+                      fontSize: "0.85rem",
+                      outline: "none"
+                    }}
+                  />
+                </div>
+                <span style={{ fontSize: "0.68rem", color: "var(--muted)" }}>
+                  {editorLang === "en" ? `Live Link: /works/${form.id || id}` : `Էջի հասցեն՝ /works/${form.id || id}`}
+                </span>
+              </div>
+
               <Field label={editorLang === "en" ? "Title*" : "Վերնագիր*"} value={parseLangText(form.title, editorLang)} onChange={v => setForm(p => ({ ...p, title: updateLangText(form.title, v, editorLang) }))} />
               <Field label={editorLang === "en" ? "Subtitle*" : "Ենթավերնագիր*"} value={parseLangText(form.subtitle, editorLang)} onChange={v => setForm(p => ({ ...p, subtitle: updateLangText(form.subtitle, v, editorLang) }))} />
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
