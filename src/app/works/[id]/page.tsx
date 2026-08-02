@@ -322,12 +322,12 @@ export default function BrandingDetailPage() {
   const hero = parseBg(work.bg);
   const avgBgColor = getAverageColor(hero.bg);
 
-  // Find indices of first and last image blocks
-  const imageBlockIndices = blocks
-    .map((b, i) => (b.type === "image" && b.image_url ? i : -1))
+  // Find indices of first and last media blocks (images and video embeds)
+  const mediaBlockIndices = blocks
+    .map((b, i) => ((b.type === "image" && b.image_url) || (b.type === "embed" && b.embed_url) ? i : -1))
     .filter(index => index !== -1);
-  const firstImageIdx = imageBlockIndices.length > 0 ? imageBlockIndices[0] : -1;
-  const lastImageIdx = imageBlockIndices.length > 0 ? imageBlockIndices[imageBlockIndices.length - 1] : -1;
+  const firstMediaIdx = mediaBlockIndices.length > 0 ? mediaBlockIndices[0] : -1;
+  const lastMediaIdx = mediaBlockIndices.length > 0 ? mediaBlockIndices[mediaBlockIndices.length - 1] : -1;
 
   return (
     <main className="case-detail-main" style={{ marginTop: "0px", minHeight: "100vh" }}>
@@ -501,8 +501,8 @@ export default function BrandingDetailPage() {
           }
 
           if (block.type === "image" && block.image_url) {
-            const isFirstImage = idx === firstImageIdx;
-            const isLastImage = idx === lastImageIdx;
+            const isFirstMedia = idx === firstMediaIdx;
+            const isLastMedia = idx === lastMediaIdx;
 
             return (
               <div key={idx} style={{ width: "100%", marginTop: mt, marginBottom: mb, display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -512,10 +512,10 @@ export default function BrandingDetailPage() {
                   overflow: "hidden",
                   transition: "max-width 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
                   margin: "0 auto",
-                  borderTopLeftRadius: (wideMedia && isFirstImage) ? "32px" : "0px",
-                  borderTopRightRadius: (wideMedia && isFirstImage) ? "32px" : "0px",
-                  borderBottomLeftRadius: (wideMedia && isLastImage) ? "32px" : "0px",
-                  borderBottomRightRadius: (wideMedia && isLastImage) ? "32px" : "0px",
+                  borderTopLeftRadius: (wideMedia && isFirstMedia) ? "32px" : "0px",
+                  borderTopRightRadius: (wideMedia && isFirstMedia) ? "32px" : "0px",
+                  borderBottomLeftRadius: (wideMedia && isLastMedia) ? "32px" : "0px",
+                  borderBottomRightRadius: (wideMedia && isLastMedia) ? "32px" : "0px",
                 }}>
                   <img src={block.image_url} alt="Project spec" style={{ width: "100%", height: "auto", display: "block" }} />
                 </div>
@@ -531,16 +531,24 @@ export default function BrandingDetailPage() {
           }
 
           if (block.type === "embed" && block.embed_url) {
+            const isFirstMedia = idx === firstMediaIdx;
+            const isLastMedia = idx === lastMediaIdx;
+
             return (
-              <div key={idx} style={{ 
-                width: "100%", 
-                maxWidth: wideMedia ? "1500px" : "100%", 
-                margin: "0 auto", 
-                marginTop: mt, 
-                marginBottom: mb, 
-                transition: "max-width 0.6s cubic-bezier(0.16, 1, 0.3, 1)"
-              }}>
-                <HdVideoPlayer src={block.embed_url} poster={block.poster_url} radius="16px" />
+              <div key={idx} style={{ width: "100%", marginTop: mt, marginBottom: mb, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <div style={{ 
+                  width: "100%", 
+                  maxWidth: wideMedia ? "1500px" : "100%", 
+                  overflow: "hidden",
+                  transition: "max-width 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
+                  margin: "0 auto",
+                  borderTopLeftRadius: (wideMedia && isFirstMedia) ? "32px" : "0px",
+                  borderTopRightRadius: (wideMedia && isFirstMedia) ? "32px" : "0px",
+                  borderBottomLeftRadius: (wideMedia && isLastMedia) ? "32px" : "0px",
+                  borderBottomRightRadius: (wideMedia && isLastMedia) ? "32px" : "0px",
+                }}>
+                  <HdVideoPlayer src={block.embed_url} poster={block.poster_url} radius="0px" width="100%" />
+                </div>
               </div>
             );
           }

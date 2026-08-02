@@ -218,7 +218,7 @@ export default function HdVideoPlayer({
         style={{
           position: "relative",
           width: width,
-          maxWidth: "1500px",
+          maxWidth: "100%",
           aspectRatio: "16 / 9",
           height: height === "auto" || !height ? "auto" : height,
           borderRadius: radius,
@@ -258,7 +258,7 @@ export default function HdVideoPlayer({
       style={{
         position: "relative",
         width: width,
-        maxWidth: "1500px",
+        maxWidth: "100%",
         aspectRatio: "16 / 9",
         height: height === "auto" || !height ? "auto" : height,
         borderRadius: radius,
