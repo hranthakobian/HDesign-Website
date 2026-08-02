@@ -2171,15 +2171,81 @@ export default function Home() {
                       </label>
                     )}
 
-                    <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                      <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Եզրագիծ: {playgroundThickness}</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Եզրագիծ</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+                          <input
+                            type="number"
+                            min="1"
+                            max="5"
+                            value={playgroundThickness.replace("px", "")}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              if (!isNaN(val) && e.target.value !== "") setPlaygroundThickness(`${val}px`);
+                            }}
+                            onBlur={(e) => {
+                              let val = parseInt(e.target.value, 10);
+                              if (isNaN(val)) val = 1;
+                              val = Math.min(5, Math.max(1, val));
+                              setPlaygroundThickness(`${val}px`);
+                            }}
+                            style={{
+                              width: "48px",
+                              padding: "2px 4px",
+                              fontSize: "0.75rem",
+                              fontWeight: "bold",
+                              color: "var(--text)",
+                              background: "rgba(0,0,0,0.2)",
+                              border: "1px solid var(--panel-border)",
+                              borderRadius: "4px",
+                              textAlign: "center",
+                              outline: "none"
+                            }}
+                          />
+                          <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>px</span>
+                        </div>
+                      </div>
                       <hd-slider min="1" max="5" value={playgroundThickness.replace("px", "")} onInput={(e: any) => setPlaygroundThickness(`${e.target.value}px`)} />
-                    </label>
+                    </div>
 
-                    <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                      <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Կլորացում: {playgroundRadius}</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Կլորացում</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+                          <input
+                            type="number"
+                            min="0"
+                            max="24"
+                            value={playgroundRadius.replace("px", "")}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              if (!isNaN(val) && e.target.value !== "") setPlaygroundRadius(`${val}px`);
+                            }}
+                            onBlur={(e) => {
+                              let val = parseInt(e.target.value, 10);
+                              if (isNaN(val)) val = 0;
+                              val = Math.min(24, Math.max(0, val));
+                              setPlaygroundRadius(`${val}px`);
+                            }}
+                            style={{
+                              width: "48px",
+                              padding: "2px 4px",
+                              fontSize: "0.75rem",
+                              fontWeight: "bold",
+                              color: "var(--text)",
+                              background: "rgba(0,0,0,0.2)",
+                              border: "1px solid var(--panel-border)",
+                              borderRadius: "4px",
+                              textAlign: "center",
+                              outline: "none"
+                            }}
+                          />
+                          <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>px</span>
+                        </div>
+                      </div>
                       <hd-slider min="0" max="24" value={playgroundRadius.replace("px", "")} onInput={(e: any) => setPlaygroundRadius(`${e.target.value}px`)} />
-                    </label>
+                    </div>
 
                     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                       <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>Գույն (Theme Color)</span>
@@ -2552,9 +2618,34 @@ export default function Home() {
                   <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "var(--text)" }}>
                     {t('home', 'thickness', 'Հաստություն (Thickness)')}
                   </span>
-                  <span style={{ fontSize: "0.85rem", fontWeight: "700", color: "var(--primary-color)" }}>
-                    {iconWeight}
-                  </span>
+                  <input
+                    type="number"
+                    min="100"
+                    max="900"
+                    step="100"
+                    value={iconWeight}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      if (!isNaN(val) && e.target.value !== "") setIconWeight(val);
+                    }}
+                    onBlur={(e) => {
+                      let val = parseInt(e.target.value, 10);
+                      if (isNaN(val)) val = 400;
+                      setIconWeight(Math.min(900, Math.max(100, val)));
+                    }}
+                    style={{
+                      width: "64px",
+                      padding: "2px 6px",
+                      fontSize: "0.85rem",
+                      fontWeight: "700",
+                      color: "var(--primary-color)",
+                      background: "var(--input-bg)",
+                      border: "1px solid var(--input-border)",
+                      borderRadius: "6px",
+                      textAlign: "center",
+                      outline: "none"
+                    }}
+                  />
                 </div>
                 <hd-slider 
                   suppressHydrationWarning
@@ -3235,9 +3326,38 @@ export default function Home() {
                         <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "var(--text)" }}>
                           {t('home', 'font_weight_label', 'Հաստություն (Font Weight)')}
                         </span>
-                        <span style={{ fontSize: "0.85rem", fontWeight: "700", color: "var(--primary-color)" }}>
-                          {hdesignFontWeight}
-                        </span>
+                        <input
+                          type="number"
+                          min="100"
+                          max="900"
+                          step="10"
+                          value={hdesignFontWeight}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            if (!isNaN(val) && e.target.value !== "") {
+                              setHdesignFontWeight(val);
+                            }
+                          }}
+                          onBlur={(e) => {
+                            let val = parseInt(e.target.value, 10);
+                            if (isNaN(val)) val = 400;
+                            val = Math.min(900, Math.max(100, val));
+                            setHdesignFontWeight(val);
+                          }}
+                          style={{
+                            width: "72px",
+                            padding: "3px 8px",
+                            fontSize: "0.85rem",
+                            fontWeight: "700",
+                            color: "var(--primary-color)",
+                            background: "var(--input-bg)",
+                            border: "1px solid var(--input-border)",
+                            borderRadius: "6px",
+                            textAlign: "center",
+                            outline: "none",
+                            boxSizing: "border-box"
+                          }}
+                        />
                       </div>
                       <hd-slider 
                         suppressHydrationWarning
@@ -3256,9 +3376,38 @@ export default function Home() {
                         <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "var(--text)" }}>
                           {t('home', 'font_slant_label', 'Թեքություն (Font Slant / Italic)')}
                         </span>
-                        <span style={{ fontSize: "0.85rem", fontWeight: "700", color: "var(--primary-color)" }}>
-                          {hdesignFontSlant.toFixed(2)}
-                        </span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={hdesignFontSlant}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            if (!isNaN(val) && e.target.value !== "") {
+                              setHdesignFontSlant(val);
+                            }
+                          }}
+                          onBlur={(e) => {
+                            let val = parseFloat(e.target.value);
+                            if (isNaN(val)) val = 0;
+                            val = Math.min(1, Math.max(0, val));
+                            setHdesignFontSlant(Number(val.toFixed(2)));
+                          }}
+                          style={{
+                            width: "72px",
+                            padding: "3px 8px",
+                            fontSize: "0.85rem",
+                            fontWeight: "700",
+                            color: "var(--primary-color)",
+                            background: "var(--input-bg)",
+                            border: "1px solid var(--input-border)",
+                            borderRadius: "6px",
+                            textAlign: "center",
+                            outline: "none",
+                            boxSizing: "border-box"
+                          }}
+                        />
                       </div>
                       <hd-slider 
                         suppressHydrationWarning
@@ -3458,9 +3607,69 @@ export default function Home() {
                     </div>
 
                     {/* Live Coordinates Readout */}
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", fontWeight: "600", color: "var(--muted)", background: "rgba(255, 255, 255, 0.02)", padding: "6px 12px", borderRadius: "8px", border: "1px solid var(--panel-border)" }}>
-                      <span>wght: <strong style={{ color: "var(--primary-color)" }}>{hdesignFontWeight}</strong></span>
-                      <span>ital / slnt: <strong style={{ color: "var(--primary-color)" }}>{hdesignFontSlant.toFixed(2)}</strong></span>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.78rem", fontWeight: "600", color: "var(--muted)", background: "rgba(255, 255, 255, 0.02)", padding: "6px 12px", borderRadius: "8px", border: "1px solid var(--panel-border)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span>wght:</span>
+                        <input
+                          type="number"
+                          min="100"
+                          max="900"
+                          step="10"
+                          value={hdesignFontWeight}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            if (!isNaN(val) && e.target.value !== "") setHdesignFontWeight(val);
+                          }}
+                          onBlur={(e) => {
+                            let val = parseInt(e.target.value, 10);
+                            if (isNaN(val)) val = 400;
+                            setHdesignFontWeight(Math.min(900, Math.max(100, val)));
+                          }}
+                          style={{
+                            width: "60px",
+                            padding: "2px 4px",
+                            fontSize: "0.78rem",
+                            fontWeight: "700",
+                            color: "var(--primary-color)",
+                            background: "var(--input-bg)",
+                            border: "1px solid var(--input-border)",
+                            borderRadius: "4px",
+                            textAlign: "center",
+                            outline: "none"
+                          }}
+                        />
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span>ital / slnt:</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={hdesignFontSlant}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            if (!isNaN(val) && e.target.value !== "") setHdesignFontSlant(val);
+                          }}
+                          onBlur={(e) => {
+                            let val = parseFloat(e.target.value);
+                            if (isNaN(val)) val = 0;
+                            setHdesignFontSlant(Number(Math.min(1, Math.max(0, val)).toFixed(2)));
+                          }}
+                          style={{
+                            width: "60px",
+                            padding: "2px 4px",
+                            fontSize: "0.78rem",
+                            fontWeight: "700",
+                            color: "var(--primary-color)",
+                            background: "var(--input-bg)",
+                            border: "1px solid var(--input-border)",
+                            borderRadius: "4px",
+                            textAlign: "center",
+                            outline: "none"
+                          }}
+                        />
+                      </div>
                     </div>
 
                     {/* Options Toggles using <hd-checkbox> */}

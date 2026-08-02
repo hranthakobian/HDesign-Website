@@ -643,9 +643,38 @@ export default function FontDetailPage() {
 
             {/* Slider: Font Size */}
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px", fontSize: "0.85rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px", fontSize: "0.85rem" }}>
                 <span>{t("fonts", "size", "Չափս")}</span>
-                <span style={{ fontWeight: "bold" }}>{fontSize}px</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <input
+                    type="number"
+                    min="12"
+                    max="120"
+                    value={fontSize}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      if (!isNaN(val) && e.target.value !== "") setFontSize(val);
+                    }}
+                    onBlur={(e) => {
+                      let val = parseInt(e.target.value, 10);
+                      if (isNaN(val)) val = 48;
+                      setFontSize(Math.min(120, Math.max(12, val)));
+                    }}
+                    style={{
+                      width: "60px",
+                      padding: "2px 6px",
+                      fontSize: "0.82rem",
+                      fontWeight: "bold",
+                      color: "var(--primary-color)",
+                      background: "var(--input-bg)",
+                      border: "1px solid var(--input-border)",
+                      borderRadius: "6px",
+                      textAlign: "center",
+                      outline: "none"
+                    }}
+                  />
+                  <span style={{ fontWeight: "bold", fontSize: "0.8rem", color: "var(--muted)" }}>px</span>
+                </div>
               </div>
               <hd-slider
                 min="12"
@@ -658,9 +687,38 @@ export default function FontDetailPage() {
 
             {/* Slider: Letter Spacing */}
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px", fontSize: "0.85rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px", fontSize: "0.85rem" }}>
                 <span>{t("fonts", "letter_spacing", "Տառատարածություն")}</span>
-                <span style={{ fontWeight: "bold" }}>{letterSpacing}px</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <input
+                    type="number"
+                    min="-4"
+                    max="20"
+                    value={letterSpacing}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      if (!isNaN(val) && e.target.value !== "") setLetterSpacing(val);
+                    }}
+                    onBlur={(e) => {
+                      let val = parseInt(e.target.value, 10);
+                      if (isNaN(val)) val = 0;
+                      setLetterSpacing(Math.min(20, Math.max(-4, val)));
+                    }}
+                    style={{
+                      width: "60px",
+                      padding: "2px 6px",
+                      fontSize: "0.82rem",
+                      fontWeight: "bold",
+                      color: "var(--primary-color)",
+                      background: "var(--input-bg)",
+                      border: "1px solid var(--input-border)",
+                      borderRadius: "6px",
+                      textAlign: "center",
+                      outline: "none"
+                    }}
+                  />
+                  <span style={{ fontWeight: "bold", fontSize: "0.8rem", color: "var(--muted)" }}>px</span>
+                </div>
               </div>
               <hd-slider
                 min="-4"
@@ -673,9 +731,36 @@ export default function FontDetailPage() {
 
             {/* Slider: Line Height */}
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px", fontSize: "0.85rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px", fontSize: "0.85rem" }}>
                 <span>{t("fonts", "line_height", "Տողի բարձրություն")}</span>
-                <span style={{ fontWeight: "bold" }}>{lineHeight}</span>
+                <input
+                  type="number"
+                  min="0.8"
+                  max="3.0"
+                  step="0.1"
+                  value={lineHeight}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    if (!isNaN(val) && e.target.value !== "") setLineHeight(val);
+                  }}
+                  onBlur={(e) => {
+                    let val = parseFloat(e.target.value);
+                    if (isNaN(val)) val = 1.2;
+                    setLineHeight(Number(Math.min(3.0, Math.max(0.8, val)).toFixed(1)));
+                  }}
+                  style={{
+                    width: "60px",
+                    padding: "2px 6px",
+                    fontSize: "0.82rem",
+                    fontWeight: "bold",
+                    color: "var(--primary-color)",
+                    background: "var(--input-bg)",
+                    border: "1px solid var(--input-border)",
+                    borderRadius: "6px",
+                    textAlign: "center",
+                    outline: "none"
+                  }}
+                />
               </div>
               <hd-slider
                 min="0.8"
@@ -796,9 +881,36 @@ export default function FontDetailPage() {
 
               {/* Axis: Weight (wght) */}
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px", fontSize: "0.82rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px", fontSize: "0.82rem" }}>
                   <span>{t("fonts", "weight", "Հաստություն (Weight)")}</span>
-                  <span style={{ fontWeight: "bold" }}>{wght}</span>
+                  <input
+                    type="number"
+                    min="100"
+                    max="900"
+                    step="10"
+                    value={wght}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      if (!isNaN(val) && e.target.value !== "") setWght(val);
+                    }}
+                    onBlur={(e) => {
+                      let val = parseInt(e.target.value, 10);
+                      if (isNaN(val)) val = 400;
+                      setWght(Math.min(900, Math.max(100, val)));
+                    }}
+                    style={{
+                      width: "64px",
+                      padding: "2px 6px",
+                      fontSize: "0.82rem",
+                      fontWeight: "bold",
+                      color: "var(--primary-color)",
+                      background: "var(--input-bg)",
+                      border: "1px solid var(--input-border)",
+                      borderRadius: "6px",
+                      textAlign: "center",
+                      outline: "none"
+                    }}
+                  />
                 </div>
                 <hd-slider
                   min="100"
@@ -812,9 +924,39 @@ export default function FontDetailPage() {
 
               {/* Axis: Slant (slnt) */}
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px", fontSize: "0.82rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px", fontSize: "0.82rem" }}>
                   <span>{t("fonts", "slant", "Թեքություն (Slant)")}</span>
-                  <span style={{ fontWeight: "bold" }}>{slnt}°</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+                    <input
+                      type="number"
+                      min="-20"
+                      max="0"
+                      step="1"
+                      value={slnt}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        if (!isNaN(val) && e.target.value !== "") setSlnt(val);
+                      }}
+                      onBlur={(e) => {
+                        let val = parseInt(e.target.value, 10);
+                        if (isNaN(val)) val = 0;
+                        setSlnt(Math.min(0, Math.max(-20, val)));
+                      }}
+                      style={{
+                        width: "56px",
+                        padding: "2px 6px",
+                        fontSize: "0.82rem",
+                        fontWeight: "bold",
+                        color: "var(--primary-color)",
+                        background: "var(--input-bg)",
+                        border: "1px solid var(--input-border)",
+                        borderRadius: "6px",
+                        textAlign: "center",
+                        outline: "none"
+                      }}
+                    />
+                    <span style={{ fontWeight: "bold", fontSize: "0.8rem", color: "var(--muted)" }}>°</span>
+                  </div>
                 </div>
                 <hd-slider
                   min="-20"
@@ -828,9 +970,39 @@ export default function FontDetailPage() {
 
               {/* Axis: Width (wdth) */}
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px", fontSize: "0.82rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px", fontSize: "0.82rem" }}>
                   <span>{t("fonts", "width", "Լայնություն (Width)")}</span>
-                  <span style={{ fontWeight: "bold" }}>{wdth}%</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+                    <input
+                      type="number"
+                      min="50"
+                      max="150"
+                      step="5"
+                      value={wdth}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        if (!isNaN(val) && e.target.value !== "") setWdth(val);
+                      }}
+                      onBlur={(e) => {
+                        let val = parseInt(e.target.value, 10);
+                        if (isNaN(val)) val = 100;
+                        setWdth(Math.min(150, Math.max(50, val)));
+                      }}
+                      style={{
+                        width: "58px",
+                        padding: "2px 6px",
+                        fontSize: "0.82rem",
+                        fontWeight: "bold",
+                        color: "var(--primary-color)",
+                        background: "var(--input-bg)",
+                        border: "1px solid var(--input-border)",
+                        borderRadius: "6px",
+                        textAlign: "center",
+                        outline: "none"
+                      }}
+                    />
+                    <span style={{ fontWeight: "bold", fontSize: "0.8rem", color: "var(--muted)" }}>%</span>
+                  </div>
                 </div>
                 <hd-slider
                   min="50"
@@ -844,9 +1016,36 @@ export default function FontDetailPage() {
 
               {/* Axis: Italic (ital) */}
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px", fontSize: "0.82rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px", fontSize: "0.82rem" }}>
                   <span>{t("fonts", "italic", "Շղագիր (Italic Axis)")}</span>
-                  <span style={{ fontWeight: "bold" }}>{ital}</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={ital}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      if (!isNaN(val) && e.target.value !== "") setItal(val);
+                    }}
+                    onBlur={(e) => {
+                      let val = parseFloat(e.target.value);
+                      if (isNaN(val)) val = 0;
+                      setItal(Number(Math.min(1, Math.max(0, val)).toFixed(1)));
+                    }}
+                    style={{
+                      width: "56px",
+                      padding: "2px 6px",
+                      fontSize: "0.82rem",
+                      fontWeight: "bold",
+                      color: "var(--primary-color)",
+                      background: "var(--input-bg)",
+                      border: "1px solid var(--input-border)",
+                      borderRadius: "6px",
+                      textAlign: "center",
+                      outline: "none"
+                    }}
+                  />
                 </div>
                 <hd-slider
                   min="0"

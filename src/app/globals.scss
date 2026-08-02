@@ -262,6 +262,19 @@ html[data-theme="green"] {
   --font-size: 9pt;
 }
 
+hd-textarea,
+hd-input,
+hd-segment,
+hd-select,
+hd-checkbox,
+.custom-input-wrapper,
+.custom-segment-wrapper,
+.custom-select-wrapper,
+.custom-checkbox-wrapper {
+  --line-thickness: 2px !important;
+}
+
+
 // input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]):not([type="range"]):not([type="image"]):not([type="submit"]):not([type="button"]),
 // hd-input {
 //   --wrapper-height: 48px !important;
@@ -2215,7 +2228,7 @@ html[data-theme="custom"] .mobile-menu-drawer {
 }
 
 
-/* Mobile Nav Structure */
+/* Mobile Nav Structure matching desktop header link colors */
 .mobile-nav-links {
   display: flex;
   flex-direction: column;
@@ -2224,6 +2237,32 @@ html[data-theme="custom"] .mobile-menu-drawer {
   max-width: 480px;
   margin: 0 auto;
 
+  // Set distinct hover colors for each mobile slot matching desktop header
+  .mobile-nav-item[href="/"] {
+    --hover-color: #F2A499;
+  }
+  .mobile-nav-item[href="/about"] {
+    --hover-color: #A3C2F7;
+  }
+  .mobile-nav-item[href="/works"] {
+    --hover-color: #F7DB8F;
+  }
+  .mobile-nav-subitem[href*="/works"] {
+    --hover-color: #F7DB8F;
+  }
+  .mobile-nav-item[href="/fonts"] {
+    --hover-color: #E2BCFF;
+  }
+  .mobile-nav-item[href="/hdesign"] {
+    --hover-color: #C7BAFF;
+  }
+  .mobile-nav-subitem[href*="/hdesign"] {
+    --hover-color: #C7BAFF;
+  }
+  .mobile-nav-item[href="/contact"] {
+    --hover-color: #A6D5C7;
+  }
+
   .mobile-nav-item {
     font-size: 1.6rem;
     font-weight: 800;
@@ -2231,10 +2270,19 @@ html[data-theme="custom"] .mobile-menu-drawer {
     text-decoration: none;
     padding: 8px 0;
     border-bottom: 1px solid rgba(0,0,0,0.04);
-    transition: color 0.2s;
+    transition: color 0.25s ease;
 
+    &:hover,
     &.active {
-      color: var(--accent, #4a897c);
+      color: var(--hover-color, var(--accent)) !important;
+
+      .nav-item-text {
+        color: var(--hover-color, var(--accent)) !important;
+      }
+
+      .nav-double-lines .nav-line path {
+        stroke: var(--hover-color, var(--accent)) !important;
+      }
     }
   }
 
@@ -2259,11 +2307,20 @@ html[data-theme="custom"] .mobile-menu-drawer {
     text-decoration: none;
     padding: 6px 0 6px 12px;
     border-left: 2px solid rgba(8, 63, 57, 0.1);
-    transition: all 0.2s;
+    transition: all 0.25s ease;
 
+    &:hover,
     &.active {
-      color: var(--accent, #4a897c);
-      border-left-color: var(--accent, #4a897c);
+      color: var(--hover-color, var(--accent)) !important;
+      border-left-color: var(--hover-color, var(--accent)) !important;
+
+      .nav-item-text {
+        color: var(--hover-color, var(--accent)) !important;
+      }
+
+      .nav-double-lines .nav-line path {
+        stroke: var(--hover-color, var(--accent)) !important;
+      }
     }
   }
 }

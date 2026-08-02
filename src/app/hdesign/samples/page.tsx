@@ -21,7 +21,7 @@ export default function HDesignSamplesPage() {
   const [thickness, setThickness] = useState<string>("3px");
   const [color, setColor] = useState<string>("#083f39");
   const [textColor, setTextColor] = useState<string>("#ffffff");
-  const [radius, setRadius] = useState<string>("12px");
+  const [radius, setRadius] = useState<string>("24px");
 
   // Component-specific attributes
   const [btnText, setBtnText] = useState<string>("Սեղմել այստեղ");
@@ -805,16 +805,74 @@ export default function HDesignSamplesPage() {
                 )}
 
                 {/* Line thickness control */}
-                <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <span style={{ fontSize: "0.8rem", opacity: 0.8 }}>Գծի հաստություն: {thickness}</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "0.8rem", opacity: 0.8 }}>Գծի հաստություն</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="5"
+                      value={thickness.replace("px", "")}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        if (!isNaN(val) && e.target.value !== "") setThickness(`${val}px`);
+                      }}
+                      onBlur={(e) => {
+                        let val = parseInt(e.target.value, 10);
+                        if (isNaN(val)) val = 1;
+                        setThickness(`${Math.min(5, Math.max(1, val))}px`);
+                      }}
+                      style={{
+                        width: "50px",
+                        padding: "2px 4px",
+                        fontSize: "0.8rem",
+                        fontWeight: "bold",
+                        color: "var(--text)",
+                        background: "rgba(0,0,0,0.2)",
+                        border: "1px solid var(--panel-border)",
+                        borderRadius: "4px",
+                        textAlign: "center",
+                        outline: "none"
+                      }}
+                    />
+                  </div>
                   <hd-slider min="1" max="5" value={thickness.replace("px", "")} onInput={(e: any) => setThickness(`${e.target.value}px`)} />
-                </label>
+                </div>
 
                 {/* Border radius control */}
-                <label style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <span style={{ fontSize: "0.8rem", opacity: 0.8 }}>Կլորացման շառավիղ: {radius}</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "0.8rem", opacity: 0.8 }}>Կլորացման շառավիղ</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="30"
+                      value={radius.replace("px", "")}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        if (!isNaN(val) && e.target.value !== "") setRadius(`${val}px`);
+                      }}
+                      onBlur={(e) => {
+                        let val = parseInt(e.target.value, 10);
+                        if (isNaN(val)) val = 0;
+                        setRadius(`${Math.min(30, Math.max(0, val))}px`);
+                      }}
+                      style={{
+                        width: "50px",
+                        padding: "2px 4px",
+                        fontSize: "0.8rem",
+                        fontWeight: "bold",
+                        color: "var(--text)",
+                        background: "rgba(0,0,0,0.2)",
+                        border: "1px solid var(--panel-border)",
+                        borderRadius: "4px",
+                        textAlign: "center",
+                        outline: "none"
+                      }}
+                    />
+                  </div>
                   <hd-slider min="0" max="30" value={radius.replace("px", "")} onInput={(e: any) => setRadius(`${e.target.value}px`)} />
-                </label>
+                </div>
 
                 {/* Primary Theme color input */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>

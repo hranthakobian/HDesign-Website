@@ -203,10 +203,10 @@ export default function Footer({
           </hd-reveal>
         </div>
 
-        <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.15)", paddingTop: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", color: "#ffffff", opacity: 0.7, fontSize: "0.85rem" }}>
-          <div>© {new Date().getFullYear()} {t('contact', 'copyright', 'HDesign. Բոլոր իրավունքները պաշտպանված են։')}</div>
+        <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.15)", paddingTop: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", color: "#ffffff", opacity: 0.7, fontSize: "0.85rem" }}>
+          <div>© {new Date().getFullYear()} {t('contact', 'copyright', 'Հակոբյան Դիզայն. Բոլոր իրավունքները պաշտպանված են։')}</div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span>{t('contact', 'designed_by', 'Դիզայնը՝ Հրանտ Հակոբյանի')}</span>
+            <span>{t('contact', 'designed_by', 'Ձեւավորումը եւ Գաղափարը՝ Հրանտ Հակոբյանի Պատրաստված է՝ Antigravity-ով')}</span>
           </div>
         </div>
       </div>

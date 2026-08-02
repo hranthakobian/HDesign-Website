@@ -1031,8 +1031,8 @@ export default function AdminDashboard() {
     setAboutTranslations({
       title_hy: hyDyn['title'] || hyTranslations['about']?.['title'] || 'Մասին',
       title_en: enDyn['title'] || enTranslations['about']?.['title'] || 'About',
-      bio_p1_hy: hyDyn['bio_p1'] || hyTranslations['about']?.['bio_p1'] || 'Ողջույն, ես Հրանտ Հակոբյանն եմ և Ճարտարապետության և շինարարության Հայաստանի Ազգային Համալսարանի ճարտարապետության ֆակուլտետի 4-րդ կուրսի ուսանող եմ։ Ես մասնագիտանում եմ տառաստեղծության և բրենդինգի մեջ։',
-      bio_p1_en: enDyn['bio_p1'] || enTranslations['about']?.['bio_p1'] || "Hello, I'm Hrant Hakobyan, a 4th-year architecture student at the National University of Architecture and Construction of Armenia. I specialize in type design and branding.",
+      bio_p1_hy: hyDyn['bio_p1'] || hyTranslations['about']?.['bio_p1'] || 'Ողջույն, ես Հրանտ Հակոբյանն եմ և Ճարտարապետության և շինարարության Հայաստանի Ազգային Համալսարանի ճարտարապետության ֆակուլտետի 4-րդ կուրսի ուսանող եմ։',
+      bio_p1_en: enDyn['bio_p1'] || enTranslations['about']?.['bio_p1'] || "Hello, I'm Hrant Hakobyan, a 4th-year architecture student at the National University of Architecture and Construction of Armenia.",
       bio_p2_hy: hyDyn['bio_p2'] || hyTranslations['about']?.['bio_p2'] || 'Իմ նախագծերում ես համատեղում եմ ճարտարապետական կառուցվածքայնությունն ու գրաֆիկական դիզայնի ճկունությունը: Յուրաքանչյուր տառատեսակ և տարբերանշան ինձ համար կառույց է, որն ունի իր սեփական հիմքերը, համամասնությունն ու գեղագիտական արժեքը:',
       bio_p2_en: enDyn['bio_p2'] || enTranslations['about']?.['bio_p2'] || 'In my projects, I combine architectural structure with graphic design flexibility. Every typeface and logo is a building for me, with its own foundations, proportion, and aesthetic value.',
       contact_btn_hy: hyDyn['contact_btn'] || hyTranslations['about']?.['contact_btn'] || 'Կապնվել',
@@ -1064,8 +1064,8 @@ export default function AdminDashboard() {
       home_about_title_en: enDynHome['about_title'] || enTranslations['home']?.['about_title'] || 'About',
       home_about_p1_hy: hyDynHome['about_p1'] || hyTranslations['home']?.['about_p1'] || 'Ողջույն, ես Հրանտ Հակոբյանն եմ և Ճարտարապետության և շինարարության Հայաստանի Ազգային Համալսարանի ճարտարապետության ֆակուլտետի 4-րդ կուրսի ուսանող եմ։',
       home_about_p1_en: enDynHome['about_p1'] || enTranslations['home']?.['about_p1'] || "Hello, I'm Hrant Hakobyan, a 4th-year architecture student at the National University of Architecture and Construction of Armenia.",
-      home_about_p2_hy: hyDynHome['about_p2'] || hyTranslations['home']?.['about_p2'] || 'Ես մասնագիտանում եմ տառաստեղծության և բրենդինգի մեջ։',
-      home_about_p2_en: enDynHome['about_p2'] || enTranslations['home']?.['about_p2'] || 'I specialize in type design and branding.',
+      home_about_p2_hy: hyDynHome['about_p2'] || hyTranslations['home']?.['about_p2'] || '',
+      home_about_p2_en: enDynHome['about_p2'] || enTranslations['home']?.['about_p2'] || '',
       home_contact_btn_hy: hyDynHome['contact_btn'] || hyTranslations['home']?.['contact_btn'] || 'Կապնվել',
       home_contact_btn_en: enDynHome['contact_btn'] || enTranslations['home']?.['contact_btn'] || 'Contact',
       home_other_works_hy: hyDynHome['other_works'] || hyTranslations['home']?.['other_works'] || 'Այլ աշխատանքներ',
@@ -7605,9 +7605,39 @@ export default function AdminDashboard() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                         {/* Hue Slider */}
                         <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                             <label style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 600 }}>Երանգ (Hue)</label>
-                            <span style={{ fontSize: '0.8rem', color: '#00C49F', fontWeight: 700 }}>{personalization.theme_hue}°</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                              <input
+                                type="number"
+                                min="0"
+                                max="360"
+                                value={personalization.theme_hue}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val !== "") setPersonalization(prev => ({ ...prev, theme_hue: val }));
+                                }}
+                                onBlur={(e) => {
+                                  let val = parseInt(e.target.value, 10);
+                                  if (isNaN(val)) val = 172;
+                                  val = Math.min(360, Math.max(0, val));
+                                  setPersonalization(prev => ({ ...prev, theme_hue: val.toString() }));
+                                }}
+                                style={{
+                                  width: "52px",
+                                  padding: "2px 4px",
+                                  fontSize: "0.8rem",
+                                  fontWeight: "700",
+                                  color: "#00C49F",
+                                  background: "var(--input-bg)",
+                                  border: "1px solid var(--input-border)",
+                                  borderRadius: "4px",
+                                  textAlign: "center",
+                                  outline: "none"
+                                }}
+                              />
+                              <span style={{ fontSize: '0.8rem', color: '#00C49F', fontWeight: 700 }}>°</span>
+                            </div>
                           </div>
                           <hd-slider 
                             min="0" 
@@ -7624,9 +7654,39 @@ export default function AdminDashboard() {
 
                         {/* Saturation Slider */}
                         <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                             <label style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 600 }}>Հագեցվածություն (Saturation)</label>
-                            <span style={{ fontSize: '0.8rem', color: '#00C49F', fontWeight: 700 }}>{personalization.theme_saturation || '77'}%</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={personalization.theme_saturation || '77'}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val !== "") setPersonalization(prev => ({ ...prev, theme_saturation: val }));
+                                }}
+                                onBlur={(e) => {
+                                  let val = parseInt(e.target.value, 10);
+                                  if (isNaN(val)) val = 77;
+                                  val = Math.min(100, Math.max(0, val));
+                                  setPersonalization(prev => ({ ...prev, theme_saturation: val.toString() }));
+                                }}
+                                style={{
+                                  width: "52px",
+                                  padding: "2px 4px",
+                                  fontSize: "0.8rem",
+                                  fontWeight: "700",
+                                  color: "#00C49F",
+                                  background: "var(--input-bg)",
+                                  border: "1px solid var(--input-border)",
+                                  borderRadius: "4px",
+                                  textAlign: "center",
+                                  outline: "none"
+                                }}
+                              />
+                              <span style={{ fontSize: '0.8rem', color: '#00C49F', fontWeight: 700 }}>%</span>
+                            </div>
                           </div>
                           <hd-slider 
                             min="0" 
@@ -7643,9 +7703,39 @@ export default function AdminDashboard() {
 
                         {/* Lightness Slider */}
                         <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                             <label style={{ fontSize: '0.8rem', color: 'var(--muted)', fontWeight: 600 }}>Պայծառություն (Lightness)</label>
-                            <span style={{ fontSize: '0.8rem', color: '#00C49F', fontWeight: 700 }}>{personalization.theme_lightness || '14'}%</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={personalization.theme_lightness || '14'}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val !== "") setPersonalization(prev => ({ ...prev, theme_lightness: val }));
+                                }}
+                                onBlur={(e) => {
+                                  let val = parseInt(e.target.value, 10);
+                                  if (isNaN(val)) val = 14;
+                                  val = Math.min(100, Math.max(0, val));
+                                  setPersonalization(prev => ({ ...prev, theme_lightness: val.toString() }));
+                                }}
+                                style={{
+                                  width: "52px",
+                                  padding: "2px 4px",
+                                  fontSize: "0.8rem",
+                                  fontWeight: "700",
+                                  color: "#00C49F",
+                                  background: "var(--input-bg)",
+                                  border: "1px solid var(--input-border)",
+                                  borderRadius: "4px",
+                                  textAlign: "center",
+                                  outline: "none"
+                                }}
+                              />
+                              <span style={{ fontSize: '0.8rem', color: '#00C49F', fontWeight: 700 }}>%</span>
+                            </div>
                           </div>
                           <hd-slider 
                             min="0" 

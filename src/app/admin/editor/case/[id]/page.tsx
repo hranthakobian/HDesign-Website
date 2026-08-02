@@ -1271,7 +1271,36 @@ export default function CaseEditor() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: "0.72rem", color: "var(--muted)" }}>Կազմի ուղղահայաց դիրք (Y-Position)</span>
-                      <span style={{ fontSize: "0.72rem", color: "var(--text)" }}>{hero.positionY}%</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={hero.positionY}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            if (!isNaN(val) && e.target.value !== "") setHero({ positionY: val });
+                          }}
+                          onBlur={(e) => {
+                            let val = parseInt(e.target.value, 10);
+                            if (isNaN(val)) val = 50;
+                            setHero({ positionY: Math.min(100, Math.max(0, val)) });
+                          }}
+                          style={{
+                            width: "48px",
+                            padding: "1px 4px",
+                            fontSize: "0.72rem",
+                            fontWeight: "bold",
+                            color: "var(--text)",
+                            background: "var(--input-bg)",
+                            border: "1px solid var(--input-border)",
+                            borderRadius: "4px",
+                            textAlign: "center",
+                            outline: "none"
+                          }}
+                        />
+                        <span style={{ fontSize: "0.72rem", color: "var(--muted)" }}>%</span>
+                      </div>
                     </div>
                     <hd-slider min="0" max="100" value={hero.positionY.toString()} onInput={(e: any) => setHero({ positionY: parseInt(e.target.value) })} data-width="100%" />
                   </div>
@@ -1279,7 +1308,36 @@ export default function CaseEditor() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: "0.72rem", color: "var(--muted)" }}>Բարձրություն (Hero Height)</span>
-                      <span style={{ fontSize: "0.72rem", color: "var(--text)" }}>{hero.height}vh</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+                        <input
+                          type="number"
+                          min="20"
+                          max="100"
+                          value={hero.height}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            if (!isNaN(val) && e.target.value !== "") setHero({ height: val });
+                          }}
+                          onBlur={(e) => {
+                            let val = parseInt(e.target.value, 10);
+                            if (isNaN(val)) val = 60;
+                            setHero({ height: Math.min(100, Math.max(20, val)) });
+                          }}
+                          style={{
+                            width: "48px",
+                            padding: "1px 4px",
+                            fontSize: "0.72rem",
+                            fontWeight: "bold",
+                            color: "var(--text)",
+                            background: "var(--input-bg)",
+                            border: "1px solid var(--input-border)",
+                            borderRadius: "4px",
+                            textAlign: "center",
+                            outline: "none"
+                          }}
+                        />
+                        <span style={{ fontSize: "0.72rem", color: "var(--muted)" }}>vh</span>
+                      </div>
                     </div>
                     <hd-slider min="20" max="100" value={hero.height.toString()} onInput={(e: any) => setHero({ height: parseInt(e.target.value) })} data-width="100%" />
                   </div>
@@ -1483,7 +1541,36 @@ export default function CaseEditor() {
                     <span style={{ fontSize: "0.72rem", color: "var(--muted)" }}>
                       {editorLang === "am" ? "Վերևի տարածություն (Margin Top)" : "Margin Top"}
                     </span>
-                    <span style={{ fontSize: "0.72rem", fontWeight: "bold", color: "var(--text)" }}>{(block as any).marginTop ?? 0}px</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+                      <input
+                        type="number"
+                        min="0"
+                        max="200"
+                        value={(block as any).marginTop ?? 0}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          if (!isNaN(val) && e.target.value !== "") upd(selected, { ...block, marginTop: val });
+                        }}
+                        onBlur={(e) => {
+                          let val = parseInt(e.target.value, 10);
+                          if (isNaN(val)) val = 0;
+                          upd(selected, { ...block, marginTop: Math.min(200, Math.max(0, val)) });
+                        }}
+                        style={{
+                          width: "48px",
+                          padding: "1px 4px",
+                          fontSize: "0.72rem",
+                          fontWeight: "bold",
+                          color: "var(--text)",
+                          background: "var(--input-bg)",
+                          border: "1px solid var(--input-border)",
+                          borderRadius: "4px",
+                          textAlign: "center",
+                          outline: "none"
+                        }}
+                      />
+                      <span style={{ fontSize: "0.72rem", color: "var(--muted)" }}>px</span>
+                    </div>
                   </div>
                   <hd-slider 
                     min="0" 
@@ -1499,7 +1586,36 @@ export default function CaseEditor() {
                     <span style={{ fontSize: "0.72rem", color: "var(--muted)" }}>
                       {editorLang === "am" ? "Ներքևի տարածություն (Margin Bottom)" : "Margin Bottom"}
                     </span>
-                    <span style={{ fontSize: "0.72rem", fontWeight: "bold", color: "var(--text)" }}>{(block as any).marginBottom ?? 0}px</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+                      <input
+                        type="number"
+                        min="0"
+                        max="200"
+                        value={(block as any).marginBottom ?? 0}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          if (!isNaN(val) && e.target.value !== "") upd(selected, { ...block, marginBottom: val });
+                        }}
+                        onBlur={(e) => {
+                          let val = parseInt(e.target.value, 10);
+                          if (isNaN(val)) val = 0;
+                          upd(selected, { ...block, marginBottom: Math.min(200, Math.max(0, val)) });
+                        }}
+                        style={{
+                          width: "48px",
+                          padding: "1px 4px",
+                          fontSize: "0.72rem",
+                          fontWeight: "bold",
+                          color: "var(--text)",
+                          background: "var(--input-bg)",
+                          border: "1px solid var(--input-border)",
+                          borderRadius: "4px",
+                          textAlign: "center",
+                          outline: "none"
+                        }}
+                      />
+                      <span style={{ fontSize: "0.72rem", color: "var(--muted)" }}>px</span>
+                    </div>
                   </div>
                   <hd-slider 
                     min="0" 
