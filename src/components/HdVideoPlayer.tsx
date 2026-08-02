@@ -174,6 +174,74 @@ export default function HdVideoPlayer({
     return `${m < 10 ? "0" + m : m}:${s < 10 ? "0" + s : s}`;
   };
 
+  const getIframeSrc = (url: string): string | null => {
+    if (!url) return null;
+    const trimmed = url.trim();
+    if (trimmed.includes("youtube.com/watch")) {
+      const id = trimmed.split("v=")[1]?.split("&")[0];
+      if (id) return `https://www.youtube.com/embed/${id}`;
+    }
+    if (trimmed.includes("youtu.be/")) {
+      const id = trimmed.split("youtu.be/")[1]?.split("?")[0];
+      if (id) return `https://www.youtube.com/embed/${id}`;
+    }
+    if (trimmed.includes("youtube.com/shorts/")) {
+      const id = trimmed.split("youtube.com/shorts/")[1]?.split("?")[0];
+      if (id) return `https://www.youtube.com/embed/${id}`;
+    }
+    if (trimmed.includes("youtube.com/embed/")) {
+      return trimmed;
+    }
+    if (trimmed.includes("vimeo.com/")) {
+      const id = trimmed.split("vimeo.com/")[1]?.split("?")[0]?.split("#")[0];
+      if (id && !isNaN(Number(id))) return `https://player.vimeo.com/video/${id}`;
+    }
+    if (trimmed.includes("player.vimeo.com/video/")) {
+      return trimmed;
+    }
+    if (trimmed.includes("loom.com/share/")) {
+      const id = trimmed.split("loom.com/share/")[1]?.split("?")[0];
+      if (id) return `https://www.loom.com/embed/${id}`;
+    }
+    if (trimmed.includes("loom.com/embed/")) {
+      return trimmed;
+    }
+    return null;
+  };
+
+  const iframeUrl = getIframeSrc(src);
+
+  if (iframeUrl) {
+    return (
+      <div
+        className={`hd-video-container ${className}`}
+        style={{
+          position: "relative",
+          width: width,
+          maxWidth: "1500px",
+          aspectRatio: "16 / 9",
+          height: height === "auto" || !height ? "auto" : height,
+          borderRadius: radius,
+          border: "none",
+          overflow: "hidden",
+          backgroundColor: "#060909",
+          boxShadow: "0 0 30px rgba(0, 0, 0, 0.08)",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          ...style
+        }}
+      >
+        <iframe
+          src={iframeUrl}
+          style={{ width: "100%", height: "100%", border: "none" }}
+          allowFullScreen
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       ref={containerRef}

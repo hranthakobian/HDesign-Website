@@ -5775,23 +5775,23 @@ export default function AdminDashboard() {
 
                                       {/* Group 3: Styles */}
                                       <div style={{ display: 'flex', gap: '2px', borderRight: '1px solid #e2e8f0', paddingRight: '6px' }}>
-                                        <button type="button" onClick={() => document.execCommand('bold', false)} style={{ ...toolBtnStyle, fontWeight: 'bold' }} title="Հաստ (Bold)">B</button>
-                                        <button type="button" onClick={() => document.execCommand('italic', false)} style={{ ...toolBtnStyle, fontStyle: 'italic' }} title="Շեղ (Italic)">I</button>
-                                        <button type="button" onClick={() => document.execCommand('underline', false)} style={{ ...toolBtnStyle, textDecoration: 'underline' }} title="Ընդգծված (Underline)">U</button>
-                                        <button type="button" onClick={() => document.execCommand('strikeThrough', false)} style={{ ...toolBtnStyle, textDecoration: 'line-through' }} title="Ջնջված (Strikethrough)">S</button>
+                                        <button type="button" onClick={() => document.execCommand('bold', false)} style={toolBtnStyle} title="Թավ (Bold)"><span className="hd-icon" style={{ fontWeight: 900 }}>B</span></button>
+                                        <button type="button" onClick={() => document.execCommand('italic', false)} style={toolBtnStyle} title="Շեղ (Italic)"><span className="hd-icon" style={{ fontStyle: 'italic', fontFamily: 'serif' }}>I</span></button>
+                                        <button type="button" onClick={() => document.execCommand('underline', false)} style={toolBtnStyle} title="Ընդգծված (Underline)"><span className="hd-icon" style={{ textDecoration: 'underline' }}>U</span></button>
+                                        <button type="button" onClick={() => document.execCommand('strikeThrough', false)} style={toolBtnStyle} title="Ջնջված (Strikethrough)"><span className="hd-icon" style={{ textDecoration: 'line-through' }}>S</span></button>
                                       </div>
 
                                       {/* Group 4: Align */}
                                       <div style={{ display: 'flex', gap: '2px', borderRight: '1px solid #e2e8f0', paddingRight: '6px' }}>
-                                        <button type="button" onClick={() => document.execCommand('justifyLeft', false)} style={toolBtnStyle} title="Ձախակողմյան (Align Left)">▤</button>
-                                        <button type="button" onClick={() => document.execCommand('justifyCenter', false)} style={toolBtnStyle} title="Կենտրոնացված (Align Center)">▥</button>
-                                        <button type="button" onClick={() => document.execCommand('justifyRight', false)} style={toolBtnStyle} title="Աջակողմյան (Align Right)">▧</button>
+                                        <button type="button" onClick={() => document.execCommand('justifyLeft', false)} style={toolBtnStyle} title="Ձախակողմյան (Align Left)"><span className="hd-icon icon-Chevrolt-Arrow-Left" /></button>
+                                        <button type="button" onClick={() => document.execCommand('justifyCenter', false)} style={toolBtnStyle} title="Կենտրոնացված (Align Center)"><span className="hd-icon icon-Hamburger-Menu" /></button>
+                                        <button type="button" onClick={() => document.execCommand('justifyRight', false)} style={toolBtnStyle} title="Աջակողմյան (Align Right)"><span className="hd-icon icon-Chevrolt-Arrow-Right" /></button>
                                       </div>
 
                                       {/* Group 5: Lists */}
                                       <div style={{ display: 'flex', gap: '2px', borderRight: '1px solid #e2e8f0', paddingRight: '6px' }}>
-                                        <button type="button" onClick={() => document.execCommand('insertUnorderedList', false)} style={toolBtnStyle} title="Կետերով ցուակ (Bullet list)">• Ցուցակ</button>
-                                        <button type="button" onClick={() => document.execCommand('insertOrderedList', false)} style={toolBtnStyle} title="Թվերով ցուցակ (Numbered list)">1. Ցուցակ</button>
+                                        <button type="button" onClick={() => document.execCommand('insertUnorderedList', false)} style={toolBtnStyle} title="Կետերով ցուցակ (Bullet list)"><span className="hd-icon icon-List" /></button>
+                                        <button type="button" onClick={() => document.execCommand('insertOrderedList', false)} style={toolBtnStyle} title="Թվերով ցուցակ (Numbered list)"><span className="hd-icon icon-List" style={{ opacity: 0.7 }} /></button>
                                       </div>
 
                                       {/* Group 6: Colors */}
@@ -5823,10 +5823,39 @@ export default function AdminDashboard() {
                                           style={toolBtnStyle}
                                           title="Ավելացնել հղում (Link)"
                                         >
-                                          🔗
+                                          <span className="hd-icon icon-Link" />
                                         </button>
-                                        <button type="button" onClick={() => document.execCommand('unlink', false)} style={toolBtnStyle} title="Ջնջել հղումը (Unlink)">🔗❌</button>
-                                        <button type="button" onClick={() => document.execCommand('removeFormat', false)} style={{ ...toolBtnStyle, color: '#ff6b6b' }} title="Մաքրել ձևավորումը (Clear format)">🧹</button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const url = window.prompt("Մուտքագրեք տեսանյութի հղումը (YouTube, Vimeo, MP4, Loom, այլ URL):", "https://");
+                                            if (url) {
+                                              const trimmed = url.trim();
+                                              let embedUrl = trimmed;
+                                              if (trimmed.includes("youtube.com/watch")) {
+                                                const id = trimmed.split("v=")[1]?.split("&")[0];
+                                                if (id) embedUrl = `https://www.youtube.com/embed/${id}`;
+                                              } else if (trimmed.includes("youtu.be/")) {
+                                                const id = trimmed.split("youtu.be/")[1]?.split("?")[0];
+                                                if (id) embedUrl = `https://www.youtube.com/embed/${id}`;
+                                              } else if (trimmed.includes("vimeo.com/")) {
+                                                const id = trimmed.split("vimeo.com/")[1]?.split("?")[0]?.split("#")[0];
+                                                if (id) embedUrl = `https://player.vimeo.com/video/${id}`;
+                                              }
+                                              if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(trimmed)) {
+                                                document.execCommand('insertHTML', false, `<video src="${trimmed}" controls style="max-width: 100%; border-radius: 8px; margin: 10px 0;"></video>`);
+                                              } else {
+                                                document.execCommand('createLink', false, embedUrl);
+                                              }
+                                            }
+                                          }}
+                                          style={toolBtnStyle}
+                                          title="Ավելացնել տեսանյութ (Video Link)"
+                                        >
+                                          <span className="hd-icon icon-Play" />
+                                        </button>
+                                        <button type="button" onClick={() => document.execCommand('unlink', false)} style={toolBtnStyle} title="Ջնջել հղումը (Unlink)"><span className="hd-icon icon-Close" /></button>
+                                        <button type="button" onClick={() => document.execCommand('removeFormat', false)} style={{ ...toolBtnStyle, color: '#ff6b6b' }} title="Մաքրել ձևավորումը (Clear format)"><span className="hd-icon icon-Trash" /></button>
                                       </div>
                                     </div>
 

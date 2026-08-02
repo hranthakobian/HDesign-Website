@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { brandingCases as staticCases } from "@/lib/brandingData";
 import RatingSystem from "@/components/RatingSystem";
 import LoadingAnimation from "@/components/LoadingAnimation";
+import HdVideoPlayer from "@/components/HdVideoPlayer";
 
 type Case = {
   id: string;
@@ -530,12 +531,6 @@ export default function BrandingDetailPage() {
           }
 
           if (block.type === "embed" && block.embed_url) {
-            let src = block.embed_url;
-            if (src.includes("youtube.com/watch?v=")) {
-              src = `https://www.youtube.com/embed/${src.split("v=")[1].split("&")[0]}`;
-            } else if (src.includes("youtu.be/")) {
-              src = `https://www.youtube.com/embed/${src.split("youtu.be/")[1]}`;
-            }
             return (
               <div key={idx} style={{ 
                 width: "100%", 
@@ -543,11 +538,9 @@ export default function BrandingDetailPage() {
                 margin: "0 auto", 
                 marginTop: mt, 
                 marginBottom: mb, 
-                aspectRatio: "16/9", 
-                overflow: "hidden",
                 transition: "max-width 0.6s cubic-bezier(0.16, 1, 0.3, 1)"
               }}>
-                <iframe src={src} style={{ width: "100%", height: "100%", border: "none" }} allowFullScreen />
+                <HdVideoPlayer src={block.embed_url} poster={block.poster_url} radius="16px" />
               </div>
             );
           }

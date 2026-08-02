@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { brandingCases as staticCases } from "@/lib/brandingData";
 import LoadingAnimation from "@/components/LoadingAnimation";
+import HdVideoPlayer from "@/components/HdVideoPlayer";
 
 /* ─── Types ─────────────────────────────────────────── */
 type BlockType = "text" | "image" | "embed" | "color_palette" | "typography_showcase";
@@ -16,7 +17,7 @@ interface BaseBlock {
 
 interface TextBlock extends BaseBlock       { type: "text";                title_am: string; title_en: string; content_am: string; content_en: string; }
 interface ImageBlock extends BaseBlock      { type: "image";               image_url: string; caption_am: string; caption_en: string; fullWidth: boolean; }
-interface EmbedBlock extends BaseBlock      { type: "embed";               embed_url: string; }
+interface EmbedBlock extends BaseBlock      { type: "embed";               embed_url: string; poster_url?: string; }
 interface PaletteBlock extends BaseBlock    { type: "color_palette";       colors: string[]; }
 interface TypoBlock extends BaseBlock       { type: "typography_showcase"; fonts: string[]; previewText: string; }
 
@@ -60,7 +61,7 @@ function serializeBg(bg: string, overlay: boolean, positionY: number, height: nu
 function makeBlock(type: BlockType): CaseBlock {
   if (type === "text")                return { type, title_am: "Նոր Բաժին", title_en: "New Section", content_am: "Բովանդակություն...", content_en: "Content here..." };
   if (type === "image")               return { type, image_url: "", caption_am: "", caption_en: "", fullWidth: true };
-  if (type === "embed")               return { type, embed_url: "" };
+  if (type === "embed")               return { type, embed_url: "", poster_url: "" };
   if (type === "color_palette")       return { type, colors: ["#0f172a", "#ffffff", "#00ffcc"] };
   if (type === "typography_showcase") return { type, fonts: ["Outfit"], previewText: "Հրանտ Հակոբյան Դիզայն 2026" };
   return { type: "text", title_am: "", title_en: "", content_am: "", content_en: "" };
@@ -182,28 +183,53 @@ function RichEditable({
           }}
           onMouseDown={e => e.preventDefault()}
         >
-          <button onClick={() => exec("formatBlock", "<h2>")} style={toolbarBtnStyle} title="Heading 2">H2</button>
-          <button onClick={() => exec("formatBlock", "<h3>")} style={toolbarBtnStyle} title="Heading 3">H3</button>
-          <button onClick={() => exec("formatBlock", "<p>")} style={toolbarBtnStyle} title="Paragraph">P</button>
+          <button onClick={() => exec("formatBlock", "<h2>")} style={toolbarBtnStyle} title="Heading 2"><span className="hd-icon" style={{ fontWeight: 800, fontSize: "0.85rem" }}>H2</span></button>
+          <button onClick={() => exec("formatBlock", "<h3>")} style={toolbarBtnStyle} title="Heading 3"><span className="hd-icon" style={{ fontWeight: 800, fontSize: "0.85rem" }}>H3</span></button>
+          <button onClick={() => exec("formatBlock", "<p>")} style={toolbarBtnStyle} title="Paragraph"><span className="hd-icon" style={{ fontWeight: 600, fontSize: "0.85rem" }}>P</span></button>
           <div style={{ width: 1, background: "var(--panel-border)", margin: "0 2px" }} />
 
-          <button onClick={() => exec("bold")} style={toolbarBtnStyle} title="Թավ (Bold)"><b>B</b></button>
-          <button onClick={() => exec("italic")} style={toolbarBtnStyle} title="Շեղ (Italic)"><i>I</i></button>
-          <button onClick={() => exec("underline")} style={toolbarBtnStyle} title="Ընդգծված (Underline)"><u>U</u></button>
-          <button onClick={() => exec("strikeThrough")} style={toolbarBtnStyle} title="Ջնջված (Strikethrough)"><s>S</s></button>
+          <button onClick={() => exec("bold")} style={toolbarBtnStyle} title="Թավ (Bold)"><span className="hd-icon" style={{ fontWeight: 900, fontSize: "0.9rem" }}>B</span></button>
+          <button onClick={() => exec("italic")} style={toolbarBtnStyle} title="Շեղ (Italic)"><span className="hd-icon" style={{ fontStyle: "italic", fontFamily: "serif", fontSize: "0.95rem" }}>I</span></button>
+          <button onClick={() => exec("underline")} style={toolbarBtnStyle} title="Ընդգծված (Underline)"><span className="hd-icon" style={{ textDecoration: "underline", fontSize: "0.9rem" }}>U</span></button>
+          <button onClick={() => exec("strikeThrough")} style={toolbarBtnStyle} title="Ջնջված (Strikethrough)"><span className="hd-icon" style={{ textDecoration: "line-through", fontSize: "0.9rem" }}>S</span></button>
           <div style={{ width: 1, background: "var(--panel-border)", margin: "0 2px" }} />
 
-          <button onClick={() => exec("justifyLeft")} style={toolbarBtnStyle} title="Ձախից">←</button>
-          <button onClick={() => exec("justifyCenter")} style={toolbarBtnStyle} title="Կենտրոնից">↔</button>
-          <button onClick={() => exec("justifyRight")} style={toolbarBtnStyle} title="Աջից">→</button>
-          <button onClick={() => exec("justifyFull")} style={toolbarBtnStyle} title="Հավասարեցնել">═</button>
+          <button onClick={() => exec("justifyLeft")} style={toolbarBtnStyle} title="Ձախից"><span className="hd-icon icon-Chevrolt-Arrow-Left" style={{ fontSize: "0.85rem" }} /></button>
+          <button onClick={() => exec("justifyCenter")} style={toolbarBtnStyle} title="Կենտրոնից"><span className="hd-icon icon-Hamburger-Menu" style={{ fontSize: "0.85rem" }} /></button>
+          <button onClick={() => exec("justifyRight")} style={toolbarBtnStyle} title="Աջից"><span className="hd-icon icon-Chevrolt-Arrow-Right" style={{ fontSize: "0.85rem" }} /></button>
+          <button onClick={() => exec("justifyFull")} style={toolbarBtnStyle} title="Հավասարեցնել"><span className="hd-icon icon-Dashboard" style={{ fontSize: "0.85rem" }} /></button>
           <div style={{ width: 1, background: "var(--panel-border)", margin: "0 2px" }} />
 
-          <button onClick={() => exec("insertUnorderedList")} style={toolbarBtnStyle} title="Բուլետներ (Bullet List)">• List</button>
+          <button onClick={() => exec("insertUnorderedList")} style={toolbarBtnStyle} title="Բուլետներ (Bullet List)"><span className="hd-icon icon-List" style={{ fontSize: "0.9rem" }} /></button>
           <button onClick={() => {
             const url = prompt("Մուտքագրեք հղումը (URL):", "https://");
             if (url) exec("createLink", url);
-          }} style={toolbarBtnStyle} title="Ավելացնել հղում">🔗</button>
+          }} style={toolbarBtnStyle} title="Ավելացնել հղում"><span className="hd-icon icon-Link" style={{ fontSize: "0.9rem" }} /></button>
+          <button onClick={() => {
+            const url = prompt("Մուտքագրեք տեսանյութի հղումը (YouTube, Vimeo, MP4, Loom, այլ URL):", "https://");
+            if (url) {
+              const trimmed = url.trim();
+              if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(trimmed) || trimmed.includes("/video")) {
+                exec("insertHTML", `<hd-video src="${trimmed}" data-radius="12px" data-height="360px" style="display:block; margin: 16px 0;"></hd-video>`);
+              } else {
+                let embedUrl = trimmed;
+                if (trimmed.includes("youtube.com/watch")) {
+                  const id = trimmed.split("v=")[1]?.split("&")[0];
+                  if (id) embedUrl = `https://www.youtube.com/embed/${id}`;
+                } else if (trimmed.includes("youtu.be/")) {
+                  const id = trimmed.split("youtu.be/")[1]?.split("?")[0];
+                  if (id) embedUrl = `https://www.youtube.com/embed/${id}`;
+                } else if (trimmed.includes("vimeo.com/")) {
+                  const id = trimmed.split("vimeo.com/")[1]?.split("?")[0]?.split("#")[0];
+                  if (id) embedUrl = `https://player.vimeo.com/video/${id}`;
+                } else if (trimmed.includes("loom.com/share/")) {
+                  const id = trimmed.split("loom.com/share/")[1]?.split("?")[0];
+                  if (id) embedUrl = `https://www.loom.com/embed/${id}`;
+                }
+                exec("insertHTML", `<div style="position: relative; width: 100%; padding-bottom: 56.25%; height: 0; margin: 16px 0; border-radius: 12px; overflow: hidden; background: #000;"><iframe src="${embedUrl}" style="position: absolute; top:0; left:0; width:100%; height:100%; border:none;" allowfullscreen></iframe></div>`);
+              }
+            }
+          }} style={toolbarBtnStyle} title="Ավելացնել տեսանյութ (YouTube, Vimeo, MP4, Loom, այլ)"><span className="hd-icon icon-Play" style={{ fontSize: "0.9rem" }} /></button>
           <div style={{ width: 1, background: "var(--panel-border)", margin: "0 2px" }} />
 
           <input 
@@ -214,7 +240,7 @@ function RichEditable({
           />
 
           <div style={{ width: 1, background: "var(--panel-border)", margin: "0 2px" }} />
-          <button onClick={() => exec("removeFormat")} style={toolbarBtnStyle} title="Մաքրել ֆորմատավորումը">✕</button>
+          <button onClick={() => exec("removeFormat")} style={toolbarBtnStyle} title="Մաքրել ֆորմատավորումը"><span className="hd-icon icon-Trash" style={{ fontSize: "0.85rem", color: "#ff6b6b" }} /></button>
         </div>
       )}
 
@@ -703,7 +729,7 @@ export default function CaseEditor() {
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <Link href="/admin?tab=cases" style={{ textDecoration: "none" }}>
             <button style={{ padding: "6px 14px", background: "var(--btn-bg)", border: "1px solid var(--panel-border)", borderRadius: 8, color: "var(--text)", cursor: "pointer", fontSize: "0.82rem", display: "flex", alignItems: "center", gap: 6 }}>
-              ← Վարիչ
+              <span className="hd-icon icon-Chevrolt-Arrow-Left" style={{ fontSize: "0.8rem" }} /> Վարիչ
             </button>
           </Link>
           <div style={{ width: 1, height: 20, background: "var(--panel-border)" }} />
@@ -752,8 +778,8 @@ export default function CaseEditor() {
 
           <Link href={`/works/${id}`} target="_blank" style={{ textDecoration: "none" }}>
             <div style={{ background: "transparent", color: "var(--muted)" }}>
-              <hd-button data-width="100px" data-height="34px" data-thickness="3px">
-                Տեսնել →
+              <hd-button data-width="110px" data-height="34px" data-thickness="3px">
+                Տեսնել <span className="hd-icon icon-Chevrolt-Arrow-Right" style={{ marginLeft: 4, fontSize: "0.7rem" }} />
               </hd-button>
             </div>
           </Link>
@@ -779,7 +805,7 @@ export default function CaseEditor() {
               transition: "all 0.2s"
             }}
           >
-            🔄 {reorderMode ? (editorLang === "en" ? "Exit Reorder" : "Ավարտել դասավորումը") : (editorLang === "en" ? "Reorder Blocks" : "Վերադասավորել")}
+            <span className="hd-icon icon-Settings" style={{ fontSize: "0.85rem" }} /> {reorderMode ? (editorLang === "en" ? "Exit Reorder" : "Ավարտել դասավորումը") : (editorLang === "en" ? "Reorder Blocks" : "Վերադասավորել")}
           </button>
           <hd-button onClick={save} disabled={saving} data-width="120px" data-height="34px" data-thickness="3px">
             {saving ? "Պահպանվում..." : "Պահպանել"}
@@ -1065,16 +1091,22 @@ export default function CaseEditor() {
                             draggable={true}
                             onDragStart={e => handleDragStart(e, idx)}
                             onDragEnd={handleDragEnd}
-                            style={{ cursor: "grab", padding: "2px 7px", color: "#00ffcc", fontWeight: "bold", fontSize: "0.85rem", userSelect: "none" }}
+                            style={{ cursor: "grab", padding: "2px 6px", color: "var(--accent)", display: "inline-flex", alignItems: "center", userSelect: "none" }}
                             title="Քաշեք տեղափոխելու համար"
                           >
-                            ⠿
+                            <span className="hd-icon icon-Hamburger-Menu" style={{ fontSize: "0.85rem" }} />
                           </span>
                           <div style={{ width: 1, background: "var(--panel-border)", margin: "0 2px" }} />
-                          <button onClick={e => { e.stopPropagation(); mov(idx, "up"); }} disabled={idx === 0} style={{ padding: "2px 7px", background: "transparent", border: "none", color: "var(--text)", cursor: "pointer", fontSize: "0.75rem" }}>↑</button>
-                          <button onClick={e => { e.stopPropagation(); mov(idx, "down"); }} disabled={idx === blocks.length - 1} style={{ padding: "2px 7px", background: "transparent", border: "none", color: "var(--text)", cursor: "pointer", fontSize: "0.75rem" }}>↓</button>
+                          <button onClick={e => { e.stopPropagation(); mov(idx, "up"); }} disabled={idx === 0} style={toolbarBtnStyle} title="Տեղափոխել վերև">
+                            <span className="hd-icon icon-Chevrolt-Arrow-Left" style={{ transform: "rotate(90deg)", display: "inline-block", fontSize: "0.75rem" }} />
+                          </button>
+                          <button onClick={e => { e.stopPropagation(); mov(idx, "down"); }} disabled={idx === blocks.length - 1} style={toolbarBtnStyle} title="Տեղափոխել ներքև">
+                            <span className="hd-icon icon-Chevrolt-Arrow-Right" style={{ transform: "rotate(90deg)", display: "inline-block", fontSize: "0.75rem" }} />
+                          </button>
                           <div style={{ width: 1, background: "var(--panel-border)", margin: "0 2px" }} />
-                          <button onClick={e => { e.stopPropagation(); del(idx); }} style={{ padding: "2px 7px", background: "transparent", border: "none", color: "#ff6b6b", cursor: "pointer", fontSize: "0.75rem" }}>✕</button>
+                          <button onClick={e => { e.stopPropagation(); del(idx); }} style={toolbarBtnStyle} title="Ջնջել բլոկը">
+                            <span className="hd-icon icon-Trash" style={{ fontSize: "0.85rem", color: "#ff6b6b" }} />
+                          </button>
                         </div>
                       )}
 
@@ -1165,14 +1197,11 @@ export default function CaseEditor() {
                       {block.type === "embed" && (
                         <div style={{ width: "100%", margin: "0" }}>
                           {block.embed_url ? (
-                            <div style={{ width: "100%", aspectRatio: reorderMode ? "21/5" : "16/9", overflow: "hidden" }}>
-                              <iframe src={block.embed_url.includes("youtu") ? `https://www.youtube.com/embed/${block.embed_url.split("v=")[1]?.split("&")[0] || block.embed_url.split("youtu.be/")[1]}` : block.embed_url}
-                                style={{ width: "100%", height: "100%", border: "none" }} allowFullScreen />
-                            </div>
+                            <HdVideoPlayer src={block.embed_url} poster={block.poster_url} radius="12px" />
                           ) : (
                             <div style={{ maxWidth: 800, width: "100%", padding: "0 24px", boxSizing: "border-box" }}>
                               <div style={{ padding: 48, background: "var(--panel)", borderRadius: 16, border: "1px dashed var(--panel-border)", textAlign: "center", color: "var(--muted)" }}>
-                                🎬 Ավելացրեք YouTube/Vimeo հղում աջ վահանակից
+                                🎬 Ավելացրեք YouTube / Vimeo / MP4 / Loom կամ այլ տեսանյութի հղում աջ վահանակից
                               </div>
                             </div>
                           )}
@@ -1358,15 +1387,15 @@ export default function CaseEditor() {
             <SectionLabel>Ավելացնել Բլոկ</SectionLabel>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
               {([
-                { type: "text",                label: "Տեքստ",       color: "#3b82f6" },
-                { type: "image",               label: "Նկար",        color: "#10b981" },
-                { type: "embed",               label: "Տեսանյութ",   color: "#f59e0b" },
-                { type: "color_palette",       label: "Գույներ",     color: "#f97316" },
-                { type: "typography_showcase", label: "Տառատեսակ",   color: "#8b5cf6" },
-              ] as { type: BlockType; label: string; color: string }[]).map(({ type, label, color }) => (
-                <div key={type} style={{ color, background: `${color}18`, border: `1px solid ${color}44`, borderRadius: "var(--border-radius, 12px)", overflow: "hidden" }}>
+                { type: "text",                label: "Տեքստ",       icon: "icon-Pencil" },
+                { type: "image",               label: "Նկար",        icon: "icon-Image" },
+                { type: "embed",               label: "Տեսանյութ",   icon: "icon-Play" },
+                { type: "color_palette",       label: "Գույներ",     icon: "icon-Star" },
+                { type: "typography_showcase", label: "Տառատեսակ",   icon: "icon-Pencil" },
+              ] as { type: BlockType; label: string; icon: string }[]).map(({ type, label, icon }) => (
+                <div key={type} style={{ background: "transparent" }}>
                   <hd-button onClick={() => add(type)} data-width="100%" data-height="36px" data-thickness="3px">
-                    + {label}
+                    <span className={`hd-icon ${icon}`} style={{ marginRight: 6, fontSize: "0.8rem" }} /> {label}
                   </hd-button>
                 </div>
               ))}
@@ -1378,7 +1407,7 @@ export default function CaseEditor() {
             <SectionLabel>Գործիքներ</SectionLabel>
             <div style={{ background: "transparent" }}>
               <hd-button onClick={() => setShowLayersPanel(true)} data-width="100%" data-height="34px" data-thickness="3px">
-                🥞 Բացել Շերտերի պատուհանը
+                <span className="hd-icon icon-List" style={{ marginRight: 6, fontSize: "0.85rem" }} /> Բացել Շերտերի պատուհանը
               </hd-button>
             </div>
           </div>
@@ -1453,22 +1482,15 @@ export default function CaseEditor() {
                 userSelect: "none",
               }}
             >
-              <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "var(--accent)", textTransform: "uppercase", letterSpacing: "1px" }}>
-                ⚙️ Բլոկ #{selected + 1} ({block.type})
+              <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "var(--accent)", textTransform: "uppercase", letterSpacing: "1px", display: "flex", alignItems: "center", gap: 6 }}>
+                <span className="hd-icon icon-Settings" style={{ fontSize: "0.85rem" }} /> Բլոկ #{selected + 1} ({block.type})
               </span>
               <button
                 onClick={() => setSelected(null)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "var(--muted)",
-                  cursor: "pointer",
-                  fontSize: "1rem",
-                  display: "flex",
-                  alignItems: "center",
-                }}
+                style={toolbarBtnStyle}
+                title="Փակել"
               >
-                ✕
+                <span className="hd-icon icon-Close" style={{ fontSize: "0.85rem" }} />
               </button>
             </div>
 
@@ -1500,7 +1522,53 @@ export default function CaseEditor() {
               </>)}
 
               {block.type === "embed" && (
-                <Field label="YouTube / Vimeo URL" value={block.embed_url} onChange={v => upd(selected, { ...block, embed_url: v })} />
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  <Field 
+                    label="Տեսանյութի / Embed-ի հղում (YouTube, Vimeo, MP4, Loom, այլ URL)" 
+                    value={block.embed_url} 
+                    onChange={v => upd(selected, { ...block, embed_url: v })} 
+                  />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>Վերբեռնեք տեսանյութ (.mp4, .webm)</span>
+                    <label style={uploadLabelStyle}>
+                      {uploading ? "Վերբեռնվում է..." : "📁 Վերբեռնել Տեսանյութ"}
+                      <input 
+                        type="file" 
+                        accept="video/*" 
+                        style={{ display: "none" }}
+                        onChange={async e => { 
+                          if (e.target.files && e.target.files[0]) {
+                            const url = await upload(e.target.files[0]); 
+                            if (url) upd(selected, { ...block, embed_url: url }); 
+                          }
+                        }} 
+                      />
+                    </label>
+                  </div>
+                  <div style={{ width: "100%", height: 1, background: "var(--panel-border)", margin: "2px 0" }} />
+                  <Field 
+                    label="Տեսանյութի Կազմի Նկար (Poster / Cover Image URL)" 
+                    value={block.poster_url || ""} 
+                    onChange={v => upd(selected, { ...block, poster_url: v })} 
+                  />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>Վերբեռնեք կազմի նկար (Poster / Thumbnail)</span>
+                    <label style={uploadLabelStyle}>
+                      {uploading ? "Վերբեռնվում է..." : "🖼️ Վերբեռնել Կազմի Նկար"}
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        style={{ display: "none" }}
+                        onChange={async e => { 
+                          if (e.target.files && e.target.files[0]) {
+                            const url = await upload(e.target.files[0]); 
+                            if (url) upd(selected, { ...block, poster_url: url }); 
+                          }
+                        }} 
+                      />
+                    </label>
+                  </div>
+                </div>
               )}
 
               {block.type === "color_palette" && (
@@ -1670,20 +1738,15 @@ export default function CaseEditor() {
               userSelect: "none",
             }}
           >
-            <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "var(--text)", textTransform: "uppercase", letterSpacing: "1px" }}>
-              🥞 Շերտեր (Layers)
+            <span style={{ fontSize: "0.78rem", fontWeight: 800, color: "var(--text)", textTransform: "uppercase", letterSpacing: "1px", display: "flex", alignItems: "center", gap: 6 }}>
+              <span className="hd-icon icon-List" style={{ fontSize: "0.85rem" }} /> Շերտեր (Layers)
             </span>
             <button
               onClick={() => setShowLayersPanel(false)}
-              style={{
-                background: "none",
-                border: "none",
-                color: "var(--muted)",
-                cursor: "pointer",
-                fontSize: "0.9rem",
-              }}
+              style={toolbarBtnStyle}
+              title="Փակել"
             >
-              ✕
+              <span className="hd-icon icon-Close" style={{ fontSize: "0.85rem" }} />
             </button>
           </div>
 
@@ -1723,34 +1786,37 @@ export default function CaseEditor() {
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                       <span style={{ fontSize: "0.78rem", color: "var(--muted)" }}>#{idx + 1}</span>
-                      <span style={{ fontSize: "0.82rem", fontWeight: 600, color: isSel ? "var(--accent)" : "var(--text)", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
-                        {block.type === "text" && `📝 ${block.title_am || "Տեքստ"}`}
-                        {block.type === "image" && `🖼 ${block.caption_am ? `Նկար (${block.caption_am})` : "Նկար"}`}
-                        {block.type === "embed" && "🎬 Տեսանյութ"}
-                        {block.type === "color_palette" && "🎨 Գունապնակ"}
-                        {block.type === "typography_showcase" && "🔤 Տառատեսակներ"}
+                      <span style={{ fontSize: "0.82rem", fontWeight: 600, color: isSel ? "var(--accent)" : "var(--text)", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6 }}>
+                        {block.type === "text" && <><span className="hd-icon icon-Pencil" style={{ fontSize: "0.85rem" }} /> {block.title_am || "Տեքստ"}</>}
+                        {block.type === "image" && <><span className="hd-icon icon-Image" style={{ fontSize: "0.85rem" }} /> {block.caption_am ? `Նկար (${block.caption_am})` : "Նկար"}</>}
+                        {block.type === "embed" && <><span className="hd-icon icon-Play" style={{ fontSize: "0.85rem" }} /> Տեսանյութ</>}
+                        {block.type === "color_palette" && <><span className="hd-icon icon-Star" style={{ fontSize: "0.85rem" }} /> Գունապնակ</>}
+                        {block.type === "typography_showcase" && <><span className="hd-icon icon-Pencil" style={{ fontSize: "0.85rem" }} /> Տառատեսակներ</>}
                       </span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 2 }} onClick={e => e.stopPropagation()}>
                       <button
                         onClick={() => mov(idx, "up")}
                         disabled={idx === 0}
-                        style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: "0.75rem", padding: 2 }}
+                        style={toolbarBtnStyle}
+                        title="Տեղափոխել վերև"
                       >
-                        ↑
+                        <span className="hd-icon icon-Chevrolt-Arrow-Left" style={{ transform: "rotate(90deg)", display: "inline-block", fontSize: "0.7rem" }} />
                       </button>
                       <button
                         onClick={() => mov(idx, "down")}
                         disabled={idx === blocks.length - 1}
-                        style={{ background: "none", border: "none", color: "var(--muted)", cursor: "pointer", fontSize: "0.75rem", padding: 2 }}
+                        style={toolbarBtnStyle}
+                        title="Տեղափոխել ներքև"
                       >
-                        ↓
+                        <span className="hd-icon icon-Chevrolt-Arrow-Right" style={{ transform: "rotate(90deg)", display: "inline-block", fontSize: "0.7rem" }} />
                       </button>
                       <button
                         onClick={() => del(idx)}
-                        style={{ background: "none", border: "none", color: "#ff6b6b", cursor: "pointer", fontSize: "0.75rem", padding: 2, marginLeft: 4 }}
+                        style={toolbarBtnStyle}
+                        title="Ջնջել շերտը"
                       >
-                        ✕
+                        <span className="hd-icon icon-Trash" style={{ fontSize: "0.75rem", color: "#ff6b6b" }} />
                       </button>
                     </div>
                   </div>
