@@ -98,57 +98,57 @@ export const defaultSeededCases: Case[] = [
   {
     id: 'seed-1',
     title: 'Pasta',
-    subtitle: 'Բրենդինգ և Փաթեթավորում',
+    subtitle: 'Բրենդինգ և Փաթեթավորում | Branding & Packaging',
     bg: '#d32f2f',
     image_url: '',
-    category: 'Branding',
-    client: 'Pasta House Co.',
+    category: 'Branding | Branding',
+    client: 'Pasta House Co. | Pasta House Co.',
     year: '2025',
-    details: 'Պաստայի նոր արտադրության համար ստեղծված բրենդավորում, որը ներառում է լոգոյի դիզայն, փաթեթավորման էսքիզներ և վիզուալ հաղորդակցության ռազմավարություն: Օգտագործվել են տաք գունային երանգներ և ավանդական իտալական շունչ:'
+    details: 'Պաստայի նոր արտադրության համար ստեղծված բրենդավորում, որը ներառում է լոգոյի դիզայն, փաթեթավորման էսքիզներ և վիզուալ հաղորդակցության ռազմավարություն: Օգտագործվել են տաք գունային երանգներ և ավանդական իտալական շունչ: | Branding created for new pasta production, including logo design, packaging sketches, and visual communication strategy. Warm tones and traditional Italian spirit were utilized.'
   },
   {
     id: 'seed-2',
     title: '11...',
-    subtitle: 'Ստեղծարար Պաստառներ',
+    subtitle: 'Ստեղծարար Պաստառներ | Creative Posters',
     bg: '#e65100',
     image_url: '',
-    category: 'Poster Design',
-    client: 'Creative Hub Yerevan',
+    category: 'Poster Design | Poster Design',
+    client: 'Creative Hub Yerevan | Creative Hub Yerevan',
     year: '2025',
-    details: '11-րդ ամենամյա ստեղծարար ցուցահանդեսի համար մշակված պաստառներ: Դիզայնը հիմնված է կոնցեպտուալ տիպոգրաֆիկայի և մինիմալիստական երկրաչափական պատկերների համադրության վրա:'
+    details: '11-րդ ամենամյա ստեղծարար ցուցահանդեսի համար մշակված պաստառներ: Դիզայնը հիմնված է կոնցեպտուալ տիպոգրաֆիկայի և մինիմալիստական երկրաչափական պատկերների համադրության վրա: | Posters developed for the 11th annual creative exhibition. The design is based on a combination of conceptual typography and minimalist geometric shapes.'
   },
   {
     id: 'seed-3',
     title: 'Posters',
-    subtitle: 'Ցուցահանդեսի Բրենդավորում',
+    subtitle: 'Ցուցահանդեսի Բրենդավորում | Exhibition Branding',
     bg: '#880e4f',
     image_url: '',
-    category: 'Identity',
-    client: 'Art Gallery',
+    category: 'Identity | Identity',
+    client: 'Art Gallery | Art Gallery',
     year: '2024',
-    details: 'Ժամանակակից արվեստի ցուցասրահի համար մշակված կորպորատիվ ոճ: Նախագիծը ներառում է այցեքարտեր, պաստառներ, սոցիալական մեդիայի ձևավորումներ և կայքի ինտերֆեյսի վիզուալ ուղեցույցներ:'
+    details: 'Ժամանակակից արվեստի ցուցասրահի համար մշակված կորպորատիվ ոճ: Նախագիծը ներառում է այցեքարտեր, պաստառներ, սոցիալական մեդիայի ձևավորումներ և կայքի ինտերֆեյսի վիզուալ ուղեցույցներ: | Corporate style developed for a contemporary art gallery. The project includes business cards, posters, social media designs, and visual guidelines for website interfaces.'
   },
   {
     id: 'seed-4',
     title: 'Teal Lines',
-    subtitle: 'Մինիմալիստական Արտ',
+    subtitle: 'Մինիմալիստական Արտ | Minimalist Art',
     bg: '#004d40',
     image_url: '',
-    category: 'Digital Art',
-    client: 'Personal Project',
+    category: 'Digital Art | Digital Art',
+    client: 'Personal Project | Personal Project',
     year: '2026',
-    details: 'Երկրաչափական գծերից և մուգ կապտականաչավուն երանգներից կազմված աբստրակտ արտ նախագիծ, որն ուսումնասիրում է տարածության և սիմետրիայի հարաբերությունները:'
+    details: 'Երկրաչափական գծերից և մուգ կապտականաչավուն երանգներից կազմված աբստրակտ արտ նախագիծ, որն ուսումնասիրում է տարածության և սիմետրիայի հարաբերությունները: | Abstract art project consisting of geometric lines and dark teal tones exploring relationships of space and symmetry.'
   },
   {
     id: 'seed-5',
     title: 'Mobile UI',
-    subtitle: 'Մոբայլ Հավելվածի Ինտերֆեյս',
+    subtitle: 'Մոբայլ Հավելվածի Ինտերֆեյս | Mobile App Interface',
     bg: '#311b92',
     image_url: '',
-    category: 'UI/UX Design',
-    client: 'FinTech Startup',
+    category: 'UI/UX Design | UI/UX Design',
+    client: 'FinTech Startup | FinTech Startup',
     year: '2025',
-    details: 'Ֆինանսական տեխնոլոգիաների ոլորտի նոր ստարտափի համար ստեղծված մոբայլ հավելվածի ինտերֆեյս: Հիմնական շեշտը դրվել է օգտագործելիության (UX), մաքուր տեսքի և հարմարավետ անցումների (Animations) վրա:'
+    details: 'Ֆինանսական տեխնոլոգիաների ոլորտի նոր ստարտափի համար ստեղծված մոբայլ հավելվածի ինտերֆեյս: Հիմնական շեշտը դրվել է օգտագործելիության (UX), մաքուր տեսքի և հարմարավետ անցումների (Animations) վրա: | Mobile application interface created for a financial tech startup. Primary emphasis was placed on usability (UX), clean aesthetic, and fluid transitions (Animations).'
   }
 ];
 

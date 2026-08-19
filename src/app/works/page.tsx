@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { brandingCases as staticCases, getPastelColor, getCasePastelColor } from "@/lib/brandingData";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, parseLangText } from "@/lib/i18n";
 import LoadingAnimation from "@/components/LoadingAnimation";
 
 type Case = {
@@ -20,15 +20,6 @@ type Case = {
   year?: string;
   created_at?: string;
 };
-
-function parseLangText(text: string, lang: 'hy' | 'en') {
-  if (!text) return "";
-  const parts = text.split(" | ");
-  if (parts.length > 1) {
-    return lang === 'en' ? parts[1] : parts[0];
-  }
-  return text;
-}
 // Helper to convert dynamic RGB to dark overlay background and bright pastel line color
 const getColorsFromRgb = (r: number, g: number, b: number) => {
   const rNorm = r / 255;
@@ -634,7 +625,7 @@ function WorksContent() {
                 {t('works_page', 'gallery_preview', 'Պատկերասրահ')} ({selectedGalleryIndex + 1} / {filteredCases.length})
               </span>
               <span style={{ fontSize: "1.1rem", fontWeight: 700 }}>
-                {filteredCases[selectedGalleryIndex]?.title}
+                {parseLangText(filteredCases[selectedGalleryIndex]?.title || "", locale === 'en' ? 'en' : 'hy')}
               </span>
             </div>
 
@@ -810,7 +801,7 @@ function WorksContent() {
           >
             {/* Active description detail */}
             <p style={{ margin: 0, fontSize: "0.88rem", opacity: 0.75, color: "#fff", textAlign: "center", maxWidth: "600px", minHeight: "20px" }}>
-              {filteredCases[selectedGalleryIndex]?.details || (locale === "en" ? "No details available." : "Այս նախագծի համար մանրամասն նկարագրություն դեռևս ավելացված չէ:")}
+              {parseLangText(filteredCases[selectedGalleryIndex]?.details || "", locale === 'en' ? 'en' : 'hy') || (locale === "en" ? "No details available." : "Այս նախագծի համար մանրամասն նկարագրություն դեռևս ավելացված չէ:")}
             </p>
 
             {/* Thumbnails strip */}

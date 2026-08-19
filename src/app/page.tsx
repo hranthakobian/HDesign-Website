@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, parseLangText } from "@/lib/i18n";
 import { getPastelColor, getCasePastelColor } from "@/lib/brandingData";
 import InteractiveWaveText from "@/components/InteractiveWaveText";
 import HdVideoPlayer from "@/components/HdVideoPlayer";
@@ -320,8 +320,8 @@ const brandingCases = [
 const galleryWorks = [
   {
     id: 1,
-    title: "Պատմական Գրքի Կազմ",
-    subtitle: "Գրքի ձևավորում",
+    title: "Պատմական Գրքի Կազմ | Historical Book Cover",
+    subtitle: "Գրքի ձևավորում | Book Design",
     bg: "linear-gradient(135deg, #2b1f1d 0%, #171110 100%)",
     svg: (
       <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
@@ -334,8 +334,8 @@ const galleryWorks = [
   },
   {
     id: 2,
-    title: "Bauns Fest",
-    subtitle: "Փառատոնի պաստառ",
+    title: "Bauns Fest | Bauns Fest",
+    subtitle: "Փառատոնի պաստառ | Festival Poster",
     bg: "linear-gradient(135deg, #ec407a 0%, #ab47bc 100%)",
     svg: (
       <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
@@ -348,8 +348,8 @@ const galleryWorks = [
   },
   {
     id: 3,
-    title: "Կենսագրական Պաստառ",
-    subtitle: "1722-1785 Դիզայն",
+    title: "Կենսագրական Պաստառ | Biographical Poster",
+    subtitle: "1722-1785 Դիզայն | 1722-1785 Design",
     bg: "linear-gradient(135deg, #b71c1c 0%, #5f0909 100%)",
     svg: (
       <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
@@ -363,8 +363,8 @@ const galleryWorks = [
   },
   {
     id: 4,
-    title: "#Artsakh",
-    subtitle: "Բրենդավորում",
+    title: "#Artsakh | #Artsakh",
+    subtitle: "Բրենդավորում | Branding",
     bg: "linear-gradient(135deg, #263238 0%, #0f172a 100%)",
     svg: (
       <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
@@ -377,8 +377,8 @@ const galleryWorks = [
   },
   {
     id: 5,
-    title: "Առեղծվածային կերպար",
-    subtitle: "Գրաֆիկական նկարազարդում",
+    title: "Առեղծվածային կերպար | Mysterious Character",
+    subtitle: "Գրաֆիկական նկարազարդում | Graphic Illustration",
     bg: "linear-gradient(135deg, #0d47a1 0%, #00103a 100%)",
     svg: (
       <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
@@ -391,8 +391,8 @@ const galleryWorks = [
   },
   {
     id: 6,
-    title: "lb Մոնոգրամ",
-    subtitle: "Լոգոյի դիզայն",
+    title: "lb Մոնոգրամ | lb Monogram",
+    subtitle: "Լոգոյի դիզայն | Logo Design",
     bg: "linear-gradient(135deg, #1b5e20 0%, #002706 100%)",
     svg: (
       <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
@@ -403,8 +403,8 @@ const galleryWorks = [
   },
   {
     id: 7,
-    title: "Մութ անտառի պատուհան",
-    subtitle: "Իլյուստրացիա",
+    title: "Մութ անտառի պատուհան | Window to Dark Forest",
+    subtitle: "Իլյուստրացիա | Illustration",
     bg: "linear-gradient(135deg, #3e2723 0%, #1b0000 100%)",
     svg: (
       <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
@@ -417,8 +417,8 @@ const galleryWorks = [
   },
   {
     id: 8,
-    title: "Երկրաչափական գծագիր",
-    subtitle: "Աբստրակտ արտ",
+    title: "Երկրաչափական գծագիր | Geometric Drawing",
+    subtitle: "Աբստրակտ արտ | Abstract Art",
     bg: "linear-gradient(135deg, #424242 0%, #151515 100%)",
     svg: (
       <svg viewBox="0 0 200 150" fill="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
@@ -628,13 +628,13 @@ export default function Home() {
           flexBasis: `${aspectRatio * 150}px`,
           height: "220px"
         }}
-        title="Դիտել պատկերասրահը"
+        title={locale === 'en' ? "View gallery" : "Դիտել պատկերասրահը"}
       >
         <div className="gallery-img-container" style={{ background: work.bg, width: "100%", height: "100%" }}>
           {work.image_url ? (
             <img 
               src={work.image_url} 
-              alt={work.title} 
+              alt={parseLangText(work.title, locale)} 
               crossOrigin="anonymous"
               onLoad={(e) => {
                 const img = e.currentTarget;
@@ -691,8 +691,8 @@ export default function Home() {
           </div>
 
           <div style={{ position: "relative", zIndex: 3 }}>
-            <h3 style={{ fontSize: "1.1rem", fontWeight: "700", margin: "0 0 6px" }}>{work.title}</h3>
-            <p style={{ fontSize: "0.85rem", opacity: 0.8, margin: 0 }}>{work.subtitle}</p>
+            <h3 style={{ fontSize: "1.1rem", fontWeight: "700", margin: "0 0 6px" }}>{parseLangText(work.title, locale)}</h3>
+            <p style={{ fontSize: "0.85rem", opacity: 0.8, margin: 0 }}>{parseLangText(work.subtitle, locale)}</p>
           </div>
         </div>
       </div>
@@ -1654,7 +1654,7 @@ export default function Home() {
                   </div>
 
                   <div className="card-content" style={{ display: "flex", flexDirection: "column", gap: "2px", alignItems: "flex-start", position: "relative", zIndex: 3 }}>
-                    <span>{card.title}</span>
+                    <span>{parseLangText(card.title, locale)}</span>
                     {renderCardRating(card.id)}
                   </div>
                 </Link>
@@ -3946,23 +3946,23 @@ export default function Home() {
                       letterSpacing: "1.5px", 
                       fontWeight: 600 
                     }}>
-                      {selectedCase.category || selectedCase.subtitle || "Case Study"}
+                      {parseLangText(selectedCase.category || selectedCase.subtitle || "", locale) || (locale === "en" ? "Case Study" : "Քեյս")}
                     </span>
                     <h2 style={{ fontSize: "2rem", fontWeight: "800", color: "#fff", margin: "6px 0 0" }}>
-                      {selectedCase.title}
+                      {parseLangText(selectedCase.title, locale)}
                     </h2>
                   </div>
 
                   <div style={{ display: "flex", gap: "24px", borderBottom: "1px solid rgba(255, 255, 255, 0.1)", paddingBottom: "20px" }}>
                     {selectedCase.client && (
                       <div>
-                        <div style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.4)", textTransform: "uppercase" }}>Հաճախորդ</div>
-                        <div style={{ fontSize: "0.95rem", color: "#fff", fontWeight: 500 }}>{selectedCase.client}</div>
+                        <div style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.4)", textTransform: "uppercase" }}>{locale === "en" ? "Client" : "Հաճախորդ"}</div>
+                        <div style={{ fontSize: "0.95rem", color: "#fff", fontWeight: 500 }}>{parseLangText(selectedCase.client, locale)}</div>
                       </div>
                     )}
                     {selectedCase.year && (
                       <div>
-                        <div style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.4)", textTransform: "uppercase" }}>Տարեթիվ</div>
+                        <div style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.4)", textTransform: "uppercase" }}>{locale === "en" ? "Year" : "Տարեթիվ"}</div>
                         <div style={{ fontSize: "0.95rem", color: "#fff", fontWeight: 500 }}>{selectedCase.year}</div>
                       </div>
                     )}
@@ -3970,7 +3970,7 @@ export default function Home() {
 
                   <div style={{ color: "rgba(255, 255, 255, 0.8)", fontSize: "0.95rem", lineHeight: "1.7" }}>
                     <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>
-                      {selectedCase.details || "Այս նախագծի համար մանրամասն նկարագրություն դեռևս ավելացված չէ:"}
+                      {parseLangText(selectedCase.details || "", locale) || (locale === "en" ? "No details available." : "Այս նախագծի համար մանրամասն նկարագրություն դեռևս ավելացված չէ:")}
                     </p>
                   </div>
 
@@ -4023,7 +4023,7 @@ export default function Home() {
                   {locale === "en" ? "Gallery Preview" : "Պատկերասրահ"} ({selectedGalleryIndex + 1} / {galleryCases.length})
                 </span>
                 <span style={{ fontSize: "1.1rem", fontWeight: 700 }}>
-                  {galleryCases[selectedGalleryIndex]?.title}
+                  {parseLangText(galleryCases[selectedGalleryIndex]?.title || "", locale)}
                 </span>
               </div>
 
@@ -4195,7 +4195,7 @@ export default function Home() {
             >
               {/* Active description detail */}
               <p style={{ margin: 0, fontSize: "0.88rem", opacity: 0.75, color: "#fff", textAlign: "center", maxWidth: "600px", minHeight: "20px" }}>
-                {galleryCases[selectedGalleryIndex]?.details || (locale === "en" ? "No details available." : "Այս նախագծի համար մանրամասն նկարագրություն դեռևս ավելացված չէ:")}
+                {parseLangText(galleryCases[selectedGalleryIndex]?.details || "", locale) || (locale === "en" ? "No details available." : "Այս նախագծի համար մանրամասն նկարագրություն դեռևս ավելացված չէ:")}
               </p>
 
               {/* Thumbnails strip */}

@@ -7,6 +7,7 @@ import { brandingCases as staticCases } from "@/lib/brandingData";
 import RatingSystem from "@/components/RatingSystem";
 import LoadingAnimation from "@/components/LoadingAnimation";
 import HdVideoPlayer from "@/components/HdVideoPlayer";
+import { useI18n, parseLangText } from "@/lib/i18n";
 
 type Case = {
   id: string;
@@ -36,15 +37,6 @@ function parseBg(bgString: string) {
   }
 
   return { bg, overlay, positionY, height };
-}
-
-function parseLangText(text: string, lang: 'hy' | 'en') {
-  if (!text) return "";
-  const parts = text.split(" | ");
-  if (parts.length > 1) {
-    return lang === 'en' ? parts[1] : parts[0];
-  }
-  return text;
 }
 
 function getAverageColor(bgString: string): string {
@@ -106,6 +98,7 @@ function getAverageColor(bgString: string): string {
 }
 
 export default function BrandingDetailPage() {
+  const { locale, t } = useI18n();
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
@@ -114,7 +107,6 @@ export default function BrandingDetailPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState("");
   const [blocks, setBlocks] = useState<any[]>([]);
-  const [lang, setLang] = useState<'hy' | 'en'>('hy');
   const [wideMedia, setWideMedia] = useState(false);
   const heroImageRef = useRef<HTMLImageElement>(null);
 
@@ -149,13 +141,6 @@ export default function BrandingDetailPage() {
   }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedLang = localStorage.getItem('hdesign_locale');
-      if (savedLang === 'en') setLang('en');
-    }
-  }, []);
-
-  useEffect(() => {
     function parseProjectBlocks(detailsString: string) {
       if (detailsString.startsWith("[")) {
         try {
@@ -166,13 +151,18 @@ export default function BrandingDetailPage() {
       }
       // Standard string fallback
       return [
-        { type: "text", title_am: "Նախագծի Մասին", title_en: "About the Project", content_am: detailsString, content_en: detailsString }
+        { 
+          type: "text", 
+          title_am: "Նախագծի Մասին", 
+          title_en: "About the Project", 
+          content_am: parseLangText(detailsString, 'hy'), 
+          content_en: parseLangText(detailsString, 'en') 
+        }
       ];
     }
 
     async function loadWork() {
-      const currentLang = (typeof window !== "undefined" && localStorage.getItem('hdesign_locale') === 'en') ? 'en' : 'hy';
-      setLoadingMessage(currentLang === "en" ? "Loading case details..." : "Բեռնվում են տվյալները...");
+      setLoadingMessage(t('works_detail', 'loading', locale === "en" ? "Loading case details..." : "Բեռնվում են տվյալները..."));
 
       let foundWork: Case | null = null;
       let parsedBlocks: any[] = [];
@@ -197,17 +187,29 @@ export default function BrandingDetailPage() {
               bg: staticFound.color,
               image_url: staticFound.image,
               details: staticFound.description,
-              category: (staticFound as any).category || "Branding",
+              category: (staticFound as any).category || (locale === 'en' ? "Branding" : "Բրենդավորում"),
               client: (staticFound as any).client || "HDesign Studio",
               year: (staticFound as any).year || "2026"
             };
             
             // Generate standard block list from static concept/typography
             parsedBlocks = [
-              { type: "text", title_am: "Նախագծի Մասին", title_en: "About the Project", content_am: staticFound.description, content_en: staticFound.description },
-              { type: "text", title_am: "Կոնցեպտուալ Լուծում", title_en: "Conceptual Solution", content_am: staticFound.concept, content_en: staticFound.concept },
+              { 
+                type: "text", 
+                title_am: "Նախագծի Մասին", 
+                title_en: "About the Project", 
+                content_am: parseLangText(staticFound.description, 'hy'), 
+                content_en: parseLangText(staticFound.description, 'en') 
+              },
+              { 
+                type: "text", 
+                title_am: "Կոնցեպտուալ Լուծում", 
+                title_en: "Conceptual Solution", 
+                content_am: parseLangText(staticFound.concept, 'hy'), 
+                content_en: parseLangText(staticFound.concept, 'en') 
+              },
               { type: "color_palette", colors: staticFound.colors || ["#d32f2f", "#f8fafc", "#0f172a"] },
-              { type: "typography_showcase", fonts: [staticFound.typography || "Outfit"], previewText: "Հրանտ Հակոբյան Դիզայն Ստուդիա 2026" }
+              { type: "typography_showcase", fonts: [staticFound.typography || "Outfit"], previewText: locale === 'en' ? "Hrant Hakobyan Design Studio 2026" : "Հրանտ Հակոբյան Դիզայն Ստուդիա 2026" }
             ];
           }
         }
@@ -222,15 +224,27 @@ export default function BrandingDetailPage() {
             bg: staticFound.color,
             image_url: staticFound.image,
             details: staticFound.description,
-            category: (staticFound as any).category || "Branding",
+            category: (staticFound as any).category || (locale === 'en' ? "Branding" : "Բրենդավորում"),
             client: (staticFound as any).client || "HDesign Studio",
             year: (staticFound as any).year || "2026"
           };
           parsedBlocks = [
-            { type: "text", title_am: "Նախագծի Մասին", title_en: "About the Project", content_am: staticFound.description, content_en: staticFound.description },
-            { type: "text", title_am: "Կոնցեպտուալ Լուծում", title_en: "Conceptual Solution", content_am: staticFound.concept, content_en: staticFound.concept },
+            { 
+              type: "text", 
+              title_am: "Նախագծի Մասին", 
+              title_en: "About the Project", 
+              content_am: parseLangText(staticFound.description, 'hy'), 
+              content_en: parseLangText(staticFound.description, 'en') 
+            },
+            { 
+              type: "text", 
+              title_am: "Կոնցեպտուալ Լուծում", 
+              title_en: "Conceptual Solution", 
+              content_am: parseLangText(staticFound.concept, 'hy'), 
+              content_en: parseLangText(staticFound.concept, 'en') 
+            },
             { type: "color_palette", colors: staticFound.colors || ["#d32f2f", "#f8fafc", "#0f172a"] },
-            { type: "typography_showcase", fonts: [staticFound.typography || "Outfit"], previewText: "Հրանտ Հակոբյան Դիզայն Ստուդիա 2026" }
+            { type: "typography_showcase", fonts: [staticFound.typography || "Outfit"], previewText: locale === 'en' ? "Hrant Hakobyan Design Studio 2026" : "Հրանտ Հակոբյան Դիզայն Ստուդիա 2026" }
           ];
         }
       }
@@ -257,7 +271,7 @@ export default function BrandingDetailPage() {
           const totalImages = imageUrls.length;
           
           setLoadingMessage(
-            currentLang === "en"
+            locale === "en"
               ? `Loading images (0/${totalImages})...`
               : `Բեռնվում են պատկերները (0/${totalImages})...`
           );
@@ -265,7 +279,7 @@ export default function BrandingDetailPage() {
           const checkAllLoaded = () => {
             loadedCount++;
             setLoadingMessage(
-              currentLang === "en"
+              locale === "en"
                 ? `Loading images (${loadedCount}/${totalImages})...`
                 : `Բեռնվում են պատկերները (${loadedCount}/${totalImages})...`
             );
@@ -296,12 +310,12 @@ export default function BrandingDetailPage() {
     }
 
     loadWork();
-  }, [id]);
+  }, [id, locale]);
 
   if (loading) {
     return (
       <main className="shell" style={{ marginTop: "160px", minHeight: "75vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <LoadingAnimation fullPage={false} message={loadingMessage || (lang === "en" ? "Loading details..." : "Բեռնվում է...")} />
+        <LoadingAnimation fullPage={false} message={loadingMessage || (locale === "en" ? "Loading details..." : "Բեռնվում է...")} />
       </main>
     );
   }
@@ -309,10 +323,12 @@ export default function BrandingDetailPage() {
   if (!work) {
     return (
       <main className="shell" style={{ marginTop: "160px", minHeight: "70vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "20px" }}>
-        <h2 style={{ fontSize: "2rem", fontWeight: "800", color: "var(--text)" }}>Աշխատանքը չի գտնվել</h2>
+        <h2 style={{ fontSize: "2rem", fontWeight: "800", color: "var(--text)" }}>
+          {t('works_detail', 'not_found', 'Աշխատանքը չի գտնվել')}
+        </h2>
         <Link href="/works" style={{ textDecoration: "none" }}>
           <hd-button data-width="180px" data-height="48px" data-thickness="3px">
-            Վերադառնալ
+            {t('works_detail', 'back', 'Վերադառնալ')}
           </hd-button>
         </Link>
       </main>
@@ -400,7 +416,7 @@ export default function BrandingDetailPage() {
               color: "#ffffff",
               opacity: 0.8
             }}>
-              {lang === 'en' ? "Branding Case" : "Բրենդավորման Քեյս"}
+              {t('works_detail', 'branding_case', 'Բրենդավորման Քեյս')}
             </span>
             <h1 style={{ 
               fontSize: "clamp(1.8rem, 5vw, 4rem)", 
@@ -409,7 +425,7 @@ export default function BrandingDetailPage() {
               margin: 0,
               lineHeight: "1.1" 
             }}>
-              {parseLangText(work.title, lang)}
+              {parseLangText(work.title, locale)}
             </h1>
             <p style={{ 
               fontSize: "clamp(0.88rem, 2vw, 1.25rem)", 
@@ -418,11 +434,11 @@ export default function BrandingDetailPage() {
               margin: 0,
               maxWidth: "700px" 
             }}>
-              {parseLangText(work.subtitle, lang)}
+              {parseLangText(work.subtitle, locale)}
             </p>
           </div>
           <div style={{ flexShrink: 0, paddingBottom: 8 }}>
-            <RatingSystem id={work.id} locale={lang === 'en' ? 'en' : 'hy'} bgColor={avgBgColor} noShadow={true} />
+            <RatingSystem id={work.id} locale={locale} bgColor={avgBgColor} noShadow={true} />
           </div>
         </div>
       </div>
@@ -431,19 +447,31 @@ export default function BrandingDetailPage() {
       <div className="works-detail-metadata-bar" style={{ borderBottom: "1px solid var(--panel-border)", background: "var(--panel)", padding: "24px 0" }}>
         <div className="shell" style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-around", gap: "24px", textAlign: "center" }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontSize: "0.78rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>{lang === 'en' ? "Category" : "Կարգ"}</span>
-            <span style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{parseLangText(work.category || "", lang) || (lang === 'en' ? "Branding" : "Բրենդավորում")}</span>
+            <span style={{ fontSize: "0.78rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>
+              {t('works_detail', 'category', 'Կարգ')}
+            </span>
+            <span style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>
+              {parseLangText(work.category || "", locale) || (locale === 'en' ? "Branding" : "Բրենդավորում")}
+            </span>
           </div>
           {work.client && (
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontSize: "0.78rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>{lang === 'en' ? "Client" : "Հաճախորդ"}</span>
-              <span style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{parseLangText(work.client, lang)}</span>
+              <span style={{ fontSize: "0.78rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>
+                {t('works_detail', 'client', 'Հաճախորդ')}
+              </span>
+              <span style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>
+                {parseLangText(work.client, locale)}
+              </span>
             </div>
           )}
           {work.year && (
             <div style={{ display: "flex", flexDirection: "column" }}>
-              <span style={{ fontSize: "0.78rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>{lang === 'en' ? "Year" : "Տարեթիվ"}</span>
-              <span style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>{work.year}</span>
+              <span style={{ fontSize: "0.78rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>
+                {t('works_detail', 'year', 'Տարեթիվ')}
+              </span>
+              <span style={{ fontSize: "1rem", fontWeight: 700, color: "var(--text)", marginTop: 4 }}>
+                {work.year}
+              </span>
             </div>
           )}
         </div>
@@ -472,7 +500,7 @@ export default function BrandingDetailPage() {
             color: "var(--accent)", 
             border: "1px solid var(--input-border)" 
           }}>~</span>
-          <span>{lang === 'en' ? "Press to toggle focus mode" : "Սեղմեք տիլդան՝ մեդիան կենտրոնացնելու համար"}</span>
+          <span>{t('works_detail', 'press_focus', 'Սեղմեք տիլդան՝ մեդիան կենտրոնացնելու համար')}</span>
         </div>
       </div>
 
@@ -483,17 +511,20 @@ export default function BrandingDetailPage() {
           const mb = (block as any).marginBottom ?? 0;
 
           if (block.type === "text") {
+            const blockTitle = locale === 'en' ? (block.title_en || block.title_am) : (block.title_am || block.title_en);
+            const blockContent = locale === 'en' ? (block.content_en || block.content_am) : (block.content_am || block.content_en);
+
             return (
               <div key={idx} style={{ width: "100%", marginTop: mt, marginBottom: mb, padding: "0 24px", boxSizing: "border-box" }}>
                 <div style={{ maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "16px" }}>
-                  {(lang === 'en' ? block.title_en : block.title_am) && (
+                  {blockTitle && (
                     <h2 style={{ fontSize: "2rem", fontWeight: "900", color: "var(--text)", margin: 0 }}>
-                      {lang === 'en' ? block.title_en : block.title_am}
+                      {blockTitle}
                     </h2>
                   )}
                   <div 
                     style={{ fontSize: "1.15rem", lineHeight: "1.8", color: "var(--text)", opacity: 0.85, margin: 0 }}
-                    dangerouslySetInnerHTML={{ __html: lang === 'en' ? (block.content_en || block.content_am) : (block.content_am || block.content_en) }}
+                    dangerouslySetInnerHTML={{ __html: blockContent || "" }}
                   />
                 </div>
               </div>
@@ -503,6 +534,7 @@ export default function BrandingDetailPage() {
           if (block.type === "image" && block.image_url) {
             const isFirstMedia = idx === firstMediaIdx;
             const isLastMedia = idx === lastMediaIdx;
+            const caption = locale === 'en' ? (block.caption_en || block.caption_am) : (block.caption_am || block.caption_en);
 
             return (
               <div key={idx} style={{ width: "100%", marginTop: mt, marginBottom: mb, display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -519,10 +551,10 @@ export default function BrandingDetailPage() {
                 }}>
                   <img src={block.image_url} alt="Project spec" style={{ width: "100%", height: "auto", display: "block" }} />
                 </div>
-                {(lang === 'en' ? block.caption_en : block.caption_am) && (
+                {caption && (
                   <div style={{ maxWidth: "900px", margin: "12px auto 0", padding: "0 24px", textAlign: "center" }}>
                     <span style={{ fontSize: "0.85rem", color: "var(--muted)", fontStyle: "italic" }}>
-                      {lang === 'en' ? block.caption_en : block.caption_am}
+                      {caption}
                     </span>
                   </div>
                 )}
@@ -557,7 +589,9 @@ export default function BrandingDetailPage() {
             return (
               <div key={idx} style={{ width: "100%", marginTop: mt, marginBottom: mb, padding: "0 24px", boxSizing: "border-box" }}>
                 <div style={{ maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "24px" }}>
-                  <h3 style={{ fontSize: "1.3rem", fontWeight: "800", color: "var(--text)", margin: 0 }}>Բրենդի Գունապնակ</h3>
+                  <h3 style={{ fontSize: "1.3rem", fontWeight: "800", color: "var(--text)", margin: 0 }}>
+                    {t('works_detail', 'color_palette', 'Բրենդի Գունապնակ')}
+                  </h3>
                   <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
                     {block.colors.map((color: string, cIdx: number) => (
                       <div key={cIdx} style={{ display: "flex", flexDirection: "column", gap: "10px", alignItems: "center" }}>
@@ -575,13 +609,15 @@ export default function BrandingDetailPage() {
             return (
               <div key={idx} style={{ width: "100%", marginTop: mt, marginBottom: mb, padding: "0 24px", boxSizing: "border-box" }}>
                 <div style={{ maxWidth: "900px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "24px" }}>
-                  <h3 style={{ fontSize: "1.3rem", fontWeight: "800", color: "var(--text)", margin: 0 }}>Տառատեսակներ</h3>
+                  <h3 style={{ fontSize: "1.3rem", fontWeight: "800", color: "var(--text)", margin: 0 }}>
+                    {t('works_detail', 'typography', 'Տառատեսակներ')}
+                  </h3>
                   <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                     {block.fonts.map((fName: string, fIdx: number) => (
                       <div key={fIdx} style={{ padding: "24px", background: "var(--panel)", borderRadius: "16px", border: "1px solid var(--panel-border)" }}>
                         <span style={{ fontSize: "0.85rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>{fName}</span>
                         <div style={{ fontFamily: `${fName}, sans-serif`, fontSize: "2rem", marginTop: "12px", color: "var(--text)" }}>
-                          {block.previewText || "Հրանտ Հակոբյան Դիզայն"}
+                          {block.previewText || (locale === 'en' ? "Hrant Hakobyan Design" : "Հրանտ Հակոբյան Դիզայն")}
                         </div>
                       </div>
                     ))}
@@ -597,14 +633,14 @@ export default function BrandingDetailPage() {
 
       {/* Footer Rating System section */}
       <div className="shell" style={{ display: "flex", justifyContent: "center" }}>
-        <RatingSystem id={work.id} locale={lang === 'en' ? 'en' : 'hy'} bgColor={avgBgColor} noShadow={true} />
+        <RatingSystem id={work.id} locale={locale} bgColor={avgBgColor} noShadow={true} />
       </div>
 
       {/* Back to works button */}
       <div style={{ display: "flex", justifyContent: "center", marginTop: "75px" }}>
         <Link href="/works" style={{ textDecoration: "none" }}>
           <hd-button data-width="220px" data-height="50px" data-thickness="3px">
-            {lang === 'en' ? "← Other Works" : "← Դեպի Այլ Աշխատանքներ"}
+            {t('works_detail', 'other_works', '← Դեպի Այլ Աշխատանքներ')}
           </hd-button>
         </Link>
       </div>

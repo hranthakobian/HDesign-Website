@@ -336,6 +336,21 @@ font_glyphs = HDesign Տառատեսակի Գլիֆներ
 char_copied = «{char}» նիշը պատճենվեց:
 click_copy_char = Կտտացրեք նիշի վրա՝ այն պատճենելու համար
 font_weight_label = Հաստություն (Font Weight)
+[works_detail]
+branding_case = Բրենդավորման Քեյս
+category = Կարգ
+client = Հաճախորդ
+year = Տարեթիվ
+color_palette = Բրենդի Գունապնակ
+typography = Տառատեսակներ
+preview_text = Հրանտ Հակոբյան Դիզայն Ստուդիա 2026
+press_focus = Սեղմեք տիլդան՝ մեդիան կենտրոնացնելու համար
+other_works = ← Դեպի Այլ Աշխատանքներ
+not_found = Աշխատանքը չի գտնվել
+back = Վերադառնալ
+loading = Բեռնվում են տվյալները...
+loading_images = Բեռնվում են պատկերները
+no_details = Այս նախագծի համար մանրամասն նկարագրություն դեռևս ավելացված չէ:
 `;
 
 const enIniContent = `[common]
@@ -672,7 +687,31 @@ font_glyphs = HDesign Font Glyphs
 char_copied = Character "{char}" copied.
 click_copy_char = Click on a character to copy it
 font_weight_label = Font Weight
+[works_detail]
+branding_case = Branding Case
+category = Category
+client = Client
+year = Year
+color_palette = Brand Color Palette
+typography = Typography
+preview_text = Hrant Hakobyan Design Studio 2026
+press_focus = Press ~ to toggle focus mode
+other_works = ← Other Works
+not_found = Work Not Found
+back = Go Back
+loading = Loading case details...
+loading_images = Loading images
+no_details = No details available for this project.
 `;
+
+export function parseLangText(text: string | null | undefined, lang: Locale | string): string {
+  if (!text) return "";
+  const parts = text.split(" | ");
+  if (parts.length > 1) {
+    return lang === 'en' ? parts[1] : parts[0];
+  }
+  return text;
+}
 
 export function parseINI(iniText: string): Record<string, Record<string, string>> {
   const result: Record<string, Record<string, string>> = {};
