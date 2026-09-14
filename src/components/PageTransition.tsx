@@ -12,8 +12,12 @@ export default function PageTransition({ children }: { children: ReactNode }) {
   const currentPathRef = useRef(pathname);
   const fallbackTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const isAdmin = pathname?.startsWith("/admin");
+
   // When pathname or route changes, trigger fade-in
   useEffect(() => {
+    if (isAdmin) return;
+
     if (fallbackTimerRef.current) {
       clearTimeout(fallbackTimerRef.current);
       fallbackTimerRef.current = null;
@@ -39,6 +43,7 @@ export default function PageTransition({ children }: { children: ReactNode }) {
   // Intercept internal link clicks for smooth fade out before navigation
   useEffect(() => {
     const handleAnchorClick = (e: MouseEvent) => {
+      if (isAdmin) return;
       // Ignore non-primary or modified clicks (Ctrl, Cmd, Shift, Alt, middle-click)
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
 
@@ -130,6 +135,10 @@ export default function PageTransition({ children }: { children: ReactNode }) {
       }
     };
   }, [router]);
+
+  if (isAdmin) {
+    return <>{children}</>;
+  }
 
   return (
     <div

@@ -757,6 +757,15 @@ hd-input.custom-input-wrapper,
   }
 }
 
+/* Disable transforms in admin area so fixed elements (tabs dock, modals) remain fixed to the viewport */
+.page-transition-wrapper:has(.admin-header),
+.page-transition-wrapper:has(.admin-floating-nav),
+.page-transition-wrapper:has(.admin-main-container) {
+  will-change: auto !important;
+  transform: none !important;
+  animation: none !important;
+}
+
 
 /* Premium Smooth Expand/Collapse Transition */
 .smooth-expand {
