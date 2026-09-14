@@ -110,23 +110,19 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         )}
       </head>
       <body>
-        {/* Google Analytics (GA4) */}
-        {apiSettings.google_analytics_enabled && cleanGaId && (
-          <>
-            <Script 
-              src={`https://www.googletagmanager.com/gtag/js?id=${cleanGaId}`}
-              strategy="afterInteractive"
-            />
-            <Script id="google-analytics" strategy="afterInteractive">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${cleanGaId}');
-              `}
-            </Script>
-          </>
-        )}
+        {/* Google Analytics (GA4) - Directly embedded */}
+        <Script 
+          src="https://www.googletagmanager.com/gtag/js?id=G-06C8EPETLZ"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-06C8EPETLZ');
+          `}
+        </Script>
         <Preloader />
         <SmoothScroll />
         <HDesignRevealInit />
