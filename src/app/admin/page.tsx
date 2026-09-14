@@ -202,6 +202,16 @@ function extractTidioWidgetId(input: string): string {
   return trimmed;
 }
 
+function extractGoogleAnalyticsId(input: string): string {
+  if (!input) return '';
+  const trimmed = input.trim();
+  const match = trimmed.match(/G-[A-Za-z0-9]+/i);
+  if (match && match[0]) {
+    return match[0].toUpperCase();
+  }
+  return trimmed;
+}
+
 interface AboutTranslations {
   title_hy: string;
   title_en: string;
@@ -1245,7 +1255,8 @@ export default function AdminDashboard() {
         setSignature(signatureData);
         setApiSettings(apiSettingsData ? {
           ...apiSettingsData,
-          tildo_widget_id: extractTidioWidgetId(apiSettingsData.tildo_widget_id || '')
+          tildo_widget_id: extractTidioWidgetId(apiSettingsData.tildo_widget_id || ''),
+          google_analytics_id: extractGoogleAnalyticsId(apiSettingsData.google_analytics_id || '')
         } : {
           tildo_enabled: false,
           tildo_widget_id: '',
@@ -2595,9 +2606,11 @@ export default function AdminDashboard() {
     if (!token) return;
 
     const cleanedWidgetId = extractTidioWidgetId(apiSettings.tildo_widget_id);
+    const cleanedGaId = extractGoogleAnalyticsId(apiSettings.google_analytics_id);
     const cleanedSettings = {
       ...apiSettings,
-      tildo_widget_id: cleanedWidgetId
+      tildo_widget_id: cleanedWidgetId,
+      google_analytics_id: cleanedGaId
     };
     setApiSettings(cleanedSettings);
 

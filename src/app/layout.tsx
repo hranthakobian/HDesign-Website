@@ -53,6 +53,16 @@ function extractTidioWidgetId(input: string): string {
   return trimmed;
 }
 
+function extractGoogleAnalyticsId(input: string): string {
+  if (!input) return '';
+  const trimmed = input.trim();
+  const match = trimmed.match(/G-[A-Za-z0-9]+/i);
+  if (match && match[0]) {
+    return match[0].toUpperCase();
+  }
+  return trimmed;
+}
+
 import { headers } from "next/headers";
 
 export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
@@ -69,6 +79,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     custom_head_script: '',
     custom_footer_script: ''
   });
+
+  const cleanGaId = extractGoogleAnalyticsId(apiSettings.google_analytics_id || '');
 
   const headersList = await headers();
   const host = headersList.get('host') || '';
@@ -92,11 +104,17 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         />
         <link rel="stylesheet" href="https://api.hakobian.am/libs/v1/components/style.css" />
 
-        {/* Google Analytics Script */}
-        {apiSettings.google_analytics_enabled && apiSettings.google_analytics_id && (
+        {/* Custom Head Scripts */}
+        {apiSettings.custom_head_script && (
+          <script dangerouslySetInnerHTML={{ __html: apiSettings.custom_head_script }} />
+        )}
+      </head>
+      <body>
+        {/* Google Analytics (GA4) */}
+        {apiSettings.google_analytics_enabled && cleanGaId && (
           <>
             <Script 
-              src={`https://www.googletagmanager.com/gtag/js?id=${apiSettings.google_analytics_id}`}
+              src={`https://www.googletagmanager.com/gtag/js?id=${cleanGaId}`}
               strategy="afterInteractive"
             />
             <Script id="google-analytics" strategy="afterInteractive">
@@ -104,18 +122,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
                 gtag('js', new Date());
-                gtag('config', '${apiSettings.google_analytics_id}');
+                gtag('config', '${cleanGaId}');
               `}
             </Script>
           </>
         )}
-
-        {/* Custom Head Scripts */}
-        {apiSettings.custom_head_script && (
-          <script dangerouslySetInnerHTML={{ __html: apiSettings.custom_head_script }} />
-        )}
-      </head>
-      <body>
         <Preloader />
         <SmoothScroll />
         <HDesignRevealInit />

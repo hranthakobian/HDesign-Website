@@ -77,10 +77,23 @@ export async function GET() {
     if (settings.smtp_user === undefined) settings.smtp_user = process.env.SMTP_USER || '';
     if (settings.smtp_pass === undefined) settings.smtp_pass = process.env.SMTP_PASS || '';
     if (settings.smtp_from === undefined) settings.smtp_from = process.env.SMTP_FROM || '';
+    if (settings.google_analytics_id) {
+      settings.google_analytics_id = extractGoogleAnalyticsId(settings.google_analytics_id);
+    }
     return NextResponse.json(settings);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+}
+
+function extractGoogleAnalyticsId(input: string): string {
+  if (!input) return '';
+  const trimmed = input.trim();
+  const match = trimmed.match(/G-[A-Za-z0-9]+/i);
+  if (match && match[0]) {
+    return match[0].toUpperCase();
+  }
+  return trimmed;
 }
 
 function extractTidioWidgetId(input: string): string {
@@ -123,6 +136,11 @@ export async function POST(request: Request) {
       body.tildo_widget_id = extractTidioWidgetId(body.tildo_widget_id);
     }
     
+    // Clean Google Analytics ID
+    if (body.google_analytics_id !== undefined) {
+      body.google_analytics_id = extractGoogleAnalyticsId(body.google_analytics_id);
+    }
+
     // Sync to .env if provided
     if (body.supabase_url !== undefined && body.supabase_key !== undefined) {
       await updateEnvFile(body.supabase_url, body.supabase_key);

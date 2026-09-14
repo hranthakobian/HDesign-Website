@@ -75,6 +75,14 @@ export default function AnalyticsTracker() {
     // We can ping the heartbeat when changing pages to mark activity and capture the new pathname
     fetch(`/api/analytics/heartbeat?sessionId=${currentSessionId.current}`)
       .catch((err) => console.error("Failed to send page transition activity:", err));
+
+    // Send Google Analytics page_view event on route change
+    if (typeof window !== "undefined" && typeof (window as any).gtag === "function") {
+      (window as any).gtag("event", "page_view", {
+        page_path: pathname,
+        page_location: window.location.href,
+      });
+    }
   }, [pathname]);
 
   return null;
