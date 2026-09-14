@@ -1897,6 +1897,19 @@ html[data-theme="dark"] .gallery-card .gallery-overlay {
   }
 }
 
+.footer-content-container {
+  width: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 80px 100px 40px;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
 html {
   overflow-y: auto;
   overflow-x: hidden !important;
@@ -2859,14 +2872,22 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     box-sizing: border-box !important;
   }
 
-  /* Footer Content Fitting 400px */
+  /* Footer Content Matching Mobile Shell (400px centered bounds) */
   .footer-content-container {
     width: 100% !important;
-    max-width: 400px !important;
+    max-width: 100% !important;
     margin-left: auto !important;
     margin-right: auto !important;
-    padding: 40px 16px 20px !important;
+    padding-left: max(16px, calc((100% - 400px) / 2)) !important;
+    padding-right: max(16px, calc((100% - 400px) / 2)) !important;
+    padding-top: 40px !important;
+    padding-bottom: 20px !important;
     box-sizing: border-box !important;
+
+    & > div:first-child {
+      grid-template-columns: 1fr !important;
+      gap: 36px !important;
+    }
   }
 }
 

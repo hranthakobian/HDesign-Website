@@ -76,7 +76,7 @@ export default function Footer({
       {/* Dynamic SVG Background */}
       <SectionBackground color="#6A3E73" className="footer-svg-bg" type="footer" />
 
-      <div className="footer-content-container" style={{ maxWidth: "1500px", margin: "0 auto", padding: "80px 0 40px", position: "relative", zIndex: 5, display: "flex", flexDirection: "column", gap: "40px" }}>
+      <div className="footer-content-container" style={{ maxWidth: "1500px", width: "100%", margin: "0 auto", padding: "80px 100px 40px", boxSizing: "border-box", position: "relative", zIndex: 5, display: "flex", flexDirection: "column", gap: "40px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "60px" }}>
           <hd-reveal data-direction="up" data-duration="900">
             <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
