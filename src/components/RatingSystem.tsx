@@ -273,3 +273,127 @@ export default function RatingSystem({ id, locale, bgColor, noShadow }: RatingSy
     </div>
   );
 }
+
+export function SingleHDesignStar({
+  size = 18,
+  active = true,
+  activeColor = "#ffcc00",
+  inactiveColor = "rgba(255, 255, 255, 0.18)"
+}: {
+  size?: number;
+  active?: boolean;
+  activeColor?: string;
+  inactiveColor?: string;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 57 57"
+      style={{ overflow: "visible", display: "inline-block", verticalAlign: "middle" }}
+    >
+      {STAR_PATH_GROUPS.map((col, i) => (
+        <g key={i}>
+          {col.paths.map((d, pIdx) => (
+            <path
+              key={pIdx}
+              d={d}
+              fill={active ? activeColor : inactiveColor}
+              style={{ transition: "fill 0.15s ease" }}
+            />
+          ))}
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+interface HDesignStarsProps {
+  rating: number; // 0 to 5 (can be fractional like 4.5 or 5.0)
+  size?: number;
+  gap?: number;
+  interactive?: boolean;
+  onRate?: (rating: number) => void;
+  activeColor?: string;
+  inactiveColor?: string;
+}
+
+export function HDesignStars({
+  rating = 5,
+  size = 20,
+  gap = 3,
+  interactive = false,
+  onRate,
+  activeColor = "#ffcc00",
+  inactiveColor = "rgba(255, 255, 255, 0.18)"
+}: HDesignStarsProps) {
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+
+  // Total 45 segments across 5 stars
+  const linesCount = Math.round((Math.max(0, Math.min(5, rating)) / 5) * 45);
+
+  return (
+    <div
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: `${gap}px`,
+        cursor: interactive ? "pointer" : "default",
+        userSelect: "none"
+      }}
+      onMouseLeave={() => {
+        if (interactive) setHoverIdx(null);
+      }}
+    >
+      {[0, 1, 2, 3, 4].map((starIdx) => (
+        <svg
+          key={starIdx}
+          width={size}
+          height={size}
+          viewBox="0 0 57 57"
+          style={{ overflow: "visible", display: "block" }}
+        >
+          {STAR_PATH_GROUPS.map((col, colIdx) => {
+            const globalIdx = starIdx * 9 + colIdx;
+            const active = hoverIdx !== null ? globalIdx <= hoverIdx : globalIdx < linesCount;
+
+            return (
+              <g
+                key={colIdx}
+                onMouseEnter={() => {
+                  if (interactive) setHoverIdx(globalIdx);
+                }}
+                onClick={() => {
+                  if (interactive && onRate) {
+                    const clickedStar = starIdx + 1;
+                    onRate(clickedStar);
+                  }
+                }}
+                style={{ cursor: interactive ? "pointer" : "default" }}
+              >
+                {interactive && (
+                  <rect
+                    x={col.x - 3}
+                    y={0}
+                    width={6}
+                    height={57}
+                    fill="transparent"
+                  />
+                )}
+                {col.paths.map((d, pIdx) => (
+                  <path
+                    key={pIdx}
+                    d={d}
+                    fill={active ? activeColor : inactiveColor}
+                    style={{ transition: "fill 0.15s ease" }}
+                  />
+                ))}
+              </g>
+            );
+          })}
+        </svg>
+      ))}
+    </div>
+  );
+}
+

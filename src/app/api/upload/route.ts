@@ -29,6 +29,8 @@ export async function POST(request: Request) {
       targetBucket = 'gallery';
     } else if (requestedBucket === 'font' || requestedBucket === 'fonts') {
       targetBucket = 'fonts';
+    } else if (requestedBucket === 'app' || requestedBucket === 'apps') {
+      targetBucket = 'apps';
     } else if (requestedBucket === 'video' || requestedBucket === 'videos') {
       targetBucket = 'videos';
     } else if (requestedBucket) {

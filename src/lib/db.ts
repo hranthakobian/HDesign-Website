@@ -22,6 +22,8 @@ const VISITS_FILE = isServer ? path.join(DATA_DIR, 'visits.json') : '';
 const SETTINGS_FILE = isServer ? path.join(DATA_DIR, 'settings.json') : '';
 const FONTS_FILE = isServer ? path.join(DATA_DIR, 'fonts.json') : '';
 const SUBSCRIBERS_FILE = isServer ? path.join(DATA_DIR, 'subscribers.json') : '';
+const APPS_FILE = isServer ? path.join(DATA_DIR, 'apps.json') : '';
+const APP_REVIEWS_FILE = isServer ? path.join(DATA_DIR, 'app_reviews.json') : '';
 
 // Ensure database directory and files exist
 async function ensureLocalDbFiles() {
@@ -70,6 +72,20 @@ async function ensureLocalDbFiles() {
       await fs.access(SUBSCRIBERS_FILE);
     } catch {
       await fs.writeFile(SUBSCRIBERS_FILE, JSON.stringify([], null, 2), 'utf-8');
+    }
+
+    // Check and create apps.json if missing
+    try {
+      await fs.access(APPS_FILE);
+    } catch {
+      await fs.writeFile(APPS_FILE, JSON.stringify([], null, 2), 'utf-8');
+    }
+
+    // Check and create app_reviews.json if missing
+    try {
+      await fs.access(APP_REVIEWS_FILE);
+    } catch {
+      await fs.writeFile(APP_REVIEWS_FILE, JSON.stringify([], null, 2), 'utf-8');
     }
   } catch (err) {
     console.error('Error initializing local JSON database files:', err);
@@ -1165,4 +1181,647 @@ export async function deleteSubscriber(id: string): Promise<boolean> {
   
   throw new Error(errorParts.join(' | ') || 'Failed to delete subscriber.');
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// APPS & PLUGINS
+// ══════════════════════════════════════════════════════════════════════════════
+
+export type AppItem = {
+  id: string;
+  title_am: string;
+  title_en: string;
+  short_desc_am?: string;
+  short_desc_en?: string;
+  description_md_am?: string;
+  description_md_en?: string;
+  host_app: string;
+  host_app_icon?: string;
+  app_type: 'plugin' | 'standalone';
+  is_paid: boolean;
+  price: number;
+  currency?: string;
+  download_url?: string;
+  store_url?: string;
+  cover_image?: string;
+  gallery_images: string[];
+  version: string;
+  release_date: string;
+  downloads_count?: number;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type AppReview = {
+  id: string;
+  app_id: string;
+  user_name: string;
+  user_email?: string;
+  is_anonymous: boolean;
+  rating: number;
+  comment: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+};
+
+export const defaultSeededApps: AppItem[] = [
+  {
+    id: 'vector-grid-master',
+    title_am: 'Vector Grid Master',
+    title_en: 'Vector Grid Master',
+    short_desc_am: 'Պրոֆեսիոնալ ցանցային գեներատոր Adobe Illustrator-ի համար։ Արագացնում է իզոմետրիկ և մոդուլային ցանցերի ստեղծումը։',
+    short_desc_en: 'Professional grid generator for Adobe Illustrator. Speeds up isometric and modular grid creation.',
+    description_md_am: `## Vector Grid Master
+
+**Vector Grid Master**-ը նախատեսված է Adobe Illustrator-ում բարդ երկրաչափական, իզոմետրիկ և մոդուլային ցանցեր արագ ստեղծելու համար։
+
+### Հիմնական հնարավորությունները
+* **Մեկ սեղմումով ցանցերի գեներացիա՝** իզոմետրիկ, աքսոնոմետրիկ, մոդուլային և ոսկե հատման ցանցեր։
+* **Հեշտ ինտեգրացիա՝** աշխատում է Illustrator CC 2021+ տարբերակների հետ։
+* **Ավտոմատ ուղեցույցներ (Smart Guides)՝** ստեղծված ցանցը կարող է վերածվել սովորական Guides շերտի։
+* **Կարգավորելի քայլեր՝** կարգավորեք անկյունները, քայլի հեռավորությունները և գծերի գույնը։
+
+### Տեղադրում
+1. Ներբեռնեք ZIP ֆայլը։
+2. Տեղադրեք \`Scripts\` թղթապանակում (Adobe Illustrator > Presets > Scripts):
+3. Վերագործարկեք Illustrator-ը և ընտրեք File > Scripts > Vector Grid Master:`,
+    description_md_en: `## Vector Grid Master
+
+**Vector Grid Master** is designed for fast creation of complex geometric, isometric, and modular grids in Adobe Illustrator.
+
+### Key Features
+* **One-click grid generation:** Isometric, axonometric, modular, and Golden Ratio grids.
+* **Seamless integration:** Works with Illustrator CC 2021+.
+* **Automatic Guides:** Easily convert created grids into native Smart Guides.
+* **Customizable steps:** Fine-tune angles, spacing, and stroke colors.
+
+### Installation
+1. Download the ZIP file.
+2. Place into the \`Scripts\` folder (Adobe Illustrator > Presets > Scripts).
+3. Restart Illustrator and run via File > Scripts > Vector Grid Master.`,
+    host_app: 'Adobe Illustrator',
+    host_app_icon: '/icons/illustrator.svg',
+    app_type: 'plugin',
+    is_paid: false,
+    price: 0,
+    currency: 'AMD',
+    download_url: '/apps/vector-grid-master.zip',
+    store_url: '',
+    cover_image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80',
+    gallery_images: [
+      'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=1200&auto=format&fit=crop&q=80'
+    ],
+    version: 'v1.2.0',
+    release_date: '2026-03-10',
+    downloads_count: 142,
+    created_at: '2026-03-10T10:00:00.000Z',
+    updated_at: '2026-03-10T10:00:00.000Z'
+  },
+  {
+    id: 'motion-keyframer-pro',
+    title_am: 'Motion Keyframer Pro',
+    title_en: 'Motion Keyframer Pro',
+    short_desc_am: 'After Effects-ի հզոր գործիք արագ և հարթ անիմացիոն կորեր (Easing Curves) ստանալու համար։',
+    short_desc_en: 'Powerful After Effects tool for fast and smooth easing curves and spring physics.',
+    description_md_am: `## Motion Keyframer Pro
+
+**Motion Keyframer Pro**-ն ապահովում է անիմացիաների կատարյալ դինամիկա և հարթություն՝ խնայելով ժամեր After Effects Graph Editor-ում։
+
+### Հնարավորություններ
+* **30+ պատրաստի Easing Presets** (Elastic, Bounce, Cubic Bezier, Spring)։
+* **Keyframe Staggering**՝ շերտերի ավտոմատ հաջորդական շեղում մեկ կտտոցով։
+* **Custom Curve Editor**՝ ինտերակտիվ վիզուալ կորերի խմբագրիչ։
+* **Expressions Baking**՝ ծանր արտահայտությունները վերածում է թեթև keyframe-ների։
+
+### Համատեղելիություն
+* After Effects CC 2022, 2023, 2024, 2025, 2026
+* Windows & macOS (Apple Silicon native)`,
+    description_md_en: `## Motion Keyframer Pro
+
+**Motion Keyframer Pro** delivers buttery smooth animation curves and spring dynamics, saving hours in the After Effects Graph Editor.
+
+### Features
+* **30+ Curated Easing Presets** (Elastic, Bounce, Cubic Bezier, Spring).
+* **Keyframe Staggering:** Automatic sequential layer offsets in one click.
+* **Custom Curve Editor:** Interactive visual spline controller.
+* **Expressions Baking:** Bake complex math expressions into lightweight keys.
+
+### Compatibility
+* After Effects CC 2022-2026
+* Windows & macOS (Native Apple Silicon)`,
+    host_app: 'After Effects',
+    host_app_icon: '/icons/after-effects.svg',
+    app_type: 'plugin',
+    is_paid: true,
+    price: 9500,
+    currency: 'AMD',
+    download_url: '',
+    store_url: 'https://aescripts.com',
+    cover_image: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1200&auto=format&fit=crop&q=80',
+    gallery_images: [
+      'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1200&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1200&auto=format&fit=crop&q=80'
+    ],
+    version: 'v2.1.4',
+    release_date: '2026-02-15',
+    downloads_count: 89,
+    created_at: '2026-02-15T12:00:00.000Z',
+    updated_at: '2026-02-15T12:00:00.000Z'
+  },
+  {
+    id: 'cad-parametric-generator',
+    title_am: 'Blender Parametric Generator',
+    title_en: 'Blender Parametric Generator',
+    short_desc_am: 'Blender-ի խրվակ՝ պարամետրիկ երկրաչափական նախշերի և 3D ֆասադների համար։',
+    short_desc_en: 'Blender addon for parametric geometric patterns and 3D architectural facades.',
+    description_md_am: `## Blender Parametric Generator
+
+Blender-ում ճարտարապետական և արդյունաբերական դիզայնի համար նախատեսված պարամետրիկ գեներատոր։
+
+### Առավելությունները
+* Անվճար և բաց կոդով (Open Source)։
+* Ինտերակտիվ պարամետրեր՝ հաստություն, շառավիղ, բարձրություն և բջիջների խտություն։
+* Ուղիղ արտահանում STL և OBJ ֆորմատներով 3D տպագրության համար։`,
+    description_md_en: `## Blender Parametric Generator
+
+Parametric facade and pattern generator designed for Blender architectural and product design.
+
+### Highlights
+* 100% Free and Open Source.
+* Interactive parameters: thickness, radius, height, cell density.
+* Direct export to STL and OBJ for 3D printing and rendering.`,
+    host_app: 'Blender',
+    host_app_icon: '/icons/blender.svg',
+    app_type: 'plugin',
+    is_paid: false,
+    price: 0,
+    currency: 'AMD',
+    download_url: '/apps/cad-parametric-generator.zip',
+    store_url: '',
+    cover_image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=1200&auto=format&fit=crop&q=80',
+    gallery_images: [
+      'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=1200&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=1200&auto=format&fit=crop&q=80'
+    ],
+    version: 'v1.0.1',
+    release_date: '2026-01-20',
+    downloads_count: 54,
+    created_at: '2026-01-20T08:00:00.000Z',
+    updated_at: '2026-01-20T08:00:00.000Z'
+  },
+  {
+    id: 'color-harmony-studio',
+    title_am: 'Color Harmony Studio',
+    title_en: 'Color Harmony Studio',
+    short_desc_am: 'Առանձին ծրագիր (Standalone App) դիզայներների համար՝ գունային գամմաներ ստեղծելու և արտահանելու համար։',
+    short_desc_en: 'Standalone desktop app for designers to generate, test contrast, and export color palettes.',
+    description_md_am: `## Color Harmony Studio
+
+**Color Harmony Studio**-ն ինքնուրույն աշխատող հավելված է (Windows & Mac), որը հնարավորություն է տալիս կառուցել գունային ներդաշնակություններ, ստուգել WCAG կոնտրաստը և արտահանել CSS, ASE, SVG և JSON ֆորմատներով։
+
+### Ինչու՞ օգտագործել
+* Չի պահանջում որևէ այլ ծրագրի առկայություն։
+* Իրական ժամանակում WCAG AA / AAA կոնտրաստի ստուգիչ։
+* Գույների ներմուծում նկարներից։`,
+    description_md_en: `## Color Harmony Studio
+
+**Color Harmony Studio** is a standalone desktop application (Windows & Mac) to build harmonious palettes, test accessibility contrast, and export in CSS, ASE, SVG, and JSON.
+
+### Why use it
+* Standalone - no external host software required.
+* Real-time WCAG AA / AAA accessibility contrast checker.
+* Extract vibrant palettes from reference images.`,
+    host_app: 'Standalone',
+    host_app_icon: '/icons/app-window.svg',
+    app_type: 'standalone',
+    is_paid: false,
+    price: 0,
+    currency: 'AMD',
+    download_url: '/apps/color-harmony-studio.zip',
+    store_url: '',
+    cover_image: 'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=1200&auto=format&fit=crop&q=80',
+    gallery_images: [
+      'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=1200&auto=format&fit=crop&q=80',
+      'https://images.unsplash.com/photo-1500462918059-b1a0cb512f1d?w=1200&auto=format&fit=crop&q=80'
+    ],
+    version: 'v1.4.0',
+    release_date: '2026-02-28',
+    downloads_count: 210,
+    created_at: '2026-02-28T14:00:00.000Z',
+    updated_at: '2026-02-28T14:00:00.000Z'
+  }
+];
+
+export const defaultSeededAppReviews: AppReview[] = [
+  {
+    id: 'rev-seed-1',
+    app_id: 'vector-grid-master',
+    user_name: 'Արամ Գասպարյան',
+    user_email: 'aram@example.com',
+    is_anonymous: false,
+    rating: 5,
+    comment: 'Հիանալի խրվակ է։ Իզոմետրիկ իլյուստրացիաների ժամանակ իսկական փրկություն է, ժամանակի 70%-ը խնայում է։',
+    status: 'approved',
+    created_at: '2026-03-11T14:20:00.000Z'
+  },
+  {
+    id: 'rev-seed-2',
+    app_id: 'vector-grid-master',
+    user_name: 'Անանուն',
+    is_anonymous: true,
+    rating: 5,
+    comment: 'Շատ արագ է աշխատում Illustrator 2025-ի վրա, ոչ մի խնդիր չի առաջացել։ Շնորհակալություն։',
+    status: 'approved',
+    created_at: '2026-03-12T09:15:00.000Z'
+  },
+  {
+    id: 'rev-seed-3',
+    app_id: 'motion-keyframer-pro',
+    user_name: 'Տիգրան Սարգսյան',
+    user_email: 'tigran.motion@example.com',
+    is_anonymous: false,
+    rating: 5,
+    comment: 'AE-ում նման գործիք վաղուց էր պետք։ Easing preset-ները շատ բնական են։ Արժե ամեն մի դրամը։',
+    status: 'approved',
+    created_at: '2026-02-20T16:40:00.000Z'
+  }
+];
+
+export async function getApps(): Promise<AppItem[]> {
+  await ensureLocalDbFiles();
+
+  let localApps: AppItem[] = [];
+  if (isServer) {
+    try {
+      const fs = getFs();
+      const content = await fs.readFile(APPS_FILE, 'utf-8');
+      localApps = JSON.parse(content) as AppItem[];
+    } catch (err) {
+      console.warn('Failed to read local apps:', err);
+    }
+  }
+
+  const readClient = supabaseAdmin || supabase;
+  let dbApps: AppItem[] = [];
+  let supabaseSuccess = false;
+
+  if (readClient) {
+    try {
+      const { data, error } = await readClient
+        .from('apps')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        dbApps = data.map((x: any) => ({
+          ...x,
+          gallery_images: Array.isArray(x.gallery_images)
+            ? x.gallery_images
+            : (typeof x.gallery_images === 'string' ? JSON.parse(x.gallery_images || '[]') : [])
+        }));
+        supabaseSuccess = true;
+      } else if (error) {
+        console.warn('Supabase getApps query error:', error.message);
+      }
+    } catch (err) {
+      console.warn('Supabase getApps failed, falling back to local storage:', err);
+    }
+  }
+
+  const deletedSeeds = await getSiteSetting('deleted_seed_apps', []);
+  const deletedSeedsSet = new Set(deletedSeeds || []);
+
+  const currentDbApps = supabaseSuccess ? dbApps : [];
+  const dynamicIds = new Set([...currentDbApps.map((x: any) => x.id), ...localApps.map(x => x.id)]);
+  const filteredSeeds = defaultSeededApps.filter((x: AppItem) => !dynamicIds.has(x.id) && !deletedSeedsSet.has(x.id));
+
+  if (supabaseSuccess) {
+    const localFiltered = localApps.filter(x => !dynamicIds.has(x.id));
+    return [...dbApps, ...localFiltered, ...filteredSeeds];
+  }
+
+  return [...localApps, ...filteredSeeds];
+}
+
+export async function getAppById(id: string): Promise<AppItem | null> {
+  const apps = await getApps();
+  return apps.find(a => a.id === id) || null;
+}
+
+export async function saveApp(app: AppItem): Promise<AppItem | null> {
+  await ensureLocalDbFiles();
+  const now = new Date().toISOString();
+  const newApp: AppItem = {
+    ...app,
+    gallery_images: Array.isArray(app.gallery_images) ? app.gallery_images : [],
+    created_at: app.created_at || now,
+    updated_at: now
+  };
+
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
+    try {
+      const { data, error } = await adminClient
+        .from('apps')
+        .upsert(newApp)
+        .select()
+        .single();
+
+      if (!error && data) {
+        return {
+          ...data,
+          gallery_images: Array.isArray(data.gallery_images)
+            ? data.gallery_images
+            : (typeof data.gallery_images === 'string' ? JSON.parse(data.gallery_images || '[]') : [])
+        };
+      }
+      console.warn('Supabase saveApp error:', error?.message);
+    } catch (err) {
+      console.warn('Supabase saveApp failed, using local storage:', err);
+    }
+  }
+
+  // Fallback to local JSON database
+  if (isServer) {
+    const fs = getFs();
+    try {
+      const content = await fs.readFile(APPS_FILE, 'utf-8');
+      const apps = JSON.parse(content) as AppItem[];
+
+      const index = apps.findIndex(x => x.id === app.id);
+      if (index !== -1) {
+        apps[index] = newApp;
+      } else {
+        apps.unshift(newApp);
+      }
+
+      await fs.writeFile(APPS_FILE, JSON.stringify(apps, null, 2), 'utf-8');
+      return newApp;
+    } catch (err) {
+      console.error('Error writing app locally:', err);
+    }
+  }
+
+  return null;
+}
+
+export async function deleteApp(id: string): Promise<boolean> {
+  await ensureLocalDbFiles();
+
+  const isSeed = defaultSeededApps.some(s => s.id === id);
+  let seedRegistered = false;
+
+  if (isSeed) {
+    try {
+      const deletedSeeds = await getSiteSetting('deleted_seed_apps', []);
+      if (!deletedSeeds.includes(id)) {
+        deletedSeeds.push(id);
+        await saveSiteSetting('deleted_seed_apps', deletedSeeds);
+      }
+      seedRegistered = true;
+    } catch (err) {
+      console.warn('Failed to register deleted seed app in settings:', err);
+    }
+  }
+
+  let supabaseErrorMsg = '';
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
+    try {
+      const { error } = await adminClient
+        .from('apps')
+        .delete()
+        .eq('id', id);
+
+      if (!error) {
+        if (isSeed) return true;
+      } else {
+        supabaseErrorMsg = error.message;
+        console.warn('Supabase deleteApp query error:', error.message);
+      }
+    } catch (err: any) {
+      supabaseErrorMsg = err.message || String(err);
+      console.warn('Supabase deleteApp failed, using local storage:', err);
+    }
+  }
+
+  // Fallback to local JSON database
+  let localErrorMsg = '';
+  if (isServer) {
+    const fs = getFs();
+    try {
+      const content = await fs.readFile(APPS_FILE, 'utf-8');
+      const apps = JSON.parse(content) as AppItem[];
+      const filtered = apps.filter(x => x.id !== id);
+      await fs.writeFile(APPS_FILE, JSON.stringify(filtered, null, 2), 'utf-8');
+      return true;
+    } catch (err: any) {
+      localErrorMsg = err.message || String(err);
+      console.error('Error deleting app locally:', err);
+    }
+  }
+
+  if (isSeed && seedRegistered) {
+    return true;
+  }
+
+  const errorParts = [];
+  if (supabaseErrorMsg) errorParts.push(`Supabase error: ${supabaseErrorMsg}`);
+  if (localErrorMsg) errorParts.push(`Local storage fallback error: ${localErrorMsg}`);
+
+  throw new Error(errorParts.join(' | ') || 'Failed to delete app.');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// APP REVIEWS
+// ══════════════════════════════════════════════════════════════════════════════
+
+export async function getAppReviews(appId?: string, onlyApproved = true): Promise<AppReview[]> {
+  await ensureLocalDbFiles();
+
+  let localReviews: AppReview[] = [];
+  if (isServer) {
+    try {
+      const fs = getFs();
+      const content = await fs.readFile(APP_REVIEWS_FILE, 'utf-8');
+      localReviews = JSON.parse(content) as AppReview[];
+    } catch (err) {
+      console.warn('Failed to read local app reviews:', err);
+    }
+  }
+
+  const readClient = supabaseAdmin || supabase;
+  let dbReviews: AppReview[] = [];
+  let supabaseSuccess = false;
+
+  if (readClient) {
+    try {
+      let query = readClient
+        .from('app_reviews')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (appId) {
+        query = query.eq('app_id', appId);
+      }
+      if (onlyApproved) {
+        query = query.eq('status', 'approved');
+      }
+
+      const { data, error } = await query;
+
+      if (!error && data) {
+        dbReviews = data;
+        supabaseSuccess = true;
+      } else if (error) {
+        console.warn('Supabase getAppReviews query error:', error.message);
+      }
+    } catch (err) {
+      console.warn('Supabase getAppReviews failed, falling back to local storage:', err);
+    }
+  }
+
+  const currentDbReviews = supabaseSuccess ? dbReviews : [];
+  const dynamicIds = new Set([...currentDbReviews.map((x: any) => x.id), ...localReviews.map(x => x.id)]);
+  const filteredSeeds = defaultSeededAppReviews.filter((x: AppReview) => !dynamicIds.has(x.id));
+
+  let allReviews: AppReview[] = [];
+  if (supabaseSuccess) {
+    const localFiltered = localReviews.filter(x => !dynamicIds.has(x.id));
+    allReviews = [...dbReviews, ...localFiltered, ...filteredSeeds];
+  } else {
+    allReviews = [...localReviews, ...filteredSeeds];
+  }
+
+  if (appId) {
+    allReviews = allReviews.filter(r => r.app_id === appId);
+  }
+  if (onlyApproved) {
+    allReviews = allReviews.filter(r => r.status === 'approved');
+  }
+
+  return allReviews;
+}
+
+export async function saveAppReview(review: Omit<AppReview, 'id' | 'created_at'> & { id?: string; created_at?: string }): Promise<AppReview | null> {
+  await ensureLocalDbFiles();
+  const id = review.id || ('rev_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36));
+  const newReview: AppReview = {
+    ...review,
+    id,
+    created_at: review.created_at || new Date().toISOString()
+  };
+
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
+    try {
+      const { data, error } = await adminClient
+        .from('app_reviews')
+        .upsert(newReview)
+        .select()
+        .single();
+
+      if (!error && data) return data;
+      console.warn('Supabase saveAppReview error:', error?.message);
+    } catch (err) {
+      console.warn('Supabase saveAppReview failed, using local storage:', err);
+    }
+  }
+
+  // Fallback to local JSON database
+  if (isServer) {
+    const fs = getFs();
+    try {
+      const content = await fs.readFile(APP_REVIEWS_FILE, 'utf-8');
+      const reviews = JSON.parse(content) as AppReview[];
+
+      const index = reviews.findIndex(x => x.id === id);
+      if (index !== -1) {
+        reviews[index] = newReview;
+      } else {
+        reviews.unshift(newReview);
+      }
+
+      await fs.writeFile(APP_REVIEWS_FILE, JSON.stringify(reviews, null, 2), 'utf-8');
+      return newReview;
+    } catch (err) {
+      console.error('Error writing app review locally:', err);
+    }
+  }
+
+  return newReview;
+}
+
+export async function updateAppReviewStatus(id: string, status: 'pending' | 'approved' | 'rejected'): Promise<boolean> {
+  await ensureLocalDbFiles();
+
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
+    try {
+      const { error } = await adminClient
+        .from('app_reviews')
+        .update({ status })
+        .eq('id', id);
+
+      if (!error) return true;
+    } catch (err) {
+      console.warn('Supabase updateAppReviewStatus failed:', err);
+    }
+  }
+
+  // Fallback to local JSON database
+  if (isServer) {
+    const fs = getFs();
+    try {
+      const content = await fs.readFile(APP_REVIEWS_FILE, 'utf-8');
+      const reviews = JSON.parse(content) as AppReview[];
+      const index = reviews.findIndex(x => x.id === id);
+      if (index !== -1) {
+        reviews[index].status = status;
+        await fs.writeFile(APP_REVIEWS_FILE, JSON.stringify(reviews, null, 2), 'utf-8');
+        return true;
+      }
+    } catch (err) {
+      console.error('Error updating review status locally:', err);
+    }
+  }
+
+  return false;
+}
+
+export async function deleteAppReview(id: string): Promise<boolean> {
+  await ensureLocalDbFiles();
+
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
+    try {
+      const { error } = await adminClient
+        .from('app_reviews')
+        .delete()
+        .eq('id', id);
+
+      if (!error) return true;
+    } catch (err) {
+      console.warn('Supabase deleteAppReview failed:', err);
+    }
+  }
+
+  // Fallback to local JSON database
+  if (isServer) {
+    const fs = getFs();
+    try {
+      const content = await fs.readFile(APP_REVIEWS_FILE, 'utf-8');
+      const reviews = JSON.parse(content) as AppReview[];
+      const filtered = reviews.filter(x => x.id !== id);
+      await fs.writeFile(APP_REVIEWS_FILE, JSON.stringify(filtered, null, 2), 'utf-8');
+      return true;
+    } catch (err) {
+      console.error('Error deleting review locally:', err);
+    }
+  }
+
+  return false;
+}
+
 

@@ -236,6 +236,7 @@ works = Աշխատանքներ
 works_branding = Բրենդինգներ
 works_design = Պատկերասրահ
 fonts = Տառատեսակներ
+apps = Հավելվածներ
 general = Ընդհանուր
 docs = Փաստաթղթեր
 samples = Փորձանմուշներ
@@ -351,6 +352,17 @@ back = Վերադառնալ
 loading = Բեռնվում են տվյալները...
 loading_images = Բեռնվում են պատկերները
 no_details = Այս նախագծի համար մանրամասն նկարագրություն դեռևս ավելացված չէ:
+
+[admin_bar]
+admin_mode = Վարիչի ռեժիմ
+dashboard = Վարիչի վահանակ
+new_case = Նոր աշխատանք
+messages = Նամակներ
+analytics = Անալիտիկա
+settings = Կարգավորումներ
+logout = Դուրս գալ
+collapse = Ծալել
+expand = Բացել
 `;
 
 const enIniContent = `[common]
@@ -587,6 +599,7 @@ works = Works
 works_branding = Branding
 works_design = Gallery
 fonts = Fonts
+apps = Apps
 general = General
 docs = Docs
 samples = Samples
@@ -702,6 +715,17 @@ back = Go Back
 loading = Loading case details...
 loading_images = Loading images
 no_details = No details available for this project.
+
+[admin_bar]
+admin_mode = Admin Mode
+dashboard = Admin Dashboard
+new_case = New Work
+messages = Messages
+analytics = Analytics
+settings = Settings
+logout = Log out
+collapse = Collapse
+expand = Expand
 `;
 
 export function parseLangText(text: string | null | undefined, lang: Locale | string): string {

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { hyTranslations, enTranslations } from '@/lib/i18n';
 import LoadingAnimation from '@/components/LoadingAnimation';
+import AdminAppsManager from '@/components/AdminAppsManager';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, BarChart, Bar 
@@ -256,8 +257,106 @@ interface AboutTranslations {
   home_other_works_en: string;
 }
 
-export default function AdminDashboard() {
+const NAV_TABS = [
+  {
+    id: 'analytics' as const,
+    label: 'Վիճակագրություն',
+    icon: <span className="icon-Dashboard" style={{ fontSize: '1.4rem' }} />
+  },
+  {
+    id: 'cases' as const,
+    label: 'Քեյսեր',
+    icon: <span className="icon-Image" style={{ fontSize: '1.4rem' }} />
+  },
+  {
+    id: 'apps' as const,
+    label: 'Հավելվածներ',
+    icon: (
+      <span style={{ fontSize: '1.3rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1.5" />
+          <rect x="14" y="3" width="7" height="7" rx="1.5" />
+          <rect x="14" y="14" width="7" height="7" rx="1.5" />
+          <rect x="3" y="14" width="7" height="7" rx="1.5" />
+        </svg>
+      </span>
+    )
+  },
+  {
+    id: 'icons' as const,
+    label: 'Պատկերակներ',
+    icon: <span className="icon-Pattern" style={{ fontSize: '1.4rem' }} />
+  },
+  {
+    id: 'messages' as const,
+    label: 'Նամակներ',
+    icon: <span className="icon-Mail" style={{ fontSize: '1.4rem' }} />
+  },
+  {
+    id: 'subscribers' as const,
+    label: 'Բաժանորդներ',
+    icon: <span className="icon-Notifications" style={{ fontSize: '1.4rem' }} />
+  },
+  {
+    id: 'translations' as const,
+    label: 'Թարգմանություններ',
+    icon: <span className="icon-Earth" style={{ fontSize: '1.4rem' }} />
+  },
+  {
+    id: 'about' as const,
+    label: 'Մասին էջ',
+    icon: <span className="icon-Info" style={{ fontSize: '1.4rem' }} />
+  },
+  {
+    id: 'apis' as const,
+    label: 'API-ներ',
+    icon: <span className="icon-API" style={{ fontSize: '1.4rem' }} />
+  },
+  {
+    id: 'personalization' as const,
+    label: 'Անհատականացում',
+    icon: <span className="icon-Cursor" style={{ fontSize: '1.4rem' }} />
+  },
+  {
+    id: 'settings' as const,
+    label: 'Կարգավորումներ',
+    icon: <span className="icon-Profile" style={{ fontSize: '1.4rem' }} />
+  }
+];
+
+type TabType = 'analytics' | 'cases' | 'fonts' | 'apps' | 'icons' | 'messages' | 'translations' | 'about' | 'apis' | 'personalization' | 'settings' | 'subscribers';
+
+function parseTabParam(rawTab: string | null): { 
+  tab: TabType; 
+  casesSubTab?: 'branding' | 'gallery' | 'fonts'; 
+  analyticsSubTab?: 'overview' | 'spam';
+} | null {
+  if (!rawTab) return null;
+  const t = rawTab.trim().toLowerCase();
+  
+  if (t === 'general') return { tab: 'settings' };
+  if (t === 'fonts') return { tab: 'cases', casesSubTab: 'fonts' };
+  if (t === 'branding') return { tab: 'cases', casesSubTab: 'branding' };
+  if (t === 'gallery') return { tab: 'cases', casesSubTab: 'gallery' };
+  if (t === 'spam') return { tab: 'analytics', analyticsSubTab: 'spam' };
+  if (t === 'overview') return { tab: 'analytics', analyticsSubTab: 'overview' };
+
+  const validTabs: TabType[] = [
+    'analytics', 'cases', 'fonts', 'apps', 'icons', 'messages', 
+    'translations', 'about', 'apis', 'personalization', 'settings', 'subscribers'
+  ];
+
+  if (validTabs.includes(t as TabType)) {
+    return { tab: t as TabType };
+  }
+  return null;
+}
+
+function AdminDashboardContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialParsedTab = useMemo(() => parseTabParam(searchParams.get('tab')), [searchParams]);
+
   const [passcode, setPasscode] = useState('');
   const [token, setToken] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -265,7 +364,7 @@ export default function AdminDashboard() {
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   // Dashboard state
-  const [activeTab, setActiveTab] = useState<'analytics' | 'cases' | 'fonts' | 'icons' | 'messages' | 'translations' | 'about' | 'apis' | 'personalization' | 'settings' | 'subscribers'>('analytics');
+  const [activeTab, setActiveTab] = useState<TabType>(initialParsedTab?.tab || 'analytics');
   const [isSavingAbout, setIsSavingAbout] = useState(false);
   const [aboutTranslations, setAboutTranslations] = useState<AboutTranslations>({
     title_hy: '',
@@ -325,7 +424,12 @@ export default function AdminDashboard() {
   const [newCursorColor, setNewCursorColor] = useState('#ffffff');
   const [cases, setCases] = useState<Case[]>([]);
   const [fonts, setFonts] = useState<Font[]>([]);
-  const [casesSubTab, setCasesSubTab] = useState<'branding' | 'gallery' | 'fonts'>('branding');
+  const [casesSubTab, setCasesSubTab] = useState<'branding' | 'gallery' | 'fonts'>(() => {
+    if (initialParsedTab?.casesSubTab) return initialParsedTab.casesSubTab;
+    const s = searchParams.get('subtab')?.toLowerCase();
+    if (s === 'gallery' || s === 'fonts' || s === 'branding') return s;
+    return 'branding';
+  });
 
   // Floating Nav Drag & Dock States
   const [offsetX, setOffsetX] = useState(0);
@@ -373,6 +477,17 @@ export default function AdminDashboard() {
       }
     }
   }, []);
+
+  // Floating nav switch state
+  const [navMounted, setNavMounted] = useState(false);
+  useEffect(() => {
+    setNavMounted(true);
+  }, []);
+
+  const activeTabIndex = useMemo(() => {
+    const idx = NAV_TABS.findIndex(t => t.id === activeTab);
+    return idx >= 0 ? idx : 0;
+  }, [activeTab]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     // Only drag on left click
@@ -998,21 +1113,22 @@ export default function AdminDashboard() {
   const [changingPassword, setChangingPassword] = useState(false);
 
   // Transition States
-  const [prevTab, setPrevTab] = useState<'analytics' | 'cases' | 'fonts' | 'icons' | 'messages' | 'translations' | 'about' | 'apis' | 'personalization' | 'settings' | 'subscribers'>('analytics');
+  const [prevTab, setPrevTab] = useState<TabType>(initialParsedTab?.tab || 'analytics');
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
 
   const tabIndices = useMemo(() => ({
     analytics: 0,
     cases: 1,
     fonts: 2,
-    icons: 3,
-    messages: 4,
-    translations: 5,
-    about: 6,
-    apis: 7,
-    personalization: 8,
-    settings: 9,
-    subscribers: 10
+    apps: 3,
+    icons: 4,
+    messages: 5,
+    subscribers: 6,
+    translations: 7,
+    about: 8,
+    apis: 9,
+    personalization: 10,
+    settings: 11
   }), []);
 
   useEffect(() => {
@@ -1024,6 +1140,70 @@ export default function AdminDashboard() {
       setPrevTab(activeTab);
     }
   }, [activeTab, prevTab, tabIndices]);
+
+  const switchTab = (tab: TabType) => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tab);
+      url.searchParams.delete('subtab');
+      url.searchParams.delete('folder');
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  };
+
+  const switchCasesSubTab = (subTab: 'branding' | 'gallery' | 'fonts') => {
+    setCasesSubTab(subTab);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', 'cases');
+      url.searchParams.set('subtab', subTab);
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  };
+
+  const switchAnalyticsSubTab = (subTab: 'overview' | 'spam') => {
+    setAnalyticsSubTab(subTab);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', 'analytics');
+      url.searchParams.set('subtab', subTab);
+      window.history.replaceState(null, '', url.pathname + url.search);
+    }
+  };
+
+  // Synchronize tab and subtabs when search params change (e.g. from Link clicks or browser history)
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (!tabParam) {
+      setActiveTab(prev => (prev !== 'analytics' ? 'analytics' : prev));
+      return;
+    }
+    const parsed = parseTabParam(tabParam);
+    if (parsed) {
+      setActiveTab(prev => (prev !== parsed.tab ? parsed.tab : prev));
+      if (parsed.casesSubTab) {
+        setCasesSubTab(parsed.casesSubTab);
+      }
+      if (parsed.analyticsSubTab) {
+        setAnalyticsSubTab(parsed.analyticsSubTab);
+      }
+    }
+
+    const subTabParam = searchParams.get('subtab')?.toLowerCase();
+    if (subTabParam) {
+      if (subTabParam === 'branding' || subTabParam === 'gallery' || subTabParam === 'fonts') {
+        setCasesSubTab(subTabParam);
+      } else if (subTabParam === 'overview' || subTabParam === 'spam') {
+        setAnalyticsSubTab(subTabParam);
+      }
+    }
+
+    const folderParam = searchParams.get('folder')?.toLowerCase();
+    if (folderParam && ['inbox', 'starred', 'sent', 'spam', 'trash'].includes(folderParam)) {
+      setSelectedMailFolder(folderParam as any);
+    }
+  }, [searchParams]);
 
   const getTabClass = (tabName: string) => {
     if (tabName !== activeTab) return '';
@@ -1372,6 +1552,10 @@ export default function AdminDashboard() {
       const data = await res.json();
       if (res.ok && data.success) {
         localStorage.setItem('hdesign_admin_token', data.token);
+        try {
+          document.cookie = `hdesign_admin_token=${encodeURIComponent(data.token)}; path=/; max-age=2592000; SameSite=Lax`;
+          window.dispatchEvent(new Event('hdesign-admin-auth-change'));
+        } catch (e) {}
         setToken(data.token);
         setIsLoggedIn(true);
         setPasscode('');
@@ -1385,9 +1569,20 @@ export default function AdminDashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem('hdesign_admin_token');
+    try {
+      document.cookie = 'hdesign_admin_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      window.dispatchEvent(new Event('hdesign-admin-auth-change'));
+    } catch (e) {}
     setToken(null);
     setIsLoggedIn(false);
     setActiveTab('analytics');
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('tab');
+      url.searchParams.delete('subtab');
+      url.searchParams.delete('folder');
+      window.history.replaceState(null, '', url.pathname);
+    }
   };
 
   // ══════════════════════════════════════════════════════════════════════════════
@@ -2909,6 +3104,10 @@ export default function AdminDashboard() {
         // Sync local auth token so session doesn't expire
         if (data.newToken) {
           localStorage.setItem('hdesign_admin_token', data.newToken);
+          try {
+            document.cookie = `hdesign_admin_token=${encodeURIComponent(data.newToken)}; path=/; max-age=2592000; SameSite=Lax`;
+            window.dispatchEvent(new Event('hdesign-admin-auth-change'));
+          } catch (e) {}
           setToken(data.newToken);
         }
         
@@ -3660,8 +3859,21 @@ export default function AdminDashboard() {
             max-height: 95vh !important;
           }
         }
+        .admin-floating-nav {
+          --nav-tab-step: 60px;
+        }
+        .admin-floating-nav .nav-switch-square {
+          border-radius: 16px;
+        }
+        .admin-floating-nav .nav-btn:hover:not(.active) {
+          color: var(--text) !important;
+        }
+        .admin-floating-nav .nav-btn.active {
+          color: var(--switcher-text-active, #fff) !important;
+        }
         @media (max-width: 480px) {
           .admin-floating-nav {
+            --nav-tab-step: 48px !important;
             width: calc(100% - 24px) !important;
             height: 60px !important;
             bottom: 12px !important;
@@ -3671,6 +3883,13 @@ export default function AdminDashboard() {
           .admin-floating-nav .nav-btn {
             width: 42px !important;
             height: 42px !important;
+            border-radius: 12px !important;
+          }
+          .admin-floating-nav .nav-switch-square {
+            width: 42px !important;
+            height: 42px !important;
+            top: 9px !important;
+            left: 6px !important;
             border-radius: 12px !important;
           }
           .admin-floating-nav .nav-btn span {
@@ -3758,7 +3977,7 @@ export default function AdminDashboard() {
                   marginBottom: '10px'
                 }}>
                   <button 
-                    onClick={() => setAnalyticsSubTab('overview')}
+                    onClick={() => switchAnalyticsSubTab('overview')}
                     style={{
                       background: analyticsSubTab === 'overview' ? 'var(--switcher-capsule-bg)' : 'transparent',
                       color: analyticsSubTab === 'overview' ? '#fff' : 'var(--muted)',
@@ -3776,7 +3995,7 @@ export default function AdminDashboard() {
                     <span className="icon-Dashboard" style={{ fontSize: '1.1rem' }} /> Իրական Դիտումներ
                   </button>
                   <button 
-                    onClick={() => setAnalyticsSubTab('spam')}
+                    onClick={() => switchAnalyticsSubTab('spam')}
                     style={{
                       background: analyticsSubTab === 'spam' ? 'var(--switcher-capsule-bg)' : 'transparent',
                       color: analyticsSubTab === 'spam' ? '#fff' : 'var(--muted)',
@@ -4083,7 +4302,7 @@ export default function AdminDashboard() {
                 {/* Sub-tabs for Branding vs Gallery vs Fonts */}
                 <div style={{ display: 'flex', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '12px', width: 'fit-content' }}>
                   <button
-                    onClick={() => setCasesSubTab('branding')}
+                    onClick={() => switchCasesSubTab('branding')}
                     style={{
                       background: casesSubTab === 'branding' ? 'var(--switcher-capsule-bg)' : 'transparent',
                       color: casesSubTab === 'branding' ? '#fff' : 'var(--muted)',
@@ -4099,7 +4318,7 @@ export default function AdminDashboard() {
                     Բրենդինգի Քեյսեր
                   </button>
                   <button
-                    onClick={() => setCasesSubTab('gallery')}
+                    onClick={() => switchCasesSubTab('gallery')}
                     style={{
                       background: casesSubTab === 'gallery' ? 'var(--switcher-capsule-bg)' : 'transparent',
                       color: casesSubTab === 'gallery' ? '#fff' : 'var(--muted)',
@@ -4115,7 +4334,7 @@ export default function AdminDashboard() {
                     Պատկերասրահ
                   </button>
                   <button
-                    onClick={() => setCasesSubTab('fonts')}
+                    onClick={() => switchCasesSubTab('fonts')}
                     style={{
                       background: casesSubTab === 'fonts' ? 'var(--switcher-capsule-bg)' : 'transparent',
                       color: casesSubTab === 'fonts' ? '#fff' : 'var(--muted)',
@@ -4723,6 +4942,15 @@ export default function AdminDashboard() {
                 )}
 
                 {/* Case modal markup fully cleaned up */}
+              </div>
+            )}
+
+            {/* ══════════════════════════════════════════════════════════════════════════
+                TAB: APPS & PLUGINS MANAGEMENT
+                ══════════════════════════════════════════════════════════════════════════ */}
+            {activeTab === 'apps' && (
+              <div className={getTabClass('apps')}>
+                <AdminAppsManager token={token} />
               </div>
             )}
 
@@ -6771,6 +6999,7 @@ export default function AdminDashboard() {
                             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--text)', cursor: 'pointer' }}>
                               <hd-radio 
                                 name="importMode" 
+                                data-size="14px"
                                 checked={importMode === 'merge'} 
                                 onChange={() => setImportMode('merge')} 
                               />
@@ -6779,6 +7008,7 @@ export default function AdminDashboard() {
                             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--text)', cursor: 'pointer' }}>
                               <hd-radio 
                                 name="importMode" 
+                                data-size="14px"
                                 checked={importMode === 'replace'} 
                                 onChange={() => setImportMode('replace')} 
                               />
@@ -9403,6 +9633,7 @@ export default function AdminDashboard() {
         onDoubleClick={handleDoubleClick}
         onDragStart={(e) => e.preventDefault()}
         style={{ 
+          ['--active-tab-index' as any]: activeTabIndex,
           position: 'fixed',
           display: 'flex', 
           alignItems: 'center', 
@@ -9449,256 +9680,60 @@ export default function AdminDashboard() {
           cursor: isDragging ? 'grabbing' : 'grab'
         }}
       >
+        {/* Single Sliding Background Square Indicator */}
         <div 
-          onClick={() => {
-            if (hasDraggedRef.current) return;
-            setActiveTab('analytics');
-          }}
-          className="nav-btn"
+          className="nav-switch-square"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: activeTab === 'analytics' ? 'var(--switcher-capsule-bg)' : 'transparent',
-            color: activeTab === 'analytics' ? '#fff' : 'var(--muted)',
-            borderRadius: '16px',
+            position: 'absolute',
+            top: dockState === 'bottom' ? '9px' : '8px',
+            left: dockState === 'bottom' ? '8px' : '9px',
             width: '50px',
             height: '50px',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-        >
-          <span className="icon-Dashboard" style={{ fontSize: '1.4rem' }} />
-          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
-            Վիճակագրություն
-          </div>
-        </div>
-
-        <div 
-          onClick={() => {
-            if (hasDraggedRef.current) return;
-            setActiveTab('cases');
-          }}
-          className="nav-btn"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: activeTab === 'cases' ? 'var(--switcher-capsule-bg)' : 'transparent',
-            color: activeTab === 'cases' ? '#fff' : 'var(--muted)',
             borderRadius: '16px',
-            width: '50px',
-            height: '50px',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
+            background: 'var(--switcher-capsule-bg)',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.16)',
+            pointerEvents: 'none',
+            zIndex: 1,
+            transform: dockState === 'bottom' 
+              ? `translate3d(calc(var(--active-tab-index) * var(--nav-tab-step, 60px)), 0, 0)`
+              : `translate3d(0, calc(var(--active-tab-index) * var(--nav-tab-step, 60px)), 0)`,
+            transition: navMounted ? 'transform 0.26s cubic-bezier(0.15, 1.05, 0.2, 1)' : 'none',
+            willChange: 'transform'
           }}
-        >
-          <span className="icon-Image" style={{ fontSize: '1.4rem' }} />
-          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
-            Քեյսեր
-          </div>
-        </div>
+        />
 
-        <div 
-          onClick={() => {
-            if (hasDraggedRef.current) return;
-            setActiveTab('icons');
-          }}
-          className="nav-btn"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: activeTab === 'icons' ? 'var(--switcher-capsule-bg)' : 'transparent',
-            color: activeTab === 'icons' ? '#fff' : 'var(--muted)',
-            borderRadius: '16px',
-            width: '50px',
-            height: '50px',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-        >
-          <span className="icon-Pattern" style={{ fontSize: '1.4rem' }} />
-          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
-            Պատկերակներ
-          </div>
-        </div>
-
-
-        <div 
-          onClick={() => {
-            if (hasDraggedRef.current) return;
-            setActiveTab('messages');
-          }}
-          className="nav-btn"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: activeTab === 'messages' ? 'var(--switcher-capsule-bg)' : 'transparent',
-            color: activeTab === 'messages' ? '#fff' : 'var(--muted)',
-            borderRadius: '16px',
-            width: '50px',
-            height: '50px',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-        >
-          <span className="icon-Mail" style={{ fontSize: '1.4rem' }} />
-          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
-            Նամակներ
-          </div>
-        </div>
-
-        <div 
-          onClick={() => {
-            if (hasDraggedRef.current) return;
-            setActiveTab('subscribers');
-          }}
-          className="nav-btn"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: activeTab === 'subscribers' ? 'var(--switcher-capsule-bg)' : 'transparent',
-            color: activeTab === 'subscribers' ? '#fff' : 'var(--muted)',
-            borderRadius: '16px',
-            width: '50px',
-            height: '50px',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-        >
-          <span className="icon-Notifications" style={{ fontSize: '1.4rem' }} />
-          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
-            Բաժանորդներ
-          </div>
-        </div>
-
-        <div 
-          onClick={() => {
-            if (hasDraggedRef.current) return;
-            setActiveTab('translations');
-          }}
-          className="nav-btn"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: activeTab === 'translations' ? 'var(--switcher-capsule-bg)' : 'transparent',
-            color: activeTab === 'translations' ? '#fff' : 'var(--muted)',
-            borderRadius: '16px',
-            width: '50px',
-            height: '50px',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-        >
-          <span className="icon-Earth" style={{ fontSize: '1.4rem' }} />
-          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
-            Թարգմանություններ
-          </div>
-        </div>
-
-        <div 
-          onClick={() => {
-            if (hasDraggedRef.current) return;
-            setActiveTab('about');
-          }}
-          className="nav-btn"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: activeTab === 'about' ? 'var(--switcher-capsule-bg)' : 'transparent',
-            color: activeTab === 'about' ? '#fff' : 'var(--muted)',
-            borderRadius: '16px',
-            width: '50px',
-            height: '50px',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-        >
-          <span className="icon-Info" style={{ fontSize: '1.4rem' }} />
-          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
-            Մասին էջ
-          </div>
-        </div>
-
-        <div 
-          onClick={() => {
-            if (hasDraggedRef.current) return;
-            setActiveTab('apis');
-          }}
-          className="nav-btn"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: activeTab === 'apis' ? 'var(--switcher-capsule-bg)' : 'transparent',
-            color: activeTab === 'apis' ? '#fff' : 'var(--muted)',
-            borderRadius: '16px',
-            width: '50px',
-            height: '50px',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-        >
-          <span className="icon-API" style={{ fontSize: '1.4rem' }} />
-          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
-            API-ներ
-          </div>
-        </div>
-
-        <div 
-          onClick={() => {
-            if (hasDraggedRef.current) return;
-            setActiveTab('personalization');
-          }}
-          className="nav-btn"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: activeTab === 'personalization' ? 'var(--switcher-capsule-bg)' : 'transparent',
-            color: activeTab === 'personalization' ? '#fff' : 'var(--muted)',
-            borderRadius: '16px',
-            width: '50px',
-            height: '50px',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-        >
-          <span className="icon-Cursor" style={{ fontSize: '1.4rem' }} />
-          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
-            Անհատականացում
-          </div>
-        </div>
-
-        <div 
-          onClick={() => {
-            if (hasDraggedRef.current) return;
-            setActiveTab('settings');
-          }}
-          className="nav-btn"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: activeTab === 'settings' ? 'var(--switcher-capsule-bg)' : 'transparent',
-            color: activeTab === 'settings' ? '#fff' : 'var(--muted)',
-            borderRadius: '16px',
-            width: '50px',
-            height: '50px',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-        >
-          <span className="icon-Profile" style={{ fontSize: '1.4rem' }} />
-          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
-            Կարգավորումներ
-          </div>
-        </div>
+        {NAV_TABS.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <div 
+              key={tab.id}
+              onClick={() => {
+                if (hasDraggedRef.current) return;
+                switchTab(tab.id);
+              }}
+              className={`nav-btn ${isActive ? 'active' : ''}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'transparent',
+                color: isActive ? 'var(--switcher-text-active, #fff)' : 'var(--muted)',
+                borderRadius: '16px',
+                width: '50px',
+                height: '50px',
+                cursor: 'pointer',
+                position: 'relative',
+                zIndex: 2,
+                transition: 'color 0.2s ease'
+              }}
+            >
+              {tab.icon}
+              <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
+                {tab.label}
+              </div>
+            </div>
+          );
+        })}
       </nav>
 
       {/* Dock Snap Preview Indicators */}
@@ -9831,5 +9866,17 @@ export default function AdminDashboard() {
       )}
       {/* Fixed Drawer Overlay Removed */}
     </main>
+  );
+}
+
+export default function AdminDashboard() {
+  return (
+    <Suspense fallback={
+      <div style={{ background: '#083f39', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: 'HDesign, sans-serif' }}>
+        <h3>Ստուգվում է լիազորումը...</h3>
+      </div>
+    }>
+      <AdminDashboardContent />
+    </Suspense>
   );
 }

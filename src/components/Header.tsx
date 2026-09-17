@@ -127,7 +127,7 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
         <span className="nav-item-text">{text}</span>
         
         {hasDropdown && (
-          <span className="hd-icon hd-icon-chevrolt-arrow-bottom dropdown-chevron" style={{ fontSize: "0.6rem", marginLeft: "6px", display: "inline-block", transform: "rotate(0deg)", transition: "transform 0.3s ease" }} />
+          <span className="hd-icon hd-icon-chevrolt-arrow-bottom dropdown-chevron" style={{ fontSize: "1.15rem", marginLeft: "6px", display: "inline-block", transform: "rotate(0deg)", transition: "transform 0.3s ease" }} />
         )}
         
         {/* Right Side Double Lines */}
@@ -149,6 +149,7 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
     if (pathname === "/about") return "about";
     if (pathname.startsWith("/works")) return "works";
     if (pathname.startsWith("/fonts")) return "fonts";
+    if (pathname.startsWith("/apps")) return "apps";
     if (pathname === "/contact") return "contact";
     if (pathname.startsWith("/hdesign")) return "hdesign";
     if (pathname === "/") return "home";
@@ -203,6 +204,9 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
              </div>
             <Link href="/fonts" className={`portfolio-nav-item ${activeNav === "fonts" ? "active" : ""}`}>
               {renderNavLinkText("fonts", t('nav', 'fonts', 'Տառատեսակներ'))}
+            </Link>
+            <Link href="/apps" className={`portfolio-nav-item ${activeNav === "apps" ? "active" : ""}`}>
+              {renderNavLinkText("apps", t('nav', 'apps', 'Հավելվածներ'))}
             </Link>
 
             {/* HDesign Dropdown as a regular link with dropdown list */}
@@ -357,6 +361,10 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
 
             <Link href="/fonts" className={`mobile-nav-item ${activeNav === "fonts" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
               {renderNavLinkText("mobile-fonts", t('nav', 'fonts', 'Տառատեսակներ'))}
+            </Link>
+
+            <Link href="/apps" className={`mobile-nav-item ${activeNav === "apps" ? "active" : ""}`} onClick={() => setIsMobileMenuOpen(false)}>
+              {renderNavLinkText("mobile-apps", t('nav', 'apps', 'Հավելվածներ'))}
             </Link>
 
             {/* HDesign Dropdown Section */}

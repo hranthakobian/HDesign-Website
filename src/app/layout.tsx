@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import "./globals.scss";
 import { I18nProvider } from "@/lib/i18n";
 import Header from "@/components/Header";
+import AdminTopBar from "@/components/AdminTopBar";
 import Footer from "@/components/Footer";
 import GlobalBackground from "@/components/GlobalBackground";
 import PageTransition from "@/components/PageTransition";
@@ -130,6 +131,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <CustomCursor />
         <AnalyticsTracker />
         <I18nProvider>
+          <AdminTopBar />
           <Header siteTitle={{ hy: personalization.site_title_hy || "HDesign", en: personalization.site_title_en || "HDesign" }} />
           <GlobalBackground />
           <UpcomingCheck 

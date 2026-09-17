@@ -90,3 +90,50 @@ CREATE TABLE IF NOT EXISTS subscribers (
 );
 
 ALTER TABLE subscribers DISABLE ROW LEVEL SECURITY;
+
+-- 7. Apps / Plugins
+CREATE TABLE IF NOT EXISTS apps (
+  id TEXT PRIMARY KEY,
+  title_am TEXT NOT NULL,
+  title_en TEXT NOT NULL,
+  short_desc_am TEXT,
+  short_desc_en TEXT,
+  description_md_am TEXT,
+  description_md_en TEXT,
+  host_app TEXT NOT NULL,
+  host_app_icon TEXT,
+  app_type TEXT NOT NULL,
+  is_paid BOOLEAN DEFAULT false,
+  price NUMERIC DEFAULT 0,
+  currency TEXT DEFAULT 'AMD',
+  download_url TEXT,
+  store_url TEXT,
+  cover_image TEXT,
+  gallery_images JSONB DEFAULT '[]'::jsonb,
+  version TEXT DEFAULT 'v1.0.0',
+  release_date TEXT,
+  downloads_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE apps DISABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_apps_type ON apps(app_type);
+CREATE INDEX IF NOT EXISTS idx_apps_host ON apps(host_app);
+
+-- 8. App Reviews & Ratings
+CREATE TABLE IF NOT EXISTS app_reviews (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  app_id TEXT NOT NULL REFERENCES apps(id) ON DELETE CASCADE,
+  user_name TEXT NOT NULL,
+  user_email TEXT,
+  is_anonymous BOOLEAN DEFAULT false,
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  comment TEXT NOT NULL,
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE app_reviews DISABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_reviews_app ON app_reviews(app_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_status ON app_reviews(status);

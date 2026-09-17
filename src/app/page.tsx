@@ -2202,7 +2202,7 @@ export default function Home() {
                           <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>px</span>
                         </div>
                       </div>
-                      <hd-slider min="1" max="5" value={playgroundThickness.replace("px", "")} onInput={(e: any) => setPlaygroundThickness(`${e.target.value}px`)} />
+                      <hd-slider suppressHydrationWarning min="1" max="5" value={playgroundThickness.replace("px", "")} onInput={(e: any) => setPlaygroundThickness(`${e.target.value}px`)} />
                     </div>
 
                     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -2240,7 +2240,7 @@ export default function Home() {
                           <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>px</span>
                         </div>
                       </div>
-                      <hd-slider min="0" max="24" value={playgroundRadius.replace("px", "")} onInput={(e: any) => setPlaygroundRadius(`${e.target.value}px`)} />
+                      <hd-slider suppressHydrationWarning min="0" max="24" value={playgroundRadius.replace("px", "")} onInput={(e: any) => setPlaygroundRadius(`${e.target.value}px`)} />
                     </div>
 
                     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -2417,7 +2417,7 @@ export default function Home() {
                     {playgroundActiveTab === "hd-select" && (
                       <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>{t('home', 'value_label', 'Արժեք')}</span>
-                        <hd-select value={playgroundSelectVal} onChange={(e: any) => setPlaygroundSelectVal(e.target.value)} data-height="34px" data-thickness="2px">
+                        <hd-select suppressHydrationWarning value={playgroundSelectVal} onChange={(e: any) => setPlaygroundSelectVal(e.target.value)} data-height="34px" data-thickness="2px">
                           {playgroundSelectOptions.split(",").map((opt, i) => (
                             <span key={i} value={`option${i+1}`}>{opt.trim()}</span>
                           ))}
@@ -2428,7 +2428,7 @@ export default function Home() {
                     {playgroundActiveTab === "hd-segment" && (
                       <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>{t('home', 'active_tab', 'Ակտիվ տաբ')}</span>
-                        <hd-select value={playgroundSegmentVal} onChange={(e: any) => setPlaygroundSegmentVal(e.target.value)} data-height="34px" data-thickness="2px">
+                        <hd-select suppressHydrationWarning value={playgroundSegmentVal} onChange={(e: any) => setPlaygroundSegmentVal(e.target.value)} data-height="34px" data-thickness="2px">
                           {playgroundSegmentOptions.split(",").map((opt, i) => (
                             <span key={i} value={`tab${i+1}`}>{opt.trim()}</span>
                           ))}
