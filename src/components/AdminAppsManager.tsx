@@ -23,9 +23,12 @@ type AppItem = {
   store_url?: string;
   cover_image?: string;
   gallery_images: string[];
+  languages?: string[];
   version: string;
   release_date: string;
   downloads_count?: number;
+  is_draft?: boolean;
+  status?: 'published' | 'draft';
   created_at?: string;
   updated_at?: string;
 };
@@ -42,6 +45,23 @@ type AppReview = {
   created_at: string;
 };
 
+type AppBugReport = {
+  id: string;
+  app_id: string;
+  app_title?: string;
+  user_name: string;
+  user_email: string;
+  subject: string;
+  description: string;
+  version?: string;
+  os?: string;
+  media_files?: string[];
+  status: 'new' | 'investigating' | 'resolved' | 'closed';
+  admin_notes?: string;
+  created_at: string;
+  updated_at?: string;
+};
+
 const SOFTWARE_PRESETS = [
   { name: 'Adobe Illustrator', icon: '/icons/illustrator.svg' },
   { name: 'Adobe Photoshop', icon: '/icons/photoshop.svg' },
@@ -54,16 +74,34 @@ const SOFTWARE_PRESETS = [
   { name: 'Unreal Engine', icon: '/icons/unreal.svg' }
 ];
 
+const LANGUAGE_PRESETS = [
+  "Հայերեն",
+  "English",
+  "Русский",
+  "Français",
+  "Deutsch",
+  "Español"
+];
+
 export default function AdminAppsManager({ token }: { token: string | null }) {
-  const [activeSubTab, setActiveSubTab] = useState<'apps' | 'reviews'>('apps');
+  const [activeSubTab, setActiveSubTab] = useState<'apps' | 'reviews' | 'bug_reports'>('apps');
   const [apps, setApps] = useState<AppItem[]>([]);
   const [reviews, setReviews] = useState<AppReview[]>([]);
+  const [bugReports, setBugReports] = useState<AppBugReport[]>([]);
+  const [bugReportsFilter, setBugReportsFilter] = useState<'all' | 'new' | 'investigating' | 'resolved' | 'closed'>('all');
+  const [bugReportsSearch, setBugReportsSearch] = useState("");
+  const [selectedBugReport, setSelectedBugReport] = useState<AppBugReport | null>(null);
+  const [reportAdminNotes, setReportAdminNotes] = useState<string>('');
+  const [savingReportNotes, setSavingReportNotes] = useState(false);
+  const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
 
   // Modal / Drawer state for Create / Edit App
   const [isEditing, setIsEditing] = useState(false);
   const [customSoftwareInput, setCustomSoftwareInput] = useState("");
+  const [customLanguageInput, setCustomLanguageInput] = useState("");
   const [editingApp, setEditingApp] = useState<AppItem>({
     id: "",
     title_am: "",
@@ -82,10 +120,13 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
     store_url: "",
     cover_image: "",
     gallery_images: [],
+    languages: ["Հայերեն", "English"],
     version: "v1.0.0",
     release_date: new Date().toISOString().split("T")[0],
     updated_at: new Date().toISOString().split("T")[0],
-    downloads_count: 0
+    downloads_count: 0,
+    is_draft: false,
+    status: "published"
   });
 
   const [savingApp, setSavingApp] = useState(false);
@@ -96,27 +137,32 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
-    if (isEditing) {
+    if (isEditing || !!selectedBugReport || !!selectedMediaUrl) {
       const prevOverflow = document.body.style.overflow;
       document.body.style.overflow = "hidden";
       return () => {
         document.body.style.overflow = prevOverflow;
       };
     }
-  }, [isEditing]);
+  }, [isEditing, selectedBugReport, selectedMediaUrl]);
 
   const mdFileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const downloadFileInputRef = useRef<HTMLInputElement>(null);
   const hostIconInputRef = useRef<HTMLInputElement>(null);
 
-  // Load apps & reviews
+  // Load apps, reviews & bug reports
   const loadData = async () => {
     setLoading(true);
     try {
-      const [appsRes, revRes] = await Promise.all([
-        fetch("/api/apps"),
+      const [appsRes, revRes, bugRes] = await Promise.all([
+        fetch("/api/apps?include_drafts=true", {
+          headers: { Authorization: token || "" }
+        }),
         fetch("/api/apps/reviews?all=true", {
+          headers: { Authorization: token || "" }
+        }),
+        fetch("/api/apps/bug-reports", {
           headers: { Authorization: token || "" }
         })
       ]);
@@ -130,8 +176,13 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
         const revData = await revRes.json();
         setReviews(revData || []);
       }
+
+      if (bugRes.ok) {
+        const bugData = await bugRes.json();
+        setBugReports(bugData || []);
+      }
     } catch (e) {
-      console.error("Failed to load apps/reviews:", e);
+      console.error("Failed to load apps/reviews/bug reports:", e);
     } finally {
       setLoading(false);
     }
@@ -140,6 +191,73 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
   useEffect(() => {
     loadData();
   }, [token]);
+
+  // Update bug report status
+  const handleUpdateBugStatus = async (id: string, newStatus: 'new' | 'investigating' | 'resolved' | 'closed') => {
+    try {
+      const res = await fetch("/api/apps/bug-reports", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token || ""
+        },
+        body: JSON.stringify({ id, status: newStatus })
+      });
+      if (res.ok) {
+        setBugReports(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r));
+        if (selectedBugReport && selectedBugReport.id === id) {
+          setSelectedBugReport(prev => prev ? { ...prev, status: newStatus } : null);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to update bug report status:", err);
+    }
+  };
+
+  // Save admin notes on bug report
+  const handleSaveBugNotes = async (id: string) => {
+    setSavingReportNotes(true);
+    try {
+      const res = await fetch("/api/apps/bug-reports", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token || ""
+        },
+        body: JSON.stringify({ id, admin_notes: reportAdminNotes })
+      });
+      if (res.ok) {
+        setBugReports(prev => prev.map(r => r.id === id ? { ...r, admin_notes: reportAdminNotes } : r));
+        if (selectedBugReport && selectedBugReport.id === id) {
+          setSelectedBugReport(prev => prev ? { ...prev, admin_notes: reportAdminNotes } : null);
+        }
+        alert("Նշումները հաջողությամբ պահպանվեցին:");
+      }
+    } catch (err) {
+      console.error("Failed to save admin notes:", err);
+    } finally {
+      setSavingReportNotes(false);
+    }
+  };
+
+  // Delete bug report
+  const handleDeleteBugReport = async (id: string) => {
+    if (!confirm("Վստա՞հ եք, որ ցանկանում եք ջնջել այս զեկույցը:")) return;
+    try {
+      const res = await fetch(`/api/apps/bug-reports?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        headers: { Authorization: token || "" }
+      });
+      if (res.ok) {
+        setBugReports(prev => prev.filter(r => r.id !== id));
+        if (selectedBugReport && selectedBugReport.id === id) {
+          setSelectedBugReport(null);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to delete bug report:", err);
+    }
+  };
 
   // Open Edit or New
   const handleOpenNew = () => {
@@ -163,17 +281,28 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
       store_url: "",
       cover_image: "",
       gallery_images: [],
+      languages: ["Հայերեն", "English"],
       version: "v1.0.0",
       release_date: today,
       updated_at: today,
-      downloads_count: 0
+      downloads_count: 0,
+      is_draft: false,
+      status: "published"
     });
+    setCustomLanguageInput("");
     setMdPreviewTab("edit");
     setIsEditing(true);
   };
 
   const handleOpenEdit = (app: AppItem) => {
     const today = new Date().toISOString().split("T")[0];
+    const isDraft = app.status === 'draft' || !!app.is_draft;
+    const languages = Array.isArray(app.languages) && app.languages.length > 0
+      ? app.languages
+      : (typeof app.languages === 'string'
+          ? (app.languages as string).split(',').map(s => s.trim()).filter(Boolean)
+          : ["Հայերեն", "English"]);
+
     setEditingApp({
       id: app.id || "",
       title_am: app.title_am || "",
@@ -192,13 +321,53 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
       store_url: app.store_url || "",
       cover_image: app.cover_image || "",
       gallery_images: Array.isArray(app.gallery_images) ? app.gallery_images : [],
+      languages: languages.length > 0 ? languages : ["Հայերեն", "English"],
       version: app.version || "v1.0.0",
       release_date: app.release_date || today,
       updated_at: app.updated_at ? app.updated_at.split("T")[0] : today,
-      downloads_count: app.downloads_count ?? 0
+      downloads_count: app.downloads_count ?? 0,
+      is_draft: isDraft,
+      status: isDraft ? 'draft' : 'published'
     });
+    setCustomLanguageInput("");
     setMdPreviewTab("edit");
     setIsEditing(true);
+  };
+
+  // Language selection helpers
+  const selectedLanguagesList = React.useMemo(() => {
+    if (!editingApp.languages || !Array.isArray(editingApp.languages)) return ["Հայերեն"];
+    return editingApp.languages;
+  }, [editingApp.languages]);
+
+  const handleToggleLanguage = (lang: string) => {
+    setEditingApp(prev => {
+      const cur = prev.languages || [];
+      const exists = cur.some(l => l.toLowerCase() === lang.toLowerCase());
+      const next = exists
+        ? cur.filter(l => l.toLowerCase() !== lang.toLowerCase())
+        : [...cur, lang];
+      return { ...prev, languages: next.length > 0 ? next : [lang] };
+    });
+  };
+
+  const handleAddCustomLanguage = () => {
+    const val = customLanguageInput.trim();
+    if (!val) return;
+    setEditingApp(prev => {
+      const cur = prev.languages || [];
+      if (cur.some(l => l.toLowerCase() === val.toLowerCase())) return prev;
+      return { ...prev, languages: [...cur, val] };
+    });
+    setCustomLanguageInput("");
+  };
+
+  const handleRemoveLanguage = (lang: string) => {
+    setEditingApp(prev => {
+      const cur = prev.languages || [];
+      const next = cur.filter(l => l.toLowerCase() !== lang.toLowerCase());
+      return { ...prev, languages: next };
+    });
   };
 
   // Software selection helpers
@@ -348,12 +517,39 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
   };
 
   // Save App
-  const handleSaveApp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingApp.title_am || !editingApp.title_en) {
-      alert("Խնդրում ենք լրացնել հավելվածի անվանումը (Հայերեն և Անգլերեն):");
-      return;
+  const handleSaveApp = async (e?: React.FormEvent, overrideStatus?: 'published' | 'draft') => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
     }
+
+    const nextStatus = overrideStatus || editingApp.status || (editingApp.is_draft ? 'draft' : 'published');
+    const isDraft = nextStatus === 'draft';
+
+    // Only enforce mandatory fields if PUBLISHING
+    if (!isDraft) {
+      if (!editingApp.title_am?.trim() || !editingApp.title_en?.trim()) {
+        alert("Հրապարակելու համար խնդրում ենք լրացնել հավելվածի անվանումը (Հայերեն և Անգլերեն):");
+        return;
+      }
+      if (editingApp.app_type === 'plugin' && !editingApp.host_app?.trim()) {
+        alert("Հրապարակելու համար խնդրում ենք նշել առնվազն մեկ ծրագիր (Software):");
+        return;
+      }
+    }
+
+    const finalId = editingApp.id?.trim() || ("app-" + Math.random().toString(36).substring(2, 8));
+    const finalTitleAm = editingApp.title_am?.trim() || editingApp.title_en?.trim() || (isDraft ? "Անանուն սևագիր" : "");
+    const finalTitleEn = editingApp.title_en?.trim() || editingApp.title_am?.trim() || (isDraft ? "Untitled Draft" : "");
+
+    const appToSave: AppItem = {
+      ...editingApp,
+      id: finalId,
+      title_am: finalTitleAm,
+      title_en: finalTitleEn,
+      is_draft: isDraft,
+      status: nextStatus,
+      languages: selectedLanguagesList
+    };
 
     setSavingApp(true);
     try {
@@ -363,13 +559,13 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
           "Content-Type": "application/json",
           Authorization: token || ""
         },
-        body: JSON.stringify(editingApp)
+        body: JSON.stringify(appToSave)
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to save app");
 
-      alert("Հավելվածը հաջողությամբ պահպանվեց:");
+      alert(isDraft ? "Հավելվածը հաջողությամբ պահպանվեց որպես սևագիր:" : "Հավելվածը հաջողությամբ պահպանվեց:");
       setIsEditing(false);
       loadData();
     } catch (err: any) {
@@ -440,16 +636,42 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
   };
 
   const pendingReviewsCount = reviews.filter(r => r.status === 'pending').length;
+  const publishedAppsCount = apps.filter(a => !a.is_draft && a.status !== 'draft').length;
+  const draftAppsCount = apps.filter(a => a.is_draft || a.status === 'draft').length;
+  const newBugReportsCount = bugReports.filter(r => r.status === 'new').length;
 
-  const filteredApps = apps.filter(a =>
-    a.title_am.toLowerCase().includes(search.toLowerCase()) ||
-    a.title_en.toLowerCase().includes(search.toLowerCase()) ||
-    a.host_app.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredApps = apps.filter(a => {
+    const isDraft = a.status === 'draft' || !!a.is_draft;
+    if (statusFilter === 'published' && isDraft) return false;
+    if (statusFilter === 'draft' && !isDraft) return false;
+
+    const q = search.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      a.title_am.toLowerCase().includes(q) ||
+      a.title_en.toLowerCase().includes(q) ||
+      (a.host_app && a.host_app.toLowerCase().includes(q)) ||
+      (Array.isArray(a.languages) && a.languages.some(l => l.toLowerCase().includes(q)))
+    );
+  });
 
   const filteredReviews = reviews.filter(r => {
     if (reviewsFilter === 'all') return true;
     return r.status === reviewsFilter;
+  });
+
+  const filteredBugReports = bugReports.filter(r => {
+    if (bugReportsFilter !== 'all' && r.status !== bugReportsFilter) return false;
+    const q = bugReportsSearch.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      r.subject.toLowerCase().includes(q) ||
+      r.description.toLowerCase().includes(q) ||
+      r.user_name.toLowerCase().includes(q) ||
+      r.user_email.toLowerCase().includes(q) ||
+      (r.app_title && r.app_title.toLowerCase().includes(q)) ||
+      r.app_id.toLowerCase().includes(q)
+    );
   });
 
   return (
@@ -530,6 +752,40 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                 </span>
               )}
             </button>
+            <button
+              type="button"
+              onClick={() => setActiveSubTab('bug_reports')}
+              style={{
+                background: activeSubTab === 'bug_reports' ? 'var(--switcher-capsule-bg, rgba(255,255,255,0.15))' : 'transparent',
+                color: activeSubTab === 'bug_reports' ? '#ffffff' : 'var(--muted)',
+                border: 'none',
+                padding: '8px 18px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '0.86rem',
+                fontWeight: 600,
+                transition: 'all 0.2s ease',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <span>Վրեպների Զեկույցներ</span>
+              {newBugReportsCount > 0 && (
+                <span
+                  style={{
+                    background: '#f59e0b',
+                    color: '#000',
+                    fontWeight: 800,
+                    borderRadius: '10px',
+                    padding: '1px 6px',
+                    fontSize: '0.72rem'
+                  }}
+                >
+                  {newBugReportsCount}
+                </span>
+              )}
+            </button>
           </div>
 
           <hd-button
@@ -557,18 +813,75 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
           ══════════════════════════════════════════════════════════════════════ */}
       {activeSubTab === 'apps' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Search bar */}
-          <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
-            <hd-input
-              suppressHydrationWarning
-              placeholder="Որոնել հավելվածներ..."
-              value={search}
-              onInput={(e: any) => setSearch(e.target.value)}
-              data-width="100%"
-              data-height="42px"
-              data-thickness="2px"
-              data-font-size="13pt"
-            />
+          {/* Search bar & Status filters */}
+          <div style={{ display: 'flex', gap: '14px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: '260px' }}>
+              <hd-input
+                suppressHydrationWarning
+                placeholder="Որոնել հավելվածներ, ծրագրեր կամ լեզուներ..."
+                value={search}
+                onInput={(e: any) => setSearch(e.target.value)}
+                data-width="100%"
+                data-height="42px"
+                data-thickness="2px"
+                data-font-size="13pt"
+              />
+            </div>
+
+            {/* Status Filter Pills */}
+            <div style={{ display: 'flex', gap: '6px', background: 'var(--panel)', border: '1px solid var(--panel-border)', padding: '4px', borderRadius: '12px' }}>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('all')}
+                style={{
+                  background: statusFilter === 'all' ? 'var(--accent)' : 'transparent',
+                  color: statusFilter === 'all' ? '#ffffff' : 'var(--muted)',
+                  border: 'none',
+                  padding: '6px 14px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Բոլորը ({apps.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('published')}
+                style={{
+                  background: statusFilter === 'published' ? 'var(--accent)' : 'transparent',
+                  color: statusFilter === 'published' ? '#ffffff' : 'var(--muted)',
+                  border: 'none',
+                  padding: '6px 14px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Հրապարակված ({publishedAppsCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('draft')}
+                style={{
+                  background: statusFilter === 'draft' ? '#ff9800' : 'transparent',
+                  color: statusFilter === 'draft' ? '#ffffff' : 'var(--muted)',
+                  border: 'none',
+                  padding: '6px 14px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Սևագրեր ({draftAppsCount})
+              </button>
+            </div>
           </div>
 
           {/* Apps Table Card */}
@@ -587,6 +900,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                   <th style={{ padding: '14px 18px' }}>Հավելված</th>
                   <th style={{ padding: '14px 18px' }}>Ծրագիր</th>
                   <th style={{ padding: '14px 18px' }}>Տիպ</th>
+                  <th style={{ padding: '14px 18px' }}>Կարգավիճակ</th>
                   <th style={{ padding: '14px 18px' }}>Գին</th>
                   <th style={{ padding: '14px 18px' }}>Վերսիա</th>
                   <th style={{ padding: '14px 18px', textAlign: 'right' }}>Գործողություններ</th>
@@ -595,7 +909,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
               <tbody>
                 {filteredApps.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ padding: '40px', textAlign: 'center', color: 'var(--muted)' }}>
+                    <td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: 'var(--muted)' }}>
                       Հավելվածներ չեն գտնվել:
                     </td>
                   </tr>
@@ -608,7 +922,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                         transition: 'background 0.2s'
                       }}
                     >
-                      {/* App Title & Thumbnail */}
+                      {/* App Title & Thumbnail & Languages */}
                       <td style={{ padding: '12px 18px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <img
@@ -629,6 +943,25 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                             <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
                               {app.title_en}
                             </span>
+                            {app.languages && app.languages.length > 0 && (
+                              <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                                {app.languages.map((l, i) => (
+                                  <span
+                                    key={i}
+                                    style={{
+                                      fontSize: '0.68rem',
+                                      padding: '1px 5px',
+                                      borderRadius: '4px',
+                                      background: 'rgba(255,255,255,0.06)',
+                                      color: 'var(--muted)',
+                                      border: '1px solid var(--panel-border)'
+                                    }}
+                                  >
+                                    {l}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -673,6 +1006,45 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                         >
                           {app.app_type === 'standalone' ? 'Standalone' : 'Plugin'}
                         </span>
+                      </td>
+
+                      {/* Status */}
+                      <td style={{ padding: '12px 18px' }}>
+                        {app.is_draft || app.status === 'draft' ? (
+                          <span
+                            style={{
+                              padding: '3px 8px',
+                              borderRadius: '10px',
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              background: 'rgba(255, 152, 0, 0.15)',
+                              color: '#ff9800',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ff9800' }} />
+                            Սևագիր
+                          </span>
+                        ) : (
+                          <span
+                            style={{
+                              padding: '3px 8px',
+                              borderRadius: '10px',
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              background: 'rgba(76, 175, 80, 0.15)',
+                              color: '#4caf50',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4caf50' }} />
+                            Հրապարակված
+                          </span>
+                        )}
                       </td>
 
                       {/* Price */}
@@ -912,6 +1284,256 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
         </div>
       )}
 
+      {/* ══════════════════════════════════════════════════════════════════════
+          SUBTAB 3: BUG REPORTS MANAGEMENT
+          ══════════════════════════════════════════════════════════════════════ */}
+      {activeSubTab === 'bug_reports' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Status Filter Tabs & Search */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.05)', padding: '5px', borderRadius: '12px', width: 'fit-content', flexWrap: 'wrap' }}>
+              {[
+                { id: 'all', label: `Բոլորը (${bugReports.length})` },
+                { id: 'new', label: `Նոր (${bugReports.filter(r => r.status === 'new').length})` },
+                { id: 'investigating', label: `Ուսումնասիրվում է (${bugReports.filter(r => r.status === 'investigating').length})` },
+                { id: 'resolved', label: `Լուծված (${bugReports.filter(r => r.status === 'resolved').length})` },
+                { id: 'closed', label: `Փակված (${bugReports.filter(r => r.status === 'closed').length})` },
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setBugReportsFilter(tab.id as any)}
+                  style={{
+                    background: bugReportsFilter === tab.id ? 'var(--switcher-capsule-bg, rgba(255,255,255,0.15))' : 'transparent',
+                    color: bugReportsFilter === tab.id ? '#ffffff' : 'var(--muted)',
+                    border: 'none',
+                    padding: '7px 16px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '0.84rem',
+                    fontWeight: 600,
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Search */}
+            <div style={{ minWidth: '260px' }}>
+              <input
+                type="text"
+                value={bugReportsSearch}
+                onChange={e => setBugReportsSearch(e.target.value)}
+                placeholder="Որոնել ըստ թեմայի, հավելվածի, էլ․ հասցեի..."
+                style={{
+                  width: '100%',
+                  padding: '9px 14px',
+                  background: 'var(--panel)',
+                  border: '1px solid var(--panel-border)',
+                  borderRadius: '10px',
+                  color: 'var(--text)',
+                  fontSize: '0.86rem',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Bug Reports List */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {filteredBugReports.length === 0 ? (
+              <div style={{ padding: '60px', textAlign: 'center', background: 'var(--panel)', borderRadius: '20px', border: '1px solid var(--panel-border)', color: 'var(--muted)' }}>
+                Վրեպների զեկույցներ չկան:
+              </div>
+            ) : (
+              filteredBugReports.map((report) => {
+                const targetApp = apps.find(a => a.id === report.app_id);
+                const statusColors = {
+                  new: { bg: 'rgba(245, 158, 11, 0.15)', text: '#f59e0b', label: 'Նոր' },
+                  investigating: { bg: 'rgba(33, 150, 243, 0.15)', text: '#2196f3', label: 'Ուսումնասիրվում է' },
+                  resolved: { bg: 'rgba(76, 175, 80, 0.15)', text: '#4caf50', label: 'Լուծված' },
+                  closed: { bg: 'rgba(158, 158, 158, 0.15)', text: '#9e9e9e', label: 'Փակված' }
+                }[report.status] || { bg: 'rgba(255,255,255,0.1)', text: 'var(--muted)', label: report.status };
+
+                return (
+                  <div
+                    key={report.id}
+                    style={{
+                      background: 'var(--panel)',
+                      borderRadius: '18px',
+                      border: report.status === 'new' ? '1.5px solid rgba(245, 158, 11, 0.4)' : '1px solid var(--panel-border)',
+                      padding: '20px 24px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      gap: '20px',
+                      boxShadow: 'var(--shadow)',
+                      transition: 'border-color 0.2s'
+                    }}
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1 }}>
+                      {/* Top Badges Row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                        {/* Status Badge */}
+                        <span
+                          style={{
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            padding: '3px 10px',
+                            borderRadius: '20px',
+                            background: statusColors.bg,
+                            color: statusColors.text,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px'
+                          }}
+                        >
+                          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: statusColors.text }} />
+                          {statusColors.label}
+                        </span>
+
+                        {/* App Badge */}
+                        <span
+                          style={{
+                            background: 'rgba(74, 137, 124, 0.12)',
+                            color: 'var(--accent)',
+                            fontSize: '0.78rem',
+                            fontWeight: 700,
+                            padding: '3px 10px',
+                            borderRadius: '12px'
+                          }}
+                        >
+                          {targetApp ? targetApp.title_am : (report.app_title || report.app_id)}
+                        </span>
+
+                        {report.version && (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--muted)', background: 'var(--bg)', padding: '2px 8px', borderRadius: '8px', border: '1px solid var(--panel-border)' }}>
+                            {report.version}
+                          </span>
+                        )}
+
+                        {report.os && (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--muted)', background: 'var(--bg)', padding: '2px 8px', borderRadius: '8px', border: '1px solid var(--panel-border)' }}>
+                            {report.os}
+                          </span>
+                        )}
+
+                        {report.media_files && report.media_files.length > 0 && (
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#d97706', background: 'rgba(245, 158, 11, 0.12)', padding: '2px 8px', borderRadius: '8px' }}>
+                            📎 {report.media_files.length} նիշք
+                          </span>
+                        )}
+
+                        <span style={{ fontSize: '0.75rem', color: 'var(--muted)', marginLeft: 'auto' }}>
+                          {new Date(report.created_at).toLocaleString('hy-AM', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+
+                      {/* Subject */}
+                      <h4 style={{ margin: 0, fontSize: '1.08rem', fontWeight: 800, color: 'var(--text)' }}>
+                        {report.subject}
+                      </h4>
+
+                      {/* Description Excerpt */}
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: '0.88rem',
+                          color: 'var(--text)',
+                          opacity: 0.8,
+                          lineHeight: '1.5',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden'
+                        }}
+                      >
+                        {report.description}
+                      </p>
+
+                      {/* Reporter Info */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '0.82rem', color: 'var(--muted)', flexWrap: 'wrap' }}>
+                        <span>
+                          👤 <strong>{report.user_name}</strong>
+                        </span>
+                        <span>
+                          ✉️ <a href={`mailto:${report.user_email}?subject=Re: [Վրեպի Զեկույց] ${encodeURIComponent(report.subject)}`} style={{ color: 'var(--accent)', textDecoration: 'underline' }}>{report.user_email}</a>
+                        </span>
+                        {report.admin_notes && (
+                          <span style={{ color: '#d97706', fontStyle: 'italic' }}>
+                            💬 Նշում՝ {report.admin_notes}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actions Right */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end', flexShrink: 0 }}>
+                      <select
+                        value={report.status}
+                        onChange={(e) => handleUpdateBugStatus(report.id, e.target.value as any)}
+                        style={{
+                          background: 'var(--bg)',
+                          border: '1px solid var(--panel-border)',
+                          color: 'var(--text)',
+                          padding: '5px 8px',
+                          borderRadius: '8px',
+                          fontSize: '0.78rem',
+                          fontWeight: 600,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value="new">Նոր</option>
+                        <option value="investigating">Ուսումնասիրվում է</option>
+                        <option value="resolved">Լուծված</option>
+                        <option value="closed">Փակված</option>
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedBugReport(report);
+                          setReportAdminNotes(report.admin_notes || '');
+                        }}
+                        style={{
+                          background: 'rgba(74, 137, 124, 0.12)',
+                          color: 'var(--accent)',
+                          border: 'none',
+                          padding: '6px 14px',
+                          borderRadius: '8px',
+                          fontSize: '0.8rem',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Դիտել
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteBugReport(report.id)}
+                        style={{
+                          background: 'transparent',
+                          color: '#e53935',
+                          border: 'none',
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Ջնջել
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ══════════════════════════════════════════════════════════════════════
           CREATE / EDIT APP MODAL DRAWER
@@ -1099,8 +1721,8 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                 </div>
               </div>
 
-              {/* ID & Type */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              {/* ID, Type & Publication Status */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
                 <div>
                   <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>
                     Հավելվածի ID (URL Slug) *
@@ -1119,7 +1741,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
 
                 <div>
                   <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>
-                    Կարգավիճակ / Տիպ *
+                    Տիպ (Type) *
                   </label>
                   <hd-segment
                     suppressHydrationWarning
@@ -1142,6 +1764,35 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                     </span>
                     <span value="standalone" {...(editingApp.app_type === 'standalone' ? { selected: true } : {})}>
                       Առանձին Հավելված
+                    </span>
+                  </hd-segment>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>
+                    Հրապարակման Կարգավիճակ *
+                  </label>
+                  <hd-segment
+                    suppressHydrationWarning
+                    value={editingApp.status || (editingApp.is_draft ? "draft" : "published")}
+                    onChange={(e: any) => {
+                      const val = e.target.value as 'published' | 'draft';
+                      setEditingApp(p => ({
+                        ...p,
+                        status: val,
+                        is_draft: val === 'draft'
+                      }));
+                    }}
+                    data-width="100%"
+                    data-height="40px"
+                    data-thickness="2px"
+                    data-font-size="0.84rem"
+                  >
+                    <span value="published" {...((!editingApp.status || editingApp.status === 'published') && !editingApp.is_draft ? { selected: true } : {})}>
+                      Հրապարակված
+                    </span>
+                    <span value="draft" {...(editingApp.status === 'draft' || editingApp.is_draft ? { selected: true } : {})}>
+                      Սևագիր
                     </span>
                   </hd-segment>
                 </div>
@@ -1295,6 +1946,148 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                   )}
                 </div>
               )}
+
+              {/* Languages Selection (Checkboxes / Chips + Custom) */}
+              <div
+                style={{
+                  background: 'var(--bg)',
+                  padding: '18px 20px',
+                  borderRadius: '16px',
+                  border: '1px solid var(--panel-border)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text)', display: 'block' }}>
+                      Օգտագործվող լեզուներ (Languages) *
+                    </label>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
+                      Ընտրեք կամ ավելացրեք այն լեզուները, որոնք առկա են հավելվածում կամ խրվակում:
+                    </span>
+                  </div>
+                  {selectedLanguagesList.length > 0 && (
+                    <span
+                      style={{
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        padding: '3px 10px',
+                        borderRadius: '12px',
+                        background: 'rgba(74, 137, 124, 0.15)',
+                        color: 'var(--accent)'
+                      }}
+                    >
+                      Ընտրված է {selectedLanguagesList.length} լեզու
+                    </span>
+                  )}
+                </div>
+
+                {/* Preset Language Chips */}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {LANGUAGE_PRESETS.map((lang) => {
+                    const isSelected = selectedLanguagesList.some(l => l.toLowerCase() === lang.toLowerCase());
+                    return (
+                      <button
+                        key={lang}
+                        type="button"
+                        onClick={() => handleToggleLanguage(lang)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '6px 14px',
+                          borderRadius: '8px',
+                          background: isSelected ? 'rgba(74, 137, 124, 0.2)' : 'var(--panel)',
+                          border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--panel-border)'}`,
+                          color: isSelected ? 'var(--accent)' : 'var(--text)',
+                          fontSize: '0.82rem',
+                          fontWeight: isSelected ? 700 : 500,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <span>{isSelected ? '✓ ' : '+ '}{lang}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Add Custom Language */}
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <div style={{ flex: 1 }}>
+                    <hd-input
+                      suppressHydrationWarning
+                      placeholder="+ Այլ լեզու (օրինակ՝ Italiano, 日本語)..."
+                      value={customLanguageInput}
+                      onInput={(e: any) => setCustomLanguageInput(e.target.value)}
+                      onKeyDown={(e: any) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddCustomLanguage();
+                        }
+                      }}
+                      data-width="100%"
+                      data-height="36px"
+                      data-thickness="2px"
+                      data-font-size="12pt"
+                    />
+                  </div>
+                  <hd-button
+                    suppressHydrationWarning
+                    data-height="36px"
+                    data-thickness="2px"
+                    data-font-size="0.8rem"
+                    data-color="var(--accent)"
+                    data-text-color="#ffffff"
+                    onClick={handleAddCustomLanguage}
+                  >
+                    <span style={{ padding: '0 12px' }}>Ավելացնել</span>
+                  </hd-button>
+                </div>
+
+                {/* Selected Languages Chips List */}
+                {selectedLanguagesList.length > 0 && (
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--muted)', marginRight: '4px' }}>Ընտրված՝</span>
+                    {selectedLanguagesList.map((lang) => (
+                      <span
+                        key={lang}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '3px 10px',
+                          borderRadius: '6px',
+                          background: 'rgba(74, 137, 124, 0.15)',
+                          color: 'var(--accent)',
+                          border: '1px solid var(--accent)',
+                          fontSize: '0.8rem',
+                          fontWeight: 700
+                        }}
+                      >
+                        {lang}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveLanguage(lang)}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'inherit',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            lineHeight: 1,
+                            padding: '0 2px'
+                          }}
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Pricing & Download / Store URL */}
               <div
@@ -1690,6 +2483,27 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                 >
                   <span style={{ padding: '0 16px' }}>Չեղարկել</span>
                 </hd-button>
+
+                <hd-button
+                  suppressHydrationWarning
+                  data-height="38px"
+                  data-thickness="2px"
+                  data-font-size="0.85rem"
+                  data-color="rgba(255, 152, 0, 0.15)"
+                  data-text-color="#ff9800"
+                  onClick={(e: any) => handleSaveApp(e, 'draft')}
+                  disabled={savingApp}
+                >
+                  <span style={{ padding: '0 16px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                      <polyline points="17 21 17 13 7 13 7 21" />
+                      <polyline points="7 3 7 8 15 8" />
+                    </svg>
+                    <span>{savingApp ? "Պահպանվում է..." : "Պահպանել որպես սևագիր"}</span>
+                  </span>
+                </hd-button>
+
                 <hd-button
                   suppressHydrationWarning
                   data-height="38px"
@@ -1697,17 +2511,530 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                   data-font-size="0.85rem"
                   data-color="var(--accent)"
                   data-text-color="#ffffff"
-                  onClick={(e: any) => {
-                    handleSaveApp(e);
-                  }}
+                  onClick={(e: any) => handleSaveApp(e, 'published')}
                   disabled={savingApp}
                 >
-                  <span style={{ padding: '0 18px' }}>
-                    {savingApp ? "Պահպանվում է..." : "Պահպանել Հավելվածը"}
+                  <span style={{ padding: '0 18px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                    <span>{savingApp ? "Պահպանվում է..." : "Հրապարակել Հավելվածը"}</span>
                   </span>
                 </hd-button>
               </div>
             </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          SELECTED BUG REPORT DETAIL MODAL
+          ══════════════════════════════════════════════════════════════════════ */}
+      {selectedBugReport && typeof document !== 'undefined' && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            width: '100vw',
+            height: '100vh',
+            background: 'rgba(0,0,0,0.82)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            zIndex: 99999998,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            boxSizing: 'border-box'
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setSelectedBugReport(null);
+            }
+          }}
+        >
+          <div
+            style={{
+              background: 'var(--panel)',
+              borderRadius: '20px',
+              border: '1px solid var(--panel-border)',
+              width: 'min(780px, 96vw)',
+              maxHeight: '92vh',
+              boxShadow: '0 24px 70px rgba(0,0,0,0.7)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              position: 'relative'
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '18px 24px',
+                borderBottom: '1px solid var(--panel-border)',
+                background: 'var(--panel)',
+                flexShrink: 0
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '1.3rem' }}>🐛</span>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--text)' }}>
+                    Վրեպի Զեկույց
+                  </h3>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: '2px' }}>
+                    ID: {selectedBugReport.id} • {new Date(selectedBugReport.created_at).toLocaleString('hy-AM')}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {/* Status Dropdown */}
+                <select
+                  value={selectedBugReport.status}
+                  onChange={(e) => handleUpdateBugStatus(selectedBugReport.id, e.target.value as any)}
+                  style={{
+                    background: 'var(--bg)',
+                    border: '1px solid var(--panel-border)',
+                    color: 'var(--text)',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="new">🟠 Նոր</option>
+                  <option value="investigating">🔵 Ուսումնասիրվում է</option>
+                  <option value="resolved">🟢 Լուծված</option>
+                  <option value="closed">⚪ Փակված</option>
+                </select>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedBugReport(null)}
+                  style={{
+                    background: 'var(--bg)',
+                    border: '1px solid var(--panel-border)',
+                    color: 'var(--text)',
+                    width: '34px',
+                    height: '34px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    fontSize: '1.1rem',
+                    lineHeight: 1
+                  }}
+                >
+                  &times;
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div
+              style={{
+                padding: '24px',
+                overflowY: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '20px'
+              }}
+            >
+              {/* Meta Info Grid */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                  gap: '12px',
+                  background: 'var(--bg)',
+                  padding: '16px',
+                  borderRadius: '14px',
+                  border: '1px solid var(--panel-border)'
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em' }}>
+                    Հավելված
+                  </div>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--accent)', marginTop: '2px' }}>
+                    {apps.find(a => a.id === selectedBugReport.app_id)?.title_am || selectedBugReport.app_title || selectedBugReport.app_id}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em' }}>
+                    Տարբերակ / Version
+                  </div>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 600, color: 'var(--text)', marginTop: '2px' }}>
+                    {selectedBugReport.version || 'Չի նշված'}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em' }}>
+                    Օպերացիոն Համակարգ
+                  </div>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 600, color: 'var(--text)', marginTop: '2px' }}>
+                    {selectedBugReport.os || 'Չի նշված'}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em' }}>
+                    Ուղարկող (Օգտատեր)
+                  </div>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 600, color: 'var(--text)', marginTop: '2px' }}>
+                    {selectedBugReport.user_name}
+                  </div>
+                  <a
+                    href={`mailto:${selectedBugReport.user_email}?subject=Re: [Վրեպի Զեկույց] ${encodeURIComponent(selectedBugReport.subject)}`}
+                    style={{ fontSize: '0.82rem', color: 'var(--accent)', textDecoration: 'underline', display: 'inline-block', marginTop: '2px' }}
+                  >
+                    {selectedBugReport.user_email}
+                  </a>
+                </div>
+              </div>
+
+              {/* Subject & Description */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '0.76rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em' }}>
+                  Թեմա
+                </div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'var(--text)' }}>
+                  {selectedBugReport.subject}
+                </h3>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ fontSize: '0.76rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em' }}>
+                  Նկարագրություն
+                </div>
+                <div
+                  style={{
+                    background: 'var(--bg)',
+                    border: '1px solid var(--panel-border)',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    fontSize: '0.92rem',
+                    lineHeight: '1.6',
+                    color: 'var(--text)',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word'
+                  }}
+                >
+                  {selectedBugReport.description}
+                </div>
+              </div>
+
+              {/* Media Attachments Section */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ fontSize: '0.76rem', color: 'var(--muted)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em' }}>
+                    Կցված Նիշքեր ({selectedBugReport.media_files ? selectedBugReport.media_files.length : 0})
+                  </div>
+                </div>
+
+                {(!selectedBugReport.media_files || selectedBugReport.media_files.length === 0) ? (
+                  <div style={{ fontSize: '0.86rem', color: 'var(--muted)', fontStyle: 'italic', background: 'var(--bg)', padding: '12px 16px', borderRadius: '10px', border: '1px solid var(--panel-border)' }}>
+                    Նիշքեր կցված չեն:
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
+                    {selectedBugReport.media_files.map((fileUrl, idx) => {
+                      const isImg = /\.(png|jpe?g|webp|gif|svg)(\?.*)?$/i.test(fileUrl);
+                      const isVid = /\.(mp4|webm|mov|ogg)(\?.*)?$/i.test(fileUrl);
+                      const filename = fileUrl.split('/').pop() || `Նիշք #${idx + 1}`;
+
+                      if (isImg) {
+                        return (
+                          <div
+                            key={idx}
+                            onClick={() => setSelectedMediaUrl(fileUrl)}
+                            style={{
+                              position: 'relative',
+                              borderRadius: '10px',
+                              overflow: 'hidden',
+                              aspectRatio: '16/10',
+                              border: '1px solid var(--panel-border)',
+                              background: '#000',
+                              cursor: 'pointer',
+                              boxShadow: 'var(--shadow)'
+                            }}
+                            title="Սեղմեք մեծացնելու համար"
+                          >
+                            <img
+                              src={fileUrl}
+                              alt=""
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                            <div
+                              style={{
+                                position: 'absolute',
+                                inset: 0,
+                                background: 'rgba(0,0,0,0.3)',
+                                opacity: 0,
+                                transition: 'opacity 0.2s ease',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#fff',
+                                fontWeight: 700,
+                                fontSize: '0.8rem'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                              onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
+                            >
+                              🔍 Դիտել
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      if (isVid) {
+                        return (
+                          <div
+                            key={idx}
+                            style={{
+                              borderRadius: '10px',
+                              overflow: 'hidden',
+                              border: '1px solid var(--panel-border)',
+                              background: '#000'
+                            }}
+                          >
+                            <video
+                              src={fileUrl}
+                              controls
+                              style={{ width: '100%', height: 'auto', maxHeight: '160px', display: 'block' }}
+                            />
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <a
+                          key={idx}
+                          href={fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '12px',
+                            background: 'var(--bg)',
+                            border: '1px solid var(--panel-border)',
+                            borderRadius: '10px',
+                            color: 'var(--text)',
+                            textDecoration: 'none',
+                            fontSize: '0.82rem',
+                            wordBreak: 'break-all'
+                          }}
+                        >
+                          <span style={{ fontSize: '1.2rem' }}>📄</span>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {filename}
+                          </span>
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Admin Internal Notes */}
+              <div
+                style={{
+                  background: 'var(--bg)',
+                  borderRadius: '14px',
+                  border: '1px solid var(--panel-border)',
+                  padding: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text)' }}>
+                    📝 Ներքին Վարչական Նշումներ (Admin Notes)
+                  </label>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>
+                    Տեսանելի է միայն վարիչին
+                  </span>
+                </div>
+
+                <textarea
+                  value={reportAdminNotes}
+                  onChange={(e) => setReportAdminNotes(e.target.value)}
+                  placeholder="Գրեք նշումներ տվյալ վրեպի շտկման ընթացքի, պատճառների կամ լուծման վերաբերյալ..."
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    background: 'var(--panel)',
+                    border: '1px solid var(--panel-border)',
+                    borderRadius: '8px',
+                    padding: '10px 12px',
+                    color: 'var(--text)',
+                    fontSize: '0.86rem',
+                    fontFamily: 'inherit',
+                    resize: 'vertical',
+                    boxSizing: 'border-box'
+                  }}
+                />
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveBugNotes(selectedBugReport.id)}
+                    disabled={savingReportNotes}
+                    style={{
+                      background: 'var(--accent)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '7px 16px',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: savingReportNotes ? 'not-allowed' : 'pointer',
+                      opacity: savingReportNotes ? 0.7 : 1
+                    }}
+                  >
+                    {savingReportNotes ? 'Պահպանվում է...' : 'Պահպանել Նշումները'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '16px 24px',
+                borderTop: '1px solid var(--panel-border)',
+                background: 'var(--panel)',
+                flexShrink: 0,
+                gap: '12px',
+                flexWrap: 'wrap'
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => handleDeleteBugReport(selectedBugReport.id)}
+                style={{
+                  background: 'transparent',
+                  color: '#e53935',
+                  border: '1px solid rgba(229, 57, 53, 0.4)',
+                  padding: '8px 16px',
+                  borderRadius: '10px',
+                  fontSize: '0.84rem',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                🗑 Ջնջել Զեկույցը
+              </button>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <a
+                  href={`mailto:${selectedBugReport.user_email}?subject=Re: [HDesign] ${encodeURIComponent(selectedBugReport.subject)}`}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: 'rgba(74, 137, 124, 0.15)',
+                    border: '1px solid var(--accent)',
+                    color: 'var(--accent)',
+                    padding: '8px 18px',
+                    borderRadius: '10px',
+                    fontSize: '0.84rem',
+                    fontWeight: 700,
+                    textDecoration: 'none'
+                  }}
+                >
+                  ✉️ Պատասխանել էլ․ փոստով
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedBugReport(null)}
+                  style={{
+                    background: 'var(--bg)',
+                    border: '1px solid var(--panel-border)',
+                    color: 'var(--text)',
+                    padding: '8px 18px',
+                    borderRadius: '10px',
+                    fontSize: '0.84rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Փակել
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          MEDIA LIGHTBOX PREVIEW MODAL
+          ══════════════════════════════════════════════════════════════════════ */}
+      {selectedMediaUrl && typeof document !== 'undefined' && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.92)',
+            zIndex: 100000000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+          onClick={() => setSelectedMediaUrl(null)}
+        >
+          <div
+            style={{ position: 'relative', maxWidth: '92vw', maxHeight: '92vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={selectedMediaUrl}
+              alt="Media Preview"
+              style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: '12px', boxShadow: '0 20px 60px rgba(0,0,0,0.8)' }}
+            />
+            <button
+              type="button"
+              onClick={() => setSelectedMediaUrl(null)}
+              style={{
+                position: 'absolute',
+                top: '-16px',
+                right: '-16px',
+                background: '#e53935',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '50%',
+                width: '34px',
+                height: '34px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '18px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+              }}
+            >
+              &times;
+            </button>
           </div>
         </div>,
         document.body

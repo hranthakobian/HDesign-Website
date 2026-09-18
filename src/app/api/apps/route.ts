@@ -12,7 +12,19 @@ export async function GET(request: Request) {
     const minPrice = searchParams.get('minPrice') ? parseFloat(searchParams.get('minPrice')!) : null;
     const maxPrice = searchParams.get('maxPrice') ? parseFloat(searchParams.get('maxPrice')!) : null;
 
+    const isAuthorized = await verifyAuth(request);
+    const statusParam = searchParams.get('status');
+
     let apps = await getApps();
+
+    // Only users logged in as admin can see drafts.
+    // For non-admin visitors, strictly filter out drafts from public view.
+    if (!isAuthorized) {
+      apps = apps.filter(a => !a.is_draft && a.status !== 'draft');
+    } else if (statusParam && (statusParam === 'draft' || statusParam === 'published')) {
+      apps = apps.filter(a => (a.status === statusParam) || (statusParam === 'draft' ? !!a.is_draft : !a.is_draft));
+    }
+
     const reviews = await getAppReviews(undefined, true);
 
     // Compute reviews stats map
@@ -44,7 +56,8 @@ export async function GET(request: Request) {
         a.title_en.toLowerCase().includes(search) ||
         (a.short_desc_am && a.short_desc_am.toLowerCase().includes(search)) ||
         (a.short_desc_en && a.short_desc_en.toLowerCase().includes(search)) ||
-        a.host_app.toLowerCase().includes(search)
+        a.host_app.toLowerCase().includes(search) ||
+        (Array.isArray(a.languages) && a.languages.some(l => l.toLowerCase().includes(search)))
       );
     }
 
@@ -108,29 +121,49 @@ export async function POST(request: Request) {
       store_url,
       cover_image,
       gallery_images,
+      languages,
       version,
       release_date,
-      downloads_count
+      downloads_count,
+      is_draft,
+      status
     } = body;
 
-    if (!id || !title_am || !title_en || !host_app || !app_type) {
-      return NextResponse.json(
-        { error: 'id, title_am, title_en, host_app, and app_type are required.' },
-        { status: 400 }
-      );
+    const draftFlag = status === 'draft' || !!is_draft;
+
+    // Only enforce mandatory fields if publishing
+    if (!draftFlag) {
+      if (!title_am || !title_en || !host_app || !app_type) {
+        return NextResponse.json(
+          { error: 'title_am, title_en, host_app, and app_type are required for published apps.' },
+          { status: 400 }
+        );
+      }
     }
 
+    const finalId = (id && id.trim()) || ('app-draft-' + Math.random().toString(36).substring(2, 9));
+    const finalTitleAm = (title_am && title_am.trim()) || (title_en && title_en.trim()) || (draftFlag ? 'Անանուն սևագիր' : '');
+    const finalTitleEn = (title_en && title_en.trim()) || (title_am && title_am.trim()) || (draftFlag ? 'Untitled Draft' : '');
+    const finalHostApp = (host_app && host_app.trim()) || (app_type === 'standalone' ? 'Standalone' : 'Adobe Illustrator');
+    const finalAppType = app_type === 'standalone' ? 'standalone' : 'plugin';
+
+    const languagesList = Array.isArray(languages)
+      ? languages
+      : (typeof languages === 'string'
+          ? languages.split(',').map((s: string) => s.trim()).filter(Boolean)
+          : ['Հայերեն']);
+
     const appToSave: AppItem = {
-      id: id.trim(),
-      title_am: title_am.trim(),
-      title_en: title_en.trim(),
+      id: finalId,
+      title_am: finalTitleAm,
+      title_en: finalTitleEn,
       short_desc_am: short_desc_am || '',
       short_desc_en: short_desc_en || '',
       description_md_am: description_md_am || '',
       description_md_en: description_md_en || '',
-      host_app: host_app.trim(),
+      host_app: finalHostApp,
       host_app_icon: host_app_icon || '',
-      app_type: app_type === 'standalone' ? 'standalone' : 'plugin',
+      app_type: finalAppType,
       is_paid: !!is_paid,
       price: Number(price) || 0,
       currency: currency || 'AMD',
@@ -138,9 +171,12 @@ export async function POST(request: Request) {
       store_url: store_url || '',
       cover_image: cover_image || (Array.isArray(gallery_images) && gallery_images[0] ? gallery_images[0] : ''),
       gallery_images: Array.isArray(gallery_images) ? gallery_images : [],
+      languages: languagesList.length > 0 ? languagesList : ['Հայերեն'],
       version: version || 'v1.0.0',
       release_date: release_date || new Date().toISOString().split('T')[0],
-      downloads_count: Number(downloads_count) || 0
+      downloads_count: Number(downloads_count) || 0,
+      is_draft: draftFlag,
+      status: draftFlag ? 'draft' : 'published'
     };
 
     const saved = await saveApp(appToSave);

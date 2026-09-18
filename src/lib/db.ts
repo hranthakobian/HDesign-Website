@@ -24,6 +24,7 @@ const FONTS_FILE = isServer ? path.join(DATA_DIR, 'fonts.json') : '';
 const SUBSCRIBERS_FILE = isServer ? path.join(DATA_DIR, 'subscribers.json') : '';
 const APPS_FILE = isServer ? path.join(DATA_DIR, 'apps.json') : '';
 const APP_REVIEWS_FILE = isServer ? path.join(DATA_DIR, 'app_reviews.json') : '';
+const APP_BUG_REPORTS_FILE = isServer ? path.join(DATA_DIR, 'app_bug_reports.json') : '';
 
 // Ensure database directory and files exist
 async function ensureLocalDbFiles() {
@@ -86,6 +87,13 @@ async function ensureLocalDbFiles() {
       await fs.access(APP_REVIEWS_FILE);
     } catch {
       await fs.writeFile(APP_REVIEWS_FILE, JSON.stringify([], null, 2), 'utf-8');
+    }
+
+    // Check and create app_bug_reports.json if missing
+    try {
+      await fs.access(APP_BUG_REPORTS_FILE);
+    } catch {
+      await fs.writeFile(APP_BUG_REPORTS_FILE, JSON.stringify([], null, 2), 'utf-8');
     }
   } catch (err) {
     console.error('Error initializing local JSON database files:', err);
@@ -1204,9 +1212,12 @@ export type AppItem = {
   store_url?: string;
   cover_image?: string;
   gallery_images: string[];
+  languages?: string[];
   version: string;
   release_date: string;
   downloads_count?: number;
+  is_draft?: boolean;
+  status?: 'published' | 'draft';
   created_at?: string;
   updated_at?: string;
 };
@@ -1221,6 +1232,23 @@ export type AppReview = {
   comment: string;
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
+};
+
+export type AppBugReport = {
+  id: string;
+  app_id: string;
+  app_title?: string;
+  user_name: string;
+  user_email: string;
+  subject: string;
+  description: string;
+  version?: string;
+  os?: string;
+  media_files?: string[];
+  status: 'new' | 'investigating' | 'resolved' | 'closed';
+  admin_notes?: string;
+  created_at: string;
+  updated_at?: string;
 };
 
 export const defaultSeededApps: AppItem[] = [
@@ -1272,9 +1300,12 @@ export const defaultSeededApps: AppItem[] = [
       'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200&auto=format&fit=crop&q=80',
       'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=1200&auto=format&fit=crop&q=80'
     ],
+    languages: ['Հայերեն', 'English'],
     version: 'v1.2.0',
     release_date: '2026-03-10',
     downloads_count: 142,
+    is_draft: false,
+    status: 'published',
     created_at: '2026-03-10T10:00:00.000Z',
     updated_at: '2026-03-10T10:00:00.000Z'
   },
@@ -1323,9 +1354,12 @@ export const defaultSeededApps: AppItem[] = [
       'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1200&auto=format&fit=crop&q=80',
       'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=1200&auto=format&fit=crop&q=80'
     ],
+    languages: ['English', 'Հայերեն'],
     version: 'v2.1.4',
     release_date: '2026-02-15',
     downloads_count: 89,
+    is_draft: false,
+    status: 'published',
     created_at: '2026-02-15T12:00:00.000Z',
     updated_at: '2026-02-15T12:00:00.000Z'
   },
@@ -1364,9 +1398,12 @@ Parametric facade and pattern generator designed for Blender architectural and p
       'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=1200&auto=format&fit=crop&q=80',
       'https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=1200&auto=format&fit=crop&q=80'
     ],
+    languages: ['English'],
     version: 'v1.0.1',
     release_date: '2026-01-20',
     downloads_count: 54,
+    is_draft: false,
+    status: 'published',
     created_at: '2026-01-20T08:00:00.000Z',
     updated_at: '2026-01-20T08:00:00.000Z'
   },
@@ -1405,9 +1442,12 @@ Parametric facade and pattern generator designed for Blender architectural and p
       'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=1200&auto=format&fit=crop&q=80',
       'https://images.unsplash.com/photo-1500462918059-b1a0cb512f1d?w=1200&auto=format&fit=crop&q=80'
     ],
+    languages: ['Հայերեն', 'English', 'Русский'],
     version: 'v1.4.0',
     release_date: '2026-02-28',
     downloads_count: 210,
+    is_draft: false,
+    status: 'published',
     created_at: '2026-02-28T14:00:00.000Z',
     updated_at: '2026-02-28T14:00:00.000Z'
   }
@@ -1474,12 +1514,22 @@ export async function getApps(): Promise<AppItem[]> {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        dbApps = data.map((x: any) => ({
-          ...x,
-          gallery_images: Array.isArray(x.gallery_images)
-            ? x.gallery_images
-            : (typeof x.gallery_images === 'string' ? JSON.parse(x.gallery_images || '[]') : [])
-        }));
+        dbApps = data.map((x: any): AppItem => {
+          const isDraft = x.status === 'draft' || !!x.is_draft;
+          return {
+            ...x,
+            gallery_images: Array.isArray(x.gallery_images)
+              ? x.gallery_images
+              : (typeof x.gallery_images === 'string' ? JSON.parse(x.gallery_images || '[]') : []),
+            languages: Array.isArray(x.languages)
+              ? x.languages
+              : (typeof x.languages === 'string'
+                  ? (x.languages.startsWith('[') ? JSON.parse(x.languages || '[]') : x.languages.split(',').map((s: string) => s.trim()).filter(Boolean))
+                  : ['Հայերեն', 'English']),
+            is_draft: isDraft,
+            status: isDraft ? 'draft' : 'published'
+          };
+        });
         supabaseSuccess = true;
       } else if (error) {
         console.warn('Supabase getApps query error:', error.message);
@@ -1492,16 +1542,27 @@ export async function getApps(): Promise<AppItem[]> {
   const deletedSeeds = await getSiteSetting('deleted_seed_apps', []);
   const deletedSeedsSet = new Set(deletedSeeds || []);
 
+  // Normalize localApps as well
+  const normalizedLocalApps: AppItem[] = localApps.map(x => {
+    const isDraft = x.status === 'draft' || !!x.is_draft;
+    return {
+      ...x,
+      languages: Array.isArray(x.languages) ? x.languages : ['Հայերեն', 'English'],
+      is_draft: isDraft,
+      status: isDraft ? 'draft' : 'published'
+    };
+  });
+
   const currentDbApps = supabaseSuccess ? dbApps : [];
-  const dynamicIds = new Set([...currentDbApps.map((x: any) => x.id), ...localApps.map(x => x.id)]);
+  const dynamicIds = new Set([...currentDbApps.map((x: any) => x.id), ...normalizedLocalApps.map(x => x.id)]);
   const filteredSeeds = defaultSeededApps.filter((x: AppItem) => !dynamicIds.has(x.id) && !deletedSeedsSet.has(x.id));
 
   if (supabaseSuccess) {
-    const localFiltered = localApps.filter(x => !dynamicIds.has(x.id));
+    const localFiltered = normalizedLocalApps.filter(x => !dynamicIds.has(x.id));
     return [...dbApps, ...localFiltered, ...filteredSeeds];
   }
 
-  return [...localApps, ...filteredSeeds];
+  return [...normalizedLocalApps, ...filteredSeeds];
 }
 
 export async function getAppById(id: string): Promise<AppItem | null> {
@@ -1512,8 +1573,18 @@ export async function getAppById(id: string): Promise<AppItem | null> {
 export async function saveApp(app: AppItem): Promise<AppItem | null> {
   await ensureLocalDbFiles();
   const now = new Date().toISOString();
+  const isDraft = app.status === 'draft' || !!app.is_draft;
+  const languagesList = Array.isArray(app.languages)
+    ? app.languages
+    : (typeof app.languages === 'string'
+        ? (app.languages as string).split(',').map(s => s.trim()).filter(Boolean)
+        : ['Հայերեն']);
+
   const newApp: AppItem = {
     ...app,
+    languages: languagesList.length > 0 ? languagesList : ['Հայերեն'],
+    is_draft: isDraft,
+    status: isDraft ? 'draft' : 'published',
     gallery_images: Array.isArray(app.gallery_images) ? app.gallery_images : [],
     created_at: app.created_at || now,
     updated_at: now
@@ -1522,15 +1593,40 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
   const adminClient = supabaseAdmin || supabase;
   if (adminClient) {
     try {
-      const { data, error } = await adminClient
+      let { data, error } = await adminClient
         .from('apps')
         .upsert(newApp)
         .select()
         .single();
 
+      // If column does not exist yet on Supabase, retry without new columns
+      if (error && error.message && (error.message.includes('languages') || error.message.includes('is_draft') || error.message.includes('status'))) {
+        const { languages, is_draft, status, ...legacyApp } = newApp as any;
+        const retry = await adminClient.from('apps').upsert(legacyApp).select().single();
+        data = retry.data;
+        error = retry.error;
+      }
+
       if (!error && data) {
+        // Also keep local file in sync
+        if (isServer) {
+          try {
+            const fs = getFs();
+            const content = await fs.readFile(APPS_FILE, 'utf-8');
+            const apps = JSON.parse(content) as AppItem[];
+            const index = apps.findIndex(x => x.id === app.id);
+            if (index !== -1) apps[index] = newApp;
+            else apps.unshift(newApp);
+            await fs.writeFile(APPS_FILE, JSON.stringify(apps, null, 2), 'utf-8');
+          } catch (e) { /* ignore */ }
+        }
+
         return {
+          ...newApp,
           ...data,
+          languages: newApp.languages,
+          is_draft: newApp.is_draft,
+          status: newApp.status,
           gallery_images: Array.isArray(data.gallery_images)
             ? data.gallery_images
             : (typeof data.gallery_images === 'string' ? JSON.parse(data.gallery_images || '[]') : [])
@@ -1818,6 +1914,204 @@ export async function deleteAppReview(id: string): Promise<boolean> {
       return true;
     } catch (err) {
       console.error('Error deleting review locally:', err);
+    }
+  }
+
+  return false;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// APP BUG REPORTS (Վրեպների Զեկույցներ)
+// ══════════════════════════════════════════════════════════════════════════════
+
+export async function getAppBugReports(appId?: string): Promise<AppBugReport[]> {
+  await ensureLocalDbFiles();
+
+  let localReports: AppBugReport[] = [];
+  if (isServer) {
+    try {
+      const fs = getFs();
+      const content = await fs.readFile(APP_BUG_REPORTS_FILE, 'utf-8');
+      localReports = JSON.parse(content) as AppBugReport[];
+    } catch (err) {
+      console.warn('Failed to read local app bug reports:', err);
+    }
+  }
+
+  const readClient = supabaseAdmin || supabase;
+  let dbReports: AppBugReport[] = [];
+  let supabaseSuccess = false;
+
+  if (readClient) {
+    try {
+      let query = readClient
+        .from('app_bug_reports')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (appId) {
+        query = query.eq('app_id', appId);
+      }
+
+      const { data, error } = await query;
+
+      if (!error && data) {
+        dbReports = data.map((d: any) => ({
+          ...d,
+          media_files: Array.isArray(d.media_files)
+            ? d.media_files
+            : typeof d.media_files === 'string'
+              ? JSON.parse(d.media_files || '[]')
+              : []
+        }));
+        supabaseSuccess = true;
+      } else if (error) {
+        console.warn('Supabase getAppBugReports query error:', error.message);
+      }
+    } catch (err) {
+      console.warn('Supabase getAppBugReports failed, falling back to local storage:', err);
+    }
+  }
+
+  const currentDbReports = supabaseSuccess ? dbReports : [];
+  const dynamicIds = new Set([...currentDbReports.map((x: any) => x.id), ...localReports.map(x => x.id)]);
+
+  let allReports: AppBugReport[] = [];
+  if (supabaseSuccess) {
+    const localFiltered = localReports.filter(x => !dynamicIds.has(x.id));
+    allReports = [...dbReports, ...localFiltered];
+  } else {
+    allReports = [...localReports];
+  }
+
+  if (appId) {
+    allReports = allReports.filter(r => r.app_id === appId);
+  }
+
+  return allReports.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+}
+
+export async function saveAppBugReport(report: Omit<AppBugReport, 'id' | 'created_at'> & { id?: string; created_at?: string }): Promise<AppBugReport | null> {
+  await ensureLocalDbFiles();
+  const id = report.id || ('bug_' + Math.random().toString(36).substring(2, 11) + Date.now().toString(36));
+  const newReport: AppBugReport = {
+    ...report,
+    id,
+    media_files: Array.isArray(report.media_files) ? report.media_files : [],
+    status: report.status || 'new',
+    created_at: report.created_at || new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
+    try {
+      const { data, error } = await adminClient
+        .from('app_bug_reports')
+        .upsert(newReport)
+        .select()
+        .single();
+
+      if (!error && data) return data;
+      console.warn('Supabase saveAppBugReport error:', error?.message);
+    } catch (err) {
+      console.warn('Supabase saveAppBugReport failed, using local storage:', err);
+    }
+  }
+
+  // Fallback to local JSON database
+  if (isServer) {
+    const fs = getFs();
+    try {
+      const content = await fs.readFile(APP_BUG_REPORTS_FILE, 'utf-8');
+      const reports = JSON.parse(content) as AppBugReport[];
+      const index = reports.findIndex(x => x.id === id);
+      if (index !== -1) {
+        reports[index] = newReport;
+      } else {
+        reports.unshift(newReport);
+      }
+      await fs.writeFile(APP_BUG_REPORTS_FILE, JSON.stringify(reports, null, 2), 'utf-8');
+      return newReport;
+    } catch (err) {
+      console.error('Error saving bug report locally:', err);
+    }
+  }
+
+  return newReport;
+}
+
+export async function updateAppBugReport(id: string, updates: Partial<AppBugReport>): Promise<boolean> {
+  await ensureLocalDbFiles();
+
+  const payload = {
+    ...updates,
+    updated_at: new Date().toISOString()
+  };
+
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
+    try {
+      const { error } = await adminClient
+        .from('app_bug_reports')
+        .update(payload)
+        .eq('id', id);
+
+      if (!error) return true;
+      console.warn('Supabase updateAppBugReport error:', error?.message);
+    } catch (err) {
+      console.warn('Supabase updateAppBugReport failed:', err);
+    }
+  }
+
+  // Fallback to local JSON database
+  if (isServer) {
+    const fs = getFs();
+    try {
+      const content = await fs.readFile(APP_BUG_REPORTS_FILE, 'utf-8');
+      const reports = JSON.parse(content) as AppBugReport[];
+      const index = reports.findIndex(x => x.id === id);
+      if (index !== -1) {
+        reports[index] = { ...reports[index], ...payload };
+        await fs.writeFile(APP_BUG_REPORTS_FILE, JSON.stringify(reports, null, 2), 'utf-8');
+        return true;
+      }
+    } catch (err) {
+      console.error('Error updating bug report locally:', err);
+    }
+  }
+
+  return false;
+}
+
+export async function deleteAppBugReport(id: string): Promise<boolean> {
+  await ensureLocalDbFiles();
+
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
+    try {
+      const { error } = await adminClient
+        .from('app_bug_reports')
+        .delete()
+        .eq('id', id);
+
+      if (!error) return true;
+    } catch (err) {
+      console.warn('Supabase deleteAppBugReport failed:', err);
+    }
+  }
+
+  // Fallback to local JSON database
+  if (isServer) {
+    const fs = getFs();
+    try {
+      const content = await fs.readFile(APP_BUG_REPORTS_FILE, 'utf-8');
+      const reports = JSON.parse(content) as AppBugReport[];
+      const filtered = reports.filter(x => x.id !== id);
+      await fs.writeFile(APP_BUG_REPORTS_FILE, JSON.stringify(filtered, null, 2), 'utf-8');
+      return true;
+    } catch (err) {
+      console.error('Error deleting bug report locally:', err);
     }
   }
 

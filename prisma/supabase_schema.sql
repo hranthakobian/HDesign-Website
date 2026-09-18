@@ -110,16 +110,30 @@ CREATE TABLE IF NOT EXISTS apps (
   store_url TEXT,
   cover_image TEXT,
   gallery_images JSONB DEFAULT '[]'::jsonb,
+  languages JSONB DEFAULT '["Հայերեն", "English"]'::jsonb,
   version TEXT DEFAULT 'v1.0.0',
   release_date TEXT,
   downloads_count INTEGER DEFAULT 0,
+  is_draft BOOLEAN DEFAULT false,
+  status TEXT DEFAULT 'published',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 ALTER TABLE apps DISABLE ROW LEVEL SECURITY;
+
+-- Migration helpers if table already exists (add new columns first)
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS languages JSONB DEFAULT '["Հայերեն", "English"]'::jsonb;
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS is_draft BOOLEAN DEFAULT false;
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'published';
+ALTER TABLE apps ALTER COLUMN title_am DROP NOT NULL;
+ALTER TABLE apps ALTER COLUMN title_en DROP NOT NULL;
+ALTER TABLE apps ALTER COLUMN host_app DROP NOT NULL;
+
+-- Create indexes
 CREATE INDEX IF NOT EXISTS idx_apps_type ON apps(app_type);
 CREATE INDEX IF NOT EXISTS idx_apps_host ON apps(host_app);
+CREATE INDEX IF NOT EXISTS idx_apps_status ON apps(status);
 
 -- 8. App Reviews & Ratings
 CREATE TABLE IF NOT EXISTS app_reviews (
@@ -137,3 +151,25 @@ CREATE TABLE IF NOT EXISTS app_reviews (
 ALTER TABLE app_reviews DISABLE ROW LEVEL SECURITY;
 CREATE INDEX IF NOT EXISTS idx_reviews_app ON app_reviews(app_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_status ON app_reviews(status);
+
+-- 9. App Bug Reports (Վրեպների Զեկույցներ)
+CREATE TABLE IF NOT EXISTS app_bug_reports (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  app_id TEXT NOT NULL REFERENCES apps(id) ON DELETE CASCADE,
+  app_title TEXT,
+  user_name TEXT NOT NULL,
+  user_email TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  description TEXT NOT NULL,
+  version TEXT,
+  os TEXT,
+  media_files JSONB DEFAULT '[]'::jsonb,
+  status TEXT DEFAULT 'new',
+  admin_notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE app_bug_reports DISABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_bug_reports_app ON app_bug_reports(app_id);
+CREATE INDEX IF NOT EXISTS idx_bug_reports_status ON app_bug_reports(status);

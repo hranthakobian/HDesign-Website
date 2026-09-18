@@ -321,3 +321,115 @@ export async function sendReplyEmail({
 }) {
   await dispatchEmail([to], subject, message, undefined, true);
 }
+
+export async function sendBugReportEmails({
+  report,
+  appTitle
+}: {
+  report: {
+    id: string;
+    app_id: string;
+    user_name: string;
+    user_email: string;
+    subject: string;
+    description: string;
+    version?: string;
+    os?: string;
+    media_files?: string[];
+    created_at?: string;
+  };
+  appTitle: string;
+}) {
+  const adminEmail = 'hrant@hakobian.am';
+  const baseUrl = getBaseUrl();
+
+  // 1. Media files presentation
+  let mediaListHtml = '<p style="color: #718096; font-style: italic; margin: 6px 0 0 0;">Կցված մեդիա նիշքեր չկան։</p>';
+
+  if (report.media_files && report.media_files.length > 0) {
+    const fullUrls = report.media_files.map(url => url.startsWith('http') ? url : `${baseUrl}${url}`);
+    mediaListHtml = `
+      <div style="margin-top: 14px;">
+        <p style="font-weight: bold; margin: 0 0 8px 0; color: #2d3748;">Կցված մեդիա նիշքեր (${report.media_files.length})՝</p>
+        <ul style="padding-left: 20px; margin: 0;">
+          ${fullUrls.map(u => `
+            <li style="margin-bottom: 6px;">
+              <a href="${u}" target="_blank" rel="noopener noreferrer" style="color: #4a897c; font-weight: bold; text-decoration: underline;">
+                ${u.split('/').pop() || u}
+              </a>
+            </li>
+          `).join('')}
+        </ul>
+      </div>
+    `;
+  }
+
+  // 2. Email to Hrant (hrant@hakobian.am)
+  const adminSubject = `[Վրեպի Զեկույց] ${appTitle} - ${report.subject}`;
+  const adminMessage = `
+    <div style="font-family: sans-serif; max-width: 620px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffff; color: #2d3748;">
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #e53e3e; padding-bottom: 12px; margin-bottom: 18px;">
+        <h2 style="color: #c53030; margin: 0; font-size: 1.3rem;">⚠️ Նոր Վրեպի Զեկույց (Bug Report)</h2>
+        <span style="font-size: 0.8rem; background: #fed7d7; color: #9b2c2c; padding: 4px 10px; border-radius: 20px; font-weight: bold;">
+          ${report.id}
+        </span>
+      </div>
+
+      <div style="background: #f7fafc; border: 1px solid #edf2f7; border-radius: 12px; padding: 16px; margin-bottom: 20px; font-size: 14px; line-height: 1.6;">
+        <p style="margin: 0 0 6px 0;"><strong>Հավելված / Խրվակ՝</strong> <a href="${baseUrl}/apps/${report.app_id}" style="color: #4a897c; font-weight: bold; text-decoration: underline;">${appTitle}</a> (ID: ${report.app_id})</p>
+        <p style="margin: 0 0 6px 0;"><strong>Օգտատեր՝</strong> ${report.user_name} (<a href="mailto:${report.user_email}" style="color: #3182ce;">${report.user_email}</a>)</p>
+        <p style="margin: 0 0 6px 0;"><strong>Հավելվածի տարբերակ՝</strong> ${report.version || 'Չի նշված'}</p>
+        <p style="margin: 0 0 6px 0;"><strong>Օպերացիոն համակարգ (OS)՝</strong> ${report.os || 'Չի նշված'}</p>
+        <p style="margin: 0;"><strong>Ամսաթիվ՝</strong> ${new Date(report.created_at || Date.now()).toLocaleString('hy-AM')}</p>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <h3 style="font-size: 1.1rem; color: #1a202c; margin: 0 0 8px 0;">Թեմա՝ ${report.subject}</h3>
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; white-space: pre-wrap; font-size: 15px; line-height: 1.6; color: #2d3748;">
+          ${report.description}
+        </div>
+      </div>
+
+      ${mediaListHtml}
+
+      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; text-align: center;">
+        <a href="${baseUrl}/admin" style="display: inline-block; background: #4a897c; color: #ffffff; padding: 10px 22px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 0.9rem;">
+          Բացել Վարիչի Վահանակում
+        </a>
+      </div>
+    </div>
+  `;
+
+  // 3. Confirmation email to the user (from noreply@hakobian.am)
+  const userSubject = `Ձեր զեկույցը ստացվել է | ${appTitle} | HDesign`;
+  const userMessage = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffff; color: #2d3748;">
+      <h2 style="color: #4a897c; border-bottom: 2px solid #4a897c; padding-bottom: 12px; margin-top: 0;">HDesign</h2>
+      <p style="font-size: 16px; line-height: 1.6; margin-bottom: 14px;">
+        Ողջույն <strong>${report.user_name}</strong>,
+      </p>
+      <p style="font-size: 15px; line-height: 1.6; color: #4a5568; margin-bottom: 16px;">
+        Շնորհակալություն «<strong>${appTitle}</strong>» հավելվածի վերաբերյալ վրեպի / խնդրի մասին զեկուցելու համար: Ձեր հաղորդագրությունը հաջողությամբ ստացվել է և փոխանցվել է ծրագրավորողին ուսումնասիրման համար:
+      </p>
+
+      <div style="background: #f7fafc; border: 1px solid #edf2f7; border-radius: 12px; padding: 16px; margin: 20px 0; font-size: 14px; line-height: 1.6;">
+        <p style="margin: 0 0 6px 0; color: #718096; font-size: 0.8rem; text-transform: uppercase; font-weight: bold; letter-spacing: 0.05em;">Ձեր ուղարկած զեկույցի պատճենը՝</p>
+        <p style="margin: 0 0 8px 0; font-weight: bold; color: #2d3748;">Թեմա՝ ${report.subject}</p>
+        <div style="white-space: pre-wrap; color: #4a5568; background: #ffffff; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">${report.description}</div>
+      </div>
+
+      <p style="font-size: 14px; color: #718096; line-height: 1.6;">
+        Եթե լրացուցիչ տեղեկատվության կարիք լինի, մենք կկապվենք Ձեզ հետ այս էլ․ հասցեով:
+      </p>
+
+      <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+      <p style="font-size: 12px; color: #a0aec0; text-align: center; margin: 0;">
+        Այս նամակն ավտոմատ ուղարկվել է noreply@hakobian.am հասցեից: Խնդրում ենք չպատասխանել այս նամակին:
+      </p>
+    </div>
+  `;
+
+  // Dispatch both emails
+  await dispatchEmail([adminEmail], adminSubject, adminMessage, report.user_email, true);
+  await dispatchEmail([report.user_email], userSubject, userMessage, undefined, true);
+}

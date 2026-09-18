@@ -8,6 +8,7 @@ import AppGallerySlider from "@/components/AppGallerySlider";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import LoadingAnimation from "@/components/LoadingAnimation";
 import { HDesignStars } from "@/components/RatingSystem";
+import BugReportModal from "@/components/BugReportModal";
 
 type Review = {
   id: string;
@@ -39,11 +40,14 @@ type AppDetail = {
   store_url?: string;
   cover_image?: string;
   gallery_images: string[];
+  languages?: string[];
   version: string;
   release_date: string;
   downloads_count?: number;
   avg_rating?: number;
   reviews_count?: number;
+  is_draft?: boolean;
+  status?: string;
   created_at?: string;
   updated_at?: string;
   reviews?: Review[];
@@ -57,6 +61,7 @@ export default function AppDetailPage() {
   const [app, setApp] = useState<AppDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isBugModalOpen, setIsBugModalOpen] = useState(false);
 
   // Reviews submission state
   const [reviewsList, setReviewsList] = useState<Review[]>([]);
@@ -73,7 +78,15 @@ export default function AppDetailPage() {
     async function loadAppDetail() {
       if (!id) return;
       try {
-        const res = await fetch(`/api/apps/${id}`);
+        let adminToken = typeof window !== 'undefined' ? (localStorage.getItem('hdesign_admin_token') || '') : '';
+        if (!adminToken && typeof document !== 'undefined') {
+          const match = document.cookie.match(/hdesign_admin_token=([^;]+)/);
+          if (match) adminToken = decodeURIComponent(match[1]);
+        }
+        const res = await fetch(`/api/apps/${id}`, {
+          headers: adminToken ? { Authorization: adminToken } : {},
+          cache: "no-store"
+        });
         if (!res.ok) throw new Error("Հավելվածը չի գտնվել");
         const data: AppDetail = await res.json();
         setApp(data);
@@ -199,6 +212,32 @@ export default function AppDetailPage() {
         <span style={{ color: "var(--text)", fontWeight: 600 }}>{title}</span>
       </div>
 
+      {/* Draft Notification Banner */}
+      {(app.is_draft || app.status === 'draft') && (
+        <div
+          style={{
+            background: 'rgba(255, 152, 0, 0.12)',
+            border: '1px solid rgba(255, 152, 0, 0.35)',
+            borderRadius: '16px',
+            padding: '14px 22px',
+            marginBottom: '28px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            color: '#ff9800',
+            fontWeight: 700,
+            fontSize: '0.92rem'
+          }}
+        >
+          <span style={{ fontSize: '1.3rem' }}>⚠️</span>
+          <span>
+            {locale === "hy"
+              ? "Այս հավելվածը պահպանված է որպես սևագիր և հասանելի է միայն ադմինիստրատորին:"
+              : "This app is currently saved as a draft and is visible only to administrators."}
+          </span>
+        </div>
+      )}
+
       {/* ══════════════════════════════════════════════════════════════════════
           HERO / OVERVIEW LAYOUT
           Left: Media Slider | Right: Main Info & Actions
@@ -227,6 +266,31 @@ export default function AppDetailPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           {/* Header Badges & Host Software */}
           <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            {/* Draft Status Badge */}
+            {(app.is_draft || app.status === 'draft') && (
+              <span
+                style={{
+                  background: "#d97706",
+                  color: "#ffffff",
+                  padding: "6px 14px",
+                  borderRadius: "30px",
+                  fontSize: "0.8rem",
+                  fontWeight: 800,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  boxShadow: "0 2px 8px rgba(217, 119, 6, 0.4)",
+                  letterSpacing: "0.02em"
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M12 20h9"/>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
+                {locale === "hy" ? "Սևագիր" : "Draft"}
+              </span>
+            )}
+
             {/* Software Tag / Badges (Only for plugin if host_app is present) */}
             {app.app_type === "plugin" && app.host_app && (
               <div
@@ -288,6 +352,30 @@ export default function AppDetailPage() {
               {app.version}
             </span>
 
+            {/* Languages Badge */}
+            {app.languages && app.languages.length > 0 && (
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: "var(--bg)",
+                  padding: "6px 14px",
+                  borderRadius: "30px",
+                  border: "1px solid var(--panel-border)",
+                  fontSize: "0.8rem",
+                  color: "var(--text)"
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="2" y1="12" x2="22" y2="12" />
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                </svg>
+                <span style={{ fontWeight: 600 }}>{app.languages.join(", ")}</span>
+              </div>
+            )}
+
             {/* Last Updated Date Pill */}
             {(app.updated_at || app.release_date) && (
               <span
@@ -315,9 +403,32 @@ export default function AppDetailPage() {
           </div>
 
           {/* Title */}
-          <h1 style={{ fontSize: "2.5rem", fontWeight: 900, color: "var(--text)", margin: 0, lineHeight: 1.2 }}>
-            {title}
-          </h1>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
+            <h1 style={{ fontSize: "2.5rem", fontWeight: 900, color: "var(--text)", margin: 0, lineHeight: 1.2 }}>
+              {title}
+            </h1>
+            {(app.is_draft || app.status === 'draft') && (
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: "rgba(245, 158, 11, 0.15)",
+                  border: "1px solid rgba(245, 158, 11, 0.4)",
+                  color: "#d97706",
+                  padding: "4px 12px",
+                  borderRadius: "8px",
+                  fontSize: "0.85rem",
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.04em"
+                }}
+              >
+                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#d97706" }} />
+                {locale === "hy" ? "Սևագիր" : "Draft"}
+              </span>
+            )}
+          </div>
 
           {/* Rating Summary Bar */}
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -430,6 +541,53 @@ export default function AppDetailPage() {
                 </hd-button>
               </a>
             )}
+
+            {/* Report Bug Button */}
+            <button
+              type="button"
+              onClick={() => setIsBugModalOpen(true)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                width: "100%",
+                padding: "11px 16px",
+                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px dashed var(--panel-border)",
+                borderRadius: "12px",
+                color: "var(--muted)",
+                fontSize: "0.86rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s ease"
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.color = "#d97706";
+                e.currentTarget.style.borderColor = "rgba(245, 158, 11, 0.5)";
+                e.currentTarget.style.background = "rgba(245, 158, 11, 0.06)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.color = "var(--muted)";
+                e.currentTarget.style.borderColor = "var(--panel-border)";
+                e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m8 2 1.88 1.88" />
+                <path d="M14.12 3.88 16 2" />
+                <path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1" />
+                <path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6" />
+                <path d="M12 20v-9" />
+                <path d="M6.53 9C4.6 8.8 3 7.1 3 5" />
+                <path d="M6 13H2" />
+                <path d="M3 21c0-2.1 1.7-3.9 3.8-4" />
+                <path d="M20.97 5c0 2.1-1.6 3.8-3.5 4" />
+                <path d="M22 13h-4" />
+                <path d="M17.2 17c2.1.1 3.8 1.9 3.8 4" />
+              </svg>
+              <span>{locale === "hy" ? "Զեկուցել վրեպի մասին" : "Report a Bug / Issue"}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -511,6 +669,30 @@ export default function AppDetailPage() {
                 </span>
               </div>
 
+              {app.languages && app.languages.length > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px dashed var(--panel-border)", paddingBottom: "10px" }}>
+                  <span style={{ color: "var(--muted)" }}>{locale === "hy" ? "Լեզուներ" : "Languages"}</span>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "flex-end" }}>
+                    {app.languages.map((lang, idx) => (
+                      <span
+                        key={idx}
+                        style={{
+                          background: "var(--bg)",
+                          padding: "2px 8px",
+                          borderRadius: "6px",
+                          fontSize: "0.8rem",
+                          border: "1px solid var(--panel-border)",
+                          fontWeight: 600,
+                          color: "var(--text)"
+                        }}
+                      >
+                        {lang}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "var(--muted)" }}>{locale === "hy" ? "Լիցենզիա" : "License"}</span>
                 <span style={{ fontWeight: 700, color: app.is_paid ? "#e53935" : "#43a047" }}>
@@ -518,6 +700,49 @@ export default function AppDetailPage() {
                 </span>
               </div>
             </div>
+          </div>
+
+          {/* Quick Report Bug Card in Sidebar */}
+          <div
+            style={{
+              marginTop: "20px",
+              background: "var(--panel)",
+              borderRadius: "20px",
+              border: "1px dashed var(--panel-border)",
+              padding: "20px",
+              textAlign: "center"
+            }}
+          >
+            <div style={{ fontSize: "1.4rem", marginBottom: "6px" }}>🐛</div>
+            <h4 style={{ margin: "0 0 6px 0", fontSize: "0.95rem", color: "var(--text)" }}>
+              {locale === "hy" ? "Սխալ կամ վրե՞պ եք նկատել:" : "Found a bug or issue?"}
+            </h4>
+            <p style={{ margin: "0 0 14px 0", fontSize: "0.82rem", color: "var(--muted)", lineHeight: 1.4 }}>
+              {locale === "hy"
+                ? "Օգնեք մեզ բարելավել հավելվածը՝ զեկուցելով խնդրի մասին։"
+                : "Help us improve by submitting a quick bug report."}
+            </p>
+            <button
+              type="button"
+              onClick={() => setIsBugModalOpen(true)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "6px",
+                padding: "8px 18px",
+                background: "rgba(245, 158, 11, 0.12)",
+                border: "1px solid rgba(245, 158, 11, 0.4)",
+                color: "#d97706",
+                borderRadius: "10px",
+                fontWeight: 700,
+                fontSize: "0.84rem",
+                cursor: "pointer",
+                transition: "all 0.2s ease"
+              }}
+            >
+              <span>{locale === "hy" ? "Զեկուցել վրեպի մասին" : "Report a Bug"}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -789,6 +1014,17 @@ export default function AppDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Bug Report Modal */}
+      {app && (
+        <BugReportModal
+          isOpen={isBugModalOpen}
+          onClose={() => setIsBugModalOpen(false)}
+          appId={app.id}
+          appTitle={title}
+          appVersion={app.version}
+        />
+      )}
     </main>
   );
 }

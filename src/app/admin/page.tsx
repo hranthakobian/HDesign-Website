@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { hyTranslations, enTranslations } from '@/lib/i18n';
 import LoadingAnimation from '@/components/LoadingAnimation';
 import AdminAppsManager from '@/components/AdminAppsManager';
+import AdminMediaManager from '@/components/AdminMediaManager';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, BarChart, Bar 
@@ -283,6 +284,18 @@ const NAV_TABS = [
     )
   },
   {
+    id: 'media' as const,
+    label: 'Մեդիա',
+    icon: (
+      <span style={{ fontSize: '1.3rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          <polygon points="12 11 12 17 17 14" fill="currentColor" stroke="none" />
+        </svg>
+      </span>
+    )
+  },
+  {
     id: 'icons' as const,
     label: 'Պատկերակներ',
     icon: <span className="icon-Pattern" style={{ fontSize: '1.4rem' }} />
@@ -324,7 +337,7 @@ const NAV_TABS = [
   }
 ];
 
-type TabType = 'analytics' | 'cases' | 'fonts' | 'apps' | 'icons' | 'messages' | 'translations' | 'about' | 'apis' | 'personalization' | 'settings' | 'subscribers';
+type TabType = 'analytics' | 'cases' | 'fonts' | 'apps' | 'media' | 'icons' | 'messages' | 'translations' | 'about' | 'apis' | 'personalization' | 'settings' | 'subscribers';
 
 function parseTabParam(rawTab: string | null): { 
   tab: TabType; 
@@ -338,11 +351,12 @@ function parseTabParam(rawTab: string | null): {
   if (t === 'fonts') return { tab: 'cases', casesSubTab: 'fonts' };
   if (t === 'branding') return { tab: 'cases', casesSubTab: 'branding' };
   if (t === 'gallery') return { tab: 'cases', casesSubTab: 'gallery' };
+  if (t === 'media') return { tab: 'media' };
   if (t === 'spam') return { tab: 'analytics', analyticsSubTab: 'spam' };
   if (t === 'overview') return { tab: 'analytics', analyticsSubTab: 'overview' };
 
   const validTabs: TabType[] = [
-    'analytics', 'cases', 'fonts', 'apps', 'icons', 'messages', 
+    'analytics', 'cases', 'fonts', 'apps', 'media', 'icons', 'messages', 
     'translations', 'about', 'apis', 'personalization', 'settings', 'subscribers'
   ];
 
@@ -1116,19 +1130,20 @@ function AdminDashboardContent() {
   const [prevTab, setPrevTab] = useState<TabType>(initialParsedTab?.tab || 'analytics');
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
 
-  const tabIndices = useMemo(() => ({
+  const tabIndices: Record<TabType, number> = useMemo(() => ({
     analytics: 0,
     cases: 1,
     fonts: 2,
     apps: 3,
-    icons: 4,
-    messages: 5,
-    subscribers: 6,
-    translations: 7,
-    about: 8,
-    apis: 9,
-    personalization: 10,
-    settings: 11
+    media: 4,
+    icons: 5,
+    messages: 6,
+    subscribers: 7,
+    translations: 8,
+    about: 9,
+    apis: 10,
+    personalization: 11,
+    settings: 12
   }), []);
 
   useEffect(() => {
@@ -4951,6 +4966,15 @@ function AdminDashboardContent() {
             {activeTab === 'apps' && (
               <div className={getTabClass('apps')}>
                 <AdminAppsManager token={token} />
+              </div>
+            )}
+
+            {/* ══════════════════════════════════════════════════════════════════════════
+                TAB: MEDIA LIBRARY (Windows Explorer Style)
+                ══════════════════════════════════════════════════════════════════════════ */}
+            {activeTab === 'media' && (
+              <div className={getTabClass('media')}>
+                <AdminMediaManager token={token} />
               </div>
             )}
 

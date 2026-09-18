@@ -22,10 +22,17 @@ export async function getCorrectPasscode(): Promise<string> {
  */
 export async function verifyAuth(request: Request): Promise<boolean> {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) return false;
+    let token = request.headers.get('authorization');
+    if (!token) {
+      const cookieHeader = request.headers.get('cookie') || '';
+      const match = cookieHeader.match(/hdesign_admin_token=([^;]+)/);
+      if (match) {
+        token = decodeURIComponent(match[1]);
+      }
+    }
+    if (!token) return false;
     const correct = await getCorrectPasscode();
-    return authHeader === correct;
+    return token === correct;
   } catch (err) {
     console.error('Error verifying auth:', err);
     return false;

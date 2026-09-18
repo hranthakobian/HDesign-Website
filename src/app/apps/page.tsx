@@ -20,6 +20,7 @@ export type AppData = {
   currency?: string;
   cover_image?: string;
   gallery_images: string[];
+  languages?: string[];
   version: string;
   release_date: string;
   downloads_count?: number;
@@ -27,6 +28,8 @@ export type AppData = {
   reviews_count?: number;
   created_at?: string;
   updated_at?: string;
+  is_draft?: boolean;
+  status?: 'published' | 'draft';
 };
 
 export default function AppsListingPage() {
@@ -45,13 +48,32 @@ export default function AppsListingPage() {
   const [maxAvailablePrice, setMaxAvailablePrice] = useState<number>(50000);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
+  const [isAdmin, setIsAdmin] = useState(false);
+
   useEffect(() => {
     async function loadApps() {
       try {
-        const res = await fetch("/api/apps");
+        let token = typeof window !== 'undefined' ? localStorage.getItem('hdesign_admin_token') : null;
+        if (!token && typeof document !== 'undefined') {
+          const match = document.cookie.match(/hdesign_admin_token=([^;]+)/);
+          if (match) token = decodeURIComponent(match[1]);
+        }
+
+        const headers: Record<string, string> = {};
+        if (token) {
+          headers['Authorization'] = token;
+        }
+
+        const res = await fetch("/api/apps", { headers, cache: "no-store" });
         if (!res.ok) throw new Error("Failed to load apps");
         const data: AppData[] = await res.json();
         setApps(data || []);
+
+        if (token) {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
 
         // Calculate max price from available apps
         if (data && data.length > 0) {
@@ -66,6 +88,16 @@ export default function AppsListingPage() {
       }
     }
     loadApps();
+
+    const handleAuthChange = () => {
+      loadApps();
+    };
+    window.addEventListener("hdesign-admin-auth-change", handleAuthChange);
+    window.addEventListener("storage", handleAuthChange);
+    return () => {
+      window.removeEventListener("hdesign-admin-auth-change", handleAuthChange);
+      window.removeEventListener("storage", handleAuthChange);
+    };
   }, []);
 
   // List of unique host software in the system
@@ -93,7 +125,8 @@ export default function AppsListingPage() {
           app.title_en?.toLowerCase().includes(q) ||
           app.short_desc_am?.toLowerCase().includes(q) ||
           app.short_desc_en?.toLowerCase().includes(q) ||
-          (app.host_app && app.host_app.toLowerCase().includes(q));
+          (app.host_app && app.host_app.toLowerCase().includes(q)) ||
+          (Array.isArray(app.languages) && app.languages.some(l => l.toLowerCase().includes(q)));
         if (!match) return false;
       }
 
@@ -430,6 +463,50 @@ export default function AppsListingPage() {
         </div>
       )}
 
+      {/* Admin Drafts Notice Bar (Only visible when logged in as admin) */}
+      {isAdmin && (
+        <div
+          style={{
+            background: "rgba(245, 158, 11, 0.08)",
+            border: "1px solid rgba(245, 158, 11, 0.3)",
+            borderRadius: "14px",
+            padding: "12px 20px",
+            marginBottom: "24px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "10px",
+            fontSize: "0.85rem",
+            color: "var(--text)"
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontSize: "1.2rem" }}>🔒</span>
+            <span>
+              <strong>{locale === "hy" ? "Վարիչի ռեժիմ․" : "Admin mode:"}</strong>{" "}
+              {locale === "hy"
+                ? "Սևագիր հավելվածները նշված են «Սևագիր» պիտակով և տեսանելի են միայն Ձեզ (սովորական այցելուներին դրանք չեն ցուցադրվում)։"
+                : "Draft applications are marked with a 'Draft' badge and visible only to you (hidden from regular visitors)."}
+            </span>
+          </div>
+          {apps.filter(a => a.is_draft || a.status === 'draft').length > 0 && (
+            <span
+              style={{
+                background: "rgba(245, 158, 11, 0.18)",
+                color: "#d97706",
+                fontWeight: 700,
+                fontSize: "0.78rem",
+                padding: "3px 10px",
+                borderRadius: "20px"
+              }}
+            >
+              {apps.filter(a => a.is_draft || a.status === 'draft').length} {locale === "hy" ? "սևագիր" : "draft(s)"}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Responsive Grid of App Cards */}
       {!loading && !error && filteredApps.length > 0 && (
         <div
@@ -449,15 +526,20 @@ export default function AppsListingPage() {
                 className="app-card"
                 style={{
                   background: "var(--panel)",
-                  border: "1px solid var(--panel-border)",
+                  border: (app.is_draft || app.status === "draft")
+                    ? "1.5px dashed rgba(245, 158, 11, 0.7)"
+                    : "1px solid var(--panel-border)",
                   borderRadius: "20px",
                   overflow: "hidden",
-                  boxShadow: "var(--shadow)",
+                  boxShadow: (app.is_draft || app.status === "draft")
+                    ? "0 4px 20px rgba(245, 158, 11, 0.15)"
+                    : "var(--shadow)",
                   display: "flex",
                   flexDirection: "column",
                   height: "100%",
                   transition: "transform 0.3s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.3s ease",
-                  cursor: "pointer"
+                  cursor: "pointer",
+                  position: "relative"
                 }}
               >
                 {/* Card Media Preview */}
@@ -475,6 +557,29 @@ export default function AppsListingPage() {
                   />
                   {/* Overlay Badges */}
                   <div style={{ position: "absolute", top: "12px", left: "12px", display: "flex", gap: "6px", flexWrap: "wrap", maxWidth: "80%" }}>
+                    {(app.is_draft || app.status === "draft") && (
+                      <span
+                        style={{
+                          background: "#d97706",
+                          color: "#ffffff",
+                          padding: "4px 10px",
+                          borderRadius: "20px",
+                          fontSize: "0.72rem",
+                          fontWeight: 800,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "5px",
+                          boxShadow: "0 2px 8px rgba(217, 119, 6, 0.4)",
+                          letterSpacing: "0.02em"
+                        }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <path d="M12 20h9"/>
+                          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                        </svg>
+                        {locale === "hy" ? "Սևագիր" : "Draft"}
+                      </span>
+                    )}
                     {app.app_type === "plugin" && app.host_app && (
                       <span
                         style={{
@@ -545,9 +650,32 @@ export default function AppsListingPage() {
                 {/* Card Content */}
                 <div style={{ padding: "22px", display: "flex", flexDirection: "column", flex: 1 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "10px", gap: "10px" }}>
-                    <h3 style={{ fontSize: "1.2rem", fontWeight: 800, margin: 0, color: "var(--text)", lineHeight: 1.3 }}>
-                      {getAppTitle(app)}
-                    </h3>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                      <h3 style={{ fontSize: "1.2rem", fontWeight: 800, margin: 0, color: "var(--text)", lineHeight: 1.3 }}>
+                        {getAppTitle(app)}
+                      </h3>
+                      {(app.is_draft || app.status === "draft") && (
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px",
+                            fontSize: "0.68rem",
+                            fontWeight: 800,
+                            color: "#d97706",
+                            background: "rgba(245, 158, 11, 0.14)",
+                            border: "1px solid rgba(245, 158, 11, 0.4)",
+                            padding: "2px 8px",
+                            borderRadius: "6px",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.03em"
+                          }}
+                        >
+                          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#d97706" }} />
+                          {locale === "hy" ? "Սևագիր" : "Draft"}
+                        </span>
+                      )}
+                    </div>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "3px", flexShrink: 0 }}>
                       <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--accent)", background: "rgba(74, 137, 124, 0.12)", padding: "2px 8px", borderRadius: "6px" }}>
                         {app.version}
@@ -576,6 +704,28 @@ export default function AppsListingPage() {
                   >
                     {getAppDesc(app)}
                   </p>
+
+                  {/* Languages Tags */}
+                  {app.languages && app.languages.length > 0 && (
+                    <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", marginBottom: "14px" }}>
+                      {app.languages.map((lang, idx) => (
+                        <span
+                          key={idx}
+                          style={{
+                            fontSize: "0.72rem",
+                            fontWeight: 600,
+                            padding: "2px 7px",
+                            borderRadius: "5px",
+                            background: "var(--bg)",
+                            border: "1px solid var(--panel-border)",
+                            color: "var(--muted)"
+                          }}
+                        >
+                          {lang}
+                        </span>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Card Footer: Rating & Action */}
                   <div
