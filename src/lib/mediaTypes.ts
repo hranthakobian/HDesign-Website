@@ -23,12 +23,28 @@ export interface MediaFile {
   modifiedAt: string;     // ISO date
   usedIn?: string[];      // e.g. ["Բրենդինգ (Branding)", "Կարգավորումներ (Settings)"]
   tags?: string[];
+  isTrashed?: boolean;    // true if file is in trash
+  trashedAt?: string;     // ISO date when trashed
+  originalFolderId?: string | null; // folder where it belonged before trash
+  daysRemaining?: number; // days until auto-deletion
+}
+
+export interface TrashItemMeta {
+  trashedAt: string;
+  originalFolderId: string | null;
+}
+
+export interface TrashSettings {
+  autoDeleteEnabled: boolean; // default true
+  retentionDays: number;      // default 30 days
 }
 
 export interface MediaLibraryData {
   folders: MediaFolder[];
   fileAssignments: Record<string, string | null>; // file id/path -> folderId
   customNames?: Record<string, string>; // file id/path -> custom display name
+  trash?: Record<string, TrashItemMeta>; // fileId -> trash metadata
+  trashSettings?: TrashSettings;
 }
 
 export interface StorageStats {
@@ -49,9 +65,13 @@ export interface StorageStats {
   imagesSizeFormatted: string;
   videosSizeFormatted: string;
   fontsSizeFormatted: string;
+  trashCount?: number;
+  trashSize?: number;
+  trashSizeFormatted?: string;
 }
 
 export type ViewMode = 'large-icons' | 'medium-icons' | 'list' | 'details' | 'tiles';
 
 export type SortField = 'name' | 'size' | 'modifiedAt' | 'type';
 export type SortOrder = 'asc' | 'desc';
+

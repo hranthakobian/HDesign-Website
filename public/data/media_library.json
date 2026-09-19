@@ -37,78 +37,138 @@
     }
   ],
   "fileAssignments": {
+    "logo.png": "folder-site-assets",
+    "logo.svg": "folder-site-assets",
+    "HDesign.ttf": "folder-fonts",
+    "favicon.ico": "folder-site-assets",
+    "test_svg.svg": "folder-site-assets",
+    "signature.png": "folder-site-assets",
+    "branding/teal.png": "folder-branding",
+    "profile_hrant.jpg": "folder-site-assets",
+    "profile_hrant.png": "folder-site-assets",
+    "branding/pasta.png": "folder-branding",
     "branding/eleven.png": "folder-branding",
     "branding/mobile.png": "folder-branding",
-    "branding/pasta.png": "folder-branding",
     "branding/posters.png": "folder-branding",
-    "branding/teal.png": "folder-branding",
-    "favicon.ico": "folder-site-assets",
-    "HDesign.ttf": "folder-fonts",
     "icons/fonts/icomoon.eot": "folder-fonts",
     "icons/fonts/icomoon.svg": "folder-fonts",
     "icons/fonts/icomoon.ttf": "folder-fonts",
     "icons/fonts/icomoon.woff": "folder-fonts",
-    "icons/varFonts/HDesign-Black.otf": "folder-fonts",
-    "icons/varFonts/HDesign-Black.ttf": "folder-fonts",
-    "icons/varFonts/HDesign-Black.woff": "folder-fonts",
-    "icons/varFonts/HDesign-Black.woff2": "folder-fonts",
     "icons/varFonts/HDesign-Bold.otf": "folder-fonts",
     "icons/varFonts/HDesign-Bold.ttf": "folder-fonts",
-    "icons/varFonts/HDesign-Bold.woff": "folder-fonts",
-    "icons/varFonts/HDesign-Bold.woff2": "folder-fonts",
-    "icons/varFonts/HDesign-ExtraBold.otf": "folder-fonts",
-    "icons/varFonts/HDesign-ExtraBold.ttf": "folder-fonts",
-    "icons/varFonts/HDesign-ExtraBold.woff": "folder-fonts",
-    "icons/varFonts/HDesign-ExtraBold.woff2": "folder-fonts",
-    "icons/varFonts/HDesign-ExtraLight.otf": "folder-fonts",
-    "icons/varFonts/HDesign-ExtraLight.ttf": "folder-fonts",
-    "icons/varFonts/HDesign-ExtraLight.woff": "folder-fonts",
-    "icons/varFonts/HDesign-ExtraLight.woff2": "folder-fonts",
-    "icons/varFonts/HDesign-Light.otf": "folder-fonts",
-    "icons/varFonts/HDesign-Light.ttf": "folder-fonts",
-    "icons/varFonts/HDesign-Light.woff": "folder-fonts",
-    "icons/varFonts/HDesign-Light.woff2": "folder-fonts",
-    "icons/varFonts/HDesign-Medium.otf": "folder-fonts",
-    "icons/varFonts/HDesign-Medium.ttf": "folder-fonts",
-    "icons/varFonts/HDesign-Medium.woff": "folder-fonts",
-    "icons/varFonts/HDesign-Medium.woff2": "folder-fonts",
-    "icons/varFonts/HDesign-Regular.otf": "folder-fonts",
-    "icons/varFonts/HDesign-Regular.ttf": "folder-fonts",
-    "icons/varFonts/HDesign-Regular.woff": "folder-fonts",
-    "icons/varFonts/HDesign-Regular.woff2": "folder-fonts",
-    "icons/varFonts/HDesign-SemiBold.otf": "folder-fonts",
-    "icons/varFonts/HDesign-SemiBold.ttf": "folder-fonts",
-    "icons/varFonts/HDesign-SemiBold.woff": "folder-fonts",
-    "icons/varFonts/HDesign-SemiBold.woff2": "folder-fonts",
     "icons/varFonts/HDesign-Thin.otf": "folder-fonts",
     "icons/varFonts/HDesign-Thin.ttf": "folder-fonts",
-    "icons/varFonts/HDesign-Thin.woff": "folder-fonts",
-    "icons/varFonts/HDesign-Thin.woff2": "folder-fonts",
-    "logo.png": "folder-site-assets",
-    "logo.svg": "folder-site-assets",
-    "profile_hrant.jpg": "folder-site-assets",
-    "profile_hrant.png": "folder-site-assets",
-    "signature.png": "folder-site-assets",
-    "test_svg.svg": "folder-site-assets",
-    "uploads/1782556026588_billboard.png": "folder-uploads",
-    "uploads/1782568221819_billboard.png": "folder-uploads",
-    "uploads/1782570002048_billboard.png": "folder-uploads",
-    "uploads/1782571120601_billboard.png": "folder-uploads",
-    "uploads/1782571214582_billboard.png": "folder-uploads",
     "uploads/1782580735872_cover.png": "folder-uploads",
+    "icons/varFonts/HDesign-Black.otf": "folder-fonts",
+    "icons/varFonts/HDesign-Black.ttf": "folder-fonts",
+    "icons/varFonts/HDesign-Bold.woff": "folder-fonts",
+    "icons/varFonts/HDesign-Light.otf": "folder-fonts",
+    "icons/varFonts/HDesign-Light.ttf": "folder-fonts",
+    "icons/varFonts/HDesign-Thin.woff": "folder-fonts",
+    "uploads/1784818032723_img072.jpg": "folder-uploads",
+    "uploads/1789805224948_figma.webp": "folder-icons",
+    "/uploads/1789805224948_figma.webp": "folder-icons",
+    "icons/varFonts/HDesign-Black.woff": "folder-fonts",
+    "icons/varFonts/HDesign-Bold.woff2": "folder-fonts",
+    "icons/varFonts/HDesign-Light.woff": "folder-fonts",
+    "icons/varFonts/HDesign-Medium.otf": "folder-fonts",
+    "icons/varFonts/HDesign-Medium.ttf": "folder-fonts",
+    "icons/varFonts/HDesign-Thin.woff2": "folder-fonts",
+    "icons/varFonts/HDesign-Black.woff2": "folder-fonts",
+    "icons/varFonts/HDesign-Light.woff2": "folder-fonts",
+    "icons/varFonts/HDesign-Medium.woff": "folder-fonts",
+    "icons/varFonts/HDesign-Regular.otf": "folder-fonts",
+    "icons/varFonts/HDesign-Regular.ttf": "folder-fonts",
+    "icons/varFonts/HDesign-Medium.woff2": "folder-fonts",
+    "icons/varFonts/HDesign-Regular.woff": "folder-fonts",
+    "icons/varFonts/HDesign-SemiBold.otf": "folder-fonts",
+    "icons/varFonts/HDesign-SemiBold.ttf": "folder-fonts",
+    "uploads/1782556026588_billboard.png": "folder-uploads",
+    "uploads/1789805220421_photoshop.png": "folder-icons",
+    "/uploads/1782556026588_billboard.png": "folder-uploads",
+    "/uploads/1789805220421_photoshop.png": "folder-icons",
+    "icons/varFonts/HDesign-ExtraBold.otf": "folder-fonts",
+    "icons/varFonts/HDesign-ExtraBold.ttf": "folder-fonts",
+    "icons/varFonts/HDesign-Regular.woff2": "folder-fonts",
+    "icons/varFonts/HDesign-SemiBold.woff": "folder-fonts",
+    "uploads/1783449928639_Untitled_1.png": "folder-uploads",
+    "icons/varFonts/HDesign-ExtraBold.woff": "folder-fonts",
+    "icons/varFonts/HDesign-ExtraLight.otf": "folder-fonts",
+    "icons/varFonts/HDesign-ExtraLight.ttf": "folder-fonts",
+    "icons/varFonts/HDesign-SemiBold.woff2": "folder-fonts",
+    "icons/varFonts/HDesign-ExtraBold.woff2": "folder-fonts",
+    "icons/varFonts/HDesign-ExtraLight.woff": "folder-fonts",
+    "icons/varFonts/HDesign-ExtraLight.woff2": "folder-fonts",
+    "supabase/branding/1782830522830_1x1.png": "folder-branding",
+    "/supabase/branding/1782830522830_1x1.png": "folder-branding",
+    "supabase/apps/1789628487169_illustrator.png": "folder-icons",
+    "/supabase/apps/1789628487169_illustrator.png": "folder-icons",
+    "uploads/1783448077547_Street_Poster_Mockup.png": "folder-uploads",
     "uploads/1783447359869_City_Fence_Banner_Mockup_2.png": "folder-uploads",
     "uploads/1783447371111_Rounded_Billboard_Mockup_3.png": "folder-uploads",
-    "uploads/1783447374634_Street_Poster_Mockup.png": "folder-uploads",
-    "uploads/1783447583023_City_Fence_Banner_Mockup_2.png": "folder-uploads",
-    "uploads/1783447593917_Rounded_Billboard_Mockup_3.png": "folder-uploads",
-    "uploads/1783447597871_Street_Poster_Mockup.png": "folder-uploads",
-    "uploads/1783448064580_City_Fence_Banner_Mockup_2.png": "folder-uploads",
-    "uploads/1783448073711_Rounded_Billboard_Mockup_3.png": "folder-uploads",
-    "uploads/1783448077547_Street_Poster_Mockup.png": "folder-uploads",
-    "uploads/1783449928639_Untitled_1.png": "folder-uploads",
-    "uploads/1783449929267_Untitled_1.png": "folder-uploads",
-    "uploads/1784818032723_img072.jpg": "folder-uploads",
-    "/uploads/1782556026588_billboard.png": "folder-uploads"
+    "uploads/1783447583023_City_Fence_Banner_Mockup_2.png": "folder-uploads"
   },
-  "customNames": {}
+  "customNames": {},
+  "trash": {
+    "supabase/branding/1783447355690_tr.png": {
+      "trashedAt": "2026-09-19T08:04:25.118Z",
+      "originalFolderId": null
+    },
+    "supabase/branding/1783448060951_tr.png": {
+      "trashedAt": "2026-09-19T08:04:25.118Z",
+      "originalFolderId": null
+    },
+    "supabase/branding/1785699368028_sdc.webp": {
+      "trashedAt": "2026-09-19T08:05:10.920Z",
+      "originalFolderId": null
+    },
+    "supabase/branding/1785699390723_sdc.webp": {
+      "trashedAt": "2026-09-19T08:04:52.658Z",
+      "originalFolderId": null
+    },
+    "supabase/branding/1782830534903_______.png": {
+      "trashedAt": "2026-09-19T08:22:36.226Z",
+      "originalFolderId": null
+    },
+    "supabase/branding/1783525639734_cover.webp": {
+      "trashedAt": "2026-09-19T08:04:25.118Z",
+      "originalFolderId": null
+    },
+    "supabase/branding/1787154253736_85_4x.webp": {
+      "trashedAt": "2026-09-19T08:04:52.658Z",
+      "originalFolderId": null
+    },
+    "supabase/branding/1783520153045_Untitled_1.png": {
+      "trashedAt": "2026-09-19T08:04:39.881Z",
+      "originalFolderId": null
+    },
+    "supabase/branding/1783525657572_billboard.webp": {
+      "trashedAt": "2026-09-19T08:04:25.118Z",
+      "originalFolderId": null
+    },
+    "supabase/branding/1783525852156_billboard.webp": {
+      "trashedAt": "2026-09-19T08:04:25.118Z",
+      "originalFolderId": null
+    },
+    "supabase/branding/1785699273418_Artboard_1_4x.webp": {
+      "trashedAt": "2026-09-19T08:05:10.920Z",
+      "originalFolderId": null
+    },
+    "supabase/branding/1785700783443_Artboard_1_4x.webp": {
+      "trashedAt": "2026-09-19T08:05:10.920Z",
+      "originalFolderId": null
+    },
+    "supabase/branding/1783447588324_Cube_Banner_Mockup_1.png": {
+      "trashedAt": "2026-09-19T08:04:25.118Z",
+      "originalFolderId": null
+    },
+    "supabase/branding/1784818069244_Screenshot_2026_07_23_184701.png": {
+      "trashedAt": "2026-09-19T09:35:14.612Z",
+      "originalFolderId": null
+    }
+  },
+  "trashSettings": {
+    "autoDeleteEnabled": true,
+    "retentionDays": 30
+  }
 }

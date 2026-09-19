@@ -39,6 +39,7 @@ export default function MediaPickerModal({
 
   // Selection
   const [selectedUrls, setSelectedUrls] = useState<string[]>([]);
+  const [lastSelectedUrl, setLastSelectedUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadText, setUploadText] = useState('');
 
@@ -155,9 +156,28 @@ export default function MediaPickerModal({
     return [...crumbs, ...trail];
   }, [currentFolderId, folderMap]);
 
-  // Handle file click selection
-  const handleToggleSelect = (url: string) => {
+  // Handle file click selection with Shift and Ctrl support
+  const handleToggleSelect = (url: string, e?: React.MouseEvent) => {
     if (multiple) {
+      if (e?.shiftKey && lastSelectedUrl) {
+        e.preventDefault();
+        const currentIdx = filteredFiles.findIndex(f => f.url === url);
+        const lastIdx = filteredFiles.findIndex(f => f.url === lastSelectedUrl);
+        if (currentIdx !== -1 && lastIdx !== -1) {
+          const minIdx = Math.min(lastIdx, currentIdx);
+          const maxIdx = Math.max(lastIdx, currentIdx);
+          const rangeUrls = filteredFiles.slice(minIdx, maxIdx + 1).map(f => f.url);
+          setSelectedUrls(prev => {
+            if (e.ctrlKey || e.metaKey) {
+              const set = new Set([...prev, ...rangeUrls]);
+              return Array.from(set);
+            }
+            return rangeUrls;
+          });
+          return;
+        }
+      }
+
       setSelectedUrls(prev => {
         if (prev.includes(url)) {
           return prev.filter(u => u !== url);
@@ -165,8 +185,10 @@ export default function MediaPickerModal({
           return [...prev, url];
         }
       });
+      setLastSelectedUrl(url);
     } else {
       setSelectedUrls([url]);
+      setLastSelectedUrl(url);
     }
   };
 
@@ -707,7 +729,7 @@ export default function MediaPickerModal({
                           return (
                             <div
                               key={file.id}
-                              onClick={() => handleToggleSelect(file.url)}
+                              onClick={e => handleToggleSelect(file.url, e)}
                               onDoubleClick={() => {
                                 if (!multiple) {
                                   onSelect(file.url);
@@ -774,7 +796,7 @@ export default function MediaPickerModal({
                           return (
                             <div
                               key={file.id}
-                              onClick={() => handleToggleSelect(file.url)}
+                              onClick={e => handleToggleSelect(file.url, e)}
                               onDoubleClick={() => {
                                 if (!multiple) {
                                   onSelect(file.url);

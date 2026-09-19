@@ -126,36 +126,26 @@ export async function DELETE(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const fileId = searchParams.get('fileId') || '';
-    const deletePhysical = searchParams.get('deletePhysical') === 'true';
+    const isPermanent = searchParams.get('permanent') === 'true' || searchParams.get('deletePhysical') === 'true';
 
     if (!fileId) {
       return NextResponse.json({ error: 'Ֆայլի ID-ն բացակայում է:' }, { status: 400 });
     }
 
-    const libraryData = await getMediaLibraryData();
-
-    // Clean up assignments
-    delete libraryData.fileAssignments[fileId];
-    delete libraryData.fileAssignments['/' + fileId.replace(/^\/+/, '')];
-    if (libraryData.customNames) {
-      delete libraryData.customNames[fileId];
+    if (isPermanent) {
+      // Permanently remove from Supabase Cloud Storage and local disk
+      const { permanentlyDeleteMediaFile } = await import('@/lib/mediaScanner');
+      await permanentlyDeleteMediaFile(fileId);
+      return NextResponse.json({ success: true, message: 'Նիշքը ընդմիշտ հեռացված է:' });
+    } else {
+      // Move to Trash
+      const { moveFilesToTrash } = await import('@/lib/mediaScanner');
+      await moveFilesToTrash([fileId]);
+      return NextResponse.json({ success: true, message: 'Նիշքը տեղափոխվեց աղբարկղ:' });
     }
-
-    await saveMediaLibraryData(libraryData);
-
-    // If requested to delete from disk and in uploads folder
-    if (deletePhysical && fileId.startsWith('uploads/')) {
-      const fullPath = path.join(process.cwd(), 'public', fileId);
-      try {
-        await fs.unlink(fullPath);
-      } catch (err) {
-        console.warn('Could not unlink physical file:', fullPath, err);
-      }
-    }
-
-    return NextResponse.json({ success: true, message: 'Նիշքը հեռացված է:' });
   } catch (error: any) {
     console.error('Failed to delete file:', error);
     return NextResponse.json({ error: error.message || 'Ֆայլի հեռացումը ձախողվեց:' }, { status: 500 });
   }
 }
+
