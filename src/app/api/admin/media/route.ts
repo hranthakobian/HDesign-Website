@@ -51,34 +51,49 @@ export async function POST(request: Request) {
     const cleanFilename = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const filename = `${Date.now()}_${cleanFilename}`;
 
-    // Upload to public/uploads
-    const targetDir = path.join(process.cwd(), 'public', 'uploads');
-    await fs.mkdir(targetDir, { recursive: true });
-    const filePath = path.join(targetDir, filename);
-    await fs.writeFile(filePath, buffer);
-
-    const relPath = `uploads/${filename}`;
-    const publicUrl = `/uploads/${filename}`;
-
-    // Optional Supabase backup
+    // 1. Try Supabase storage upload
+    let publicUrl = '';
     const storageClient = supabaseAdmin || supabase;
     if (storageClient) {
       try {
-        await storageClient.storage
+        const { data: upData, error: upErr } = await storageClient.storage
           .from('gallery')
           .upload(filename, buffer, {
             contentType: file.type || 'application/octet-stream',
-            upsert: false
+            upsert: true
           });
+        if (!upErr && upData) {
+          const { data: pubData } = storageClient.storage.from('gallery').getPublicUrl(filename);
+          if (pubData?.publicUrl) {
+            publicUrl = pubData.publicUrl;
+          }
+        }
       } catch (err) {
-        // ignore fallback
+        console.warn('Cloud storage upload notice:', err);
       }
     }
 
-    // Register into media_library.json
+    // 2. Local fallback if public folder writable
+    const relPath = `uploads/${filename}`;
+    if (!publicUrl) {
+      publicUrl = `/uploads/${filename}`;
+    }
+
+    try {
+      const targetDir = path.join(process.cwd(), 'public', 'uploads');
+      await fs.mkdir(targetDir, { recursive: true });
+      const filePath = path.join(targetDir, filename);
+      await fs.writeFile(filePath, buffer);
+    } catch (fsErr) {
+      console.warn('Local fs write skipped or read-only:', fsErr);
+    }
+
+    // Register into library data
     const libraryData = await getMediaLibraryData();
     libraryData.fileAssignments[relPath] = targetFolderId;
-    libraryData.fileAssignments[publicUrl] = targetFolderId;
+    if (publicUrl) {
+      libraryData.fileAssignments[publicUrl] = targetFolderId;
+    }
     await saveMediaLibraryData(libraryData);
 
     const ext = path.extname(cleanFilename).toLowerCase().replace('.', '');
