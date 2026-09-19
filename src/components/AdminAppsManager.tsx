@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import MarkdownRenderer from "./MarkdownRenderer";
 import { HDesignStars } from "./RatingSystem";
+import MediaPickerModal from "./MediaPickerModal";
+import { MediaFileType } from "@/lib/mediaTypes";
 
 type AppItem = {
   id: string;
@@ -21,6 +23,8 @@ type AppItem = {
   currency?: string;
   download_url?: string;
   store_url?: string;
+  repository_url?: string;
+  repository_type?: string;
   cover_image?: string;
   gallery_images: string[];
   languages?: string[];
@@ -118,6 +122,8 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
     currency: "AMD",
     download_url: "",
     store_url: "",
+    repository_url: "",
+    repository_type: "github",
     cover_image: "",
     gallery_images: [],
     languages: ["Հայերեն", "English"],
@@ -150,6 +156,54 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const downloadFileInputRef = useRef<HTMLInputElement>(null);
   const hostIconInputRef = useRef<HTMLInputElement>(null);
+
+  // Media Picker Popup Modal state
+  const [mediaPickerConfig, setMediaPickerConfig] = useState<{
+    isOpen: boolean;
+    target: 'cover' | 'gallery' | 'download' | 'host_icon';
+    multiple?: boolean;
+    allowedTypes?: MediaFileType[];
+    title?: string;
+    currentValue?: string | string[];
+  } | null>(null);
+
+  const handleMediaPickerSelect = (selected: string | string[]) => {
+    if (!mediaPickerConfig) return;
+    const { target } = mediaPickerConfig;
+
+    if (target === 'gallery') {
+      const urls = Array.isArray(selected) ? selected : [selected];
+      setEditingApp(prev => {
+        const updated = Array.from(new Set([...prev.gallery_images, ...urls]));
+        return {
+          ...prev,
+          gallery_images: updated,
+          cover_image: prev.cover_image || updated[0] || ""
+        };
+      });
+    } else if (target === 'cover') {
+      const url = Array.isArray(selected) ? selected[0] : selected;
+      if (url) {
+        setEditingApp(prev => ({
+          ...prev,
+          cover_image: url,
+          gallery_images: prev.gallery_images.includes(url) ? prev.gallery_images : [url, ...prev.gallery_images]
+        }));
+      }
+    } else if (target === 'download') {
+      const url = Array.isArray(selected) ? selected[0] : selected;
+      if (url) {
+        setEditingApp(prev => ({ ...prev, download_url: url }));
+      }
+    } else if (target === 'host_icon') {
+      const url = Array.isArray(selected) ? selected[0] : selected;
+      if (url) {
+        setEditingApp(prev => ({ ...prev, host_app_icon: url }));
+      }
+    }
+
+    setMediaPickerConfig(null);
+  };
 
   // Load apps, reviews & bug reports
   const loadData = async () => {
@@ -279,6 +333,8 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
       currency: "AMD",
       download_url: "",
       store_url: "",
+      repository_url: "",
+      repository_type: "github",
       cover_image: "",
       gallery_images: [],
       languages: ["Հայերեն", "English"],
@@ -319,6 +375,8 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
       currency: app.currency || "AMD",
       download_url: app.download_url || "",
       store_url: app.store_url || "",
+      repository_url: app.repository_url || "",
+      repository_type: app.repository_type || "github",
       cover_image: app.cover_image || "",
       gallery_images: Array.isArray(app.gallery_images) ? app.gallery_images : [],
       languages: languages.length > 0 ? languages : ["Հայերեն", "English"],
@@ -517,9 +575,10 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
   };
 
   // Save App
-  const handleSaveApp = async (e?: React.FormEvent, overrideStatus?: 'published' | 'draft') => {
-    if (e && typeof e.preventDefault === 'function') {
-      e.preventDefault();
+  const handleSaveApp = async (e?: React.FormEvent | React.MouseEvent, overrideStatus?: 'published' | 'draft') => {
+    if (e) {
+      if (typeof (e as any).preventDefault === 'function') (e as any).preventDefault();
+      if (typeof (e as any).stopPropagation === 'function') (e as any).stopPropagation();
     }
 
     const nextStatus = overrideStatus || editingApp.status || (editingApp.is_draft ? 'draft' : 'published');
@@ -1649,7 +1708,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
               </div>
             </div>
 
-            <form onSubmit={handleSaveApp} style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ flex: 1, overflowY: 'auto', padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {/* Title AM & Title EN */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -2171,11 +2230,11 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                     <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>
                       Ներբեռնման ֆայլ կամ հղում (Direct Download URL)
                     </label>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                      <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <div style={{ flex: '1 1 240px' }}>
                         <hd-input
                           suppressHydrationWarning
-                          placeholder="/uploads/apps/..."
+                          placeholder="/uploads/apps/... կամ https://..."
                           value={editingApp.download_url || ""}
                           onInput={(e: any) => setEditingApp(p => ({ ...p, download_url: e.target.value }))}
                           data-width="100%"
@@ -2195,13 +2254,32 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                         data-height="40px"
                         data-thickness="2px"
                         data-font-size="0.8rem"
+                        data-color="rgba(74, 137, 124, 0.15)"
+                        data-text-color="var(--accent)"
+                        onClick={() => setMediaPickerConfig({
+                          isOpen: true,
+                          target: 'download',
+                          allowedTypes: ['document', 'other', 'vector', 'image'],
+                          title: 'Ընտրել Ներբեռնման Նիշք (Download File)',
+                          currentValue: editingApp.download_url
+                        })}
+                      >
+                        <span style={{ padding: '0 12px' }}>
+                          📁 Ընտրել Մեդիայից
+                        </span>
+                      </hd-button>
+                      <hd-button
+                        suppressHydrationWarning
+                        data-height="40px"
+                        data-thickness="2px"
+                        data-font-size="0.8rem"
                         data-color="var(--bg)"
                         data-text-color="var(--text)"
                         onClick={() => downloadFileInputRef.current?.click()}
                         disabled={uploadingFile}
                       >
                         <span style={{ padding: '0 12px' }}>
-                          {uploadingFile ? "Բեռնվում է..." : "Նիշքի Բեռնում"}
+                          {uploadingFile ? "Բեռնվում է..." : "↑ Վերբեռնել"}
                         </span>
                       </hd-button>
                     </div>
@@ -2209,104 +2287,319 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                 )}
               </div>
 
-              {/* Screenshots Gallery Section */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <label style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text)' }}>
-                    Սքրինշոթներ և Պատկերասրահ ({editingApp.gallery_images.length})
-                  </label>
-                  <input
-                    ref={galleryInputRef}
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    style={{ display: 'none' }}
-                    onChange={handleGalleryUpload}
-                  />
-                  <hd-button
-                    suppressHydrationWarning
-                    data-height="32px"
-                    data-thickness="2px"
-                    data-font-size="0.8rem"
-                    data-color="rgba(74, 137, 124, 0.12)"
-                    data-text-color="var(--accent)"
-                    onClick={() => galleryInputRef.current?.click()}
-                    disabled={uploadingGallery}
-                  >
-                    <span style={{ padding: '0 12px' }}>
-                      {uploadingGallery ? "Բեռնվում է..." : "+ Ավելացնել Նկարներ"}
+              {/* Repository / Source Code Link Section (GitHub, GitLab, etc.) */}
+              <div
+                style={{
+                  background: 'var(--bg)',
+                  padding: '18px 20px',
+                  borderRadius: '16px',
+                  border: '1px solid var(--panel-border)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                      </svg>
+                      Կոդի Շտեմարանի Հղում (Repository / Source Link)
+                    </label>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginTop: '2px' }}>
+                      Հավելվածի էջում Ներբեռնելու կոճակի կողքին կհայտնվի քառակուսի կոճակ՝ միայն պատկերակով (GitHub, GitLab և այլն)
                     </span>
-                  </hd-button>
+                  </div>
                 </div>
 
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))',
-                    gap: '12px',
-                    background: 'var(--bg)',
-                    padding: '14px',
-                    borderRadius: '12px',
-                    border: '1px solid var(--panel-border)',
-                    minHeight: '80px'
-                  }}
-                >
-                  {editingApp.gallery_images.length === 0 ? (
-                    <span style={{ color: 'var(--muted)', fontSize: '0.85rem', padding: '12px' }}>
-                      Սքրինշոթներ չկան:
-                    </span>
-                  ) : (
-                    editingApp.gallery_images.map((img, i) => (
-                      <div
-                        key={i}
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                  <div style={{ flex: '1 1 280px' }}>
+                    <hd-input
+                      suppressHydrationWarning
+                      placeholder="https://github.com/username/repository կամ https://gitlab.com/..."
+                      value={editingApp.repository_url || ""}
+                      onInput={(e: any) => {
+                        const val = e.target.value;
+                        let detectedType = editingApp.repository_type || 'github';
+                        if (val.includes('github.com')) detectedType = 'github';
+                        else if (val.includes('gitlab.com')) detectedType = 'gitlab';
+                        else if (val.includes('bitbucket.org')) detectedType = 'bitbucket';
+                        setEditingApp(p => ({ ...p, repository_url: val, repository_type: detectedType }));
+                      }}
+                      data-width="100%"
+                      data-height="40px"
+                      data-thickness="2px"
+                      data-font-size="13pt"
+                    />
+                  </div>
+
+                  {/* Platform Type Selector */}
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    {[
+                      { id: 'github', label: 'GitHub' },
+                      { id: 'gitlab', label: 'GitLab' },
+                      { id: 'bitbucket', label: 'Bitbucket' },
+                      { id: 'code', label: 'Git / Code' }
+                    ].map(p => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setEditingApp(prev => ({ ...prev, repository_type: p.id }))}
                         style={{
-                          position: 'relative',
+                          background: (editingApp.repository_type === p.id || (!editingApp.repository_type && p.id === 'github'))
+                            ? 'var(--accent)'
+                            : 'rgba(255, 255, 255, 0.05)',
+                          color: (editingApp.repository_type === p.id || (!editingApp.repository_type && p.id === 'github'))
+                            ? '#ffffff'
+                            : 'var(--muted)',
+                          border: '1px solid var(--panel-border)',
                           borderRadius: '8px',
-                          overflow: 'hidden',
-                          aspectRatio: '16/10',
-                          border: editingApp.cover_image === img ? '2px solid var(--accent)' : '1px solid var(--panel-border)'
+                          padding: '7px 11px',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
                         }}
                       >
-                        <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <button
-                          type="button"
-                          onClick={() => setEditingApp(p => ({ ...p, gallery_images: p.gallery_images.filter((_, idx) => idx !== i) }))}
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Preview Badge if URL is filled */}
+                {editingApp.repository_url && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '2px', padding: '8px 12px', background: 'rgba(74, 137, 124, 0.08)', borderRadius: '10px', border: '1px dashed rgba(74, 137, 124, 0.3)' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 600 }}>
+                      Կոճակի տեսքը էջում՝
+                    </span>
+                    <div style={{
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '8px',
+                      background: 'var(--panel)',
+                      border: '1.5px solid var(--panel-border)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'var(--text)',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+                    }}>
+                      {(editingApp.repository_type === 'gitlab' || (!editingApp.repository_type && editingApp.repository_url.includes('gitlab'))) ? (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="m23.6 9.59-1.23-3.79a.9.9 0 0 0-.85-.62.9.9 0 0 0-.86.62l-1.23 3.79H4.57L3.34 5.8a.9.9 0 0 0-.86-.62.9.9 0 0 0-.85.62L.4 9.59a.9.9 0 0 0 .33 1l11.27 8.19 11.27-8.19a.9.9 0 0 0 .33-1ZM12 18.78 1.77 11.34h20.46L12 18.78Z"/>
+                        </svg>
+                      ) : (editingApp.repository_type === 'bitbucket' || (!editingApp.repository_type && editingApp.repository_url.includes('bitbucket'))) ? (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M2.61 3a1.44 1.44 0 0 0-1.44 1.64l2.49 14.86A1.66 1.66 0 0 0 5.3 21h13.4a1.66 1.66 0 0 0 1.64-1.5l2.49-14.86A1.44 1.44 0 0 0 21.39 3H2.61zm10.74 12.35h-2.7L9.38 9.5h5.24l-1.27 5.85z"/>
+                        </svg>
+                      ) : (editingApp.repository_type === 'code') ? (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="16 18 22 12 16 6" />
+                          <polyline points="8 6 2 12 8 18" />
+                        </svg>
+                      ) : (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                        </svg>
+                      )}
+                    </div>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
+                      {editingApp.repository_url}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Cover Image & Screenshots Gallery Section */}
+              <div
+                style={{
+                  background: 'var(--bg)',
+                  padding: '18px 20px',
+                  borderRadius: '16px',
+                  border: '1px solid var(--panel-border)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '16px'
+                }}
+              >
+                {/* Cover Image */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                    <label style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text)' }}>
+                      Գլխավոր Պատկեր (Cover Image)
+                    </label>
+                    <hd-button
+                      suppressHydrationWarning
+                      data-height="32px"
+                      data-thickness="2px"
+                      data-font-size="0.78rem"
+                      data-color="rgba(74, 137, 124, 0.15)"
+                      data-text-color="var(--accent)"
+                      onClick={() => setMediaPickerConfig({
+                        isOpen: true,
+                        target: 'cover',
+                        multiple: false,
+                        allowedTypes: ['image'],
+                        title: 'Ընտրել Գլխավոր Պատկեր (Cover Image)',
+                        currentValue: editingApp.cover_image
+                      })}
+                    >
+                      <span style={{ padding: '0 10px' }}>📁 Ընտրել Գլխավոր Նկար</span>
+                    </hd-button>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    {editingApp.cover_image ? (
+                      <div style={{ width: '80px', height: '56px', borderRadius: '8px', overflow: 'hidden', border: '2px solid var(--accent)', flexShrink: 0 }}>
+                        <img src={editingApp.cover_image} alt="Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+                    ) : (
+                      <div style={{ width: '80px', height: '56px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px dashed var(--panel-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: '0.72rem', flexShrink: 0 }}>
+                        Նկար չկա
+                      </div>
+                    )}
+                    <div style={{ flex: 1 }}>
+                      <hd-input
+                        suppressHydrationWarning
+                        placeholder="https://... cover.jpg"
+                        value={editingApp.cover_image || ""}
+                        onInput={(e: any) => setEditingApp(p => ({ ...p, cover_image: e.target.value }))}
+                        data-width="100%"
+                        data-height="36px"
+                        data-thickness="2px"
+                        data-font-size="12pt"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Screenshots Gallery */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                    <label style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text)' }}>
+                      Սքրինշոթներ և Պատկերասրահ ({editingApp.gallery_images.length})
+                    </label>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <input
+                        ref={galleryInputRef}
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={handleGalleryUpload}
+                      />
+                      <hd-button
+                        suppressHydrationWarning
+                        data-height="32px"
+                        data-thickness="2px"
+                        data-font-size="0.8rem"
+                        data-color="rgba(74, 137, 124, 0.15)"
+                        data-text-color="var(--accent)"
+                        onClick={() => setMediaPickerConfig({
+                          isOpen: true,
+                          target: 'gallery',
+                          multiple: true,
+                          allowedTypes: ['image'],
+                          title: 'Ընտրել Սքրինշոթներ (Screenshots)',
+                          currentValue: editingApp.gallery_images
+                        })}
+                      >
+                        <span style={{ padding: '0 10px' }}>📁 Ընտրել Մեդիայից</span>
+                      </hd-button>
+                      <hd-button
+                        suppressHydrationWarning
+                        data-height="32px"
+                        data-thickness="2px"
+                        data-font-size="0.8rem"
+                        data-color="var(--panel)"
+                        data-text-color="var(--text)"
+                        onClick={() => galleryInputRef.current?.click()}
+                        disabled={uploadingGallery}
+                      >
+                        <span style={{ padding: '0 10px' }}>
+                          {uploadingGallery ? "Բեռնվում է..." : "↑ Վերբեռնել"}
+                        </span>
+                      </hd-button>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))',
+                      gap: '12px',
+                      background: 'var(--panel)',
+                      padding: '14px',
+                      borderRadius: '12px',
+                      border: '1px solid var(--panel-border)',
+                      minHeight: '80px'
+                    }}
+                  >
+                    {editingApp.gallery_images.length === 0 ? (
+                      <span style={{ color: 'var(--muted)', fontSize: '0.85rem', padding: '12px' }}>
+                        Սքրինշոթներ չկան: Սեղմեք «Ընտրել Մեդիայից» կամ «Վերբեռնել»:
+                      </span>
+                    ) : (
+                      editingApp.gallery_images.map((img, i) => (
+                        <div
+                          key={i}
                           style={{
-                            position: 'absolute',
-                            top: '4px',
-                            right: '4px',
-                            background: 'rgba(0,0,0,0.7)',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '50%',
-                            width: '20px',
-                            height: '20px',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                            lineHeight: 1
+                            position: 'relative',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            aspectRatio: '16/10',
+                            border: editingApp.cover_image === img ? '2px solid var(--accent)' : '1px solid var(--panel-border)',
+                            cursor: 'pointer'
                           }}
+                          onClick={() => setEditingApp(p => ({ ...p, cover_image: img }))}
+                          title="Սեղմեք գլխավոր (Cover) դարձնելու համար"
                         >
-                          &times;
-                        </button>
-                        {editingApp.cover_image === img && (
-                          <span
+                          <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingApp(p => ({ ...p, gallery_images: p.gallery_images.filter((_, idx) => idx !== i) }));
+                            }}
                             style={{
                               position: 'absolute',
-                              bottom: '2px',
-                              left: '2px',
-                              background: 'var(--accent)',
+                              top: '4px',
+                              right: '4px',
+                              background: 'rgba(0,0,0,0.7)',
                               color: '#fff',
-                              fontSize: '9px',
-                              padding: '1px 4px',
-                              borderRadius: '4px'
+                              border: 'none',
+                              borderRadius: '50%',
+                              width: '20px',
+                              height: '20px',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              lineHeight: 1
                             }}
                           >
-                            Cover
-                          </span>
-                        )}
-                      </div>
-                    ))
-                  )}
+                            &times;
+                          </button>
+                          {editingApp.cover_image === img && (
+                            <span
+                              style={{
+                                position: 'absolute',
+                                bottom: '2px',
+                                left: '2px',
+                                background: 'var(--accent)',
+                                color: '#fff',
+                                fontSize: '9px',
+                                fontWeight: 700,
+                                padding: '1px 5px',
+                                borderRadius: '4px'
+                              }}
+                            >
+                              Cover
+                            </span>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -2522,7 +2815,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                   </span>
                 </hd-button>
               </div>
-            </form>
+            </div>
           </div>
         </div>,
         document.body
@@ -3038,6 +3331,22 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
           </div>
         </div>,
         document.body
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          MEDIA PICKER POPUP MODAL
+          ══════════════════════════════════════════════════════════════════════ */}
+      {mediaPickerConfig?.isOpen && (
+        <MediaPickerModal
+          isOpen={mediaPickerConfig.isOpen}
+          onClose={() => setMediaPickerConfig(null)}
+          onSelect={handleMediaPickerSelect}
+          multiple={mediaPickerConfig.multiple}
+          allowedTypes={mediaPickerConfig.allowedTypes}
+          title={mediaPickerConfig.title}
+          token={token}
+          currentValue={mediaPickerConfig.currentValue}
+        />
       )}
     </div>
   );

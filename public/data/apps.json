@@ -1,6 +1,6 @@
 [
   {
-    "id": "app-1kua6m",
+    "id": "app-uaasrs",
     "title_am": "Անանուն սևագիր",
     "title_en": "Untitled Draft",
     "short_desc_am": "",
@@ -15,8 +15,12 @@
     "currency": "AMD",
     "download_url": "",
     "store_url": "",
-    "cover_image": "",
-    "gallery_images": [],
+    "repository_url": "https://github.com/hranthakobian/Grammar-Engine",
+    "repository_type": "github",
+    "cover_image": "/uploads/1782580735872_cover.png",
+    "gallery_images": [
+      "/uploads/1782580735872_cover.png"
+    ],
     "languages": [
       "Հայերեն",
       "English"
@@ -24,9 +28,9 @@
     "version": "v1.0.0",
     "release_date": "2026-09-18",
     "downloads_count": 0,
-    "is_draft": false,
-    "status": "published",
-    "created_at": "2026-09-18T07:35:18.281Z",
-    "updated_at": "2026-09-18T07:35:18.281Z"
+    "is_draft": true,
+    "status": "draft",
+    "created_at": "2026-09-19T07:02:14.978Z",
+    "updated_at": "2026-09-19T07:02:14.978Z"
   }
 ]

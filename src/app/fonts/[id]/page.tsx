@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
 import RatingSystem from "@/components/RatingSystem";
 import LoadingAnimation from "@/components/LoadingAnimation";
+import MediaLightbox, { MediaLightboxItem } from "@/components/MediaLightbox";
 
 type Font = {
   id: string;
@@ -195,6 +196,7 @@ export default function FontDetailPage() {
   const [font, setFont] = useState<Font | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedSpecimenIndex, setSelectedSpecimenIndex] = useState<number | null>(null);
 
   // Playground States
   const [text, setText] = useState("");
@@ -1320,9 +1322,23 @@ export default function FontDetailPage() {
               }
 
               if (block.type === "image" && block.image_url) {
+                const specimenImageBlocks = specimenBlocks.filter((b: any) => b.type === "image" && b.image_url);
+                const imgIndex = specimenImageBlocks.indexOf(block);
+
                 return (
                   <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
-                    <div style={{ borderRadius: "16px", overflow: "hidden", border: "1px solid var(--panel-border)", width: "100%" }}>
+                    <div 
+                      onClick={() => setSelectedSpecimenIndex(imgIndex >= 0 ? imgIndex : 0)}
+                      title={t("works_page", "view_gallery", "Դիտել պատկերասրահը")}
+                      style={{ 
+                        borderRadius: "16px", 
+                        overflow: "hidden", 
+                        border: "1px solid var(--panel-border)", 
+                        width: "100%", 
+                        cursor: "pointer", 
+                        transition: "transform 0.3s ease, box-shadow 0.3s ease" 
+                      }}
+                    >
                       <img src={block.image_url} alt="Specimen Graphic" style={{ width: "100%", display: "block" }} />
                     </div>
                     {(block.caption_am || block.caption_en) && (
@@ -1339,6 +1355,23 @@ export default function FontDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Unified Gallery Lightbox Slider for Font Specimens */}
+      <MediaLightbox
+        items={specimenBlocks
+          .filter((b: any) => b.type === "image" && b.image_url)
+          .map((b: any, bIdx: number) => ({
+            id: `specimen-${bIdx}`,
+            url: b.image_url,
+            title: locale === "hy" ? (font?.name_am || font?.name_en) : (font?.name_en || font?.name_am),
+            description: locale === "hy" ? (b.caption_am || b.caption_en) : (b.caption_en || b.caption_am),
+            type: "image"
+          }))}
+        initialIndex={selectedSpecimenIndex !== null ? selectedSpecimenIndex : 0}
+        isOpen={selectedSpecimenIndex !== null}
+        onClose={() => setSelectedSpecimenIndex(null)}
+        categoryLabel={locale === 'en' ? 'Font Specimen' : 'Տառատեսակի Նմուշ'}
+      />
 
       </div>
 

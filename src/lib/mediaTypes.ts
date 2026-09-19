@@ -31,6 +31,26 @@ export interface MediaLibraryData {
   customNames?: Record<string, string>; // file id/path -> custom display name
 }
 
+export interface StorageStats {
+  totalFiles: number;
+  totalSize: number;
+  totalSizeFormatted: string;
+  storageLimit: number;
+  storageLimitFormatted: string;
+  storageRemaining: number;
+  storageRemainingFormatted: string;
+  storagePercent: number;
+  isSupabaseConnected: boolean;
+  imagesCount: number;
+  videosCount: number;
+  fontsCount: number;
+  vectorsCount: number;
+  othersCount: number;
+  imagesSizeFormatted: string;
+  videosSizeFormatted: string;
+  fontsSizeFormatted: string;
+}
+
 export type ViewMode = 'large-icons' | 'medium-icons' | 'list' | 'details' | 'tiles';
 
 export type SortField = 'name' | 'size' | 'modifiedAt' | 'type';

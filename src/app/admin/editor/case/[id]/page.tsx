@@ -6,6 +6,8 @@ import Link from "next/link";
 import { brandingCases as staticCases } from "@/lib/brandingData";
 import LoadingAnimation from "@/components/LoadingAnimation";
 import HdVideoPlayer from "@/components/HdVideoPlayer";
+import MediaPickerModal from "@/components/MediaPickerModal";
+import { MediaFileType } from "@/lib/mediaTypes";
 
 /* ─── Types ─────────────────────────────────────────── */
 type BlockType = "text" | "image" | "embed" | "color_palette" | "typography_showcase";
@@ -373,6 +375,43 @@ export default function CaseEditor() {
   const [layersPos, setLayersPos] = useState({ x: 200, y: 480 });
   const [draggingLayers, setDraggingLayers] = useState(false);
   const layersStart = useRef({ x: 0, y: 0 });
+
+  // Media Picker Popup Modal state
+  const [mediaPickerConfig, setMediaPickerConfig] = useState<{
+    isOpen: boolean;
+    target: 'hero_cover' | { type: 'block_image'; blockIdx: number } | { type: 'block_embed'; blockIdx: number };
+    multiple?: boolean;
+    allowedTypes?: MediaFileType[];
+    title?: string;
+    currentValue?: string | string[];
+  } | null>(null);
+
+  const handleMediaPickerSelect = (selected: string | string[]) => {
+    if (!mediaPickerConfig) return;
+    const url = Array.isArray(selected) ? selected[0] : selected;
+    if (!url) {
+      setMediaPickerConfig(null);
+      return;
+    }
+
+    if (mediaPickerConfig.target === 'hero_cover') {
+      setForm(p => ({ ...p, image_url: url }));
+    } else if (typeof mediaPickerConfig.target === 'object') {
+      if (mediaPickerConfig.target.type === 'block_image') {
+        const { blockIdx } = mediaPickerConfig.target;
+        if (blocks[blockIdx]) {
+          upd(blockIdx, { ...blocks[blockIdx], image_url: url } as ImageBlock);
+        }
+      } else if (mediaPickerConfig.target.type === 'block_embed') {
+        const { blockIdx } = mediaPickerConfig.target;
+        if (blocks[blockIdx]) {
+          upd(blockIdx, { ...blocks[blockIdx], embed_url: url } as EmbedBlock);
+        }
+      }
+    }
+
+    setMediaPickerConfig(null);
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -1174,15 +1213,52 @@ export default function CaseEditor() {
                             </div>
                           ) : (
                             <div style={{ maxWidth: 800, width: "100%", padding: "0 24px", boxSizing: "border-box" }}>
-                              <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 240, border: "2px dashed var(--panel-border)", borderRadius: 16, cursor: "pointer", gap: 8, background: "var(--panel)" }}>
+                              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 220, border: "2px dashed var(--panel-border)", borderRadius: 16, gap: 12, background: "var(--panel)" }}>
                                 <span style={{ fontSize: "2.5rem", opacity: 0.4 }}>🖼</span>
-                                <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Սեղմեք նկար ավելացնելու համար</span>
-                                <input type="file" accept="image/*" style={{ display: "none" }}
-                                  onChange={async e => {
-                                    const url = await upload(e.target.files![0]);
-                                    if (url) upd(idx, { ...block, image_url: url });
-                                  }} />
-                              </label>
+                                <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Ավելացրեք նկար նախագծի մեջ</span>
+                                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => setMediaPickerConfig({
+                                      isOpen: true,
+                                      target: { type: 'block_image', blockIdx: idx },
+                                      allowedTypes: ['image'],
+                                      title: 'Ընտրել Նկար Մեդիայից'
+                                    })}
+                                    style={{
+                                      background: "rgba(74, 137, 124, 0.15)",
+                                      color: "var(--accent)",
+                                      border: "1px solid var(--accent)",
+                                      borderRadius: "8px",
+                                      padding: "7px 14px",
+                                      fontSize: "0.8rem",
+                                      fontWeight: 700,
+                                      cursor: "pointer"
+                                    }}
+                                  >
+                                    📁 Ընտրել Մեդիայից
+                                  </button>
+                                  <label style={{
+                                    background: "var(--btn-bg)",
+                                    border: "1px solid var(--panel-border)",
+                                    borderRadius: "8px",
+                                    padding: "7px 14px",
+                                    fontSize: "0.8rem",
+                                    fontWeight: 600,
+                                    cursor: "pointer",
+                                    color: "var(--text)"
+                                  }}>
+                                    ↑ Վերբեռնել
+                                    <input type="file" accept="image/*" style={{ display: "none" }}
+                                      onChange={async e => {
+                                        if (e.target.files && e.target.files[0]) {
+                                          const url = await upload(e.target.files[0]);
+                                          if (url) upd(idx, { ...block, image_url: url });
+                                        }
+                                      }} />
+                                  </label>
+                                </div>
+                              </div>
                             </div>
                           )}
                           {((editorLang === "am" ? block.caption_am : block.caption_en) || isSel) && (
@@ -1402,11 +1478,41 @@ export default function CaseEditor() {
                   </div>
 
                   <Field label="Cover Նկար URL" value={form.image_url} onChange={v => setForm(p => ({ ...p, image_url: v }))} />
-                  <label style={uploadLabelStyle}>
-                    {uploading ? "Վերբեռնվում..." : "📁 Վերբեռնել Cover"}
-                    <input type="file" accept="image/*" style={{ display: "none" }}
-                      onChange={async e => { const url = await upload(e.target.files![0]); if (url) setForm(p => ({ ...p, image_url: url })); }} />
-                  </label>
+                  <div style={{ display: "flex", gap: "6px" }}>
+                    <button
+                      type="button"
+                      onClick={() => setMediaPickerConfig({
+                        isOpen: true,
+                        target: 'hero_cover',
+                        allowedTypes: ['image'],
+                        title: 'Ընտրել Գլխավոր Նկար (Hero Cover)',
+                        currentValue: form.image_url
+                      })}
+                      style={{
+                        flex: 1,
+                        background: "rgba(74, 137, 124, 0.15)",
+                        color: "var(--accent)",
+                        border: "1px solid var(--accent)",
+                        borderRadius: "8px",
+                        padding: "8px 12px",
+                        fontSize: "0.8rem",
+                        fontWeight: 700,
+                        cursor: "pointer"
+                      }}
+                    >
+                      📁 Ընտրել Մեդիայից
+                    </button>
+                    <label style={{ ...uploadLabelStyle, flex: 1, margin: 0 }}>
+                      {uploading ? "Վերբեռնվում..." : "↑ Վերբեռնել"}
+                      <input type="file" accept="image/*" style={{ display: "none" }}
+                        onChange={async e => {
+                          if (e.target.files && e.target.files[0]) {
+                            const url = await upload(e.target.files[0]);
+                            if (url) setForm(p => ({ ...p, image_url: url }));
+                          }
+                        }} />
+                    </label>
+                  </div>
                 </div>
               );
             })()}
@@ -1542,11 +1648,41 @@ export default function CaseEditor() {
 
               {block.type === "image" && (<>
                 <Field label={editorLang === "am" ? "Նկարի URL" : "Image URL"} value={block.image_url} onChange={v => upd(selected, { ...block, image_url: v })} />
-                <label style={uploadLabelStyle}>
-                  {uploading ? (editorLang === "am" ? "Վերբեռնվում..." : "Uploading...") : (editorLang === "am" ? "📁 Վերբեռնել Նկար" : "📁 Upload Image")}
-                  <input type="file" accept="image/*" style={{ display: "none" }}
-                    onChange={async e => { const url = await upload(e.target.files![0]); if (url) upd(selected, { ...block, image_url: url }); }} />
-                </label>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <button
+                    type="button"
+                    onClick={() => setMediaPickerConfig({
+                      isOpen: true,
+                      target: { type: 'block_image', blockIdx: selected },
+                      allowedTypes: ['image'],
+                      title: 'Ընտրել Նկար Մեդիայից',
+                      currentValue: block.image_url
+                    })}
+                    style={{
+                      flex: 1,
+                      background: "rgba(74, 137, 124, 0.15)",
+                      color: "var(--accent)",
+                      border: "1px solid var(--accent)",
+                      borderRadius: "8px",
+                      padding: "8px 10px",
+                      fontSize: "0.78rem",
+                      fontWeight: 700,
+                      cursor: "pointer"
+                    }}
+                  >
+                    📁 Ընտրել Մեդիայից
+                  </button>
+                  <label style={{ ...uploadLabelStyle, flex: 1, margin: 0 }}>
+                    {uploading ? (editorLang === "am" ? "Վերբեռնվում..." : "Uploading...") : (editorLang === "am" ? "↑ Վերբեռնել Նկար" : "↑ Upload Image")}
+                    <input type="file" accept="image/*" style={{ display: "none" }}
+                      onChange={async e => {
+                        if (e.target.files && e.target.files[0]) {
+                          const url = await upload(e.target.files[0]);
+                          if (url) upd(selected, { ...block, image_url: url });
+                        }
+                      }} />
+                  </label>
+                </div>
                 <Field label={editorLang === "am" ? "Նկարագրություն (Caption)" : "Caption"} value={(editorLang === "am" ? block.caption_am : block.caption_en) || ""} onChange={v => upd(selected, { ...block, [editorLang === "am" ? "caption_am" : "caption_en"]: v })} />
                 <Toggle label={editorLang === "am" ? "Ամբողջ լայնությամբ" : "Full Width"} checked={block.fullWidth} onChange={v => upd(selected, { ...block, fullWidth: v })} />
               </>)}
@@ -1559,21 +1695,46 @@ export default function CaseEditor() {
                     onChange={v => upd(selected, { ...block, embed_url: v })} 
                   />
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>Վերբեռնեք տեսանյութ (.mp4, .webm)</span>
-                    <label style={uploadLabelStyle}>
-                      {uploading ? "Վերբեռնվում է..." : "📁 Վերբեռնել Տեսանյութ"}
-                      <input 
-                        type="file" 
-                        accept="video/*" 
-                        style={{ display: "none" }}
-                        onChange={async e => { 
-                          if (e.target.files && e.target.files[0]) {
-                            const url = await upload(e.target.files[0]); 
-                            if (url) upd(selected, { ...block, embed_url: url }); 
-                          }
-                        }} 
-                      />
-                    </label>
+                    <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>Վերբեռնեք կամ ընտրեք տեսանյութ (.mp4, .webm)</span>
+                    <div style={{ display: "flex", gap: "6px" }}>
+                      <button
+                        type="button"
+                        onClick={() => setMediaPickerConfig({
+                          isOpen: true,
+                          target: { type: 'block_embed', blockIdx: selected },
+                          allowedTypes: ['video'],
+                          title: 'Ընտրել Տեսանյութ Մեդիայից',
+                          currentValue: block.embed_url
+                        })}
+                        style={{
+                          flex: 1,
+                          background: "rgba(74, 137, 124, 0.15)",
+                          color: "var(--accent)",
+                          border: "1px solid var(--accent)",
+                          borderRadius: "8px",
+                          padding: "8px 10px",
+                          fontSize: "0.78rem",
+                          fontWeight: 700,
+                          cursor: "pointer"
+                        }}
+                      >
+                        📁 Ընտրել Մեդիայից
+                      </button>
+                      <label style={{ ...uploadLabelStyle, flex: 1, margin: 0 }}>
+                        {uploading ? "Վերբեռնվում է..." : "↑ Վերբեռնել"}
+                        <input 
+                          type="file" 
+                          accept="video/*" 
+                          style={{ display: "none" }}
+                          onChange={async e => { 
+                            if (e.target.files && e.target.files[0]) {
+                              const url = await upload(e.target.files[0]); 
+                              if (url) upd(selected, { ...block, embed_url: url }); 
+                            }
+                          }} 
+                        />
+                      </label>
+                    </div>
                   </div>
                   <div style={{ width: "100%", height: 1, background: "var(--panel-border)", margin: "2px 0" }} />
                   <Field 
@@ -1858,6 +2019,20 @@ export default function CaseEditor() {
             })}
           </div>
         </div>
+      )}
+
+      {/* Media Picker Modal */}
+      {mediaPickerConfig?.isOpen && (
+        <MediaPickerModal
+          isOpen={mediaPickerConfig.isOpen}
+          onClose={() => setMediaPickerConfig(null)}
+          onSelect={handleMediaPickerSelect}
+          multiple={mediaPickerConfig.multiple}
+          allowedTypes={mediaPickerConfig.allowedTypes}
+          title={mediaPickerConfig.title}
+          token={token}
+          currentValue={mediaPickerConfig.currentValue}
+        />
       )}
 
     </div>

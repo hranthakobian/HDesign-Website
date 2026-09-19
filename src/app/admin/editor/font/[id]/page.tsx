@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import LoadingAnimation from "@/components/LoadingAnimation";
+import MediaPickerModal from "@/components/MediaPickerModal";
+import { MediaFileType } from "@/lib/mediaTypes";
 
 type FontBlock = 
   | { type: 'text'; title_am: string; title_en: string; content_am: string; content_en: string }
@@ -59,6 +61,29 @@ export default function FontWysiwygEditor() {
   const [uploadingFontFile, setUploadingFontFile] = useState(false);
   const [saving, setSaving] = useState(false);
   const [activeStep, setActiveStep] = useState<"details" | "files" | "pricing" | "specimen">("details");
+
+  // Media Picker Popup Modal state
+  const [mediaPickerConfig, setMediaPickerConfig] = useState<{
+    isOpen: boolean;
+    target: 'font_file';
+    multiple?: boolean;
+    allowedTypes?: MediaFileType[];
+    title?: string;
+    currentValue?: string | string[];
+  } | null>(null);
+
+  const handleMediaPickerSelect = (selected: string | string[]) => {
+    if (!mediaPickerConfig) return;
+    const url = Array.isArray(selected) ? selected[0] : selected;
+    if (url) {
+      setFontForm(prev => ({
+        ...prev,
+        font_file_url: url,
+        download_url: prev.download_url || url
+      }));
+    }
+    setMediaPickerConfig(null);
+  };
 
   // Load auth token & initial font data
   useEffect(() => {
@@ -623,15 +648,39 @@ export default function FontWysiwygEditor() {
                 <h4 style={{ margin: '4px 0 12px 0', fontSize: '0.9rem', color: 'var(--text)' }}>Font Source Files</h4>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ background: 'var(--input-bg)', border: '1px dashed var(--input-border)', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--muted)', display: 'block', marginBottom: '10px' }}>Upload OTF, TTF package file</span>
-                    <label style={{
-                      padding: '8px 16px', background: 'rgba(0, 255, 204, 0.1)', border: '1px solid rgba(0, 255, 204, 0.3)',
-                      borderRadius: '6px', color: 'var(--accent)', fontSize: '0.78rem', cursor: 'pointer', display: 'inline-block', fontWeight: 600
-                    }}>
-                      {uploadingFontFile ? 'Վերբեռնվում է...' : 'Ընտրել ֆայլ'}
-                      <input type="file" accept=".ttf,.otf" onChange={handleFontFileUpload} disabled={uploadingFontFile} style={{ display: 'none' }} />
-                    </label>
+                  <div style={{ background: 'var(--input-bg)', border: '1px dashed var(--input-border)', padding: '16px', borderRadius: '8px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--muted)', display: 'block', marginBottom: '2px' }}>Upload OTF, TTF package file</span>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                      <label style={{
+                        padding: '8px 16px', background: 'rgba(0, 255, 204, 0.1)', border: '1px solid rgba(0, 255, 204, 0.3)',
+                        borderRadius: '6px', color: 'var(--accent)', fontSize: '0.78rem', cursor: 'pointer', display: 'inline-block', fontWeight: 600
+                      }}>
+                        {uploadingFontFile ? 'Վերբեռնվում է...' : '⬆ Վերբեռնել համակարգչից'}
+                        <input type="file" accept=".ttf,.otf" onChange={handleFontFileUpload} disabled={uploadingFontFile} style={{ display: 'none' }} />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setMediaPickerConfig({
+                          isOpen: true,
+                          target: 'font_file',
+                          allowedTypes: ['font'],
+                          title: 'Ընտրել Տառատեսակի Նիշք (Font File)',
+                          currentValue: fontForm.font_file_url
+                        })}
+                        style={{
+                          padding: '8px 16px',
+                          background: 'rgba(74, 137, 124, 0.15)',
+                          border: '1px solid var(--accent)',
+                          borderRadius: '6px',
+                          color: 'var(--accent)',
+                          fontSize: '0.78rem',
+                          cursor: 'pointer',
+                          fontWeight: 600
+                        }}
+                      >
+                        📁 Ընտրել Մեդիայից
+                      </button>
+                    </div>
                   </div>
 
                   <div>
@@ -845,6 +894,19 @@ export default function FontWysiwygEditor() {
         </div>
 
       </div>
+
+      {mediaPickerConfig?.isOpen && (
+        <MediaPickerModal
+          isOpen={mediaPickerConfig.isOpen}
+          onClose={() => setMediaPickerConfig(null)}
+          onSelect={handleMediaPickerSelect}
+          multiple={mediaPickerConfig.multiple}
+          allowedTypes={mediaPickerConfig.allowedTypes}
+          title={mediaPickerConfig.title}
+          token={token}
+          currentValue={mediaPickerConfig.currentValue}
+        />
+      )}
 
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { MediaFolder, MediaFile, ViewMode, SortField, SortOrder, MediaFileType } from '@/lib/mediaTypes';
+import { MediaFolder, MediaFile, ViewMode, SortField, SortOrder, MediaFileType, StorageStats } from '@/lib/mediaTypes';
 
 const COLOR_PRESETS = [
   { name: 'Կապույտ (Windows Blue)', hex: '#3B82F6' },
@@ -26,14 +26,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
   const [folders, setFolders] = useState<MediaFolder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<{
-    totalFiles: number;
-    totalSizeFormatted: string;
-    imagesCount: number;
-    videosCount: number;
-    fontsCount: number;
-    vectorsCount: number;
-  } | null>(null);
+  const [stats, setStats] = useState<StorageStats | null>(null);
 
   // Navigation & View state
   // currentFolderId: null means Root / All, or string folder ID
@@ -1600,6 +1593,137 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               Ստեղծեք առաջին պանակը:
             </div>
           )}
+
+          {/* SUPABASE STORAGE PROGRESS BAR & USAGE CARD */}
+          <div
+            style={{
+              marginTop: 'auto',
+              paddingTop: '14px',
+              borderTop: '1px solid var(--panel-border)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3ECF8E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                </svg>
+                <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--fg)', letterSpacing: '0.02em' }}>
+                  Supabase Պահոց
+                </span>
+              </div>
+
+              <span
+                style={{
+                  fontSize: '0.68rem',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  background: 'rgba(62, 207, 142, 0.15)',
+                  color: '#3ECF8E',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3ECF8E', display: 'inline-block' }} />
+                {stats?.storageLimitFormatted || '1 GB'}
+              </span>
+            </div>
+
+            {/* Glowing Custom Progress Bar Track */}
+            <div
+              style={{
+                width: '100%',
+                height: '10px',
+                background: 'var(--bg)',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                border: '1px solid var(--panel-border)',
+                position: 'relative'
+              }}
+            >
+              <div
+                style={{
+                  width: `${stats?.storagePercent || 0}%`,
+                  height: '100%',
+                  background: (stats?.storagePercent || 0) > 85
+                    ? 'linear-gradient(90deg, #F59E0B 0%, #EF4444 100%)'
+                    : (stats?.storagePercent || 0) > 60
+                    ? 'linear-gradient(90deg, #3ECF8E 0%, #F59E0B 100%)'
+                    : 'linear-gradient(90deg, #3B82F6 0%, #3ECF8E 100%)',
+                  borderRadius: '8px',
+                  transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: (stats?.storagePercent || 0) > 85
+                    ? '0 0 12px rgba(239, 68, 68, 0.5)'
+                    : '0 0 12px rgba(62, 207, 142, 0.5)'
+                }}
+              />
+            </div>
+
+            {/* Used / Total & Percent */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.74rem' }}>
+              <span style={{ color: 'var(--muted)', fontWeight: 500 }}>
+                {stats?.totalSizeFormatted || '0 MB'} / {stats?.storageLimitFormatted || '1 GB'}
+              </span>
+              <span
+                style={{
+                  fontWeight: 800,
+                  color: (stats?.storagePercent || 0) > 85 ? '#EF4444' : '#3ECF8E'
+                }}
+              >
+                {stats?.storagePercent || 0}%
+              </span>
+            </div>
+
+            {/* Remaining Space Pill Box */}
+            <div
+              style={{
+                fontSize: '0.74rem',
+                color: 'var(--muted)',
+                background: 'var(--bg)',
+                padding: '8px 10px',
+                borderRadius: '10px',
+                border: '1px solid var(--panel-border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span>⚡</span>
+                <span>Մնացել է՝</span>
+              </span>
+              <span style={{ fontWeight: 700, color: 'var(--fg)' }}>
+                {stats?.storageRemainingFormatted || '1 GB'} ազատ
+              </span>
+            </div>
+
+            {/* Breakdown Mini Badges */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '4px',
+                marginTop: '2px'
+              }}
+            >
+              <div style={{ background: 'var(--bg)', padding: '4px 6px', borderRadius: '6px', textAlign: 'center', fontSize: '0.65rem' }}>
+                <div style={{ color: 'var(--muted)' }}>Նկարներ</div>
+                <div style={{ fontWeight: 700, color: 'var(--fg)' }}>{stats?.imagesSizeFormatted || '0 MB'}</div>
+              </div>
+              <div style={{ background: 'var(--bg)', padding: '4px 6px', borderRadius: '6px', textAlign: 'center', fontSize: '0.65rem' }}>
+                <div style={{ color: 'var(--muted)' }}>Վիդեո</div>
+                <div style={{ fontWeight: 700, color: 'var(--fg)' }}>{stats?.videosSizeFormatted || '0 MB'}</div>
+              </div>
+              <div style={{ background: 'var(--bg)', padding: '4px 6px', borderRadius: '6px', textAlign: 'center', fontSize: '0.65rem' }}>
+                <div style={{ color: 'var(--muted)' }}>Տառեր</div>
+                <div style={{ fontWeight: 700, color: 'var(--fg)' }}>{stats?.fontsSizeFormatted || '0 MB'}</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* RIGHT MAIN AREA (Subfolders and Files) */}

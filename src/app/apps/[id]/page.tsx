@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
@@ -38,6 +38,8 @@ type AppDetail = {
   currency?: string;
   download_url?: string;
   store_url?: string;
+  repository_url?: string;
+  repository_type?: string;
   cover_image?: string;
   gallery_images: string[];
   languages?: string[];
@@ -57,11 +59,25 @@ export default function AppDetailPage() {
   const params = useParams();
   const id = params?.id as string;
   const { locale, t } = useI18n();
+  const [mounted, setMounted] = useState(false);
 
   const [app, setApp] = useState<AppDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isBugModalOpen, setIsBugModalOpen] = useState(false);
+
+  // Sticky CTA and Description Collapsible States
+  const heroCtaRef = useRef<HTMLDivElement>(null);
+  const descContentRef = useRef<HTMLDivElement>(null);
+  const descInnerRef = useRef<HTMLDivElement>(null);
+  const [descFullHeight, setDescFullHeight] = useState<number | null>(null);
+  const [isHeroCtaVisible, setIsHeroCtaVisible] = useState(true);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [isDescriptionLong, setIsDescriptionLong] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Reviews submission state
   const [reviewsList, setReviewsList] = useState<Review[]>([]);
@@ -99,6 +115,51 @@ export default function AppDetailPage() {
     }
     loadAppDetail();
   }, [id]);
+
+  useEffect(() => {
+    const target = heroCtaRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsHeroCtaVisible(entry.isIntersecting);
+      },
+      { threshold: 0.05, rootMargin: "-80px 0px 0px 0px" }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [loading, app]);
+
+  useEffect(() => {
+    const updateHeight = () => {
+      if (descInnerRef.current) {
+        const height = descInnerRef.current.scrollHeight;
+        setDescFullHeight(height);
+        if (height > 380) {
+          setIsDescriptionLong(true);
+        } else {
+          setIsDescriptionLong(false);
+        }
+      }
+    };
+    updateHeight();
+    const timer = setTimeout(updateHeight, 350);
+    return () => clearTimeout(timer);
+  }, [app, locale]);
+
+  const handleToggleDescription = () => {
+    if (isDescriptionExpanded && descContentRef.current) {
+      const rect = descContentRef.current.getBoundingClientRect();
+      if (rect.top < 90) {
+        window.scrollTo({
+          top: window.scrollY + rect.top - 110,
+          behavior: 'smooth'
+        });
+      }
+    }
+    setIsDescriptionExpanded(prev => !prev);
+  };
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -251,7 +312,7 @@ export default function AppDetailPage() {
           padding: "36px",
           boxShadow: "var(--shadow)",
           display: "grid",
-          gridTemplateColumns: "1.1fr 1fr",
+          gridTemplateColumns: "3fr 2fr",
           gap: "40px",
           marginBottom: "40px",
           alignItems: "start"
@@ -484,63 +545,116 @@ export default function AppDetailPage() {
           </div>
 
           {/* CTA Action Buttons */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "4px" }}>
-            {app.is_paid ? (
-              <a
-                href={app.store_url || "#"}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ textDecoration: "none", width: "100%" }}
-              >
-                <hd-button
-                  suppressHydrationWarning
-                  data-width="100%"
-                  data-height="52px"
-                  data-thickness="3px"
-                  data-font-size="1.02rem"
-                  data-color="rgba(229, 57, 53, 0.9)"
-                  data-text-color="#ffffff"
+          <div ref={heroCtaRef} style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "4px" }}>
+            <div style={{ display: "flex", alignItems: "stretch", gap: "10px", width: "100%" }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {app.is_paid ? (
+                  <a
+                    href={app.store_url || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ textDecoration: "none", width: "100%", display: "block" }}
+                  >
+                    <hd-button
+                      suppressHydrationWarning
+                      data-width="100%"
+                      data-height="52px"
+                      data-thickness="3px"
+                      data-font-size="1.02rem"
+                      data-color="rgba(229, 57, 53, 0.9)"
+                      data-text-color="#ffffff"
+                    >
+                      <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="9" cy="21" r="1" />
+                          <circle cx="20" cy="21" r="1" />
+                          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                        </svg>
+                        <span>{locale === "hy" ? "Գնել արտաքին խանութում" : "Buy on External Store"}</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                          <polyline points="15 3 21 3 21 9" />
+                        </svg>
+                      </span>
+                    </hd-button>
+                  </a>
+                ) : (
+                  <a
+                    href={app.download_url || "#"}
+                    download
+                    style={{ textDecoration: "none", width: "100%", display: "block" }}
+                  >
+                    <hd-button
+                      suppressHydrationWarning
+                      data-width="100%"
+                      data-height="52px"
+                      data-thickness="3px"
+                      data-font-size="1.02rem"
+                      data-color="var(--accent)"
+                      data-text-color="#ffffff"
+                    >
+                      <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        <span>{locale === "hy" ? "Ներբեռնել Անվճար" : "Direct Download (Free)"}</span>
+                      </span>
+                    </hd-button>
+                  </a>
+                )}
+              </div>
+
+              {/* Repository Icon Button (GitHub, GitLab, etc.) */}
+              {app.repository_url && (
+                <a
+                  href={app.repository_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={
+                    app.repository_type === 'gitlab' || (!app.repository_type && app.repository_url.includes('gitlab'))
+                      ? "GitLab Repository"
+                      : app.repository_type === 'bitbucket' || (!app.repository_type && app.repository_url.includes('bitbucket'))
+                      ? "Bitbucket Repository"
+                      : app.repository_type === 'code'
+                      ? "Source Code"
+                      : "GitHub Repository"
+                  }
+                  style={{ textDecoration: "none", flexShrink: 0 }}
                 >
-                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="9" cy="21" r="1" />
-                      <circle cx="20" cy="21" r="1" />
-                      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-                    </svg>
-                    <span>{locale === "hy" ? "Գնել արտաքին խանութում" : "Buy on External Store"}</span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                      <polyline points="15 3 21 3 21 9" />
-                    </svg>
-                  </span>
-                </hd-button>
-              </a>
-            ) : (
-              <a
-                href={app.download_url || "#"}
-                download
-                style={{ textDecoration: "none", width: "100%" }}
-              >
-                <hd-button
-                  suppressHydrationWarning
-                  data-width="100%"
-                  data-height="52px"
-                  data-thickness="3px"
-                  data-font-size="1.02rem"
-                  data-color="var(--accent)"
-                  data-text-color="#ffffff"
-                >
-                  <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
-                    <span>{locale === "hy" ? "Ներբեռնել Անվճար" : "Direct Download (Free)"}</span>
-                  </span>
-                </hd-button>
-              </a>
-            )}
+                  <hd-button
+                    suppressHydrationWarning
+                    data-width="52px"
+                    data-height="52px"
+                    data-thickness="3px"
+                    data-color="var(--bg)"
+                    data-text-color="var(--text)"
+                  >
+                    <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {(app.repository_type === 'gitlab' || (!app.repository_type && app.repository_url.includes('gitlab'))) ? (
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="m23.6 9.59-1.23-3.79a.9.9 0 0 0-.85-.62.9.9 0 0 0-.86.62l-1.23 3.79H4.57L3.34 5.8a.9.9 0 0 0-.86-.62.9.9 0 0 0-.85.62L.4 9.59a.9.9 0 0 0 .33 1l11.27 8.19 11.27-8.19a.9.9 0 0 0 .33-1ZM12 18.78 1.77 11.34h20.46L12 18.78Z"/>
+                        </svg>
+                      ) : (app.repository_type === 'bitbucket' || (!app.repository_type && app.repository_url.includes('bitbucket'))) ? (
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M2.61 3a1.44 1.44 0 0 0-1.44 1.64l2.49 14.86A1.66 1.66 0 0 0 5.3 21h13.4a1.66 1.66 0 0 0 1.64-1.5l2.49-14.86A1.44 1.44 0 0 0 21.39 3H2.61zm10.74 12.35h-2.7L9.38 9.5h5.24l-1.27 5.85z"/>
+                        </svg>
+                      ) : (app.repository_type === 'code') ? (
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="16 18 22 12 16 6" />
+                          <polyline points="8 6 2 12 8 18" />
+                        </svg>
+                      ) : (
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                        </svg>
+                      )}
+                    </span>
+                  </hd-button>
+                </a>
+              )}
+            </div>
 
             {/* Report Bug Button */}
             <button
@@ -594,46 +708,566 @@ export default function AppDetailPage() {
 
       {/* ══════════════════════════════════════════════════════════════════════
           BOTTOM SECTION: DETAILED INFO & REVIEWS
+          75% Left Description + 25% Right Sticky Technical Specs
           ══════════════════════════════════════════════════════════════════════ */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "40px", alignItems: "start" }} className="app-detail-content-grid">
-        {/* Left Column: Markdown Description */}
-        <div
-          style={{
-            background: "var(--panel)",
-            borderRadius: "24px",
-            border: "1px solid var(--panel-border)",
-            padding: "40px",
-            boxShadow: "var(--shadow)"
-          }}
-        >
-          <h2 style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--text)", margin: "0 0 24px 0", borderBottom: "1px solid var(--panel-border)", paddingBottom: "16px" }}>
-            {locale === "hy" ? "Մանրամասն Նկարագրություն" : "Detailed Overview"}
-          </h2>
+      <div 
+        style={{ 
+          display: "grid", 
+          gridTemplateColumns: "minmax(0, 3fr) minmax(0, 1fr)", 
+          gap: "36px", 
+          alignItems: "start" 
+        }} 
+        className="app-detail-content-grid"
+      >
+        {/* Left Column: Markdown Description + Reviews (75% width) */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "36px", minWidth: 0 }}>
+          <div
+            style={{
+              background: "var(--panel)",
+              borderRadius: "24px",
+              border: "1px solid var(--panel-border)",
+              padding: "40px",
+              boxShadow: "var(--shadow)",
+              position: "relative",
+              display: "flex",
+              flexDirection: "column"
+            }}
+          >
+            <h2 style={{ fontSize: "1.6rem", fontWeight: 800, color: "var(--text)", margin: "0 0 24px 0", borderBottom: "1px solid var(--panel-border)", paddingBottom: "16px" }}>
+              {locale === "hy" ? "Մանրամասն Նկարագրություն" : "Detailed Overview"}
+            </h2>
 
-          {detailedMd ? (
-            <MarkdownRenderer content={detailedMd} />
-          ) : (
-            <p style={{ color: "var(--muted)", fontStyle: "italic" }}>
-              {locale === "hy" ? "Մանրամասն նկարագրություն նշված չէ:" : "No detailed overview provided."}
-            </p>
-          )}
+            <div
+              ref={descContentRef}
+              style={{
+                maxHeight: !isDescriptionLong
+                  ? "none"
+                  : isDescriptionExpanded
+                  ? `${(descFullHeight || 3000) + 40}px`
+                  : "380px",
+                overflow: "hidden",
+                position: "relative",
+                transition: "max-height 0.6s cubic-bezier(0.16, 1, 0.3, 1)"
+              }}
+            >
+              <div ref={descInnerRef} style={{ paddingBottom: isDescriptionLong ? "12px" : "0px" }}>
+                {detailedMd ? (
+                  <MarkdownRenderer content={detailedMd} />
+                ) : (
+                  <p style={{ color: "var(--muted)", fontStyle: "italic" }}>
+                    {locale === "hy" ? "Մանրամասն նկարագրություն նշված չէ:" : "No detailed overview provided."}
+                  </p>
+                )}
+              </div>
+
+              {/* Gradient Fade-out overlay when collapsed */}
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: "140px",
+                  background: "linear-gradient(to bottom, rgba(0, 0, 0, 0) 0%, var(--panel) 95%)",
+                  pointerEvents: "none",
+                  opacity: isDescriptionLong && !isDescriptionExpanded ? 1 : 0,
+                  transition: "opacity 0.4s ease"
+                }}
+              />
+            </div>
+
+            {/* Toggle Read More / Show Less Button */}
+            {isDescriptionLong && (
+              <div style={{ display: "flex", justifyContent: "center", marginTop: "24px" }}>
+                <button
+                  type="button"
+                  onClick={handleToggleDescription}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    background: "var(--bg)",
+                    border: "1px solid var(--panel-border)",
+                    borderRadius: "24px",
+                    padding: "10px 24px",
+                    color: "var(--text)",
+                    fontSize: "0.92rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    transition: "all 0.25s ease",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "var(--accent)";
+                    e.currentTarget.style.color = "var(--accent)";
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "var(--panel-border)";
+                    e.currentTarget.style.color = "var(--text)";
+                    e.currentTarget.style.transform = "translateY(0)";
+                  }}
+                >
+                  <span>
+                    {isDescriptionExpanded
+                      ? (locale === "hy" ? "Կոծկել" : "Show Less")
+                      : (locale === "hy" ? "Կարդալ ավելին" : "Read More")}
+                  </span>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{
+                      transform: isDescriptionExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                      transition: "transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)"
+                    }}
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* ══════════════════════════════════════════════════════════════════════
+              REVIEWS & RATINGS SECTION
+              5-Star Rating System & Guest Submission Form
+              ══════════════════════════════════════════════════════════════════════ */}
+          <div
+            className="app-reviews-section"
+            style={{
+              background: "var(--panel)",
+              borderRadius: "24px",
+              border: "1px solid var(--panel-border)",
+              padding: "40px",
+              boxShadow: "var(--shadow)"
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", flexWrap: "wrap", gap: "16px" }}>
+              <div>
+                <h2 style={{ fontSize: "1.7rem", fontWeight: 800, color: "var(--text)", margin: "0 0 6px 0" }}>
+                  {locale === "hy" ? "Գնահատականներ և Մեկնաբանություններ" : "Ratings & Reviews"}
+                </h2>
+                <p style={{ color: "var(--muted)", margin: 0, fontSize: "0.95rem" }}>
+                  {locale === "hy" ? "Կիսվեք ձեր կարծիքով կամ փորձով այս հավելվածի վերաբերյալ։" : "Share your thoughts and feedback about this app."}
+                </p>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "16px",
+                  background: "var(--bg)",
+                  padding: "12px 24px",
+                  borderRadius: "16px",
+                  border: "1px solid var(--panel-border)"
+                }}
+              >
+                <div style={{ fontSize: "2.4rem", fontWeight: 900, color: "var(--text)", lineHeight: 1 }}>
+                  {app.avg_rating || 5.0}
+                </div>
+                <div>
+                  <div style={{ marginBottom: "4px" }}>
+                    <HDesignStars rating={app.avg_rating || 5.0} size={18} gap={3} />
+                  </div>
+                  <span style={{ fontSize: "0.8rem", color: "var(--muted)" }}>
+                    {reviewsList.length} {locale === "hy" ? "կարծիք" : "ratings"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Reviews Layout: List of Reviews + Submit Form */}
+            <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "40px", alignItems: "start" }} className="reviews-layout-grid">
+              {/* Left: Approved Reviews List */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <h3 style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--text)", margin: "0 0 8px 0" }}>
+                  {locale === "hy" ? "Օգտատերերի Կարծիքները" : "User Reviews"} ({reviewsList.length})
+                </h3>
+
+                {reviewsList.length === 0 ? (
+                  <div style={{ padding: "40px 20px", textAlign: "center", border: "1px dashed var(--panel-border)", borderRadius: "16px", color: "var(--muted)" }}>
+                    <p style={{ margin: 0 }}>
+                      {locale === "hy" ? "Առայժմ մեկնաբանություններ չկան։ Եղեք առաջինը, ով կգնահատի։" : "No reviews yet. Be the first to share your experience!"}
+                    </p>
+                  </div>
+                ) : (
+                  reviewsList.map((rev) => (
+                    <div
+                      key={rev.id}
+                      style={{
+                        background: "var(--bg)",
+                        border: "1px solid var(--panel-border)",
+                        borderRadius: "16px",
+                        padding: "20px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "10px"
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <div
+                            style={{
+                              width: "36px",
+                              height: "36px",
+                              borderRadius: "50%",
+                              background: "var(--accent)",
+                              color: "#fff",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontWeight: 700,
+                              fontSize: "0.9rem"
+                            }}
+                          >
+                            {rev.is_anonymous ? "?" : (rev.user_name ? rev.user_name[0].toUpperCase() : "U")}
+                          </div>
+                          <div>
+                            <span style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text)", display: "block" }}>
+                              {rev.user_name}
+                            </span>
+                            <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>
+                              {new Date(rev.created_at).toLocaleDateString(locale === "hy" ? "hy-AM" : "en-US", { year: "numeric", month: "short", day: "numeric" })}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Stars */}
+                        <HDesignStars rating={rev.rating} size={15} gap={2} />
+                      </div>
+
+                      <p style={{ margin: 0, fontSize: "0.92rem", color: "var(--text)", opacity: 0.9, lineHeight: "1.5" }}>
+                        {rev.comment}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Right: Guest Review Form */}
+              <div
+                style={{
+                  background: "var(--bg)",
+                  border: "1px solid var(--panel-border)",
+                  borderRadius: "20px",
+                  padding: "28px"
+                }}
+              >
+                <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--text)", margin: "0 0 6px 0" }}>
+                  {locale === "hy" ? "Թողնել Կարծիք" : "Write a Review"}
+                </h3>
+                <p style={{ fontSize: "0.85rem", color: "var(--muted)", margin: "0 0 20px 0" }}>
+                  {locale === "hy" ? "Գրանցում չի պահանջվում։" : "No registration required."}
+                </p>
+
+                {reviewMessage && (
+                  <div
+                    style={{
+                      padding: "12px 16px",
+                      borderRadius: "10px",
+                      marginBottom: "20px",
+                      fontSize: "0.88rem",
+                      lineHeight: "1.4",
+                      background: reviewMessage.type === "success" ? "rgba(74, 137, 124, 0.15)" : "rgba(229, 57, 53, 0.15)",
+                      color: reviewMessage.type === "success" ? "var(--accent)" : "#e53935",
+                      border: `1px solid ${reviewMessage.type === "success" ? "var(--accent)" : "rgba(229, 57, 53, 0.3)"}`
+                    }}
+                  >
+                    {reviewMessage.text}
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmitReview} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {/* Star Rating Input */}
+                  <div>
+                    <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text)", display: "block", marginBottom: "10px" }}>
+                      {locale === "hy" ? "Ձեր գնահատականը՝" : "Your Rating:"} <span style={{ color: "#ffcc00", fontWeight: 800 }}>★ {formRating} / 5</span>
+                    </span>
+                    <HDesignStars
+                      rating={hoverRating !== null ? hoverRating : formRating}
+                      size={32}
+                      gap={6}
+                      interactive={true}
+                      onRate={(star) => setFormRating(star)}
+                    />
+                  </div>
+
+                  {/* Anonymous Checkbox / Toggle */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      fontSize: "0.88rem",
+                      color: "var(--text)",
+                      cursor: "pointer",
+                      userSelect: "none"
+                    }}
+                    onClick={() => setFormIsAnonymous(!formIsAnonymous)}
+                  >
+                    <hd-checkbox
+                      suppressHydrationWarning
+                      checked={formIsAnonymous}
+                      data-thickness="3px"
+                      data-size="16px"
+                      onChange={(e: any) => setFormIsAnonymous(e.target.checked)}
+                    />
+                    <span>{locale === "hy" ? "Թողնել կարծիքը որպես «Անանուն»" : "Post review as Anonymous"}</span>
+                  </div>
+
+                  {/* Name & Email Fields (Disabled/Hidden if anonymous) */}
+                  {!formIsAnonymous && (
+                    <>
+                      <div>
+                        <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: "6px" }}>
+                          {locale === "hy" ? "Անուն *" : "Name *"}
+                        </label>
+                        <hd-input
+                          suppressHydrationWarning
+                          placeholder={locale === "hy" ? "Ձեր անունը" : "Your name"}
+                          value={formName}
+                          onInput={(e: any) => setFormName(e.target.value)}
+                          data-width="100%"
+                          data-height="44px"
+                          data-thickness="2px"
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: "6px" }}>
+                          {locale === "hy" ? "Էլ. փոստ (ըստ ցանկության)" : "Email (optional)"}
+                        </label>
+                        <hd-input
+                          suppressHydrationWarning
+                          type="email"
+                          placeholder="example@mail.com"
+                          value={formEmail}
+                          onInput={(e: any) => setFormEmail(e.target.value)}
+                          data-width="100%"
+                          data-height="44px"
+                          data-thickness="2px"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Comment Text Area */}
+                  <div>
+                    <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: "6px" }}>
+                      {locale === "hy" ? "Մեկնաբանություն *" : "Comment *"}
+                    </label>
+                    {mounted ? (
+                      <hd-textarea
+                        suppressHydrationWarning
+                        placeholder={locale === "hy" ? "Գրեք ձեր տպավորությունների մասին..." : "Write your feedback..."}
+                        value={formComment}
+                        onInput={(e: any) => setFormComment(e.target.value)}
+                        data-width="100%"
+                        data-height="110px"
+                        data-thickness="2px"
+                      />
+                    ) : (
+                      <textarea
+                        placeholder={locale === "hy" ? "Գրեք ձեր տպավորությունների մասին..." : "Write your feedback..."}
+                        value={formComment}
+                        onChange={(e: any) => setFormComment(e.target.value)}
+                        style={{ width: "100%", height: "110px", background: "var(--bg)", border: "1px solid var(--panel-border)", borderRadius: "8px", padding: "10px", color: "var(--text)" }}
+                      />
+                    )}
+                  </div>
+
+                  {/* Submit Button */}
+                  {mounted ? (
+                    <hd-button
+                      suppressHydrationWarning
+                      data-height="46px"
+                      data-thickness="3px"
+                      data-color="var(--accent)"
+                      data-text-color="#ffffff"
+                      onClick={handleSubmitReview}
+                      disabled={submittingReview}
+                    >
+                      {submittingReview ? (
+                        <span>{locale === "hy" ? "Ուղարկվում է..." : "Submitting..."}</span>
+                      ) : (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13" />
+                            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                          </svg>
+                          <span>{locale === "hy" ? "Ուղարկել Կարծիքը" : "Submit Review"}</span>
+                        </span>
+                      )}
+                    </hd-button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSubmitReview}
+                      style={{ height: "46px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: "10px", fontWeight: 700, padding: "0 20px" }}
+                    >
+                      {locale === "hy" ? "Ուղարկել Կարծիքը" : "Submit Review"}
+                    </button>
+                  )}
+                </form>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Right Column: Metadata & Specifications */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        {/* Right Column: Metadata & Specifications (25% width, Sticky) */}
+        <div 
+          className="app-detail-sticky-sidebar"
+          style={{ 
+            display: "flex", 
+            flexDirection: "column", 
+            gap: "24px",
+            position: "sticky",
+            top: "calc(var(--admin-bar-height, 0px) + 96px)",
+            alignSelf: "flex-start",
+            zIndex: 20
+          }}
+        >
           {/* Metadata Card */}
           <div
             style={{
               background: "var(--panel)",
               borderRadius: "20px",
               border: "1px solid var(--panel-border)",
-              padding: "28px",
+              padding: "24px",
               boxShadow: "var(--shadow)"
             }}
           >
-            <h3 style={{ fontSize: "1.15rem", fontWeight: 800, color: "var(--text)", margin: "0 0 20px 0" }}>
-              {locale === "hy" ? "Տեխնիկական Տվյալներ" : "Specifications"}
-            </h3>
+            {/* Header with Title and Sticky CTA Button */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "20px" }}>
+              <h3 style={{ fontSize: "1.15rem", fontWeight: 800, color: "var(--text)", margin: 0 }}>
+                {locale === "hy" ? "Տեխնիկական Տվյալներ" : "Specifications"}
+              </h3>
+
+              {/* Sticky Top Download / Action Button (Appears when main Hero CTA is scrolled out of view) */}
+              {!isHeroCtaVisible && (
+                <div
+                  style={{
+                    animation: "fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px"
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "stretch", gap: "8px", width: "100%" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {app.is_paid ? (
+                        <a
+                          href={app.store_url || "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ textDecoration: "none", width: "100%", display: "block" }}
+                        >
+                          <hd-button
+                            suppressHydrationWarning
+                            data-width="100%"
+                            data-height="46px"
+                            data-thickness="2.5px"
+                            data-font-size="0.9rem"
+                            data-color="rgba(229, 57, 53, 0.9)"
+                            data-text-color="#ffffff"
+                          >
+                            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px", fontWeight: 800, letterSpacing: "0.5px" }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="9" cy="21" r="1" />
+                                <circle cx="20" cy="21" r="1" />
+                                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                              </svg>
+                              <span>{locale === "hy" ? "ԳՆԵԼ" : "BUY NOW"} ({app.price ? `${app.price.toLocaleString()} ${app.currency || 'AMD'}` : ''})</span>
+                            </span>
+                          </hd-button>
+                        </a>
+                      ) : (
+                        <a
+                          href={app.download_url || "#"}
+                          download
+                          style={{ textDecoration: "none", width: "100%", display: "block" }}
+                        >
+                          <hd-button
+                            suppressHydrationWarning
+                            data-width="100%"
+                            data-height="46px"
+                            data-thickness="2.5px"
+                            data-font-size="0.9rem"
+                            data-color="var(--accent)"
+                            data-text-color="#ffffff"
+                          >
+                            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px", fontWeight: 800, letterSpacing: "0.5px" }}>
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                              </svg>
+                              <span>{locale === "hy" ? "ՆԵՐԲԵՌՆԵԼ" : "DOWNLOAD"}</span>
+                            </span>
+                          </hd-button>
+                        </a>
+                      )}
+                    </div>
+
+                    {/* Sticky Repository Icon Button */}
+                    {app.repository_url && (
+                      <a
+                        href={app.repository_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={
+                          app.repository_type === 'gitlab' || (!app.repository_type && app.repository_url.includes('gitlab'))
+                            ? "GitLab Repository"
+                            : app.repository_type === 'bitbucket' || (!app.repository_type && app.repository_url.includes('bitbucket'))
+                            ? "Bitbucket Repository"
+                            : app.repository_type === 'code'
+                            ? "Source Code"
+                            : "GitHub Repository"
+                        }
+                        style={{ textDecoration: "none", flexShrink: 0 }}
+                      >
+                        <hd-button
+                          suppressHydrationWarning
+                          data-width="46px"
+                          data-height="46px"
+                          data-thickness="2.5px"
+                          data-color="var(--bg)"
+                          data-text-color="var(--text)"
+                        >
+                          <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            {(app.repository_type === 'gitlab' || (!app.repository_type && app.repository_url.includes('gitlab'))) ? (
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="m23.6 9.59-1.23-3.79a.9.9 0 0 0-.85-.62.9.9 0 0 0-.86.62l-1.23 3.79H4.57L3.34 5.8a.9.9 0 0 0-.86-.62.9.9 0 0 0-.85.62L.4 9.59a.9.9 0 0 0 .33 1l11.27 8.19 11.27-8.19a.9.9 0 0 0 .33-1ZM12 18.78 1.77 11.34h20.46L12 18.78Z"/>
+                              </svg>
+                            ) : (app.repository_type === 'bitbucket' || (!app.repository_type && app.repository_url.includes('bitbucket'))) ? (
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M2.61 3a1.44 1.44 0 0 0-1.44 1.64l2.49 14.86A1.66 1.66 0 0 0 5.3 21h13.4a1.66 1.66 0 0 0 1.64-1.5l2.49-14.86A1.44 1.44 0 0 0 21.39 3H2.61zm10.74 12.35h-2.7L9.38 9.5h5.24l-1.27 5.85z"/>
+                              </svg>
+                            ) : (app.repository_type === 'code') ? (
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="16 18 22 12 16 6" />
+                                <polyline points="8 6 2 12 8 18" />
+                              </svg>
+                            ) : (
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                              </svg>
+                            )}
+                          </span>
+                        </hd-button>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "16px", fontSize: "0.9rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px dashed var(--panel-border)", paddingBottom: "10px" }}>
@@ -743,274 +1377,6 @@ export default function AppDetailPage() {
             >
               <span>{locale === "hy" ? "Զեկուցել վրեպի մասին" : "Report a Bug"}</span>
             </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════════════════
-          REVIEWS & RATINGS SECTION
-          5-Star Rating System & Guest Submission Form
-          ══════════════════════════════════════════════════════════════════════ */}
-      <div
-        className="app-reviews-section"
-        style={{
-          marginTop: "48px",
-          background: "var(--panel)",
-          borderRadius: "24px",
-          border: "1px solid var(--panel-border)",
-          padding: "40px",
-          boxShadow: "var(--shadow)"
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", flexWrap: "wrap", gap: "16px" }}>
-          <div>
-            <h2 style={{ fontSize: "1.7rem", fontWeight: 800, color: "var(--text)", margin: "0 0 6px 0" }}>
-              {locale === "hy" ? "Գնահատականներ և Մեկնաբանություններ" : "Ratings & Reviews"}
-            </h2>
-            <p style={{ color: "var(--muted)", margin: 0, fontSize: "0.95rem" }}>
-              {locale === "hy" ? "Կիսվեք ձեր կարծիքով կամ փորձով այս հավելվածի վերաբերյալ։" : "Share your thoughts and feedback about this app."}
-            </p>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "16px",
-              background: "var(--bg)",
-              padding: "12px 24px",
-              borderRadius: "16px",
-              border: "1px solid var(--panel-border)"
-            }}
-          >
-            <div style={{ fontSize: "2.4rem", fontWeight: 900, color: "var(--text)", lineHeight: 1 }}>
-              {app.avg_rating || 5.0}
-            </div>
-            <div>
-              <div style={{ marginBottom: "4px" }}>
-                <HDesignStars rating={app.avg_rating || 5.0} size={18} gap={3} />
-              </div>
-              <span style={{ fontSize: "0.8rem", color: "var(--muted)" }}>
-                {reviewsList.length} {locale === "hy" ? "կարծիք" : "ratings"}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Reviews Layout: List of Reviews + Submit Form */}
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "40px", alignItems: "start" }} className="reviews-layout-grid">
-          {/* Left: Approved Reviews List */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <h3 style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--text)", margin: "0 0 8px 0" }}>
-              {locale === "hy" ? "Օգտատերերի Կարծիքները" : "User Reviews"} ({reviewsList.length})
-            </h3>
-
-            {reviewsList.length === 0 ? (
-              <div style={{ padding: "40px 20px", textAlign: "center", border: "1px dashed var(--panel-border)", borderRadius: "16px", color: "var(--muted)" }}>
-                <p style={{ margin: 0 }}>
-                  {locale === "hy" ? "Առայժմ մեկնաբանություններ չկան։ Եղեք առաջինը, ով կգնահատի։" : "No reviews yet. Be the first to share your experience!"}
-                </p>
-              </div>
-            ) : (
-              reviewsList.map((rev) => (
-                <div
-                  key={rev.id}
-                  style={{
-                    background: "var(--bg)",
-                    border: "1px solid var(--panel-border)",
-                    borderRadius: "16px",
-                    padding: "20px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "10px"
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <div
-                        style={{
-                          width: "36px",
-                          height: "36px",
-                          borderRadius: "50%",
-                          background: "var(--accent)",
-                          color: "#fff",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontWeight: 700,
-                          fontSize: "0.9rem"
-                        }}
-                      >
-                        {rev.is_anonymous ? "?" : (rev.user_name ? rev.user_name[0].toUpperCase() : "U")}
-                      </div>
-                      <div>
-                        <span style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text)", display: "block" }}>
-                          {rev.user_name}
-                        </span>
-                        <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>
-                          {new Date(rev.created_at).toLocaleDateString(locale === "hy" ? "hy-AM" : "en-US", { year: "numeric", month: "short", day: "numeric" })}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Stars */}
-                    <HDesignStars rating={rev.rating} size={15} gap={2} />
-                  </div>
-
-                  <p style={{ margin: 0, fontSize: "0.92rem", color: "var(--text)", opacity: 0.9, lineHeight: "1.5" }}>
-                    {rev.comment}
-                  </p>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* Right: Guest Review Form */}
-          <div
-            style={{
-              background: "var(--bg)",
-              border: "1px solid var(--panel-border)",
-              borderRadius: "20px",
-              padding: "28px"
-            }}
-          >
-            <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: "var(--text)", margin: "0 0 6px 0" }}>
-              {locale === "hy" ? "Թողնել Կարծիք" : "Write a Review"}
-            </h3>
-            <p style={{ fontSize: "0.85rem", color: "var(--muted)", margin: "0 0 20px 0" }}>
-              {locale === "hy" ? "Գրանցում չի պահանջվում։" : "No registration required."}
-            </p>
-
-            {reviewMessage && (
-              <div
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: "10px",
-                  marginBottom: "20px",
-                  fontSize: "0.88rem",
-                  lineHeight: "1.4",
-                  background: reviewMessage.type === "success" ? "rgba(74, 137, 124, 0.15)" : "rgba(229, 57, 53, 0.15)",
-                  color: reviewMessage.type === "success" ? "var(--accent)" : "#e53935",
-                  border: `1px solid ${reviewMessage.type === "success" ? "var(--accent)" : "rgba(229, 57, 53, 0.3)"}`
-                }}
-              >
-                {reviewMessage.text}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmitReview} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {/* Star Rating Input */}
-              <div>
-                <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text)", display: "block", marginBottom: "10px" }}>
-                  {locale === "hy" ? "Ձեր գնահատականը՝" : "Your Rating:"} <span style={{ color: "#ffcc00", fontWeight: 800 }}>★ {formRating} / 5</span>
-                </span>
-                <HDesignStars
-                  rating={hoverRating !== null ? hoverRating : formRating}
-                  size={32}
-                  gap={6}
-                  interactive={true}
-                  onRate={(star) => setFormRating(star)}
-                />
-              </div>
-
-              {/* Anonymous Checkbox / Toggle */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  fontSize: "0.88rem",
-                  color: "var(--text)",
-                  cursor: "pointer",
-                  userSelect: "none"
-                }}
-                onClick={() => setFormIsAnonymous(!formIsAnonymous)}
-              >
-                <hd-checkbox
-                  suppressHydrationWarning
-                  checked={formIsAnonymous}
-                  data-thickness="3px"
-                  data-size="16px"
-                  onChange={(e: any) => setFormIsAnonymous(e.target.checked)}
-                />
-                <span>{locale === "hy" ? "Թողնել կարծիքը որպես «Անանուն»" : "Post review as Anonymous"}</span>
-              </div>
-
-              {/* Name & Email Fields (Disabled/Hidden if anonymous) */}
-              {!formIsAnonymous && (
-                <>
-                  <div>
-                    <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: "6px" }}>
-                      {locale === "hy" ? "Անուն *" : "Name *"}
-                    </label>
-                    <hd-input
-                      suppressHydrationWarning
-                      placeholder={locale === "hy" ? "Ձեր անունը" : "Your name"}
-                      value={formName}
-                      onInput={(e: any) => setFormName(e.target.value)}
-                      data-width="100%"
-                      data-height="44px"
-                      data-thickness="2px"
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: "6px" }}>
-                      {locale === "hy" ? "Էլ. փոստ (ըստ ցանկության)" : "Email (optional)"}
-                    </label>
-                    <hd-input
-                      suppressHydrationWarning
-                      type="email"
-                      placeholder="example@mail.com"
-                      value={formEmail}
-                      onInput={(e: any) => setFormEmail(e.target.value)}
-                      data-width="100%"
-                      data-height="44px"
-                      data-thickness="2px"
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* Comment Text Area */}
-              <div>
-                <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: "6px" }}>
-                  {locale === "hy" ? "Մեկնաբանություն *" : "Comment *"}
-                </label>
-                <hd-textarea
-                  suppressHydrationWarning
-                  placeholder={locale === "hy" ? "Գրեք ձեր տպավորությունների մասին..." : "Write your feedback..."}
-                  value={formComment}
-                  onInput={(e: any) => setFormComment(e.target.value)}
-                  data-width="100%"
-                  data-height="110px"
-                  data-thickness="2px"
-                />
-              </div>
-
-              {/* Submit Button */}
-              <hd-button
-                suppressHydrationWarning
-                data-height="46px"
-                data-thickness="3px"
-                data-color="var(--accent)"
-                data-text-color="#ffffff"
-                onClick={handleSubmitReview}
-                disabled={submittingReview}
-              >
-                {submittingReview ? (
-                  <span>{locale === "hy" ? "Ուղարկվում է..." : "Submitting..."}</span>
-                ) : (
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="22" y1="2" x2="11" y2="13" />
-                      <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                    </svg>
-                    <span>{locale === "hy" ? "Ուղարկել Կարծիքը" : "Submit Review"}</span>
-                  </span>
-                )}
-              </hd-button>
-            </form>
           </div>
         </div>
       </div>

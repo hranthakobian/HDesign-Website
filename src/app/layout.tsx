@@ -125,7 +125,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           `}
         </Script>
         <Preloader />
-        <SmoothScroll />
+        <SmoothScroll initialEnabled={!!generalSettings?.smooth_scroll_enabled} />
         <HDesignRevealInit />
         <HdVideoInit />
         <CustomCursor />

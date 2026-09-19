@@ -1,14 +1,40 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Lenis from "lenis";
 
-export default function SmoothScroll() {
+export default function SmoothScroll({ initialEnabled = false }: { initialEnabled?: boolean }) {
   const pathname = usePathname();
+  const [enabled, setEnabled] = useState(initialEnabled);
+
+  useEffect(() => {
+    setEnabled(initialEnabled);
+  }, [initialEnabled]);
+
+  useEffect(() => {
+    const handleSettingChange = (e: any) => {
+      if (e?.detail?.smooth_scroll_enabled !== undefined) {
+        setEnabled(!!e.detail.smooth_scroll_enabled);
+      }
+    };
+    window.addEventListener("hdesign-smooth-scroll-change", handleSettingChange);
+    return () => {
+      window.removeEventListener("hdesign-smooth-scroll-change", handleSettingChange);
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (!enabled) {
+      if ((window as any).lenis) {
+        try {
+          (window as any).lenis.destroy();
+        } catch (e) {}
+        (window as any).lenis = null;
+      }
+      return;
+    }
     if (pathname?.startsWith("/admin")) return;
 
     // Initialize Lenis smooth scroll
@@ -36,7 +62,8 @@ export default function SmoothScroll() {
       cancelAnimationFrame(rafId);
       (window as any).lenis = null;
     };
-  }, [pathname]);
+  }, [pathname, enabled]);
 
   return null;
 }
+

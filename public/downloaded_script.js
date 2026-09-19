@@ -1008,7 +1008,7 @@ class HdButton extends HTMLElement {
 
     this.addEventListener('click', (e) => {
       if (this._internals && this._internals.form) {
-        const type = this.getAttribute('type') || 'submit';
+        const type = this.getAttribute('type');
         if (type === 'submit') {
           const form = this._internals.form;
           if (form) {

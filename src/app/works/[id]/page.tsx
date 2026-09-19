@@ -7,6 +7,7 @@ import { brandingCases as staticCases } from "@/lib/brandingData";
 import RatingSystem from "@/components/RatingSystem";
 import LoadingAnimation from "@/components/LoadingAnimation";
 import HdVideoPlayer from "@/components/HdVideoPlayer";
+import MediaLightbox, { MediaLightboxItem } from "@/components/MediaLightbox";
 import { useI18n, parseLangText } from "@/lib/i18n";
 
 type Case = {
@@ -108,6 +109,7 @@ export default function BrandingDetailPage() {
   const [loadingMessage, setLoadingMessage] = useState("");
   const [blocks, setBlocks] = useState<any[]>([]);
   const [wideMedia, setWideMedia] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const heroImageRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
@@ -338,6 +340,42 @@ export default function BrandingDetailPage() {
   const hero = parseBg(work.bg);
   const avgBgColor = getAverageColor(hero.bg);
 
+  // Collect all media items for the case study gallery lightbox
+  const lightboxMediaItems: MediaLightboxItem[] = [];
+  if (work.image_url) {
+    lightboxMediaItems.push({
+      id: "hero",
+      url: work.image_url,
+      title: parseLangText(work.title, locale),
+      subtitle: parseLangText(work.subtitle || "", locale),
+      description: !work.details?.startsWith("[") ? parseLangText(work.details || "", locale) : "",
+      type: "image"
+    });
+  }
+
+  const blockMediaIndices: Record<number, number> = {};
+  blocks.forEach((block, bIdx) => {
+    if (block.type === "image" && block.image_url) {
+      blockMediaIndices[bIdx] = lightboxMediaItems.length;
+      lightboxMediaItems.push({
+        id: `block-${bIdx}`,
+        url: block.image_url,
+        title: parseLangText(work.title, locale),
+        description: locale === "en" ? (block.caption_en || block.caption_am) : (block.caption_am || block.caption_en),
+        type: "image"
+      });
+    } else if (block.type === "embed" && block.embed_url) {
+      blockMediaIndices[bIdx] = lightboxMediaItems.length;
+      lightboxMediaItems.push({
+        id: `block-${bIdx}`,
+        url: block.embed_url,
+        title: parseLangText(work.title, locale),
+        description: locale === "en" ? (block.caption_en || block.caption_am) : (block.caption_am || block.caption_en),
+        type: "video"
+      });
+    }
+  });
+
   // Find indices of first and last media blocks (images and video embeds)
   const mediaBlockIndices = blocks
     .map((b, i) => ((b.type === "image" && b.image_url) || (b.type === "embed" && b.embed_url) ? i : -1))
@@ -366,6 +404,8 @@ export default function BrandingDetailPage() {
             ref={heroImageRef}
             src={work.image_url} 
             alt={work.title} 
+            onClick={() => setLightboxIndex(0)}
+            title={t('works_page', 'view_gallery', 'Դիտել պատկերասրահը')}
             style={{ 
               position: "absolute", 
               top: "-15%", 
@@ -376,7 +416,8 @@ export default function BrandingDetailPage() {
               objectPosition: `50% ${hero.positionY}%`,
               opacity: 0.8,
               willChange: "transform",
-              transform: "translate3d(0, 0, 0)"
+              transform: "translate3d(0, 0, 0)",
+              cursor: "pointer"
             }} 
           />
         )}
@@ -535,21 +576,27 @@ export default function BrandingDetailPage() {
             const isFirstMedia = idx === firstMediaIdx;
             const isLastMedia = idx === lastMediaIdx;
             const caption = locale === 'en' ? (block.caption_en || block.caption_am) : (block.caption_am || block.caption_en);
+            const mediaItemIdx = blockMediaIndices[idx] ?? 0;
 
             return (
               <div key={idx} style={{ width: "100%", marginTop: mt, marginBottom: mb, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <div style={{ 
-                  width: "100%", 
-                  maxWidth: wideMedia ? "1500px" : "100%", 
-                  overflow: "hidden",
-                  transition: "max-width 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
-                  margin: "0 auto",
-                  borderTopLeftRadius: (wideMedia && isFirstMedia) ? "32px" : "0px",
-                  borderTopRightRadius: (wideMedia && isFirstMedia) ? "32px" : "0px",
-                  borderBottomLeftRadius: (wideMedia && isLastMedia) ? "32px" : "0px",
-                  borderBottomRightRadius: (wideMedia && isLastMedia) ? "32px" : "0px",
-                }}>
-                  <img src={block.image_url} alt="Project spec" style={{ width: "100%", height: "auto", display: "block" }} />
+                <div 
+                  onClick={() => setLightboxIndex(mediaItemIdx)}
+                  title={t('works_page', 'view_gallery', 'Դիտել պատկերասրահը')}
+                  style={{ 
+                    width: "100%", 
+                    maxWidth: wideMedia ? "1500px" : "100%", 
+                    overflow: "hidden",
+                    transition: "max-width 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-radius 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.3s ease",
+                    margin: "0 auto",
+                    borderTopLeftRadius: (wideMedia && isFirstMedia) ? "32px" : "0px",
+                    borderTopRightRadius: (wideMedia && isFirstMedia) ? "32px" : "0px",
+                    borderBottomLeftRadius: (wideMedia && isLastMedia) ? "32px" : "0px",
+                    borderBottomRightRadius: (wideMedia && isLastMedia) ? "32px" : "0px",
+                    cursor: "pointer"
+                  }}
+                >
+                  <img src={block.image_url} alt="Project spec" style={{ width: "100%", height: "auto", display: "block", transition: "transform 0.4s ease" }} />
                 </div>
                 {caption && (
                   <div style={{ maxWidth: "900px", margin: "12px auto 0", padding: "0 24px", textAlign: "center" }}>
@@ -644,6 +691,15 @@ export default function BrandingDetailPage() {
           </hd-button>
         </Link>
       </div>
+
+      {/* Unified Gallery Lightbox Slider */}
+      <MediaLightbox
+        items={lightboxMediaItems}
+        initialIndex={lightboxIndex !== null ? lightboxIndex : 0}
+        isOpen={lightboxIndex !== null}
+        onClose={() => setLightboxIndex(null)}
+        categoryLabel={locale === 'en' ? 'Project Gallery' : 'Նախագծի Պատկերասրահ'}
+      />
     </main>
   );
 }

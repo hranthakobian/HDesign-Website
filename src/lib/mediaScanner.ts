@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
-import { MediaFolder, MediaFile, MediaLibraryData, MediaFileType } from './mediaTypes';
+import { MediaFolder, MediaFile, MediaLibraryData, MediaFileType, StorageStats } from './mediaTypes';
 
 const DATA_DIR = path.join(process.cwd(), 'public', 'data');
 const MEDIA_LIBRARY_FILE = path.join(DATA_DIR, 'media_library.json');
@@ -204,16 +204,7 @@ async function getMediaUsageMap(): Promise<Map<string, string[]>> {
 export async function scanAllMediaFiles(): Promise<{
   files: MediaFile[];
   folders: MediaFolder[];
-  stats: {
-    totalFiles: number;
-    totalSize: number;
-    totalSizeFormatted: string;
-    imagesCount: number;
-    videosCount: number;
-    fontsCount: number;
-    vectorsCount: number;
-    othersCount: number;
-  };
+  stats: StorageStats;
 }> {
   const libraryData = await getMediaLibraryData();
   const usageMap = await getMediaUsageMap();
@@ -267,6 +258,9 @@ export async function scanAllMediaFiles(): Promise<{
   let fontsCount = 0;
   let vectorsCount = 0;
   let othersCount = 0;
+  let imagesSize = 0;
+  let videosSize = 0;
+  let fontsSize = 0;
 
   const files: MediaFile[] = [];
 
@@ -277,11 +271,19 @@ export async function scanAllMediaFiles(): Promise<{
     const size = item.stat.size;
     totalSize += size;
 
-    if (type === 'image') imagesCount++;
-    else if (type === 'video') videosCount++;
-    else if (type === 'font') fontsCount++;
-    else if (type === 'vector') vectorsCount++;
-    else othersCount++;
+    if (type === 'image' || type === 'vector') {
+      if (type === 'image') imagesCount++;
+      else vectorsCount++;
+      imagesSize += size;
+    } else if (type === 'video') {
+      videosCount++;
+      videosSize += size;
+    } else if (type === 'font') {
+      fontsCount++;
+      fontsSize += size;
+    } else {
+      othersCount++;
+    }
 
     // Determine folder ID:
     // 1. Explicit assignment in library data
@@ -363,6 +365,11 @@ export async function scanAllMediaFiles(): Promise<{
   // Persist any auto-assigned folders back to media_library.json
   await saveMediaLibraryData(libraryData);
 
+  // Supabase Free Tier Storage Limit: 1 GB (1,073,741,824 Bytes)
+  const storageLimit = 1024 * 1024 * 1024;
+  const storageRemaining = Math.max(0, storageLimit - totalSize);
+  const storagePercent = Math.min(100, Math.round((totalSize / storageLimit) * 1000) / 10);
+
   return {
     files,
     folders: libraryData.folders,
@@ -370,11 +377,20 @@ export async function scanAllMediaFiles(): Promise<{
       totalFiles: files.length,
       totalSize,
       totalSizeFormatted: formatBytes(totalSize),
+      storageLimit,
+      storageLimitFormatted: formatBytes(storageLimit),
+      storageRemaining,
+      storageRemainingFormatted: formatBytes(storageRemaining),
+      storagePercent,
+      isSupabaseConnected: true,
       imagesCount,
       videosCount,
       fontsCount,
       vectorsCount,
-      othersCount
+      othersCount,
+      imagesSizeFormatted: formatBytes(imagesSize),
+      videosSizeFormatted: formatBytes(videosSize),
+      fontsSizeFormatted: formatBytes(fontsSize)
     }
   };
 }

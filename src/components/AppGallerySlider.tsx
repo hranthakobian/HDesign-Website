@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import MediaLightbox, { MediaLightboxItem } from '@/components/MediaLightbox';
 
 interface AppGallerySliderProps {
   images: string[];
@@ -24,21 +25,33 @@ export default function AppGallerySlider({ images, title }: AppGallerySliderProp
     setActiveIndex((prev) => (prev === displayImages.length - 1 ? 0 : prev + 1));
   }, [displayImages.length]);
 
-  // Keyboard navigation
+  // Keyboard navigation for inline slider
   useEffect(() => {
+    if (isLightboxOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') handlePrev();
       if (e.key === 'ArrowRight') handleNext();
-      if (e.key === 'Escape') setIsLightboxOpen(false);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handlePrev, handleNext]);
+  }, [handlePrev, handleNext, isLightboxOpen]);
+
+  const lightboxItems: MediaLightboxItem[] = displayImages.map((img, idx) => ({
+    id: `app-img-${idx}`,
+    url: img,
+    title: `${title} (${idx + 1} / ${displayImages.length})`,
+    type: 'image'
+  }));
 
   return (
     <div className="app-gallery-slider">
       {/* Main Image Container */}
-      <div className="gallery-main-frame" onClick={() => setIsLightboxOpen(true)}>
+      <div 
+        className="gallery-main-frame" 
+        onClick={() => setIsLightboxOpen(true)}
+        style={{ cursor: "pointer" }}
+        title="Դիտել պատկերասրահը / View Gallery"
+      >
         <img
           src={displayImages[activeIndex]}
           alt={`${title} - screenshot ${activeIndex + 1}`}
@@ -108,56 +121,13 @@ export default function AppGallerySlider({ images, title }: AppGallerySliderProp
         </div>
       )}
 
-      {/* Fullscreen Lightbox Modal */}
-      {isLightboxOpen && (
-        <div className="gallery-lightbox" onClick={() => setIsLightboxOpen(false)}>
-          <button
-            type="button"
-            className="lightbox-close-btn"
-            onClick={() => setIsLightboxOpen(false)}
-            aria-label="Փակել"
-          >
-            &times;
-          </button>
-
-          <img
-            src={displayImages[activeIndex]}
-            alt={`${title} - full preview`}
-            className="lightbox-img"
-            onClick={(e) => e.stopPropagation()}
-          />
-
-          {displayImages.length > 1 && (
-            <>
-              <button
-                type="button"
-                className="gallery-nav-btn prev-btn lightbox-nav"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePrev();
-                }}
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
-              </button>
-
-              <button
-                type="button"
-                className="gallery-nav-btn next-btn lightbox-nav"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleNext();
-                }}
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </button>
-            </>
-          )}
-        </div>
-      )}
+      {/* Unified Gallery Lightbox Slider */}
+      <MediaLightbox
+        items={lightboxItems}
+        initialIndex={activeIndex}
+        isOpen={isLightboxOpen}
+        onClose={() => setIsLightboxOpen(false)}
+      />
     </div>
   );
 }

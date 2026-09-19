@@ -1,10 +1,23 @@
 "use client";
  
+import { useState } from "react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
+import MediaLightbox, { MediaLightboxItem } from "@/components/MediaLightbox";
  
 export default function AboutPage() {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
+  const [isPhotoLightboxOpen, setIsPhotoLightboxOpen] = useState(false);
+
+  const profileItems: MediaLightboxItem[] = [
+    {
+      id: "profile-photo",
+      url: "/profile_hrant.jpg",
+      title: locale === "hy" ? "Հրանտ Հակոբյան" : "Hrant Hakobyan",
+      description: t('about', 'bio_p1', 'Ողջույն, ես Հրանտ Հակոբյանն եմ և Ճարտարապետության և շինարարության Հայաստանի Ազգային Համալսարանի ճարտարապետության ֆակուլտետի 4-րդ կուրսի ուսանող եմ։'),
+      type: "image"
+    }
+  ];
 
   return (
     <main className="shell" style={{ marginTop: "140px", minHeight: "80vh", position: "relative" }}>
@@ -38,11 +51,24 @@ export default function AboutPage() {
  
         <div style={{ position: "relative", zIndex: 10, display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: "56px", alignItems: "stretch" }} className="about-grid">
           {/* Profile Photo */}
-          <div style={{ position: "relative", borderRadius: "20px", overflow: "hidden", height: "100%", minHeight: "300px", boxShadow: "0 10px 40px rgba(0,0,0,0.15)" }}>
+          <div 
+            onClick={() => setIsPhotoLightboxOpen(true)}
+            title={t('works_page', 'view_gallery', 'Դիտել պատկերասրահը')}
+            style={{ 
+              position: "relative", 
+              borderRadius: "20px", 
+              overflow: "hidden", 
+              height: "100%", 
+              minHeight: "300px", 
+              boxShadow: "0 10px 40px rgba(0,0,0,0.15)",
+              cursor: "pointer",
+              transition: "transform 0.3s ease"
+            }}
+          >
             <img 
               src="/profile_hrant.jpg" 
               alt="Hrant Hakobyan" 
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
             />
           </div>
  
@@ -105,9 +131,18 @@ export default function AboutPage() {
               {t('about', 'spec3_desc', 'Օգտագործողի փորձի (UX) և միջավայրերի (UI) նախագծում՝ հիմնված մոդուլային դիզայն-համակարգերի և ճշգրիտ կառուցվածքների վրա:')}
             </p>
           </div>
-
+ 
         </div>
       </div>
+
+      {/* Unified Gallery Lightbox for Profile Photo */}
+      <MediaLightbox
+        items={profileItems}
+        initialIndex={0}
+        isOpen={isPhotoLightboxOpen}
+        onClose={() => setIsPhotoLightboxOpen(false)}
+        categoryLabel={locale === 'en' ? 'Profile' : 'Պրոֆիլ'}
+      />
     </main>
   );
 }

@@ -1210,6 +1210,8 @@ export type AppItem = {
   currency?: string;
   download_url?: string;
   store_url?: string;
+  repository_url?: string;
+  repository_type?: string;
   cover_image?: string;
   gallery_images: string[];
   languages?: string[];
@@ -1518,6 +1520,8 @@ export async function getApps(): Promise<AppItem[]> {
           const isDraft = x.status === 'draft' || !!x.is_draft;
           return {
             ...x,
+            repository_url: x.repository_url || '',
+            repository_type: x.repository_type || 'github',
             gallery_images: Array.isArray(x.gallery_images)
               ? x.gallery_images
               : (typeof x.gallery_images === 'string' ? JSON.parse(x.gallery_images || '[]') : []),
@@ -1547,6 +1551,8 @@ export async function getApps(): Promise<AppItem[]> {
     const isDraft = x.status === 'draft' || !!x.is_draft;
     return {
       ...x,
+      repository_url: x.repository_url || '',
+      repository_type: x.repository_type || 'github',
       languages: Array.isArray(x.languages) ? x.languages : ['Հայերեն', 'English'],
       is_draft: isDraft,
       status: isDraft ? 'draft' : 'published'
@@ -1558,8 +1564,17 @@ export async function getApps(): Promise<AppItem[]> {
   const filteredSeeds = defaultSeededApps.filter((x: AppItem) => !dynamicIds.has(x.id) && !deletedSeedsSet.has(x.id));
 
   if (supabaseSuccess) {
-    const localFiltered = normalizedLocalApps.filter(x => !dynamicIds.has(x.id));
-    return [...dbApps, ...localFiltered, ...filteredSeeds];
+    const localMap = new Map(normalizedLocalApps.map(l => [l.id, l]));
+    const mergedDbApps = dbApps.map(item => {
+      const local = localMap.get(item.id);
+      return {
+        ...item,
+        repository_url: item.repository_url || local?.repository_url || '',
+        repository_type: item.repository_type || local?.repository_type || 'github'
+      };
+    });
+    const localFiltered = normalizedLocalApps.filter(x => !new Set(dbApps.map(d => d.id)).has(x.id));
+    return [...mergedDbApps, ...localFiltered, ...filteredSeeds];
   }
 
   return [...normalizedLocalApps, ...filteredSeeds];
@@ -1582,6 +1597,8 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
 
   const newApp: AppItem = {
     ...app,
+    repository_url: app.repository_url || '',
+    repository_type: app.repository_type || 'github',
     languages: languagesList.length > 0 ? languagesList : ['Հայերեն'],
     is_draft: isDraft,
     status: isDraft ? 'draft' : 'published',
@@ -1600,8 +1617,8 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
         .single();
 
       // If column does not exist yet on Supabase, retry without new columns
-      if (error && error.message && (error.message.includes('languages') || error.message.includes('is_draft') || error.message.includes('status'))) {
-        const { languages, is_draft, status, ...legacyApp } = newApp as any;
+      if (error && error.message && (error.message.includes('languages') || error.message.includes('is_draft') || error.message.includes('status') || error.message.includes('repository_url') || error.message.includes('repository_type'))) {
+        const { languages, is_draft, status, repository_url, repository_type, ...legacyApp } = newApp as any;
         const retry = await adminClient.from('apps').upsert(legacyApp).select().single();
         data = retry.data;
         error = retry.error;
@@ -1624,6 +1641,8 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
         return {
           ...newApp,
           ...data,
+          repository_url: newApp.repository_url || data?.repository_url || '',
+          repository_type: newApp.repository_type || data?.repository_type || 'github',
           languages: newApp.languages,
           is_draft: newApp.is_draft,
           status: newApp.status,

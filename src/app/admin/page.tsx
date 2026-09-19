@@ -7,6 +7,8 @@ import { hyTranslations, enTranslations } from '@/lib/i18n';
 import LoadingAnimation from '@/components/LoadingAnimation';
 import AdminAppsManager from '@/components/AdminAppsManager';
 import AdminMediaManager from '@/components/AdminMediaManager';
+import MediaPickerModal from '@/components/MediaPickerModal';
+import { MediaFileType } from '@/lib/mediaTypes';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, BarChart, Bar 
@@ -831,6 +833,54 @@ function AdminDashboardContent() {
   const [drawerFontSandboxText, setDrawerFontSandboxText] = useState('Մուտքագրեք փորձարկվող տեքստը այստեղ...');
   const [drawerFontSize, setDrawerFontSize] = useState(32);
 
+  // Global Media Picker Modal state for Admin
+  const [mediaPickerConfig, setMediaPickerConfig] = useState<{
+    isOpen: boolean;
+    target: 'case_cover' | 'case_bg' | 'font_file' | 'site_font' | 'video_hy' | 'video_en' | 'poster_hy' | 'poster_en';
+    multiple?: boolean;
+    allowedTypes?: MediaFileType[];
+    title?: string;
+    currentValue?: string | string[];
+  } | null>(null);
+
+  const handleMediaPickerSelect = (selected: string | string[]) => {
+    if (!mediaPickerConfig) return;
+    const url = Array.isArray(selected) ? selected[0] : selected;
+    if (!url) {
+      setMediaPickerConfig(null);
+      return;
+    }
+
+    switch (mediaPickerConfig.target) {
+      case 'case_cover':
+        setDrawerCaseImageUrl(url);
+        break;
+      case 'case_bg':
+        setDrawerCaseBg(url);
+        break;
+      case 'font_file':
+        setDrawerFontFileUrl(url);
+        break;
+      case 'site_font':
+        setSiteFontUrl(url);
+        break;
+      case 'video_hy':
+        setDesignSystemVideoHy(url);
+        break;
+      case 'video_en':
+        setDesignSystemVideoEn(url);
+        break;
+      case 'poster_hy':
+        setDesignSystemPosterHy(url);
+        break;
+      case 'poster_en':
+        setDesignSystemPosterEn(url);
+        break;
+    }
+
+    setMediaPickerConfig(null);
+  };
+
   // View mode states
   const [casesViewMode, setCasesViewMode] = useState<'grid' | 'list'>('grid');
   const [fontsViewMode, setFontsViewMode] = useState<'grid' | 'list'>('grid');
@@ -1074,6 +1124,8 @@ function AdminDashboardContent() {
   const [contactTel, setContactTel] = useState('+374 00 000000');
   const [contactAddressHy, setContactAddressHy] = useState('Երևան, Հայաստան');
   const [contactAddressEn, setContactAddressEn] = useState('Yerevan, Armenia');
+  const [smoothScrollEnabled, setSmoothScrollEnabled] = useState(false);
+  const [togglingSmoothScroll, setTogglingSmoothScroll] = useState(false);
   
   // Custom Site Font & Design System Videos State
   const [siteFontUrl, setSiteFontUrl] = useState('https://api.hakobian.am/libs/v1/fonts/hdesign.ttf');
@@ -1510,6 +1562,7 @@ function AdminDashboardContent() {
         setContactTel(generalSettingsData.contact_tel || '+374 00 000000');
         setContactAddressHy(generalSettingsData.contact_address_hy || 'Երևան, Հայաստան');
         setContactAddressEn(generalSettingsData.contact_address_en || 'Yerevan, Armenia');
+        setSmoothScrollEnabled(generalSettingsData.smooth_scroll_enabled || false);
 
         if (generalSettingsData.site_font_url) setSiteFontUrl(generalSettingsData.site_font_url);
         if (generalSettingsData.site_font_name) setSiteFontName(generalSettingsData.site_font_name);
@@ -3018,6 +3071,38 @@ function AdminDashboardContent() {
     }
   };
 
+  const toggleSmoothScrollQuick = async (newValue: boolean) => {
+    if (!token) return;
+    setTogglingSmoothScroll(true);
+    try {
+      const res = await fetch('/api/general-settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token
+        },
+        body: JSON.stringify({ 
+          smooth_scroll_enabled: newValue
+        })
+      });
+      if (res.ok) {
+        setSmoothScrollEnabled(newValue);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('hdesign-smooth-scroll-change', {
+            detail: { enabled: newValue }
+          }));
+        }
+      } else {
+        const data = await res.json();
+        alert('Սխալ՝ ' + data.error);
+      }
+    } catch (err) {
+      alert('Չհաջողվեց փոխել սահուն էջաշարժի (smooth scroll) ռեժիմը։');
+    } finally {
+      setTogglingSmoothScroll(false);
+    }
+  };
+
   const handleSaveGeneralSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) return;
@@ -3034,6 +3119,7 @@ function AdminDashboardContent() {
           upcoming_mode: upcomingMode,
           upcoming_hdesign_mode: upcomingHdesignMode,
           upcoming_pages: upcomingPages,
+          smooth_scroll_enabled: smoothScrollEnabled,
           upcoming_title_hy: upcomingTitleHy,
           upcoming_title_en: upcomingTitleEn,
           upcoming_desc_hy: upcomingDescHy,
@@ -4620,7 +4706,31 @@ function AdminDashboardContent() {
                                 <hd-input value={drawerCaseBg} onInput={(e: any) => setDrawerCaseBg(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
                               </div>
                               <div>
-                                <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Cover URL</label>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                  <label style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Cover URL</label>
+                                  <button
+                                    type="button"
+                                    onClick={() => setMediaPickerConfig({
+                                      isOpen: true,
+                                      target: 'case_cover',
+                                      allowedTypes: ['image'],
+                                      title: 'Ընտրել Քեյսի Գլխավոր Նկար (Cover Image)',
+                                      currentValue: drawerCaseImageUrl
+                                    })}
+                                    style={{
+                                      background: 'rgba(74, 137, 124, 0.15)',
+                                      color: 'var(--accent)',
+                                      border: '1px solid var(--accent)',
+                                      borderRadius: '6px',
+                                      padding: '2px 8px',
+                                      fontSize: '0.72rem',
+                                      fontWeight: 600,
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    📁 Ընտրել Մեդիայից
+                                  </button>
+                                </div>
                                 <hd-input value={drawerCaseImageUrl} onInput={(e: any) => setDrawerCaseImageUrl(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
                               </div>
                               <div style={{ marginTop: '10px' }}>
@@ -4909,7 +5019,31 @@ function AdminDashboardContent() {
                                 <hd-input value={drawerFontCreator} onInput={(e: any) => setDrawerFontCreator(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
                               </div>
                               <div>
-                                <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Ֆայլի հղում</label>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                  <label style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Ֆայլի հղում (Font File URL)</label>
+                                  <button
+                                    type="button"
+                                    onClick={() => setMediaPickerConfig({
+                                      isOpen: true,
+                                      target: 'font_file',
+                                      allowedTypes: ['font'],
+                                      title: 'Ընտրել Տառատեսակի Նիշք (Font File)',
+                                      currentValue: drawerFontFileUrl
+                                    })}
+                                    style={{
+                                      background: 'rgba(74, 137, 124, 0.15)',
+                                      color: 'var(--accent)',
+                                      border: '1px solid var(--accent)',
+                                      borderRadius: '6px',
+                                      padding: '2px 8px',
+                                      fontSize: '0.72rem',
+                                      fontWeight: 600,
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    📁 Ընտրել Մեդիայից
+                                  </button>
+                                </div>
                                 <hd-input value={drawerFontFileUrl} onInput={(e: any) => setDrawerFontFileUrl(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
                               </div>
 
@@ -8726,6 +8860,65 @@ function AdminDashboardContent() {
                       </div>
                     </div>
 
+                    {/* Card: Smooth Scroll (Lenis) */}
+                    <div style={{
+                      background: 'var(--panel)',
+                      border: '1px solid var(--panel-border)',
+                      borderRadius: '16px',
+                      padding: '24px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '16px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+                        <div>
+                          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0 0 6px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span className="icon-Move" style={{ color: '#00C49F' }} />
+                            Սահուն Էջաշարժ (Smooth Scroll)
+                          </h3>
+                          <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: 0, maxWidth: '600px', lineHeight: 1.5 }}>
+                            Միացրեք կամ անջատեք կայքի իներցիոն սահուն էջաշարժը (Lenis Smooth Scroll)։ Անջատված վիճակում (լռելյայն) գործում է բրաուզերի բնական էջաշարժը։
+                          </p>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <button
+                            type="button"
+                            disabled={togglingSmoothScroll}
+                            onClick={() => toggleSmoothScrollQuick(!smoothScrollEnabled)}
+                            style={{
+                              background: smoothScrollEnabled ? 'rgba(0, 196, 159, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                              color: smoothScrollEnabled ? '#00C49F' : 'var(--muted)',
+                              border: `1px solid ${smoothScrollEnabled ? '#00C49F' : 'var(--panel-border)'}`,
+                              borderRadius: '20px',
+                              padding: '6px 14px',
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                              cursor: togglingSmoothScroll ? 'not-allowed' : 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px'
+                            }}
+                          >
+                            <span style={{
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              background: smoothScrollEnabled ? '#00C49F' : '#888888',
+                              display: 'inline-block'
+                            }} />
+                            {togglingSmoothScroll ? 'Փոխվում է...' : (smoothScrollEnabled ? 'Միացված է' : 'Անջատված է')}
+                          </button>
+
+                          <hd-switch 
+                            checked={smoothScrollEnabled} 
+                            data-thickness="4px"
+                            onChange={(e: any) => toggleSmoothScrollQuick(e.target.checked)} 
+                          />
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Card: General Font Management */}
                     <div style={{
                       background: 'var(--panel)',
@@ -8747,22 +8940,31 @@ function AdminDashboardContent() {
 
                       <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                         <div>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Տառատեսակի Ֆայլի Վերբեռնում (.ttf, .otf, .woff, .woff2)</label>
-                          <input 
-                            type="file" 
-                            accept=".ttf,.otf,.woff,.woff2" 
-                            onChange={(e) => {
-                              if (e.target.files && e.target.files[0]) {
-                                handleUploadSiteFont(e.target.files[0]);
-                              }
-                            }}
-                            style={{ fontSize: '0.85rem', color: 'var(--muted)' }}
-                          />
-                          {isUploadingFont && <span style={{ fontSize: '0.78rem', color: 'var(--primary-color)', marginLeft: '10px' }}>Վերբեռնվում է...</span>}
-                        </div>
-
-                        <div>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Տառատեսակի URL</label>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                            <label style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Տառատեսակի URL կամ Նիշք</label>
+                            <button
+                              type="button"
+                              onClick={() => setMediaPickerConfig({
+                                isOpen: true,
+                                target: 'site_font',
+                                allowedTypes: ['font'],
+                                title: 'Ընտրել Կայքի Ընդհանուր Տառատեսակ (Site Font)',
+                                currentValue: siteFontUrl
+                              })}
+                              style={{
+                                background: 'rgba(74, 137, 124, 0.15)',
+                                color: 'var(--accent)',
+                                border: '1px solid var(--accent)',
+                                borderRadius: '6px',
+                                padding: '4px 10px',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              📁 Ընտրել Մեդիայից
+                            </button>
+                          </div>
                           <hd-input 
                             placeholder="https://..."
                             value={siteFontUrl}
@@ -8770,6 +8972,19 @@ function AdminDashboardContent() {
                             data-width="100%"
                             data-height="38px"
                           />
+                          <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input 
+                              type="file" 
+                              accept=".ttf,.otf,.woff,.woff2" 
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  handleUploadSiteFont(e.target.files[0]);
+                                }
+                              }}
+                              style={{ fontSize: '0.82rem', color: 'var(--muted)' }}
+                            />
+                            {isUploadingFont && <span style={{ fontSize: '0.78rem', color: 'var(--primary-color)' }}>Վերբեռնվում է...</span>}
+                          </div>
                         </div>
 
                         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -8850,7 +9065,31 @@ function AdminDashboardContent() {
                           <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--primary-color)', fontWeight: 700 }}>🇦🇲 Հայերեն (Armenian) Տեսանյութ</h4>
                           
                           <div>
-                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Տեսանյութի URL (.mp4)</label>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                              <label style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Տեսանյութի URL (.mp4)</label>
+                              <button
+                                type="button"
+                                onClick={() => setMediaPickerConfig({
+                                  isOpen: true,
+                                  target: 'video_hy',
+                                  allowedTypes: ['video'],
+                                  title: 'Ընտրել Հայերեն Տեսանյութ (Armenian Video)',
+                                  currentValue: designSystemVideoHy
+                                })}
+                                style={{
+                                  background: 'rgba(74, 137, 124, 0.15)',
+                                  color: 'var(--accent)',
+                                  border: '1px solid var(--accent)',
+                                  borderRadius: '6px',
+                                  padding: '2px 8px',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 600,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                📁 Ընտրել Մեդիայից
+                              </button>
+                            </div>
                             <hd-input 
                               placeholder="https://... video.mp4"
                               value={designSystemVideoHy}
@@ -8872,7 +9111,31 @@ function AdminDashboardContent() {
                           </div>
 
                           <div>
-                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Պաստառի Նկարի URL (Poster Image)</label>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                              <label style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Պաստառի Նկարի URL (Poster Image)</label>
+                              <button
+                                type="button"
+                                onClick={() => setMediaPickerConfig({
+                                  isOpen: true,
+                                  target: 'poster_hy',
+                                  allowedTypes: ['image'],
+                                  title: 'Ընտրել Հայերեն Պաստառի Նկար (Armenian Poster)',
+                                  currentValue: designSystemPosterHy
+                                })}
+                                style={{
+                                  background: 'rgba(74, 137, 124, 0.15)',
+                                  color: 'var(--accent)',
+                                  border: '1px solid var(--accent)',
+                                  borderRadius: '6px',
+                                  padding: '2px 8px',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 600,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                📁 Ընտրել Մեդիայից
+                              </button>
+                            </div>
                             <hd-input 
                               placeholder="https://... poster.jpg"
                               value={designSystemPosterHy}
@@ -8899,7 +9162,31 @@ function AdminDashboardContent() {
                           <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--primary-color)', fontWeight: 700 }}>🇬🇧 Անգլերեն (English) Տեսանյութ</h4>
                           
                           <div>
-                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Video URL (.mp4)</label>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                              <label style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Video URL (.mp4)</label>
+                              <button
+                                type="button"
+                                onClick={() => setMediaPickerConfig({
+                                  isOpen: true,
+                                  target: 'video_en',
+                                  allowedTypes: ['video'],
+                                  title: 'Ընտրել Անգլերեն Տեսանյութ (English Video)',
+                                  currentValue: designSystemVideoEn
+                                })}
+                                style={{
+                                  background: 'rgba(74, 137, 124, 0.15)',
+                                  color: 'var(--accent)',
+                                  border: '1px solid var(--accent)',
+                                  borderRadius: '6px',
+                                  padding: '2px 8px',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 600,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                📁 Ընտրել Մեդիայից
+                              </button>
+                            </div>
                             <hd-input 
                               placeholder="https://... video.mp4"
                               value={designSystemVideoEn}
@@ -8921,7 +9208,31 @@ function AdminDashboardContent() {
                           </div>
 
                           <div>
-                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Poster Image URL</label>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                              <label style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Poster Image URL</label>
+                              <button
+                                type="button"
+                                onClick={() => setMediaPickerConfig({
+                                  isOpen: true,
+                                  target: 'poster_en',
+                                  allowedTypes: ['image'],
+                                  title: 'Ընտրել Անգլերեն Պաստառի Նկար (English Poster)',
+                                  currentValue: designSystemPosterEn
+                                })}
+                                style={{
+                                  background: 'rgba(74, 137, 124, 0.15)',
+                                  color: 'var(--accent)',
+                                  border: '1px solid var(--accent)',
+                                  borderRadius: '6px',
+                                  padding: '2px 8px',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 600,
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                📁 Ընտրել Մեդիայից
+                              </button>
+                            </div>
                             <hd-input 
                               placeholder="https://... poster.jpg"
                               value={designSystemPosterEn}
@@ -9888,7 +10199,22 @@ function AdminDashboardContent() {
           </div>
         </div>
       )}
-      {/* Fixed Drawer Overlay Removed */}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          GLOBAL MEDIA PICKER MODAL
+          ══════════════════════════════════════════════════════════════════════ */}
+      {mediaPickerConfig?.isOpen && (
+        <MediaPickerModal
+          isOpen={mediaPickerConfig.isOpen}
+          onClose={() => setMediaPickerConfig(null)}
+          onSelect={handleMediaPickerSelect}
+          multiple={mediaPickerConfig.multiple}
+          allowedTypes={mediaPickerConfig.allowedTypes}
+          title={mediaPickerConfig.title}
+          token={token}
+          currentValue={mediaPickerConfig.currentValue}
+        />
+      )}
     </main>
   );
 }

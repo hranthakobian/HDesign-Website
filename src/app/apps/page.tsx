@@ -18,6 +18,10 @@ export type AppData = {
   is_paid: boolean;
   price: number;
   currency?: string;
+  download_url?: string;
+  store_url?: string;
+  repository_url?: string;
+  repository_type?: string;
   cover_image?: string;
   gallery_images: string[];
   languages?: string[];
@@ -34,6 +38,7 @@ export type AppData = {
 
 export default function AppsListingPage() {
   const { locale, t } = useI18n();
+  const [mounted, setMounted] = useState(false);
   const [apps, setApps] = useState<AppData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +54,10 @@ export default function AppsListingPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     async function loadApps() {
@@ -211,205 +220,214 @@ export default function AppsListingPage() {
           display: "flex",
           flexDirection: "column",
           gap: "16px",
+          minHeight: "100px"
         }}
       >
-        {/* Search Input and Filter Toggle */}
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
-          <div style={{ flex: "1 1 240px", minWidth: "220px" }}>
-            <hd-input
-              suppressHydrationWarning
-              placeholder={locale === "hy" ? "Որոնել ըստ անվան, ծրագրի կամ նկարագրության..." : "Search by title, host software, or description..."}
-              value={searchQuery}
-              onInput={(e: any) => setSearchQuery(e.target.value)}
-              data-width="100%"
-              data-height="36px"
-              data-thickness="2px"
-              data-font-size="12pt"
-            />
-          </div>
+        {mounted ? (
+          <>
+            {/* Search Input and Filter Toggle */}
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
+              <div style={{ flex: "1 1 240px", minWidth: "220px" }}>
+                <hd-input
+                  suppressHydrationWarning
+                  placeholder={locale === "hy" ? "Որոնել ըստ անվան, ծրագրի կամ նկարագրության..." : "Search by title, host software, or description..."}
+                  value={searchQuery}
+                  onInput={(e: any) => setSearchQuery(e.target.value)}
+                  data-width="100%"
+                  data-height="36px"
+                  data-thickness="2px"
+                  data-font-size="12pt"
+                />
+              </div>
 
-          {/* Type Switcher Segment */}
-          <hd-segment
-            suppressHydrationWarning
-            value={selectedType}
-            onChange={(e: any) => setSelectedType(e.target.value)}
-            data-width="320px"
-            data-height="36px"
-            data-thickness="2px"
-            data-font-size="0.82rem"
-          >
-            <span value="all" {...(selectedType === "all" ? { selected: true } : {})}>
-              {locale === "hy" ? "Բոլորը" : "All"}
-            </span>
-            <span value="plugin" {...(selectedType === "plugin" ? { selected: true } : {})}>
-              {locale === "hy" ? "Խրվակներ" : "Plugins"}
-            </span>
-            <span value="standalone" {...(selectedType === "standalone" ? { selected: true } : {})}>
-              {locale === "hy" ? "Հավելվածներ" : "Applications"}
-            </span>
-          </hd-segment>
-
-          {/* Pricing Tabs Quick Switch */}
-          <hd-segment
-            suppressHydrationWarning
-            value={pricingFilter}
-            onChange={(e: any) => setPricingFilter(e.target.value)}
-            data-width="250px"
-            data-height="36px"
-            data-thickness="2px"
-            data-font-size="0.82rem"
-          >
-            <span value="all" {...(pricingFilter === "all" ? { selected: true } : {})}>
-              {locale === "hy" ? "Բոլորը" : "All"}
-            </span>
-            <span value="free" {...(pricingFilter === "free" ? { selected: true } : {})}>
-              {locale === "hy" ? "Անվճար" : "Free"}
-            </span>
-            <span value="paid" {...(pricingFilter === "paid" ? { selected: true } : {})}>
-              {locale === "hy" ? "Վճարովի" : "Paid"}
-            </span>
-          </hd-segment>
-
-          <hd-button
-            suppressHydrationWarning
-            data-height="36px"
-            data-thickness="2px"
-            data-font-size="0.82rem"
-            data-color={showAdvanced ? "var(--accent)" : "var(--bg)"}
-            data-text-color={showAdvanced ? "#fff" : "var(--text)"}
-            onClick={() => setShowAdvanced(!showAdvanced)}
-          >
-            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "0 12px" }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="4" y1="21" x2="4" y2="14" />
-                <line x1="4" y1="10" x2="4" y2="3" />
-                <line x1="12" y1="21" x2="12" y2="12" />
-                <line x1="12" y1="8" x2="12" y2="3" />
-                <line x1="20" y1="21" x2="20" y2="16" />
-                <line x1="20" y1="12" x2="20" y2="3" />
-                <line x1="1" y1="14" x2="7" y2="14" />
-                <line x1="9" y1="8" x2="15" y2="8" />
-                <line x1="17" y1="16" x2="23" y2="16" />
-              </svg>
-              {locale === "hy" ? "Զտիչներ" : "Filters"}
-            </span>
-          </hd-button>
-        </div>
-
-        {/* Software Tag Quick Chips */}
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", paddingTop: "2px" }}>
-          <span style={{ fontSize: "0.82rem", color: "var(--muted)", marginRight: "4px", fontWeight: 600 }}>
-            {locale === "hy" ? "Ծրագիր՝" : "Software:"}
-          </span>
-          <hd-button
-            suppressHydrationWarning
-            data-height="26px"
-            data-thickness="2px"
-            data-font-size="0.75rem"
-            data-color={selectedHost === "all" ? "var(--accent)" : "var(--bg)"}
-            data-text-color={selectedHost === "all" ? "#fff" : "var(--text)"}
-            onClick={() => setSelectedHost("all")}
-          >
-            <span style={{ padding: "0 8px" }}>{locale === "hy" ? "Բոլորը" : "All"}</span>
-          </hd-button>
-          {hostAppsList.map(h => (
-            <hd-button
-              key={h}
-              suppressHydrationWarning
-              data-height="26px"
-              data-thickness="2px"
-              data-font-size="0.75rem"
-              data-color={selectedHost === h ? "var(--accent)" : "var(--bg)"}
-              data-text-color={selectedHost === h ? "#fff" : "var(--text)"}
-              onClick={() => setSelectedHost(selectedHost === h ? "all" : h)}
-            >
-              <span style={{ padding: "0 8px" }}>{h}</span>
-            </hd-button>
-          ))}
-        </div>
-
-        {/* Advanced Filters Drawer */}
-        {showAdvanced && (
-          <div
-            style={{
-              paddingTop: "20px",
-              borderTop: "1px solid var(--panel-border)",
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-              gap: "24px",
-              animation: "fadeIn 0.2s ease"
-            }}
-          >
-            {/* Type Filter: Plugin vs Standalone */}
-            <div>
-              <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: "10px" }}>
-                {locale === "hy" ? "Կարգավիճակ / Տիպ" : "Type / Status"}
-              </span>
+              {/* Type Switcher Segment */}
               <hd-segment
                 suppressHydrationWarning
                 value={selectedType}
                 onChange={(e: any) => setSelectedType(e.target.value)}
-                data-width="100%"
+                data-width="320px"
                 data-height="36px"
                 data-thickness="2px"
+                data-font-size="0.82rem"
               >
                 <span value="all" {...(selectedType === "all" ? { selected: true } : {})}>
                   {locale === "hy" ? "Բոլորը" : "All"}
                 </span>
                 <span value="plugin" {...(selectedType === "plugin" ? { selected: true } : {})}>
-                  {locale === "hy" ? "Խրվակ" : "Plugin"}
+                  {locale === "hy" ? "Խրվակներ" : "Plugins"}
                 </span>
                 <span value="standalone" {...(selectedType === "standalone" ? { selected: true } : {})}>
-                  {locale === "hy" ? "Առանձին Հավելված" : "Standalone App"}
+                  {locale === "hy" ? "Հավելվածներ" : "Applications"}
                 </span>
               </hd-segment>
-            </div>
 
-            {/* Price Range Filter Slider */}
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--muted)" }}>
-                  {locale === "hy" ? "Գնային տիրույթ" : "Price Range"}
+              {/* Pricing Tabs Quick Switch */}
+              <hd-segment
+                suppressHydrationWarning
+                value={pricingFilter}
+                onChange={(e: any) => setPricingFilter(e.target.value)}
+                data-width="250px"
+                data-height="36px"
+                data-thickness="2px"
+                data-font-size="0.82rem"
+              >
+                <span value="all" {...(pricingFilter === "all" ? { selected: true } : {})}>
+                  {locale === "hy" ? "Բոլորը" : "All"}
                 </span>
-                <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--accent)" }}>
-                  {minPrice.toLocaleString()} - {maxPrice.toLocaleString()} AMD
+                <span value="free" {...(pricingFilter === "free" ? { selected: true } : {})}>
+                  {locale === "hy" ? "Անվճար" : "Free"}
                 </span>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <hd-slider
-                  suppressHydrationWarning
-                  min={0}
-                  max={maxAvailablePrice}
-                  step={500}
-                  value={maxPrice}
-                  onChange={(e: any) => setMaxPrice(Number(e.target.value))}
-                />
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "var(--muted)" }}>
-                  <span>0 AMD</span>
-                  <span>{maxAvailablePrice.toLocaleString()} AMD</span>
-                </div>
-              </div>
-            </div>
+                <span value="paid" {...(pricingFilter === "paid" ? { selected: true } : {})}>
+                  {locale === "hy" ? "Վճարովի" : "Paid"}
+                </span>
+              </hd-segment>
 
-            {/* Reset Button */}
-            <div style={{ display: "flex", alignItems: "flex-end" }}>
               <hd-button
                 suppressHydrationWarning
                 data-height="36px"
                 data-thickness="2px"
-                data-color="transparent"
-                data-text-color="var(--muted)"
-                onClick={resetFilters}
+                data-font-size="0.82rem"
+                data-color={showAdvanced ? "var(--accent)" : "var(--bg)"}
+                data-text-color={showAdvanced ? "#fff" : "var(--text)"}
+                onClick={() => setShowAdvanced(!showAdvanced)}
               >
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "0 10px" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                    <path d="M3 3v5h5" />
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "0 12px" }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="4" y1="21" x2="4" y2="14" />
+                    <line x1="4" y1="10" x2="4" y2="3" />
+                    <line x1="12" y1="21" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12" y2="3" />
+                    <line x1="20" y1="21" x2="20" y2="16" />
+                    <line x1="20" y1="12" x2="20" y2="3" />
+                    <line x1="1" y1="14" x2="7" y2="14" />
+                    <line x1="9" y1="8" x2="15" y2="8" />
+                    <line x1="17" y1="16" x2="23" y2="16" />
                   </svg>
-                  {locale === "hy" ? "Վերակայել զտիչները" : "Reset Filters"}
+                  {locale === "hy" ? "Զտիչներ" : "Filters"}
                 </span>
               </hd-button>
             </div>
+
+            {/* Software Tag Quick Chips */}
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", paddingTop: "2px" }}>
+              <span style={{ fontSize: "0.82rem", color: "var(--muted)", marginRight: "4px", fontWeight: 600 }}>
+                {locale === "hy" ? "Ծրագիր՝" : "Software:"}
+              </span>
+              <hd-button
+                suppressHydrationWarning
+                data-height="26px"
+                data-thickness="2px"
+                data-font-size="0.75rem"
+                data-color={selectedHost === "all" ? "var(--accent)" : "var(--bg)"}
+                data-text-color={selectedHost === "all" ? "#fff" : "var(--text)"}
+                onClick={() => setSelectedHost("all")}
+              >
+                <span style={{ padding: "0 8px" }}>{locale === "hy" ? "Բոլորը" : "All"}</span>
+              </hd-button>
+              {hostAppsList.map(h => (
+                <hd-button
+                  key={h}
+                  suppressHydrationWarning
+                  data-height="26px"
+                  data-thickness="2px"
+                  data-font-size="0.75rem"
+                  data-color={selectedHost === h ? "var(--accent)" : "var(--bg)"}
+                  data-text-color={selectedHost === h ? "#fff" : "var(--text)"}
+                  onClick={() => setSelectedHost(selectedHost === h ? "all" : h)}
+                >
+                  <span style={{ padding: "0 8px" }}>{h}</span>
+                </hd-button>
+              ))}
+            </div>
+
+            {/* Advanced Filters Drawer */}
+            {showAdvanced && (
+              <div
+                style={{
+                  paddingTop: "20px",
+                  borderTop: "1px solid var(--panel-border)",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                  gap: "24px",
+                  animation: "fadeIn 0.2s ease"
+                }}
+              >
+                {/* Type Filter: Plugin vs Standalone */}
+                <div>
+                  <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: "10px" }}>
+                    {locale === "hy" ? "Կարգավիճակ / Տիպ" : "Type / Status"}
+                  </span>
+                  <hd-segment
+                    suppressHydrationWarning
+                    value={selectedType}
+                    onChange={(e: any) => setSelectedType(e.target.value)}
+                    data-width="100%"
+                    data-height="36px"
+                    data-thickness="2px"
+                  >
+                    <span value="all" {...(selectedType === "all" ? { selected: true } : {})}>
+                      {locale === "hy" ? "Բոլորը" : "All"}
+                    </span>
+                    <span value="plugin" {...(selectedType === "plugin" ? { selected: true } : {})}>
+                      {locale === "hy" ? "Խրվակ" : "Plugin"}
+                    </span>
+                    <span value="standalone" {...(selectedType === "standalone" ? { selected: true } : {})}>
+                      {locale === "hy" ? "Առանձին Հավելված" : "Standalone App"}
+                    </span>
+                  </hd-segment>
+                </div>
+
+                {/* Price Range Filter Slider */}
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                    <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--muted)" }}>
+                      {locale === "hy" ? "Գնային տիրույթ" : "Price Range"}
+                    </span>
+                    <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--accent)" }}>
+                      {minPrice.toLocaleString()} - {maxPrice.toLocaleString()} AMD
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <hd-slider
+                      suppressHydrationWarning
+                      min={0}
+                      max={maxAvailablePrice}
+                      step={500}
+                      value={maxPrice}
+                      onChange={(e: any) => setMaxPrice(Number(e.target.value))}
+                    />
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.75rem", color: "var(--muted)" }}>
+                      <span>0 AMD</span>
+                      <span>{maxAvailablePrice.toLocaleString()} AMD</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Reset Button */}
+                <div style={{ display: "flex", alignItems: "flex-end" }}>
+                  <hd-button
+                    suppressHydrationWarning
+                    data-height="36px"
+                    data-thickness="2px"
+                    data-color="transparent"
+                    data-text-color="var(--muted)"
+                    onClick={resetFilters}
+                  >
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "0 10px" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                        <path d="M3 3v5h5" />
+                      </svg>
+                      {locale === "hy" ? "Վերակայել զտիչները" : "Reset Filters"}
+                    </span>
+                  </hd-button>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div style={{ display: "flex", gap: "12px", alignItems: "center", minHeight: "36px" }}>
+            <div style={{ flex: 1, height: "36px", background: "var(--bg)", borderRadius: "8px", border: "1px solid var(--panel-border)" }} />
           </div>
         )}
       </div>
@@ -450,16 +468,18 @@ export default function AppsListingPage() {
           <p style={{ margin: "0 0 16px 0", fontSize: "0.9rem" }}>
             {locale === "hy" ? "Փորձեք փոխել որոնման բառերը կամ վերակայել զտիչները։" : "Try adjusting your search criteria or resetting filters."}
           </p>
-          <hd-button
-            suppressHydrationWarning
-            data-height="36px"
-            data-thickness="2px"
-            data-color="var(--accent)"
-            data-text-color="#ffffff"
-            onClick={resetFilters}
-          >
-            <span style={{ padding: "0 14px" }}>{locale === "hy" ? "Մաքրել զտիչները" : "Clear Filters"}</span>
-          </hd-button>
+          {mounted && (
+            <hd-button
+              suppressHydrationWarning
+              data-height="36px"
+              data-thickness="2px"
+              data-color="var(--accent)"
+              data-text-color="#ffffff"
+              onClick={resetFilters}
+            >
+              <span style={{ padding: "0 14px" }}>{locale === "hy" ? "Մաքրել զտիչները" : "Clear Filters"}</span>
+            </hd-button>
+          )}
         </div>
       )}
 
