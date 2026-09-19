@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import JSZip from 'jszip';
-import { MediaFolder, MediaFile, ViewMode, SortField, SortOrder, MediaFileType, StorageStats, TrashSettings } from '@/lib/mediaTypes';
+import { MediaFolder, MediaFile, ViewMode, SortField, SortOrder, SortCriterion, MediaFileType, StorageStats, TrashSettings } from '@/lib/mediaTypes';
 
 const COLOR_PRESETS = [
   { name: 'Կապույտ (Windows Blue)', hex: '#3B82F6' },
@@ -22,6 +23,12 @@ interface AdminMediaManagerProps {
 }
 
 export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
+  // Client mount state for portals
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Data state
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [folders, setFolders] = useState<MediaFolder[]>([]);
@@ -64,40 +71,159 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     return 'all';
   });
 
-  const [sortField, setSortField] = useState<SortField>(() => {
+  // Multi-level sort criteria (e.g. Primary: Type ASC, Secondary: Size DESC)
+  const [sortCriteria, setSortCriteria] = useState<SortCriterion[]>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const saved = localStorage.getItem('hdesign_media_sort_field') as SortField | null;
-        if (saved && ['name', 'size', 'modifiedAt', 'type'].includes(saved)) {
-          return saved;
+        const saved = localStorage.getItem('hdesign_media_sort_criteria');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+        // Fallback to legacy single sort preferences if present
+        const savedField = localStorage.getItem('hdesign_media_sort_field') as SortField | null;
+        const savedOrder = localStorage.getItem('hdesign_media_sort_order') as SortOrder | null;
+        if (savedField && ['name', 'size', 'modifiedAt', 'type', 'folder'].includes(savedField)) {
+          return [{ field: savedField, order: savedOrder === 'desc' ? 'desc' : 'asc' }];
         }
       } catch (e) {}
     }
-    return 'name';
+    return [{ field: 'name', order: 'asc' }];
   });
 
-  const [sortOrder, setSortOrder] = useState<SortOrder>(() => {
+  const sortField = sortCriteria[0]?.field || 'name';
+  const sortOrder = sortCriteria[0]?.order || 'asc';
+
+  // Pinned files to top (persistent across reloads and views)
+  const [pinnedFileIds, setPinnedFileIds] = useState<Set<string>>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const saved = localStorage.getItem('hdesign_media_sort_order') as SortOrder | null;
-        if (saved === 'asc' || saved === 'desc') {
-          return saved;
-        }
+        const saved = localStorage.getItem('hdesign_media_pinned_ids');
+        if (saved) return new Set(JSON.parse(saved));
       } catch (e) {}
     }
-    return 'asc';
+    return new Set();
   });
 
-  const [onlyUsedInSite, setOnlyUsedInSite] = useState(false);
+  // Usage filter ('all' | 'used' | 'unused')
+  const [usageFilter, setUsageFilter] = useState<'all' | 'used' | 'unused'>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('hdesign_media_usage_filter');
+        if (saved === 'used' || saved === 'unused' || saved === 'all') return saved;
+      } catch (e) {}
+    }
+    return 'all';
+  });
 
-  // Floating Drag Preview Avatar with Inertia Tilt
+  // Skip trash confirmation preference (Delete without confirmation)
+  const [skipTrashConfirm, setSkipTrashConfirm] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('hdesign_media_skip_trash_confirm');
+        if (saved !== null) return saved === 'true';
+      } catch (e) {}
+    }
+    return false;
+  });
+
+  const toggleSkipTrashConfirm = (value: boolean) => {
+    setSkipTrashConfirm(value);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('hdesign_media_skip_trash_confirm', String(value));
+      } catch (e) {}
+    }
+  };
+
+  // Custom UI Dialog / Popup Modal state (replaces window.confirm & window.alert)
+  interface DialogModalConfig {
+    type: 'confirm' | 'warning' | 'danger' | 'info' | 'alert';
+    title: string;
+    message: string;
+    usedInList?: string[];
+    confirmText?: string;
+    cancelText?: string;
+    showSkipConfirmToggle?: boolean;
+    onConfirm: (dontAskAgain?: boolean) => void;
+    onCancel?: () => void;
+  }
+
+  const [dialogModal, setDialogModal] = useState<DialogModalConfig & { isOpen: boolean }>({
+    isOpen: false,
+    type: 'confirm',
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
+  const [dialogDontAskAgain, setDialogDontAskAgain] = useState(false);
+
+  const openDialog = (config: DialogModalConfig) => {
+    setDialogDontAskAgain(false);
+    setDialogModal({ ...config, isOpen: true });
+  };
+
+  const closeDialog = () => {
+    setDialogModal(prev => ({ ...prev, isOpen: false }));
+  };
+
+  // Detailed file usage inspector modal
+  const [usageInspectFile, setUsageInspectFile] = useState<MediaFile | null>(null);
+
+  // Real-time Exiting animation state for smooth deletions, moves, and restores
+  const [exitingFiles, setExitingFiles] = useState<Map<string, 'trash' | 'delete' | 'restore' | 'move'>>(new Map());
+
+  const animateAndExecute = useCallback((
+    fileIds: string[],
+    actionType: 'trash' | 'delete' | 'restore' | 'move',
+    onComplete: () => void,
+    durationMs = 280
+  ) => {
+    if (fileIds.length === 0) {
+      onComplete();
+      return;
+    }
+    setExitingFiles(prev => {
+      const next = new Map(prev);
+      fileIds.forEach(id => next.set(id, actionType));
+      return next;
+    });
+
+    setTimeout(() => {
+      onComplete();
+      setExitingFiles(prev => {
+        const next = new Map(prev);
+        fileIds.forEach(id => next.delete(id));
+        return next;
+      });
+    }, durationMs);
+  }, []);
+
+  const getExitingClass = useCallback((fileId: string) => {
+    const action = exitingFiles.get(fileId);
+    return action ? `is-exiting-${action}` : '';
+  }, [exitingFiles]);
+
+  const changeUsageFilter = (filter: 'all' | 'used' | 'unused') => {
+    setUsageFilter(filter);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('hdesign_media_usage_filter', filter);
+      } catch (e) {}
+    }
+  };
+
+  // Floating Drag Preview Avatar with Inertia Tilt (Supports multi-card fanned stack)
   const [dragAvatar, setDragAvatar] = useState<{
     isDragging: boolean;
     count: number;
-    file?: MediaFile;
+    files: MediaFile[];
   }>({
     isDragging: false,
-    count: 0
+    count: 0,
+    files: []
   });
   const dragAvatarRef = useRef<HTMLDivElement | null>(null);
   const dragPhysicsRef = useRef<{
@@ -105,21 +231,51 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     targetY: number;
     currentX: number;
     currentY: number;
+    originX: number;
+    originY: number;
+    originScale: number;
     targetTilt: number;
     currentTilt: number;
+    scale: number;
+    targetScale: number;
+    opacity: number;
+    targetOpacity: number;
     lastEventX: number;
     lastEventTime: number;
+    startTime: number;
+    spawnDuration: number;
     active: boolean;
+    isEnding: boolean;
+    endTime: number;
+    endDuration: number;
+    startX: number;
+    startY: number;
+    startScale: number;
   }>({
     targetX: 0,
     targetY: 0,
     currentX: 0,
     currentY: 0,
+    originX: 0,
+    originY: 0,
+    originScale: 1.0,
     targetTilt: 0,
     currentTilt: 0,
+    scale: 1.0,
+    targetScale: 1.0,
+    opacity: 0,
+    targetOpacity: 1,
     lastEventX: 0,
     lastEventTime: 0,
-    active: false
+    startTime: 0,
+    spawnDuration: 300,
+    active: false,
+    isEnding: false,
+    endTime: 0,
+    endDuration: 280,
+    startX: 0,
+    startY: 0,
+    startScale: 1.0
   });
 
   // History for Back / Forward navigation
@@ -337,23 +493,135 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     updateUrlQuery({ type }, true);
   }, [updateUrlQuery]);
 
+  const handleColumnSortClick = (field: SortField, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const isMulti = e.ctrlKey || e.metaKey || e.shiftKey;
+    setSortCriteria(prev => {
+      let next: SortCriterion[];
+      const existingIndex = prev.findIndex(c => c.field === field);
+
+      if (isMulti) {
+        if (existingIndex !== -1) {
+          // Toggle direction of this existing field in multi-sort
+          next = prev.map((c, i) => i === existingIndex ? { ...c, order: c.order === 'asc' ? 'desc' : 'asc' } : c);
+        } else {
+          // Add as secondary / tertiary sort level
+          next = [...prev, { field, order: 'asc' }];
+        }
+      } else {
+        // Single column sort: if same column, toggle direction; if new column, switch to it (asc)
+        if (prev.length === 1 && prev[0].field === field) {
+          next = [{ field, order: prev[0].order === 'asc' ? 'desc' : 'asc' }];
+        } else {
+          next = [{ field, order: 'asc' }];
+        }
+      }
+
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('hdesign_media_sort_criteria', JSON.stringify(next));
+          localStorage.setItem('hdesign_media_sort_field', next[0]?.field || 'name');
+          localStorage.setItem('hdesign_media_sort_order', next[0]?.order || 'asc');
+        } catch (err) {}
+      }
+      return next;
+    });
+  };
+
   const handleSortFieldChange = (field: SortField) => {
-    setSortField(field);
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('hdesign_media_sort_field', field);
-      } catch (e) {}
-    }
+    setSortCriteria(prev => {
+      const next: SortCriterion[] = [{ field, order: prev[0]?.order || 'asc' }];
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('hdesign_media_sort_criteria', JSON.stringify(next));
+          localStorage.setItem('hdesign_media_sort_field', field);
+        } catch (e) {}
+      }
+      return next;
+    });
   };
 
   const handleSortOrderToggle = () => {
-    setSortOrder(prev => {
-      const next = prev === 'asc' ? 'desc' : 'asc';
+    setSortCriteria(prev => {
+      const currentOrder = prev[0]?.order || 'asc';
+      const nextOrder: SortOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+      const next: SortCriterion[] = prev.map(c => ({ ...c, order: nextOrder }));
       if (typeof window !== 'undefined') {
         try {
-          localStorage.setItem('hdesign_media_sort_order', next);
+          localStorage.setItem('hdesign_media_sort_criteria', JSON.stringify(next));
+          localStorage.setItem('hdesign_media_sort_order', nextOrder);
         } catch (e) {}
       }
+      return next;
+    });
+  };
+
+  const renderSortIndicator = (field: SortField) => {
+    const index = sortCriteria.findIndex(c => c.field === field);
+    if (index === -1) return null;
+    const criterion = sortCriteria[index];
+    const isOnly = sortCriteria.length === 1;
+
+    return (
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '2px',
+          marginLeft: '4px',
+          padding: '1px 5px',
+          borderRadius: '4px',
+          background: 'rgba(59, 130, 246, 0.2)',
+          color: '#3B82F6',
+          fontSize: '0.72rem',
+          fontWeight: 700
+        }}
+      >
+        {!isOnly && <span>{index + 1}</span>}
+        <span>{criterion.order === 'asc' ? '▲' : '▼'}</span>
+      </span>
+    );
+  };
+
+  const togglePinFile = (fileId: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setPinnedFileIds(prev => {
+      const next = new Set(prev);
+      const isCurrentlyPinned = next.has(fileId);
+      if (isCurrentlyPinned) {
+        next.delete(fileId);
+        showToast('Նիշքը ապագամվեց');
+      } else {
+        next.add(fileId);
+        showToast('📌 Նիշքը գամվեց վերեւում');
+      }
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('hdesign_media_pinned_ids', JSON.stringify(Array.from(next)));
+        } catch (err) {}
+      }
+      return next;
+    });
+  };
+
+  const handleBatchPin = (pin: boolean) => {
+    const selected = Array.from(selectedFileIds);
+    if (selected.length === 0) return;
+    setPinnedFileIds(prev => {
+      const next = new Set(prev);
+      selected.forEach(id => {
+        if (pin) next.add(id);
+        else next.delete(id);
+      });
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('hdesign_media_pinned_ids', JSON.stringify(Array.from(next)));
+        } catch (err) {}
+      }
+      showToast(pin ? `📌 ${selected.length} նիշք գամվեց վերեւում` : `${selected.length} նիշք ապագամվեց`);
       return next;
     });
   };
@@ -498,12 +766,18 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
   const breadcrumbs = useMemo(() => {
     if (currentFolderId === 'trash') {
       return [
-        { id: null, name: 'Այս Համակարգիչը' },
+        { id: null, name: 'Անհատական Կայք (ԱԿ)' },
         { id: 'trash', name: '🗑️ Աղբարկղ', color: '#EF4444' }
       ];
     }
+    if (currentFolderId === 'gallery') {
+      return [
+        { id: null, name: 'Անհատական Կայք (ԱԿ)' },
+        { id: 'gallery', name: '🖼️ Պատկերասրահ (Բոլոր նիշքերը)', color: '#8B5CF6' }
+      ];
+    }
     const crumbs: Array<{ id: string | null; name: string; color?: string }> = [
-      { id: null, name: 'Այս Համակարգիչը (Գլխավոր)' }
+      { id: null, name: 'Անհատական Կայք (ԱԿ) (Գլխավոր)' }
     ];
     if (!currentFolderId) return crumbs;
 
@@ -531,24 +805,29 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
   // Filter and sort files
   const filteredFiles = useMemo(() => {
     const isTrashView = currentFolderId === 'trash';
+    const isGalleryView = currentFolderId === 'gallery';
+
     return files.filter(file => {
       // In trash view, show ONLY trashed files
       if (isTrashView) {
         if (!file.isTrashed) return false;
       } else {
-        // In normal view, HIDE trashed files
+        // In normal view or gallery view, HIDE trashed files
         if (file.isTrashed) return false;
 
-        // Folder filter:
-        const matchFolder = searchQuery ? true : file.folderId === currentFolderId;
-        if (!matchFolder) return false;
+        // Folder filter: Gallery view shows all files flatly!
+        if (!isGalleryView) {
+          const matchFolder = searchQuery ? true : file.folderId === currentFolderId;
+          if (!matchFolder) return false;
+        }
       }
 
       // Type filter
       if (typeFilter !== 'all' && file.type !== typeFilter) return false;
 
-      // Used in site filter
-      if (onlyUsedInSite && (!file.usedIn || file.usedIn.length === 0)) return false;
+      // Usage filter (all | used | unused)
+      if (usageFilter === 'used' && (!file.usedIn || file.usedIn.length === 0)) return false;
+      if (usageFilter === 'unused' && file.usedIn && file.usedIn.length > 0) return false;
 
       // Search query
       if (searchQuery.trim()) {
@@ -561,27 +840,46 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
       return true;
     }).sort((a, b) => {
-      let comparison = 0;
-      if (sortField === 'name') {
-        comparison = a.name.localeCompare(b.name, undefined, { numeric: true });
-      } else if (sortField === 'size') {
-        comparison = a.size - b.size;
-      } else if (sortField === 'modifiedAt') {
-        comparison = new Date(a.modifiedAt).getTime() - new Date(b.modifiedAt).getTime();
-      } else if (sortField === 'type') {
-        comparison = a.type.localeCompare(b.type);
+      // 1. PINNED FILES ALWAYS COME FIRST (except in trash view)
+      if (!isTrashView) {
+        const isPinnedA = pinnedFileIds.has(a.id);
+        const isPinnedB = pinnedFileIds.has(b.id);
+        if (isPinnedA && !isPinnedB) return -1;
+        if (!isPinnedA && isPinnedB) return 1;
       }
-      return sortOrder === 'asc' ? comparison : -comparison;
+
+      // 2. MULTI-LEVEL SORT CRITERIA
+      for (const criterion of sortCriteria) {
+        let comparison = 0;
+        if (criterion.field === 'name') {
+          comparison = a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+        } else if (criterion.field === 'size') {
+          comparison = a.size - b.size;
+        } else if (criterion.field === 'modifiedAt') {
+          comparison = new Date(a.modifiedAt).getTime() - new Date(b.modifiedAt).getTime();
+        } else if (criterion.field === 'type') {
+          comparison = a.type.localeCompare(b.type);
+        } else if (criterion.field === 'folder') {
+          const folderA = a.folderId ? (folderMap.get(a.folderId)?.name || '') : '';
+          const folderB = b.folderId ? (folderMap.get(b.folderId)?.name || '') : '';
+          comparison = folderA.localeCompare(folderB, undefined, { numeric: true });
+        }
+
+        if (comparison !== 0) {
+          return criterion.order === 'asc' ? comparison : -comparison;
+        }
+      }
+      return 0;
     });
-  }, [files, currentFolderId, searchQuery, typeFilter, onlyUsedInSite, sortField, sortOrder]);
+  }, [files, currentFolderId, searchQuery, typeFilter, usageFilter, pinnedFileIds, sortCriteria, folderMap]);
 
   // Folder CRUD handlers
-  const handleOpenCreateFolder = (parentId: string | null = currentFolderId) => {
+  const handleOpenCreateFolder = (parentId: string | null = (currentFolderId === 'gallery' ? null : currentFolderId)) => {
     setFolderModalMode('create');
     setEditingFolderId(null);
     setFolderFormName('');
     setFolderFormColor('#3B82F6');
-    setFolderFormParentId(parentId);
+    setFolderFormParentId(parentId === 'gallery' ? null : parentId);
     setIsFolderModalOpen(true);
   };
 
@@ -623,7 +921,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
             setExpandedFolderIds(prev => new Set([...prev, folderFormParentId]));
           }
         } else {
-          alert(data.error || 'Չհաջողվեց ստեղծել պանակը');
+          openDialog({ type: 'alert', title: 'Սխալ', message: data.error || 'Չհաջողվեց ստեղծել պանակը', onConfirm: closeDialog });
         }
       } else if (folderModalMode === 'edit' && editingFolderId) {
         const res = await fetch('/api/admin/media/folders', {
@@ -645,53 +943,101 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           showToast('Պանակը թարմացված է');
           setIsFolderModalOpen(false);
         } else {
-          alert(data.error || 'Չհաջողվեց թարմացնել պանակը');
+          openDialog({ type: 'alert', title: 'Սխալ', message: data.error || 'Չհաջողվեց թարմացնել պանակը', onConfirm: closeDialog });
         }
       }
     } catch (err: any) {
-      alert(err.message || 'Սխալ պանակը պահպանելիս');
+      openDialog({ type: 'alert', title: 'Սխալ', message: err.message || 'Սխալ պանակը պահպանելիս', onConfirm: closeDialog });
     }
   };
 
   const handleDeleteFolder = async (folder: MediaFolder, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     const count = folderItemCounts.get(folder.id) || 0;
-    const confirmText = count > 0
-      ? `Վստա՞հ եք, որ ցանկանում եք ջնջել «${folder.name}» պանակը:\nԴրանում առկա ${count} ֆայլերը կտեղափոխվեն վերադաս մակարդակ:`
+    const confirmMessage = count > 0
+      ? `«${folder.name}» պանակում առկա է ${count} նիշք: Ջնջելու դեպքում բոլոր նիշքերը կտեղափոխվեն վերադաս մակարդակ:`
       : `Վստա՞հ եք, որ ցանկանում եք ջնջել «${folder.name}» պանակը:`;
 
-    if (!confirm(confirmText)) return;
-
-    try {
-      const res = await fetch(`/api/admin/media/folders?id=${encodeURIComponent(folder.id)}`, {
-        method: 'DELETE',
-        headers: { Authorization: token || '' }
-      });
-      const data = await res.json();
-      if (data.success) {
-        setFolders(prev => prev.filter(f => f.id !== folder.id));
-        // Reparent local files
-        setFiles(prev => prev.map(file => {
-          if (file.folderId === folder.id) {
-            return { ...file, folderId: folder.parentId };
+    openDialog({
+      type: 'danger',
+      title: '🗑️ Պանակի ջնջում',
+      message: confirmMessage,
+      confirmText: 'Ջնջել պանակը',
+      cancelText: 'Չեղարկել',
+      onConfirm: async () => {
+        closeDialog();
+        try {
+          const res = await fetch(`/api/admin/media/folders?id=${encodeURIComponent(folder.id)}`, {
+            method: 'DELETE',
+            headers: { Authorization: token || '' }
+          });
+          const data = await res.json();
+          if (data.success) {
+            setFolders(prev => prev.filter(f => f.id !== folder.id));
+            setFiles(prev => prev.map(file => {
+              if (file.folderId === folder.id) {
+                return { ...file, folderId: folder.parentId };
+              }
+              return file;
+            }));
+            if (currentFolderId === folder.id) {
+              navigateToFolder(folder.parentId);
+            }
+            showToast(`«${folder.name}» պանակը ջնջված է`);
+          } else {
+            openDialog({ type: 'alert', title: 'Սխալ', message: data.error || 'Չհաջողվեց ջնջել պանակը', onConfirm: closeDialog });
           }
-          return file;
-        }));
-        if (currentFolderId === folder.id) {
-          navigateToFolder(folder.parentId);
+        } catch (err: any) {
+          openDialog({ type: 'alert', title: 'Սխալ', message: err.message || 'Սխալ պանակը ջնջելիս', onConfirm: closeDialog });
         }
-        showToast(`«${folder.name}» պանակը ջնջված է`);
-      } else {
-        alert(data.error || 'Չհաջողվեց ջնջել պանակը');
       }
-    } catch (err: any) {
-      alert(err.message || 'Սխալ պանակը ջնջելիս');
-    }
+    });
   };
 
-  // Move files to target folder
+  // Move files to target folder (with automatic restore if moved from Trash)
   const handleMoveFiles = async (targetFolderId: string | null, fileIdsToMove: string[]) => {
     if (fileIdsToMove.length === 0) return;
+
+    const trashedMovedCount = files.filter(f => fileIdsToMove.includes(f.id) && f.isTrashed).length;
+    const isFromTrash = currentFolderId === 'trash' || trashedMovedCount > 0;
+
+    const targetName = targetFolderId ? folderMap.get(targetFolderId)?.name || 'պանակ' : 'Գլխավոր (ԱԿ)';
+    if (isFromTrash) {
+      showToast(`${fileIdsToMove.length} նիշք վերականգնվեց աղբարկղից և տեղափոխվեց «${targetName}»`);
+    } else {
+      showToast(`${fileIdsToMove.length} նիշք տեղափոխվեց «${targetName}»`);
+    }
+    setSelectedFileIds(new Set());
+    setIsMoveModalOpen(false);
+
+    // If moving from trash or between folders, trigger smooth animation
+    const shouldAnimate = currentFolderId !== 'gallery' && !searchQuery && (isFromTrash || targetFolderId !== currentFolderId);
+    const animType = isFromTrash ? 'restore' : 'move';
+
+    if (shouldAnimate) {
+      animateAndExecute(fileIdsToMove, animType, () => {
+        setFiles(prev => prev.map(f => {
+          if (fileIdsToMove.includes(f.id)) {
+            return { ...f, folderId: targetFolderId, isTrashed: false, trashedAt: undefined };
+          }
+          return f;
+        }));
+        if (trashedMovedCount > 0) {
+          setStats(prev => prev ? { ...prev, trashCount: Math.max(0, (prev.trashCount || trashedMovedCount) - trashedMovedCount) } : prev);
+        }
+      });
+    } else {
+      setFiles(prev => prev.map(f => {
+        if (fileIdsToMove.includes(f.id)) {
+          return { ...f, folderId: targetFolderId, isTrashed: false, trashedAt: undefined };
+        }
+        return f;
+      }));
+      if (trashedMovedCount > 0) {
+        setStats(prev => prev ? { ...prev, trashCount: Math.max(0, (prev.trashCount || trashedMovedCount) - trashedMovedCount) } : prev);
+      }
+    }
+
     try {
       const res = await fetch('/api/admin/media/move', {
         method: 'POST',
@@ -705,22 +1051,13 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         })
       });
       const data = await res.json();
-      if (data.success) {
-        setFiles(prev => prev.map(f => {
-          if (fileIdsToMove.includes(f.id)) {
-            return { ...f, folderId: targetFolderId };
-          }
-          return f;
-        }));
-        const targetName = targetFolderId ? folderMap.get(targetFolderId)?.name || 'պանակ' : 'Գլխավոր մակարդակ';
-        showToast(`${fileIdsToMove.length} նիշք տեղափոխվեց «${targetName}»`);
-        setSelectedFileIds(new Set());
-        setIsMoveModalOpen(false);
-      } else {
-        alert(data.error || 'Չհաջողվեց տեղափոխել նիշքերը');
+      if (!data.success) {
+        openDialog({ type: 'alert', title: 'Սխալ', message: data.error || 'Չհաջողվեց տեղափոխել նիշքերը', onConfirm: closeDialog });
+        loadMedia();
       }
     } catch (err: any) {
-      alert(err.message || 'Սխալ նիշքերը տեղափոխելիս');
+      openDialog({ type: 'alert', title: 'Սխալ', message: err.message || 'Սխալ նիշքերը տեղափոխելիս', onConfirm: closeDialog });
+      loadMedia();
     }
   };
 
@@ -732,14 +1069,6 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
   ) => {
     e.preventDefault();
     e.stopPropagation();
-
-    // If right clicking on a file that is not yet selected, select it
-    if (type === 'file' && item?.file) {
-      if (!selectedFileIds.has(item.file.id)) {
-        setSelectedFileIds(new Set([item.file.id]));
-        setLastSelectedFileId(item.file.id);
-      }
-    }
 
     // Viewport boundaries (menu width ~230px, height ~320px)
     let x = e.clientX;
@@ -820,7 +1149,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
       showToast(`Արխիվը (${zipFilename}) հաջողությամբ ներբեռնվեց`);
     } catch (err: any) {
       console.error('Archive error:', err);
-      alert('Սխալ արխիվը պատրաստելիս: ' + (err.message || ''));
+      openDialog({ type: 'alert', title: 'Սխալ', message: 'Սխալ արխիվը պատրաստելիս: ' + (err.message || ''), onConfirm: closeDialog });
     }
   };
 
@@ -832,32 +1161,45 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     // Check if a ZIP file was uploaded
     const zipFile = filesToUpload.find(f => f.name.toLowerCase().endsWith('.zip') || f.type === 'application/zip');
     if (zipFile && filesToUpload.length === 1) {
-      const shouldExtract = confirm(`Դուք վերբեռնում եք «${zipFile.name}» արխիվը:\nՑանկանու՞մ եք ԱՊԱԱՐԽԻՎԱՑՆԵԼ (Extract) դրա բոլոր նիշքերը ընթացիկ պանակում:`);
-      if (shouldExtract) {
-        setIsUploading(true);
-        setUploadProgressText('Բացվում է արխիվը...');
-        try {
-          const zip = await JSZip.loadAsync(zipFile);
-          const entries = Object.keys(zip.files);
-          const validFiles: File[] = [];
+      openDialog({
+        type: 'confirm',
+        title: '📦 ZIP Արխիվի վերբեռնում',
+        message: `Դուք վերբեռնում եք «${zipFile.name}» արխիվը:\nՑանկանու՞մ եք ԱՊԱԱՐԽԻՎԱՑՆԵԼ (Extract) դրա բոլոր նիշքերը ընթացիկ պանակում:`,
+        confirmText: 'Ապաարխիվացնել',
+        cancelText: 'Վերբեռնել որպես ZIP',
+        onConfirm: async () => {
+          closeDialog();
+          setIsUploading(true);
+          setUploadProgressText('Բացվում է արխիվը...');
+          try {
+            const zip = await JSZip.loadAsync(zipFile);
+            const entries = Object.keys(zip.files);
+            const validFiles: File[] = [];
 
-          for (const filename of entries) {
-            const entry = zip.files[filename];
-            if (entry.dir || filename.startsWith('__MACOSX/') || filename.endsWith('/.DS_Store')) continue;
-            const blob = await entry.async('blob');
-            const cleanName = filename.split('/').pop() || filename;
-            validFiles.push(new File([blob], cleanName, { type: blob.type }));
-          }
+            for (const filename of entries) {
+              const entry = zip.files[filename];
+              if (entry.dir || filename.startsWith('__MACOSX/') || filename.endsWith('/.DS_Store')) continue;
+              const blob = await entry.async('blob');
+              const cleanName = filename.split('/').pop() || filename;
+              validFiles.push(new File([blob], cleanName, { type: blob.type }));
+            }
 
-          if (validFiles.length > 0) {
-            showToast(`Արխիվից առանձնացվեց ${validFiles.length} նիշք: Սկսվում է վերբեռնումը...`);
-            await uploadExtractedFiles(validFiles);
-            return;
+            if (validFiles.length > 0) {
+              showToast(`Արխիվից առանձնացվեց ${validFiles.length} նիշք: Սկսվում է վերբեռնումը...`);
+              await uploadExtractedFiles(validFiles);
+              return;
+            }
+          } catch (err: any) {
+            console.error('ZIP extraction failed:', err);
+            openDialog({ type: 'alert', title: 'Սխալ', message: 'Արխիվը բացել չհաջողվեց: ' + (err.message || ''), onConfirm: closeDialog });
           }
-        } catch (err: any) {
-          console.error('ZIP extraction failed:', err);
+        },
+        onCancel: () => {
+          closeDialog();
+          uploadExtractedFiles(filesToUpload);
         }
-      }
+      });
+      return;
     }
 
     // Standard upload
@@ -873,7 +1215,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
       setUploadProgressText(`Վերբեռնվում է (${i + 1}/${filesList.length}): ${file.name}`);
       const formData = new FormData();
       formData.append('file', file);
-      if (currentFolderId && currentFolderId !== 'trash') {
+      if (currentFolderId && currentFolderId !== 'trash' && currentFolderId !== 'gallery') {
         formData.append('folderId', currentFolderId);
       }
 
@@ -900,17 +1242,13 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     showToast(`${successCount} նոր նիշք հաջողությամբ վերբեռնվեց`);
   };
 
-  // Move single file to trash
+  // Move single file to trash (with smart detection if used in website & skip confirm support)
   const handleMoveToTrash = async (file: MediaFile, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    try {
-      const res = await fetch('/api/admin/media/trash', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: token || '' },
-        body: JSON.stringify({ action: 'moveToTrash', fileIds: [file.id] })
-      });
-      const data = await res.json();
-      if (data.success) {
+    const isUsed = file.usedIn && file.usedIn.length > 0;
+
+    const executeTrash = () => {
+      animateAndExecute([file.id], 'trash', () => {
         setFiles(prev => prev.map(f => f.id === file.id ? { ...f, isTrashed: true, trashedAt: new Date().toISOString() } : f));
         setSelectedFileIds(prev => {
           const next = new Set(prev);
@@ -918,45 +1256,148 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           return next;
         });
         if (previewFile?.id === file.id) setPreviewFile(null);
-        showToast('Նիշքը տեղափոխվեց աղբարկղ');
+        setStats(prev => prev ? { ...prev, trashCount: (prev.trashCount || 0) + 1 } : prev);
+      });
+
+      showToast('Նիշքը տեղափոխվեց աղբարկղ');
+
+      fetch('/api/admin/media/trash', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: token || '' },
+        body: JSON.stringify({ action: 'moveToTrash', fileIds: [file.id] })
+      }).then(res => res.json()).then(data => {
+        if (!data.success) {
+          openDialog({ type: 'alert', title: 'Սխալ', message: data.error || 'Չհաջողվեց տեղափոխել աղբարկղ', onConfirm: closeDialog });
+          loadMedia();
+        }
+      }).catch(err => {
+        openDialog({ type: 'alert', title: 'Սխալ', message: err.message || 'Սխալ նիշքը աղբարկղ տեղափոխելիս', onConfirm: closeDialog });
         loadMedia();
-      } else {
-        alert(data.error || 'Չհաջողվեց տեղափոխել աղբարկղ');
-      }
-    } catch (err: any) {
-      alert(err.message || 'Սխալ նիշքը աղբարկղ տեղափոխելիս');
+      });
+    };
+
+    // If file is used in website, ALWAYS show the extra prominent warning popup!
+    if (isUsed) {
+      openDialog({
+        type: 'warning',
+        title: '⚠️ Զգուշացում․ Նիշքն օգտագործվում է կայքում',
+        message: `«${file.name}» նիշքը ակտիվորեն օգտագործվում է կայքի ${file.usedIn!.length} հատվածում։ Աղբարկղ տեղափոխելու դեպքում այն կարող է այլևս չցուցադրվել կայքում։`,
+        usedInList: file.usedIn,
+        confirmText: 'Այնուամենայնիվ տեղափոխել աղբարկղ',
+        cancelText: 'Չեղարկել',
+        onConfirm: () => {
+          closeDialog();
+          executeTrash();
+        }
+      });
+      return;
     }
+
+    // If skip confirm preference is enabled, execute directly
+    if (skipTrashConfirm) {
+      executeTrash();
+      return;
+    }
+
+    // Standard trash confirmation popup
+    openDialog({
+      type: 'confirm',
+      title: '🗑️ Տեղափոխել աղբարկղ',
+      message: `Վստա՞հ եք, որ ցանկանում եք «${file.name}» նիշքը տեղափոխել աղբարկղ:`,
+      confirmText: 'Տեղափոխել աղբարկղ',
+      cancelText: 'Չեղարկել',
+      showSkipConfirmToggle: true,
+      onConfirm: (dontAskAgain) => {
+        if (dontAskAgain) toggleSkipTrashConfirm(true);
+        closeDialog();
+        executeTrash();
+      }
+    });
   };
 
-  // Batch move to trash
+  // Batch move to trash (with smart website usage detection & skip confirm support)
   const handleBatchMoveToTrash = async (ids?: string[]) => {
     const idsToTrash = ids || Array.from(selectedFileIds);
     if (idsToTrash.length === 0) return;
-    if (!confirm(`Վստա՞հ եք, որ ցանկանում եք աղբարկղ տեղափոխել ընտրված ${idsToTrash.length} նիշքերը:`)) return;
 
-    try {
-      const res = await fetch('/api/admin/media/trash', {
+    const filesToTrash = files.filter(f => idsToTrash.includes(f.id));
+    const usedFiles = filesToTrash.filter(f => f.usedIn && f.usedIn.length > 0);
+    const allUsedLocations = Array.from(new Set(usedFiles.flatMap(f => f.usedIn || [])));
+
+    const executeBatchTrash = () => {
+      animateAndExecute(idsToTrash, 'trash', () => {
+        setFiles(prev => prev.map(f => idsToTrash.includes(f.id) ? { ...f, isTrashed: true, trashedAt: new Date().toISOString() } : f));
+        setSelectedFileIds(new Set());
+        if (previewFile && idsToTrash.includes(previewFile.id)) setPreviewFile(null);
+        setStats(prev => prev ? { ...prev, trashCount: (prev.trashCount || 0) + idsToTrash.length } : prev);
+      });
+
+      showToast(`${idsToTrash.length} նիշք տեղափոխվեց աղբարկղ`);
+
+      fetch('/api/admin/media/trash', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: token || '' },
         body: JSON.stringify({ action: 'moveToTrash', fileIds: idsToTrash })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSelectedFileIds(new Set());
-        if (previewFile && idsToTrash.includes(previewFile.id)) setPreviewFile(null);
-        showToast(`${idsToTrash.length} նիշք տեղափոխվեց աղբարկղ`);
+      }).then(res => res.json()).then(data => {
+        if (!data.success) {
+          openDialog({ type: 'alert', title: 'Սխալ', message: data.error || 'Չհաջողվեց տեղափոխել աղբարկղ', onConfirm: closeDialog });
+          loadMedia();
+        }
+      }).catch(err => {
+        openDialog({ type: 'alert', title: 'Սխալ', message: err.message || 'Սխալ աղբարկղ տեղափոխելիս', onConfirm: closeDialog });
         loadMedia();
-      } else {
-        alert(data.error || 'Չհաջողվեց տեղափոխել աղբարկղ');
-      }
-    } catch (err: any) {
-      alert(err.message || 'Սխալ աղբարկղ տեղափոխելիս');
+      });
+    };
+
+    // If any selected files are used in the website, show prominent warning popup!
+    if (usedFiles.length > 0) {
+      openDialog({
+        type: 'warning',
+        title: '⚠️ Զգուշացում․ Ընտրված նիշքերից որոշներն օգտագործվում են կայքում',
+        message: `Ընտրված ${idsToTrash.length} նիշքերից ${usedFiles.length}-ը ներկայումս ակտիվորեն օգտագործվում են կայքում։ Աղբարկղ տեղափոխելու դեպքում դրանք կարող են այլևս չցուցադրվել կայքում։`,
+        usedInList: allUsedLocations,
+        confirmText: 'Այնուամենայնիվ տեղափոխել աղբարկղ',
+        cancelText: 'Չեղարկել',
+        onConfirm: () => {
+          closeDialog();
+          executeBatchTrash();
+        }
+      });
+      return;
     }
+
+    if (skipTrashConfirm) {
+      executeBatchTrash();
+      return;
+    }
+
+    openDialog({
+      type: 'confirm',
+      title: '🗑️ Տեղափոխել աղբարկղ',
+      message: `Վստա՞հ եք, որ ցանկանում եք աղբարկղ տեղափոխել ընտրված ${idsToTrash.length} նիշքերը:`,
+      confirmText: 'Տեղափոխել աղբարկղ',
+      cancelText: 'Չեղարկել',
+      showSkipConfirmToggle: true,
+      onConfirm: (dontAskAgain) => {
+        if (dontAskAgain) toggleSkipTrashConfirm(true);
+        closeDialog();
+        executeBatchTrash();
+      }
+    });
   };
 
   // Restore single file from trash
   const handleRestoreFile = async (file: MediaFile, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    animateAndExecute([file.id], 'restore', () => {
+      setFiles(prev => prev.map(f => f.id === file.id ? { ...f, isTrashed: false, trashedAt: undefined } : f));
+      setSelectedFileIds(prev => { const next = new Set(prev); next.delete(file.id); return next; });
+      if (previewFile?.id === file.id) setPreviewFile(null);
+      setStats(prev => prev ? { ...prev, trashCount: Math.max(0, (prev.trashCount || 1) - 1) } : prev);
+    });
+
+    showToast('Նիշքը հաջողությամբ վերականգնվեց');
+
     try {
       const res = await fetch('/api/admin/media/trash', {
         method: 'POST',
@@ -964,16 +1405,13 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         body: JSON.stringify({ action: 'restore', fileIds: [file.id] })
       });
       const data = await res.json();
-      if (data.success) {
-        setSelectedFileIds(prev => { const next = new Set(prev); next.delete(file.id); return next; });
-        if (previewFile?.id === file.id) setPreviewFile(null);
-        showToast('Նիշքը հաջողությամբ վերականգնվեց');
+      if (!data.success) {
+        openDialog({ type: 'alert', title: 'Սխալ', message: data.error || 'Չհաջողվեց վերականգնել նիշքը', onConfirm: closeDialog });
         loadMedia();
-      } else {
-        alert(data.error || 'Չհաջողվեց վերականգնել նիշքը');
       }
     } catch (err: any) {
-      alert(err.message || 'Սխալ նիշքը վերականգնելիս');
+      openDialog({ type: 'alert', title: 'Սխալ', message: err.message || 'Սխալ նիշքը վերականգնելիս', onConfirm: closeDialog });
+      loadMedia();
     }
   };
 
@@ -981,6 +1419,16 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
   const handleBatchRestore = async () => {
     const idsToRestore = Array.from(selectedFileIds);
     if (idsToRestore.length === 0) return;
+
+    animateAndExecute(idsToRestore, 'restore', () => {
+      setFiles(prev => prev.map(f => idsToRestore.includes(f.id) ? { ...f, isTrashed: false, trashedAt: undefined } : f));
+      setSelectedFileIds(new Set());
+      if (previewFile && idsToRestore.includes(previewFile.id)) setPreviewFile(null);
+      setStats(prev => prev ? { ...prev, trashCount: Math.max(0, (prev.trashCount || idsToRestore.length) - idsToRestore.length) } : prev);
+    });
+
+    showToast(`${idsToRestore.length} նիշք վերականգնվեց`);
+
     try {
       const res = await fetch('/api/admin/media/trash', {
         method: 'POST',
@@ -988,95 +1436,161 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         body: JSON.stringify({ action: 'restore', fileIds: idsToRestore })
       });
       const data = await res.json();
-      if (data.success) {
-        setSelectedFileIds(new Set());
-        showToast(`${idsToRestore.length} նիշք վերականգնվեց`);
+      if (!data.success) {
+        openDialog({ type: 'alert', title: 'Սխալ', message: data.error || 'Չհաջողվեց վերականգնել նիշքերը', onConfirm: closeDialog });
         loadMedia();
-      } else {
-        alert(data.error || 'Չհաջողվեց վերականգնել նիշքերը');
       }
     } catch (err: any) {
-      alert(err.message || 'Սխալ նիշքերը վերականգնելիս');
+      openDialog({ type: 'alert', title: 'Սխալ', message: err.message || 'Սխալ նիշքերը վերականգնելիս', onConfirm: closeDialog });
+      loadMedia();
     }
   };
 
-  // Permanently delete single file from Supabase & disk
+  // Permanently delete single file from Supabase & disk (with warning if used in website)
   const handlePermanentDelete = async (file: MediaFile, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    if (!confirm(`Վստա՞հ եք, որ ցանկանում եք ԸՆԴՄԻՇՏ հեռացնել «${file.name}» նիշքը:\nԱյն կջնջվի Supabase պահոցից և սերվերից անվերադարձ:`)) return;
+    const isUsed = file.usedIn && file.usedIn.length > 0;
 
-    try {
-      const res = await fetch('/api/admin/media/trash', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: token || '' },
-        body: JSON.stringify({ action: 'permanentDelete', fileIds: [file.id] })
-      });
-      const data = await res.json();
-      if (data.success) {
+    const executePermanentDelete = () => {
+      animateAndExecute([file.id], 'delete', () => {
         setFiles(prev => prev.filter(f => f.id !== file.id));
         setSelectedFileIds(prev => { const next = new Set(prev); next.delete(file.id); return next; });
         if (previewFile?.id === file.id) setPreviewFile(null);
-        showToast('Նիշքը ընդմիշտ ջնջվեց Supabase-ից');
+        setStats(prev => prev ? { ...prev, trashCount: Math.max(0, (prev.trashCount || 1) - 1), totalFiles: Math.max(0, (prev.totalFiles || 1) - 1) } : prev);
+      });
+
+      showToast('Նիշքը ընդմիշտ ջնջվեց Supabase-ից');
+
+      fetch('/api/admin/media/trash', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: token || '' },
+        body: JSON.stringify({ action: 'permanentDelete', fileIds: [file.id] })
+      }).then(res => res.json()).then(data => {
+        if (!data.success) {
+          openDialog({ type: 'alert', title: 'Սխալ', message: data.error || 'Չհաջողվեց ընդմիշտ ջնջել նիշքը', onConfirm: closeDialog });
+          loadMedia();
+        }
+      }).catch(err => {
+        openDialog({ type: 'alert', title: 'Սխալ', message: err.message || 'Սխալ նիշքը ընդմիշտ ջնջելիս', onConfirm: closeDialog });
         loadMedia();
-      } else {
-        alert(data.error || 'Չհաջողվեց ընդմիշտ ջնջել նիշքը');
+      });
+    };
+
+    openDialog({
+      type: isUsed ? 'warning' : 'danger',
+      title: isUsed ? '⚠️ Զգուշացում․ Ընդմիշտ ջնջվող նիշքը օգտագործվում է կայքում' : '💥 Ընդմիշտ ջնջում',
+      message: isUsed
+        ? `«${file.name}» նիշքը օգտագործվում է կայքի ${file.usedIn!.length} հատվածում: Ընդմիշտ ջնջելու դեպքում այն կջնջվի Supabase-ից անվերադարձ և կայքի այդ հատվածները կկոտրվեն:`
+        : `Վստա՞հ եք, որ ցանկանում եք ԸՆԴՄԻՇՏ հեռացնել «${file.name}» նիշքը:\nԱյն կջնջվի Supabase պահոցից և սերվերից անվերադարձ:`,
+      usedInList: isUsed ? file.usedIn : undefined,
+      confirmText: 'Ընդմիշտ ջնջել',
+      cancelText: 'Չեղարկել',
+      onConfirm: () => {
+        closeDialog();
+        executePermanentDelete();
       }
-    } catch (err: any) {
-      alert(err.message || 'Սխալ նիշքը ընդմիշտ ջնջելիս');
-    }
+    });
   };
 
-  // Batch permanently delete
+  // Batch permanently delete (with warning if used in website)
   const handleBatchPermanentDelete = async () => {
     const idsToDelete = Array.from(selectedFileIds);
     if (idsToDelete.length === 0) return;
-    if (!confirm(`Վստա՞հ եք, որ ցանկանում եք ԸՆԴՄԻՇՏ հեռացնել ընտրված ${idsToDelete.length} նիշքերը:\nԴրանք կջնջվեն Supabase-ից և սերվերից անվերադարձ:`)) return;
 
-    try {
-      const res = await fetch('/api/admin/media/trash', {
+    const filesToDelete = files.filter(f => idsToDelete.includes(f.id));
+    const usedFiles = filesToDelete.filter(f => f.usedIn && f.usedIn.length > 0);
+    const allUsedLocations = Array.from(new Set(usedFiles.flatMap(f => f.usedIn || [])));
+
+    const executeBatchDelete = () => {
+      animateAndExecute(idsToDelete, 'delete', () => {
+        setFiles(prev => prev.filter(f => !idsToDelete.includes(f.id)));
+        setSelectedFileIds(new Set());
+        if (previewFile && idsToDelete.includes(previewFile.id)) setPreviewFile(null);
+        setStats(prev => prev ? { ...prev, trashCount: Math.max(0, (prev.trashCount || idsToDelete.length) - idsToDelete.length), totalFiles: Math.max(0, (prev.totalFiles || idsToDelete.length) - idsToDelete.length) } : prev);
+      });
+
+      showToast(`${idsToDelete.length} նիշք ընդմիշտ հեռացվեց Supabase-ից`);
+
+      fetch('/api/admin/media/trash', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: token || '' },
         body: JSON.stringify({ action: 'permanentDelete', fileIds: idsToDelete })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setSelectedFileIds(new Set());
-        if (previewFile && idsToDelete.includes(previewFile.id)) setPreviewFile(null);
-        showToast(`${idsToDelete.length} նիշք ընդմիշտ հեռացվեց Supabase-ից`);
+      }).then(res => res.json()).then(data => {
+        if (!data.success) {
+          openDialog({ type: 'alert', title: 'Սխալ', message: data.error || 'Չհաջողվեց ընդմիշտ ջնջել նիշքերը', onConfirm: closeDialog });
+          loadMedia();
+        }
+      }).catch(err => {
+        openDialog({ type: 'alert', title: 'Սխալ', message: err.message || 'Սխալ նիշքերը ջնջելիս', onConfirm: closeDialog });
         loadMedia();
-      } else {
-        alert(data.error || 'Չհաջողվեց ընդմիշտ ջնջել նիշքերը');
+      });
+    };
+
+    openDialog({
+      type: usedFiles.length > 0 ? 'warning' : 'danger',
+      title: usedFiles.length > 0 ? '⚠️ Զգուշացում․ Ընտրված նիշքերից որոշներն օգտագործվում են կայքում' : '💥 Ընդմիշտ ջնջում',
+      message: usedFiles.length > 0
+        ? `Ընտրված ${idsToDelete.length} նիշքերից ${usedFiles.length}-ը ակտիվորեն օգտագործվում են կայքում: Դրանք ընդմիշտ կջնջվեն Supabase-ից անվերադարձ:`
+        : `Վստա՞հ եք, որ ցանկանում եք ԸՆԴՄԻՇՏ հեռացնել ընտրված ${idsToDelete.length} նիշքերը:\nԴրանք կջնջվեն Supabase-ից և սերվերից անվերադարձ:`,
+      usedInList: usedFiles.length > 0 ? allUsedLocations : undefined,
+      confirmText: 'Ընդմիշտ ջնջել',
+      cancelText: 'Չեղարկել',
+      onConfirm: () => {
+        closeDialog();
+        executeBatchDelete();
       }
-    } catch (err: any) {
-      alert(err.message || 'Սխալ նիշքերը ջնջելիս');
-    }
+    });
   };
 
   // Empty entire trash
   const handleEmptyTrash = async () => {
-    const trashedCount = files.filter(f => f.isTrashed).length;
-    if (trashedCount === 0) {
-      alert('Աղբարկղը դատարկ է:');
+    const trashedFiles = files.filter(f => f.isTrashed);
+    if (trashedFiles.length === 0) {
+      openDialog({ type: 'info', title: 'Աղբարկղ', message: 'Աղբարկղը դատարկ է:', onConfirm: closeDialog });
       return;
     }
-    if (!confirm(`Վստա՞հ եք, որ ցանկանում եք դատարկել աղբարկղը:\nԲոլոր ${trashedCount} նիշքերը կջնջվեն Supabase-ից և սերվերից ԸՆԴՄԻՇՏ:`)) return;
 
-    try {
-      const res = await fetch('/api/admin/media/trash', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: token || '' },
-        body: JSON.stringify({ action: 'empty' })
-      });
-      const data = await res.json();
-      if (data.success) {
+    const usedInTrash = trashedFiles.filter(f => f.usedIn && f.usedIn.length > 0);
+    const allUsedLocations = Array.from(new Set(usedInTrash.flatMap(f => f.usedIn || [])));
+
+    openDialog({
+      type: usedInTrash.length > 0 ? 'warning' : 'danger',
+      title: '💥 Դատարկել աղբարկղը',
+      message: usedInTrash.length > 0
+        ? `Աղբարկղում առկա ${trashedFiles.length} նիշքերից ${usedInTrash.length}-ը օգտագործվում են կայքում:\nԲոլոր նիշքերը կջնջվեն Supabase-ից և սերվերից ԸՆԴՄԻՇՏ:`
+        : `Վստա՞հ եք, որ ցանկանում եք դատարկել աղբարկղը:\nԲոլոր ${trashedFiles.length} նիշքերը կջնջվեն Supabase-ից և սերվերից ԸՆԴՄԻՇՏ:`,
+      usedInList: usedInTrash.length > 0 ? allUsedLocations : undefined,
+      confirmText: 'Դատարկել աղբարկղը',
+      cancelText: 'Չեղարկել',
+      onConfirm: async () => {
+        closeDialog();
+        const trashedIds = trashedFiles.map(f => f.id);
+        animateAndExecute(trashedIds, 'delete', () => {
+          setFiles(prev => prev.filter(f => !f.isTrashed));
+          setSelectedFileIds(new Set());
+          if (previewFile && previewFile.isTrashed) setPreviewFile(null);
+          setStats(prev => prev ? { ...prev, trashCount: 0, trashSize: 0, trashSizeFormatted: '0 B' } : prev);
+        });
+
         showToast('Աղբարկղը ամբողջությամբ դատարկվեց');
-        loadMedia();
-      } else {
-        alert(data.error || 'Չհաջողվեց դատարկել աղբարկղը');
+
+        try {
+          const res = await fetch('/api/admin/media/trash', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: token || '' },
+            body: JSON.stringify({ action: 'empty' })
+          });
+          const data = await res.json();
+          if (!data.success) {
+            openDialog({ type: 'alert', title: 'Սխալ', message: data.error || 'Չհաջողվեց դատարկել աղբարկղը', onConfirm: closeDialog });
+            loadMedia();
+          }
+        } catch (err: any) {
+          openDialog({ type: 'alert', title: 'Սխալ', message: err.message || 'Սխալ աղբարկղը դատարկելիս', onConfirm: closeDialog });
+          loadMedia();
+        }
       }
-    } catch (err: any) {
-      alert(err.message || 'Սխալ աղբարկղը դատարկելիս');
-    }
+    });
   };
 
   // Save trash settings (auto delete & retention days)
@@ -1093,10 +1607,10 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         showToast('Աղբարկղի կարգավորումները պահպանվեցին');
         loadMedia();
       } else {
-        alert(data.error || 'Չհաջողվեց պահպանել կարգավորումները');
+        openDialog({ type: 'alert', title: 'Սխալ', message: data.error || 'Չհաջողվեց պահպանել կարգավորումները', onConfirm: closeDialog });
       }
     } catch (err: any) {
-      alert(err.message || 'Սխալ կարգավորումները պահպանելիս');
+      openDialog({ type: 'alert', title: 'Սխալ', message: err.message || 'Սխալ կարգավորումները պահպանելիս', onConfirm: closeDialog });
     }
   };
 
@@ -1148,15 +1662,103 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         showToast('Նիշքը անվանափոխվեց');
         setRenamingFile(null);
       } else {
-        alert(data.error || 'Անվանափոխումը ձախողվեց');
+        openDialog({ type: 'alert', title: 'Սխալ', message: data.error || 'Անվանափոխումը ձախողվեց', onConfirm: closeDialog });
       }
     } catch (err: any) {
-      alert(err.message || 'Սխալ անվանափոխելիս');
+      openDialog({ type: 'alert', title: 'Սխալ', message: err.message || 'Սխալ անվանափոխելիս', onConfirm: closeDialog });
     }
+  };
+
+  // Unlink media file from website usages (single usage or all usages)
+  const handleUnlinkUsage = async (file: MediaFile, targetUsage?: string) => {
+    openDialog({
+      type: 'warning',
+      title: '🔓 Ապակապել կայքից',
+      message: targetUsage
+        ? `Ցանկանո՞ւմ եք ապակապել «${file.name}» նիշքը «${targetUsage}» հատվածից:`
+        : `Ցանկանո՞ւմ եք ապակապել «${file.name}» նիշքը կայքի բոլոր կապված հատվածներից:`,
+      confirmText: 'Ապակապել',
+      cancelText: 'Չեղարկել',
+      onConfirm: async () => {
+        closeDialog();
+        try {
+          const res = await fetch('/api/admin/media/unlink', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: token || ''
+            },
+            body: JSON.stringify({
+              fileId: file.id,
+              url: file.url,
+              targetUsage
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            showToast(data.message || 'Հղումը ապակապվեց կայքից');
+            // Optimistically update usedIn for the file in state
+            setFiles(prev => prev.map(f => {
+              if (f.id === file.id) {
+                if (targetUsage && f.usedIn) {
+                  const updatedUsedIn = f.usedIn.filter(u => u !== targetUsage);
+                  return { ...f, usedIn: updatedUsedIn.length > 0 ? updatedUsedIn : undefined };
+                }
+                return { ...f, usedIn: undefined };
+              }
+              return f;
+            }));
+
+            // Update previewFile if open
+            if (previewFile && previewFile.id === file.id) {
+              setPreviewFile(prev => {
+                if (!prev) return null;
+                if (targetUsage && prev.usedIn) {
+                  const updated = prev.usedIn.filter(u => u !== targetUsage);
+                  return { ...prev, usedIn: updated.length > 0 ? updated : undefined };
+                }
+                return { ...prev, usedIn: undefined };
+              });
+            }
+
+            // Update usageInspectFile if open
+            if (usageInspectFile && usageInspectFile.id === file.id) {
+              setUsageInspectFile(prev => {
+                if (!prev) return null;
+                if (targetUsage && prev.usedIn) {
+                  const updated = prev.usedIn.filter(u => u !== targetUsage);
+                  if (updated.length === 0) return null;
+                  return { ...prev, usedIn: updated };
+                }
+                return null;
+              });
+            }
+
+            // Reload media library in background to ensure fresh synced data
+            loadMedia();
+          } else {
+            openDialog({
+              type: 'alert',
+              title: 'Սխալ',
+              message: data.error || 'Ապակապումը ձախողվեց',
+              onConfirm: closeDialog
+            });
+          }
+        } catch (err: any) {
+          openDialog({
+            type: 'alert',
+            title: 'Սխալ',
+            message: err.message || 'Սխալ ապակապելիս',
+            onConfirm: closeDialog
+          });
+        }
+      }
+    });
   };
 
   // Advanced File Selection: Standard Shift + Ctrl multi-selection
   const handleFileClick = (file: MediaFile, e: React.MouseEvent) => {
+    e.stopPropagation();
     // 1. Shift-click: Range selection
     if (e.shiftKey) {
       e.preventDefault();
@@ -1202,9 +1804,20 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
       return;
     }
 
-    // 3. Normal single click: Select only this file and update anchor
-    setSelectedFileIds(new Set([file.id]));
-    setLastSelectedFileId(file.id);
+    // 3. Normal single click: If already selected, toggle off (deselect); otherwise select only this file
+    setSelectedFileIds(prev => {
+      if (prev.has(file.id)) {
+        if (prev.size === 1) {
+          setLastSelectedFileId(null);
+          return new Set();
+        }
+        const next = new Set(prev);
+        next.delete(file.id);
+        return next;
+      }
+      setLastSelectedFileId(file.id);
+      return new Set([file.id]);
+    });
   };
 
   // Double click: open preview
@@ -1385,7 +1998,43 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     });
   };
 
-  // Drag avatar coordinate & inertia tilt tracking (Ultra-smooth 60fps physics loop without React re-renders)
+  // Drag avatar coordinate & inertia tilt tracking (Ultra-smooth 60fps physics loop with icon-to-mouse & return animation)
+  const triggerDragEndAnimation = useCallback((targetFolderId?: string | null) => {
+    const p = dragPhysicsRef.current;
+    if (!p.active || p.isEnding) return;
+    p.isEnding = true;
+    p.endTime = performance.now();
+    p.startX = p.currentX;
+    p.startY = p.currentY;
+    p.startScale = p.scale;
+
+    // Locate target folder element if dropped on a folder
+    let targetEl: Element | null = null;
+    if (targetFolderId !== undefined) {
+      if (targetFolderId === null) {
+        targetEl = document.querySelector('[data-folder-id="root"]');
+      } else if (targetFolderId === 'trash') {
+        targetEl = document.querySelector('[data-folder-id="trash"]');
+      } else {
+        targetEl = document.querySelector(`[data-folder-id="${targetFolderId}"]`);
+      }
+    }
+
+    if (targetEl) {
+      const fRect = targetEl.getBoundingClientRect();
+      p.targetX = fRect.left + fRect.width / 2 - 38;
+      p.targetY = fRect.top + fRect.height / 2 - 38;
+      p.targetScale = 0.2;
+    } else {
+      // Rebound / fly smoothly back to original file thumbnail position!
+      p.targetX = p.originX;
+      p.targetY = p.originY;
+      p.targetScale = p.originScale;
+    }
+
+    setDragOverFolderId(null);
+  }, []);
+
   useEffect(() => {
     if (!dragAvatar.isDragging) return;
 
@@ -1394,17 +2043,51 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     const updatePhysics = () => {
       if (!dragPhysicsRef.current.active) return;
       const p = dragPhysicsRef.current;
+      const now = performance.now();
 
-      // Smooth lerp for position and tilt
-      p.currentX += (p.targetX - p.currentX) * 0.4;
-      p.currentY += (p.targetY - p.currentY) * 0.4;
-      p.currentTilt += (p.targetTilt - p.currentTilt) * 0.18;
-      
-      // Decay tilt back to 0 smoothly
-      p.targetTilt *= 0.88;
+      if (p.isEnding) {
+        const elapsed = now - p.endTime;
+        const progress = Math.min(1, Math.max(0, elapsed / p.endDuration));
+        const ease = 1 - Math.pow(1 - progress, 3); // cubic ease out
+
+        p.currentX = p.startX + (p.targetX - p.startX) * ease;
+        p.currentY = p.startY + (p.targetY - p.startY) * ease;
+        p.scale = p.startScale + (p.targetScale - p.startScale) * ease;
+        p.opacity = Math.max(0, 1 - progress);
+        p.currentTilt *= 0.85;
+
+        if (progress >= 1) {
+          p.active = false;
+          setDragAvatar(prev => ({ ...prev, isDragging: false }));
+          return;
+        }
+      } else {
+        const spawnElapsed = now - p.startTime;
+        if (spawnElapsed < p.spawnDuration) {
+          // Smooth 300ms cubic ease-out spawn from thumbnail origin to mouse
+          const spawnProgress = Math.min(1, Math.max(0, spawnElapsed / p.spawnDuration));
+          const ease = 1 - Math.pow(1 - spawnProgress, 3);
+
+          p.currentX = p.originX + (p.targetX - p.originX) * ease;
+          p.currentY = p.originY + (p.targetY - p.originY) * ease;
+          p.scale = p.originScale + (1.0 - p.originScale) * ease;
+          p.opacity = 0.95 + 0.05 * ease;
+        } else {
+          // Normal dragging phase: follow mouse smoothly with inertia
+          p.currentX += (p.targetX - p.currentX) * 0.28;
+          p.currentY += (p.targetY - p.currentY) * 0.28;
+          p.scale += (1.0 - p.scale) * 0.28;
+          p.opacity = 1.0;
+        }
+
+        // Tilt follows velocity with spring lerp
+        p.currentTilt += (p.targetTilt - p.currentTilt) * 0.18;
+        p.targetTilt *= 0.88;
+      }
 
       if (dragAvatarRef.current) {
-        dragAvatarRef.current.style.transform = `translate3d(${p.currentX + 14}px, ${p.currentY + 14}px, 0) rotate(${p.currentTilt.toFixed(2)}deg) scale(0.9)`;
+        dragAvatarRef.current.style.transform = `translate3d(${p.currentX.toFixed(1)}px, ${p.currentY.toFixed(1)}px, 0) rotate(${p.currentTilt.toFixed(2)}deg) scale(${p.scale.toFixed(3)})`;
+        dragAvatarRef.current.style.opacity = p.opacity.toFixed(3);
       }
 
       animId = requestAnimationFrame(updatePhysics);
@@ -1415,12 +2098,13 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     const handleGlobalDragOver = (e: DragEvent) => {
       const now = performance.now();
       const p = dragPhysicsRef.current;
+      if (p.isEnding) return;
       const dt = Math.max(1, now - p.lastEventTime);
       const dx = e.clientX - p.lastEventX;
       const speedX = dx / dt; // velocity in px/ms
 
-      p.targetX = e.clientX;
-      p.targetY = e.clientY;
+      p.targetX = e.clientX - 38;
+      p.targetY = e.clientY - 38;
       // Clamped inertia tilt based on horizontal velocity
       p.targetTilt = Math.max(-22, Math.min(22, speedX * 26));
       p.lastEventX = e.clientX;
@@ -1428,8 +2112,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     };
 
     const handleGlobalDragEnd = () => {
-      dragPhysicsRef.current.active = false;
-      setDragAvatar(prev => ({ ...prev, isDragging: false }));
+      triggerDragEndAnimation(dragOverFolderId);
     };
 
     window.addEventListener('dragover', handleGlobalDragOver);
@@ -1442,7 +2125,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
       window.removeEventListener('dragend', handleGlobalDragEnd);
       window.removeEventListener('drop', handleGlobalDragEnd);
     };
-  }, [dragAvatar.isDragging]);
+  }, [dragAvatar.isDragging, dragOverFolderId, triggerDragEndAnimation]);
 
   // Drag and Drop files onto folder cards/tree items
   const handleDragStart = (fileId: string, e: React.DragEvent) => {
@@ -1451,7 +2134,13 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     e.dataTransfer.setData('text/plain', JSON.stringify(toMove));
     e.dataTransfer.effectAllowed = 'move';
 
+    // Collect dragged file objects (primary file first, then the rest)
     const primary = files.find(f => f.id === fileId);
+    const otherFiles = toMove
+      .filter(id => id !== fileId)
+      .map(id => files.find(f => f.id === id))
+      .filter(Boolean) as MediaFile[];
+    const dragFilesList = primary ? [primary, ...otherFiles] : otherFiles;
 
     // Create transparent drag image to hide default browser drag ghost
     try {
@@ -1460,29 +2149,59 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
       e.dataTransfer.setDragImage(img, 0, 0);
     } catch (err) {}
 
+    const el = e.currentTarget as HTMLElement | null;
+    let originX = e.clientX - 38;
+    let originY = e.clientY - 38;
+    let originScale = 2.2;
+
+    if (el) {
+      // Target the exact thumbnail container inside the dragged card
+      const thumbEl = el.querySelector('[data-thumbnail-img="true"]') || el.querySelector('img') || el.querySelector('svg') || el;
+      const rect = (thumbEl || el).getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      originX = centerX - 38;
+      originY = centerY - 38;
+      originScale = Math.max(0.8, Math.min(3.5, rect.width / 76));
+    }
+
+    const now = performance.now();
     dragPhysicsRef.current = {
-      targetX: e.clientX,
-      targetY: e.clientY,
-      currentX: e.clientX,
-      currentY: e.clientY,
+      targetX: e.clientX - 38,
+      targetY: e.clientY - 38,
+      currentX: originX,
+      currentY: originY,
+      originX,
+      originY,
+      originScale,
       targetTilt: 0,
       currentTilt: 0,
+      scale: originScale, // Starts at the exact position and scale of the file thumbnail!
+      targetScale: 1.0,   // Shrinks and glides to mouse cursor!
+      opacity: 1.0,
+      targetOpacity: 1.0,
       lastEventX: e.clientX,
-      lastEventTime: performance.now(),
-      active: true
+      lastEventTime: now,
+      startTime: now,
+      spawnDuration: 300,
+      active: true,
+      isEnding: false,
+      endTime: 0,
+      endDuration: 280,
+      startX: originX,
+      startY: originY,
+      startScale: originScale
     };
 
     setDragAvatar({
       isDragging: true,
       count: toMove.length,
-      file: primary
+      files: dragFilesList
     });
   };
 
   const handleDragEnd = () => {
-    dragPhysicsRef.current.active = false;
-    setDragAvatar(prev => ({ ...prev, isDragging: false }));
-    setDragOverFolderId(null);
+    triggerDragEndAnimation(dragOverFolderId);
   };
 
   const handleFolderDragOver = (folderId: string | null, e: React.DragEvent) => {
@@ -1503,7 +2222,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
   const handleFolderDrop = (targetFolderId: string | null, e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setDragOverFolderId(null);
+    triggerDragEndAnimation(targetFolderId);
 
     // Check if dragging files from computer
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
@@ -1550,6 +2269,8 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     return (
       <div key={folder.id} style={{ display: 'flex', flexDirection: 'column' }}>
         <div
+          data-folder-id={folder.id}
+          className={`media-sidebar-nav-item ${isSelected ? 'is-selected' : ''}`}
           onClick={() => navigateToFolder(folder.id)}
           onContextMenu={e => openContextMenu(e, 'folder', { folder })}
           onDragOver={e => handleFolderDragOver(folder.id, e)}
@@ -1677,7 +2398,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
     if (isImg) {
       return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: '#090a0f' }}>
+        <div data-thumbnail-img="true" style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: '#090a0f' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={file.url}
@@ -1699,7 +2420,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
     if (isVid) {
       return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)', color: '#818cf8', position: 'relative' }}>
+        <div data-thumbnail-img="true" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)', color: '#818cf8', position: 'relative' }}>
           <svg width={size === 'large' ? 44 : 28} height={size === 'large' ? 44 : 28} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polygon points="5 3 19 12 5 21 5 3" />
           </svg>
@@ -1710,7 +2431,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
     if (isFont) {
       return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #064e3b 0%, #022c22 100%)', color: '#34d399' }}>
+        <div data-thumbnail-img="true" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #064e3b 0%, #022c22 100%)', color: '#34d399' }}>
           <span style={{ fontSize: size === 'large' ? '2.4rem' : '1.4rem', fontWeight: 700, fontFamily: 'serif' }}>Aa</span>
           <span style={{ fontSize: '0.68rem', fontWeight: 600, letterSpacing: '0.05em', marginTop: '2px' }}>{file.extension.toUpperCase()}</span>
         </div>
@@ -1719,7 +2440,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
     if (isAudio) {
       return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #701a75 0%, #4a044e 100%)', color: '#f472b6' }}>
+        <div data-thumbnail-img="true" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #701a75 0%, #4a044e 100%)', color: '#f472b6' }}>
           <svg width={size === 'large' ? 40 : 26} height={size === 'large' ? 40 : 26} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 18V5l12-2v13" />
             <circle cx="6" cy="18" r="3" />
@@ -1731,7 +2452,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     }
 
     return (
-      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--panel)', color: 'var(--muted)' }}>
+      <div data-thumbnail-img="true" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--panel)', color: 'var(--muted)' }}>
         <svg width={size === 'large' ? 36 : 24} height={size === 'large' ? 36 : 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
           <polyline points="13 2 13 9 20 9" />
@@ -1797,16 +2518,235 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
             max-height: 280px !important;
           }
         }
+        .media-file-card {
+          position: relative;
+          transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.18s ease, background 0.18s ease;
+        }
+        .media-file-card:hover {
+          transform: translateY(-3px);
+          border-color: rgba(59, 130, 246, 0.6) !important;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(59, 130, 246, 0.25) !important;
+        }
+        .media-file-list-item {
+          transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .media-file-list-item:hover {
+          background: rgba(59, 130, 246, 0.08) !important;
+          border-color: rgba(59, 130, 246, 0.45) !important;
+          transform: translateX(3px);
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        }
+        .media-file-tile-item {
+          transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+        .media-file-tile-item:hover {
+          background: rgba(59, 130, 246, 0.08) !important;
+          border-color: rgba(59, 130, 246, 0.45) !important;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12) !important;
+        }
+        .media-folder-card {
+          transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+        .media-folder-card:hover {
+          transform: translateY(-2px);
+          border-color: rgba(59, 130, 246, 0.6) !important;
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12) !important;
+        }
+        .media-table-row {
+          transition: background 0.12s ease;
+        }
+        .media-table-row:hover {
+          background: rgba(59, 130, 246, 0.09) !important;
+        }
+        .media-table-header-cell {
+          transition: background 0.15s ease, color 0.15s ease;
+        }
+        .media-table-header-cell:hover {
+          background: rgba(59, 130, 246, 0.12) !important;
+          color: #3B82F6 !important;
+        }
+        .media-sidebar-nav-item {
+          transition: all 0.15s ease;
+        }
+        .media-sidebar-nav-item:hover {
+          background: rgba(59, 130, 246, 0.12) !important;
+          transform: translateX(2px);
+        }
+        .media-sidebar-nav-item.is-selected {
+          background: var(--accent) !important;
+          color: #ffffff !important;
+        }
+        .media-sidebar-nav-item.is-selected:hover {
+          background: #93c5fd !important;
+          color: #0f172a !important;
+        }
+        .media-sidebar-nav-item.is-selected:hover span,
+        .media-sidebar-nav-item.is-selected:hover div,
+        .media-sidebar-nav-item.is-selected:hover button {
+          color: #0f172a !important;
+        }
+        .media-sidebar-nav-item.is-trash-selected.is-selected {
+          background: #EF4444 !important;
+          color: #ffffff !important;
+        }
+        .media-sidebar-nav-item.is-trash-selected.is-selected:hover {
+          background: #fca5a5 !important;
+          color: #450a0a !important;
+        }
+        .media-sidebar-nav-item.is-trash-selected.is-selected:hover span,
+        .media-sidebar-nav-item.is-trash-selected.is-selected:hover div {
+          color: #450a0a !important;
+        }
+        .media-pill-btn {
+          transition: all 0.15s ease;
+        }
+        .media-pill-btn:hover {
+          transform: translateY(-1px);
+          border-color: rgba(59, 130, 246, 0.6) !important;
+          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+        }
+        .media-icon-btn {
+          transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+        }
+        .media-icon-btn:hover {
+          transform: scale(1.15);
+          color: var(--fg) !important;
+        }
+        .media-file-pin-btn {
+          opacity: 0;
+          transition: opacity 0.15s ease, transform 0.15s ease, background 0.15s ease;
+        }
+        .media-file-pin-btn:hover {
+          transform: scale(1.15);
+        }
+        .media-file-card:hover .media-file-pin-btn,
+        .media-file-list-item:hover .media-file-pin-btn,
+        .media-file-tile-item:hover .media-file-pin-btn,
+        .media-file-pin-btn.is-pinned {
+          opacity: 1 !important;
+        }
+
+        /* Real-time smooth exit and entry animations */
+        @keyframes fileTrashExit {
+          0% {
+            transform: scale(1) translateY(0) rotate(0deg);
+            opacity: 1;
+            filter: blur(0px);
+          }
+          40% {
+            transform: scale(0.95) translateY(-6px) rotate(1.5deg);
+            opacity: 0.9;
+          }
+          100% {
+            transform: scale(0.35) translateY(45px) rotate(-10deg);
+            opacity: 0;
+            filter: blur(8px);
+          }
+        }
+        @keyframes fileDeleteExit {
+          0% {
+            transform: scale(1);
+            opacity: 1;
+            filter: drop-shadow(0 0 0 rgba(239, 68, 68, 0));
+          }
+          30% {
+            transform: scale(1.05);
+            opacity: 1;
+            filter: drop-shadow(0 0 16px rgba(239, 68, 68, 0.8)) brightness(1.25);
+          }
+          100% {
+            transform: scale(0.25) rotate(8deg);
+            opacity: 0;
+            filter: drop-shadow(0 0 24px rgba(239, 68, 68, 0)) brightness(2) blur(10px);
+          }
+        }
+        @keyframes fileMoveExit {
+          0% {
+            transform: scale(1) translate(0, 0);
+            opacity: 1;
+          }
+          35% {
+            transform: scale(0.96) translateY(-8px);
+            opacity: 0.85;
+          }
+          100% {
+            transform: scale(0.3) translate(-35px, -45px);
+            opacity: 0;
+            filter: blur(6px);
+          }
+        }
+        @keyframes fileRestoreExit {
+          0% {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+          }
+          35% {
+            transform: scale(1.06) translateY(-10px);
+            opacity: 0.9;
+            filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.7));
+          }
+          100% {
+            transform: scale(0.4) translateY(-40px);
+            opacity: 0;
+            filter: blur(8px);
+          }
+        }
+        @keyframes itemEntry {
+          from {
+            transform: scale(0.93) translateY(8px);
+            opacity: 0;
+          }
+          to {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+          }
+        }
+        .media-file-card,
+        .media-file-list-item,
+        .media-file-tile-item,
+        .media-folder-card,
+        .media-table-row {
+          animation: itemEntry 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        .media-file-card.is-exiting-trash,
+        .media-file-list-item.is-exiting-trash,
+        .media-file-tile-item.is-exiting-trash,
+        .media-table-row.is-exiting-trash {
+          animation: fileTrashExit 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+          pointer-events: none !important;
+        }
+        .media-file-card.is-exiting-delete,
+        .media-file-list-item.is-exiting-delete,
+        .media-file-tile-item.is-exiting-delete,
+        .media-table-row.is-exiting-delete {
+          animation: fileDeleteExit 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+          pointer-events: none !important;
+        }
+        .media-file-card.is-exiting-move,
+        .media-file-list-item.is-exiting-move,
+        .media-file-tile-item.is-exiting-move,
+        .media-table-row.is-exiting-move {
+          animation: fileMoveExit 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+          pointer-events: none !important;
+        }
+        .media-file-card.is-exiting-restore,
+        .media-file-list-item.is-exiting-restore,
+        .media-file-tile-item.is-exiting-restore,
+        .media-table-row.is-exiting-restore {
+          animation: fileRestoreExit 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+          pointer-events: none !important;
+        }
       `}</style>
 
       {/* Toast Notification */}
-      {toastMessage && (
+      {mounted && toastMessage && typeof document !== 'undefined' && createPortal(
         <div
           style={{
             position: 'fixed',
             bottom: '24px',
             right: '24px',
-            zIndex: 9999,
+            zIndex: 999999,
             background: '#10B981',
             color: '#ffffff',
             padding: '12px 20px',
@@ -1822,7 +2762,8 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         >
           <span>✓</span>
           <span>{toastMessage}</span>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Invisible file input for Upload */}
@@ -1885,7 +2826,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
             padding: '14px 16px',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            boxShadow: '0 8px 30px rgba(0,0,0,0.18)'
+            boxShadow: 'none'
           }}
         >
           {/* Top Row: Address Bar, History, Search */}
@@ -2114,11 +3055,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
             {/* Quick Filter: Used in site */}
             <button
               type="button"
-              onClick={() => setOnlyUsedInSite(prev => !prev)}
+              className="media-pill-btn"
+              onClick={() => changeUsageFilter(usageFilter === 'used' ? 'all' : 'used')}
               style={{
-                background: onlyUsedInSite ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
-                color: onlyUsedInSite ? '#10B981' : 'var(--muted)',
-                border: `1px solid ${onlyUsedInSite ? '#10B981' : 'var(--panel-border)'}`,
+                background: usageFilter === 'used' ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
+                color: usageFilter === 'used' ? '#10B981' : 'var(--muted)',
+                border: `1px solid ${usageFilter === 'used' ? '#10B981' : 'var(--panel-border)'}`,
                 borderRadius: '10px',
                 padding: '8px 12px',
                 fontSize: '0.82rem',
@@ -2132,50 +3074,96 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               <span>🔗</span>
               <span>Կայքում օգտագործվողները</span>
             </button>
+
+            {/* Quick Filter: Unused in site */}
+            <button
+              type="button"
+              className="media-pill-btn"
+              onClick={() => changeUsageFilter(usageFilter === 'unused' ? 'all' : 'unused')}
+              style={{
+                background: usageFilter === 'unused' ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
+                color: usageFilter === 'unused' ? '#F59E0B' : 'var(--muted)',
+                border: `1px solid ${usageFilter === 'unused' ? '#F59E0B' : 'var(--panel-border)'}`,
+                borderRadius: '10px',
+                padding: '8px 12px',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px'
+              }}
+            >
+              <span>💤</span>
+              <span>Չօգտագործվողները</span>
+            </button>
           </div>
 
           {/* Right Section: View Mode & Sorting */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             {/* Sort Field Selector */}
-            <select
-              value={sortField}
-              onChange={e => setSortField(e.target.value as SortField)}
-              style={{
-                background: 'var(--bg)',
-                color: 'var(--fg)',
-                border: '1px solid var(--panel-border)',
-                borderRadius: '8px',
-                padding: '6px 10px',
-                fontSize: '0.82rem',
-                cursor: 'pointer'
-              }}
-            >
-              <option value="name">Անունով (Name)</option>
-              <option value="size">Չափսով (Size)</option>
-              <option value="modifiedAt">Ամսաթվով (Date)</option>
-              <option value="type">Տեսակով (Type)</option>
-            </select>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <select
+                value={sortField}
+                onChange={e => handleSortFieldChange(e.target.value as SortField)}
+                style={{
+                  background: 'var(--bg)',
+                  color: 'var(--fg)',
+                  border: '1px solid var(--panel-border)',
+                  borderRadius: '8px',
+                  padding: '6px 10px',
+                  fontSize: '0.82rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="name">Անունով (Name)</option>
+                <option value="size">Չափսով (Size)</option>
+                <option value="modifiedAt">Ամսաթվով (Date)</option>
+                <option value="type">Տեսակով (Type)</option>
+                <option value="folder">Պանակով (Folder)</option>
+              </select>
 
-            <button
-              type="button"
-              onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-              title={`Տեսակավորում՝ ${sortOrder === 'asc' ? 'Աճող' : 'Նվազող'}`}
-              style={{
-                background: 'var(--bg)',
-                color: 'var(--fg)',
-                border: '1px solid var(--panel-border)',
-                borderRadius: '8px',
-                width: '32px',
-                height: '32px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '0.85rem'
-              }}
-            >
-              {sortOrder === 'asc' ? '▲' : '▼'}
-            </button>
+              <button
+                type="button"
+                onClick={handleSortOrderToggle}
+                title={`Տեսակավորում՝ ${sortOrder === 'asc' ? 'Աճող (Ascending)' : 'Նվազող (Descending)'}`}
+                style={{
+                  background: 'var(--bg)',
+                  color: 'var(--fg)',
+                  border: '1px solid var(--panel-border)',
+                  borderRadius: '8px',
+                  width: '32px',
+                  height: '32px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.85rem'
+                }}
+              >
+                {sortOrder === 'asc' ? '▲' : '▼'}
+              </button>
+
+              {sortCriteria.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setSortCriteria([{ field: sortField, order: sortOrder }])}
+                  title="Մաքրել բազմամակարդակ դասակարգումը (Reset multi-sort)"
+                  style={{
+                    background: 'rgba(59, 130, 246, 0.15)',
+                    color: '#3B82F6',
+                    border: '1px solid rgba(59, 130, 246, 0.4)',
+                    borderRadius: '8px',
+                    padding: '4px 8px',
+                    fontSize: '0.74rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {sortCriteria.length} մակարդակ ✕
+                </button>
+              )}
+            </div>
 
             {/* 5 View Mode Buttons (Like Windows Explorer) */}
             <div
@@ -2305,6 +3293,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
             <button
               key={tab.id}
               type="button"
+              className="media-pill-btn"
               onClick={() => changeTypeFilter(tab.id as any)}
               style={{
                 background: typeFilter === tab.id ? 'var(--accent)' : 'var(--bg)',
@@ -2416,6 +3405,30 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
                 <button
                   type="button"
+                  onClick={() => {
+                    setMoveTargetFolderId(null);
+                    setIsMoveModalOpen(true);
+                  }}
+                  style={{
+                    background: '#3B82F6',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '6px 14px',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}
+                >
+                  <span>📁</span>
+                  <span>Տեղափոխել պանակ...</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={handleBatchPermanentDelete}
                   style={{
                     background: '#EF4444',
@@ -2433,6 +3446,32 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               </>
             ) : (
               <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allPinned = Array.from(selectedFileIds).every(id => pinnedFileIds.has(id));
+                    handleBatchPin(!allPinned);
+                  }}
+                  style={{
+                    background: Array.from(selectedFileIds).every(id => pinnedFileIds.has(id))
+                      ? '#F59E0B'
+                      : 'rgba(255,255,255,0.2)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '6px 14px',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}
+                >
+                  <span>📌</span>
+                  <span>{Array.from(selectedFileIds).every(id => pinnedFileIds.has(id)) ? 'Ապագամել' : 'Գամել վերեւում'}</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -2536,6 +3575,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         </div>
       )}
       </div>
+      </div>
 
       {/* ══════════════════════════════════════════════════════════════════════════
           MAIN EXPLORER BODY: Left Tree Sidebar + Right File Grid
@@ -2576,6 +3616,8 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
           {/* Root / All Media quick link */}
           <div
+            data-folder-id="root"
+            className={`media-sidebar-nav-item ${currentFolderId === null ? 'is-selected' : ''}`}
             onClick={() => navigateToFolder(null)}
             onDragOver={e => handleFolderDragOver(null, e)}
             onDragLeave={handleFolderDragLeave}
@@ -2595,14 +3637,51 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span>🖥️</span>
-              <span style={{ fontWeight: currentFolderId === null ? 700 : 500 }}>Այս Համակարգիչը</span>
+              <span style={{ fontWeight: currentFolderId === null ? 700 : 500 }}>Անհատական Կայք (ԱԿ)</span>
+            </div>
+            {files.filter(f => !f.isTrashed && f.folderId === null).length > 0 && (
+              <span
+                style={{
+                  fontSize: '0.72rem',
+                  padding: '1px 6px',
+                  borderRadius: '10px',
+                  background: currentFolderId === null ? 'rgba(255,255,255,0.25)' : 'var(--panel-border)',
+                  fontWeight: 600
+                }}
+              >
+                {files.filter(f => !f.isTrashed && f.folderId === null).length}
+              </span>
+            )}
+          </div>
+
+          {/* Gallery quick link (All files flat view) */}
+          <div
+            data-folder-id="gallery"
+            className={`media-sidebar-nav-item ${currentFolderId === 'gallery' ? 'is-selected' : ''}`}
+            onClick={() => navigateToFolder('gallery')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '8px 10px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '0.86rem',
+              color: currentFolderId === 'gallery' ? '#ffffff' : 'var(--fg)',
+              background: currentFolderId === 'gallery' ? 'var(--accent)' : 'transparent',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>🖼️</span>
+              <span style={{ fontWeight: currentFolderId === 'gallery' ? 700 : 500 }}>Պատկերասրահ (Gallery)</span>
             </div>
             <span
               style={{
                 fontSize: '0.72rem',
                 padding: '1px 6px',
                 borderRadius: '10px',
-                background: currentFolderId === null ? 'rgba(255,255,255,0.25)' : 'var(--panel-border)',
+                background: currentFolderId === 'gallery' ? 'rgba(255,255,255,0.25)' : 'var(--panel-border)',
                 fontWeight: 600
               }}
             >
@@ -2612,12 +3691,15 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
           {/* Trash quick link */}
           <div
+            data-folder-id="trash"
+            className={`media-sidebar-nav-item ${currentFolderId === 'trash' ? 'is-selected is-trash-selected' : ''}`}
             onClick={() => navigateToFolder('trash')}
             onDragOver={e => handleFolderDragOver('trash', e)}
             onDragLeave={handleFolderDragLeave}
             onDrop={e => {
               e.preventDefault();
               e.stopPropagation();
+              triggerDragEndAnimation('trash');
               if (draggedFileIds.length > 0) {
                 handleBatchMoveToTrash(draggedFileIds);
                 setDraggedFileIds([]);
@@ -2833,6 +3915,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
         {/* RIGHT MAIN AREA (Subfolders and Files) */}
         <div
+          onClick={(e) => {
+            if (selectedFileIds.size > 0) {
+              setSelectedFileIds(new Set());
+              setLastSelectedFileId(null);
+            }
+          }}
           onContextMenu={e => openContextMenu(e, 'empty')}
           style={{
             background: 'var(--panel)',
@@ -2977,7 +4065,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               )}
 
               {/* SUBFOLDERS SECTION OF CURRENT FOLDER (if any) */}
-              {currentSubfolders.length > 0 && !searchQuery && currentFolderId !== 'trash' && (
+              {currentSubfolders.length > 0 && !searchQuery && currentFolderId !== 'trash' && currentFolderId !== 'gallery' && (
                 <div>
                   <div
                     style={{
@@ -3006,7 +4094,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                       return (
                         <div
                           key={subf.id}
-                          onClick={() => navigateToFolder(subf.id)}
+                          className="media-folder-card"
+                          data-folder-id={subf.id}
+                          onClick={e => {
+                            e.stopPropagation();
+                            navigateToFolder(subf.id);
+                          }}
                           onContextMenu={e => openContextMenu(e, 'folder', { folder: subf })}
                           onDragOver={e => handleFolderDragOver(subf.id, e)}
                           onDragLeave={handleFolderDragLeave}
@@ -3182,10 +4275,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   >
                     {filteredFiles.map(file => {
                       const isSelected = selectedFileIds.has(file.id);
+                      const isPinned = pinnedFileIds.has(file.id);
 
                       return (
                         <div
                           key={file.id}
+                          className={`media-file-card ${getExitingClass(file.id)}`}
                           draggable
                           onDragStart={e => handleDragStart(file.id, e)}
                           onDragEnd={handleDragEnd}
@@ -3194,7 +4289,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                           onContextMenu={e => openContextMenu(e, 'file', { file })}
                           style={{
                             background: isSelected ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg)',
-                            border: `1.5px solid ${isSelected ? '#3B82F6' : 'var(--panel-border)'}`,
+                            border: `1.5px solid ${isSelected ? '#3B82F6' : (isPinned ? 'rgba(245, 158, 11, 0.6)' : 'var(--panel-border)')}`,
                             borderRadius: '14px',
                             overflow: 'hidden',
                             cursor: 'pointer',
@@ -3202,7 +4297,9 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                             flexDirection: 'column',
                             position: 'relative',
                             transition: 'all 0.15s ease',
-                            boxShadow: isSelected ? '0 4px 14px rgba(59, 130, 246, 0.2)' : 'none'
+                            boxShadow: isSelected
+                              ? '0 4px 14px rgba(59, 130, 246, 0.2)'
+                              : (isPinned ? '0 2px 10px rgba(245, 158, 11, 0.15)' : 'none')
                           }}
                         >
                           {/* Selection Checkbox */}
@@ -3227,6 +4324,34 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                             }}
                           >
                             {isSelected ? '✓' : ''}
+                          </div>
+
+                          {/* Pin Badge / Button */}
+                          <div
+                            onClick={e => togglePinFile(file.id, e)}
+                            className={`media-file-pin-btn ${isPinned ? 'is-pinned' : ''}`}
+                            title={isPinned ? 'Ապագամել վերեւից' : 'Գամել վերեւում (Pin to top)'}
+                            style={{
+                              position: 'absolute',
+                              top: '8px',
+                              right: '46px',
+                              zIndex: 10,
+                              width: '22px',
+                              height: '22px',
+                              borderRadius: '6px',
+                              background: isPinned ? '#F59E0B' : 'rgba(0,0,0,0.55)',
+                              backdropFilter: 'blur(4px)',
+                              border: '1px solid rgba(255,255,255,0.4)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#ffffff',
+                              fontSize: '0.72rem',
+                              cursor: 'pointer',
+                              boxShadow: isPinned ? '0 0 10px rgba(245, 158, 11, 0.5)' : 'none'
+                            }}
+                          >
+                            📌
                           </div>
 
                           {/* Extension Badge */}
@@ -3262,28 +4387,44 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                 fontSize: '0.82rem',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
+                                whiteSpace: 'nowrap',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
                               }}
                               title={file.name}
                             >
-                              {file.name}
+                              {isPinned && <span style={{ color: '#F59E0B', fontSize: '0.8rem' }}>📌</span>}
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
                             </div>
 
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--muted)' }}>
                               <span>{file.sizeFormatted}</span>
                               {file.usedIn && file.usedIn.length > 0 && (
-                                <span
+                                <button
+                                  type="button"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    setUsageInspectFile(file);
+                                  }}
+                                  title={`Օգտագործվում է կայքի ${file.usedIn.length} հատվածում (Կտտացրեք՝ տեսնելու ցանկը)`}
                                   style={{
                                     background: 'rgba(16, 185, 129, 0.15)',
                                     color: '#10B981',
+                                    border: '1px solid rgba(16, 185, 129, 0.35)',
                                     padding: '1px 6px',
                                     borderRadius: '6px',
                                     fontWeight: 600,
-                                    fontSize: '0.68rem'
+                                    fontSize: '0.68rem',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '3px'
                                   }}
                                 >
-                                  Կայքում ✓
-                                </span>
+                                  <span>🔗</span>
+                                  <span>Կայքում ({file.usedIn.length})</span>
+                                </button>
                               )}
                             </div>
                           </div>
@@ -3306,10 +4447,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   >
                     {filteredFiles.map(file => {
                       const isSelected = selectedFileIds.has(file.id);
+                      const isPinned = pinnedFileIds.has(file.id);
 
                       return (
                         <div
                           key={file.id}
+                          className={`media-file-card ${getExitingClass(file.id)}`}
                           draggable
                           onDragStart={e => handleDragStart(file.id, e)}
                           onDragEnd={handleDragEnd}
@@ -3318,13 +4461,17 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                           onContextMenu={e => openContextMenu(e, 'file', { file })}
                           style={{
                             background: isSelected ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg)',
-                            border: `1.5px solid ${isSelected ? '#3B82F6' : 'var(--panel-border)'}`,
+                            border: `1.5px solid ${isSelected ? '#3B82F6' : (isPinned ? 'rgba(245, 158, 11, 0.6)' : 'var(--panel-border)')}`,
                             borderRadius: '12px',
                             overflow: 'hidden',
                             cursor: 'pointer',
                             display: 'flex',
                             flexDirection: 'column',
-                            position: 'relative'
+                            position: 'relative',
+                            transition: 'all 0.15s ease',
+                            boxShadow: isSelected
+                              ? '0 4px 14px rgba(59, 130, 246, 0.2)'
+                              : (isPinned ? '0 2px 8px rgba(245, 158, 11, 0.15)' : 'none')
                           }}
                         >
                           <div
@@ -3349,6 +4496,34 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                             {isSelected ? '✓' : ''}
                           </div>
 
+                          {/* Pin Badge / Button */}
+                          <div
+                            onClick={e => togglePinFile(file.id, e)}
+                            className={`media-file-pin-btn ${isPinned ? 'is-pinned' : ''}`}
+                            title={isPinned ? 'Ապագամել վերեւից' : 'Գամել վերեւում (Pin to top)'}
+                            style={{
+                              position: 'absolute',
+                              top: '6px',
+                              right: '6px',
+                              zIndex: 10,
+                              width: '20px',
+                              height: '20px',
+                              borderRadius: '5px',
+                              background: isPinned ? '#F59E0B' : 'rgba(0,0,0,0.55)',
+                              backdropFilter: 'blur(4px)',
+                              border: '1px solid rgba(255,255,255,0.4)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#ffffff',
+                              fontSize: '0.68rem',
+                              cursor: 'pointer',
+                              boxShadow: isPinned ? '0 0 8px rgba(245, 158, 11, 0.5)' : 'none'
+                            }}
+                          >
+                            📌
+                          </div>
+
                           <div style={{ height: '100px', width: '100%' }}>
                             {renderThumbnail(file, 'medium')}
                           </div>
@@ -3360,14 +4535,44 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                 fontSize: '0.76rem',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
+                                whiteSpace: 'nowrap',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
                               }}
                               title={file.name}
                             >
-                              {file.name}
+                              {isPinned && <span style={{ color: '#F59E0B', fontSize: '0.72rem' }}>📌</span>}
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
                             </div>
-                            <div style={{ fontSize: '0.68rem', color: 'var(--muted)', marginTop: '2px' }}>
-                              {file.sizeFormatted}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--muted)', marginTop: '2px' }}>
+                              <span>{file.sizeFormatted}</span>
+                              {file.usedIn && file.usedIn.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    setUsageInspectFile(file);
+                                  }}
+                                  title={`Օգտագործվում է կայքի ${file.usedIn.length} հատվածում (Կտտացրեք՝ տեսնելու ցանկը)`}
+                                  style={{
+                                    background: 'rgba(16, 185, 129, 0.15)',
+                                    color: '#10B981',
+                                    border: '1px solid rgba(16, 185, 129, 0.35)',
+                                    padding: '1px 5px',
+                                    borderRadius: '4px',
+                                    fontWeight: 600,
+                                    fontSize: '0.64rem',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '2px'
+                                  }}
+                                >
+                                  <span>🔗</span>
+                                  <span>Կայքում ({file.usedIn.length})</span>
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -3383,10 +4588,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {filteredFiles.map(file => {
                       const isSelected = selectedFileIds.has(file.id);
+                      const isPinned = pinnedFileIds.has(file.id);
 
                       return (
                         <div
                           key={file.id}
+                          className={`media-file-list-item ${getExitingClass(file.id)}`}
                           draggable
                           onDragStart={e => handleDragStart(file.id, e)}
                           onDragEnd={handleDragEnd}
@@ -3399,7 +4606,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                             justifyContent: 'space-between',
                             padding: '8px 12px',
                             background: isSelected ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg)',
-                            border: `1px solid ${isSelected ? '#3B82F6' : 'var(--panel-border)'}`,
+                            border: `1px solid ${isSelected ? '#3B82F6' : (isPinned ? 'rgba(245, 158, 11, 0.5)' : 'var(--panel-border)')}`,
                             borderRadius: '10px',
                             cursor: 'pointer'
                           }}
@@ -3434,10 +4641,14 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                   fontSize: '0.84rem',
                                   overflow: 'hidden',
                                   textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap'
+                                  whiteSpace: 'nowrap',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '5px'
                                 }}
                               >
-                                {file.name}
+                                {isPinned && <span style={{ color: '#F59E0B', fontSize: '0.8rem' }}>📌</span>}
+                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
                               </div>
                               <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
                                 {file.sizeFormatted} • {file.extension.toUpperCase()}
@@ -3447,21 +4658,51 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             {file.usedIn && file.usedIn.length > 0 && (
-                              <span
+                              <button
+                                type="button"
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  setUsageInspectFile(file);
+                                }}
+                                title={`Օգտագործվում է կայքի ${file.usedIn.length} հատվածում (Կտտացրեք՝ տեսնելու ցանկը)`}
                                 style={{
                                   background: 'rgba(16, 185, 129, 0.15)',
                                   color: '#10B981',
+                                  border: '1px solid rgba(16, 185, 129, 0.35)',
                                   padding: '2px 8px',
                                   borderRadius: '6px',
                                   fontSize: '0.72rem',
-                                  fontWeight: 600
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
                                 }}
                               >
-                                Կայքում
-                              </span>
+                                <span>🔗</span>
+                                <span>Կայքում ({file.usedIn.length})</span>
+                              </button>
                             )}
                             <button
                               type="button"
+                              className="media-icon-btn"
+                              onClick={e => togglePinFile(file.id, e)}
+                              title={isPinned ? 'Ապագամել վերեւից' : 'Գամել վերեւում (Pin to top)'}
+                              style={{
+                                background: isPinned ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
+                                border: isPinned ? '1px solid rgba(245, 158, 11, 0.5)' : 'none',
+                                color: isPinned ? '#F59E0B' : 'var(--muted)',
+                                borderRadius: '6px',
+                                padding: '4px 6px',
+                                cursor: 'pointer',
+                                fontSize: '0.85rem'
+                              }}
+                            >
+                              📌
+                            </button>
+                            <button
+                              type="button"
+                              className="media-icon-btn"
                               onClick={e => copyUrl(file.url, e)}
                               title="Պատճենել հղումը"
                               style={{
@@ -3502,30 +4743,71 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                               onChange={handleSelectAll}
                             />
                           </th>
-                          <th style={{ padding: '10px 12px', cursor: 'pointer' }} onClick={() => setSortField('name')}>
-                            Անուն {sortField === 'name' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+                          <th style={{ padding: '10px 6px', width: '36px', textAlign: 'center' }}>📌</th>
+                          <th
+                            className="media-table-header-cell"
+                            style={{ padding: '10px 12px', cursor: 'pointer', userSelect: 'none' }}
+                            onClick={e => handleColumnSortClick('name', e)}
+                            title="Կտտացրեք դասակարգելու համար (Ctrl + Կտտոց՝ բազմակի դասակարգում)"
+                          >
+                            <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                              Անուն {renderSortIndicator('name')}
+                            </span>
                           </th>
-                          <th style={{ padding: '10px 12px', cursor: 'pointer' }} onClick={() => setSortField('type')}>
-                            Տեսակ {sortField === 'type' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+                          <th
+                            className="media-table-header-cell"
+                            style={{ padding: '10px 12px', cursor: 'pointer', userSelect: 'none' }}
+                            onClick={e => handleColumnSortClick('type', e)}
+                            title="Կտտացրեք դասակարգելու համար (Ctrl + Կտտոց՝ բազմակի դասակարգում)"
+                          >
+                            <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                              Տեսակ {renderSortIndicator('type')}
+                            </span>
                           </th>
-                          <th style={{ padding: '10px 12px', cursor: 'pointer' }} onClick={() => setSortField('size')}>
-                            Չափս {sortField === 'size' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+                          <th
+                            className="media-table-header-cell"
+                            style={{ padding: '10px 12px', cursor: 'pointer', userSelect: 'none' }}
+                            onClick={e => handleColumnSortClick('size', e)}
+                            title="Կտտացրեք դասակարգելու համար (Ctrl + Կտտոց՝ բազմակի դասակարգում)"
+                          >
+                            <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                              Չափս {renderSortIndicator('size')}
+                            </span>
                           </th>
-                          <th style={{ padding: '10px 12px' }}>Պանակ</th>
-                          <th style={{ padding: '10px 12px', cursor: 'pointer' }} onClick={() => setSortField('modifiedAt')}>
-                            Ամսաթիվ {sortField === 'modifiedAt' ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+                          <th
+                            className="media-table-header-cell"
+                            style={{ padding: '10px 12px', cursor: 'pointer', userSelect: 'none' }}
+                            onClick={e => handleColumnSortClick('folder', e)}
+                            title="Կտտացրեք դասակարգելու համար (Ctrl + Կտտոց՝ բազմակի դասակարգում)"
+                          >
+                            <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                              Պանակ {renderSortIndicator('folder')}
+                            </span>
                           </th>
-                          <th style={{ padding: '10px 12px', textAlign: 'right' }}>Գործողություն</th>
+                          <th
+                            className="media-table-header-cell"
+                            style={{ padding: '10px 12px', cursor: 'pointer', userSelect: 'none' }}
+                            onClick={e => handleColumnSortClick('modifiedAt', e)}
+                            title="Կտտացրեք դասակարգելու համար (Ctrl + Կտտոց՝ բազմակի դասակարգում)"
+                          >
+                            <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                              Ամսաթիվ {renderSortIndicator('modifiedAt')}
+                            </span>
+                          </th>
+                          <th style={{ padding: '10px 12px', textAlign: 'right' }}>Գործողություններ</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredFiles.map(file => {
                           const isSelected = selectedFileIds.has(file.id);
+                          const isPinned = pinnedFileIds.has(file.id);
                           const folderObj = file.folderId ? folderMap.get(file.folderId) : undefined;
+                          const isUsed = file.usedIn && file.usedIn.length > 0;
 
                           return (
                             <tr
                               key={file.id}
+                              className={`media-table-row ${getExitingClass(file.id)}`}
                               draggable
                               onDragStart={e => handleDragStart(file.id, e)}
                               onDragEnd={handleDragEnd}
@@ -3534,7 +4816,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                               onContextMenu={e => openContextMenu(e, 'file', { file })}
                               style={{
                                 borderBottom: '1px solid var(--panel-border)',
-                                background: isSelected ? 'rgba(59, 130, 246, 0.08)' : 'transparent',
+                                background: isSelected ? 'rgba(59, 130, 246, 0.08)' : (isPinned ? 'rgba(245, 158, 11, 0.04)' : 'transparent'),
                                 cursor: 'pointer',
                                 transition: 'background 0.1s ease'
                               }}
@@ -3546,13 +4828,36 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                   onChange={e => toggleSelectFile(file.id, e as any)}
                                 />
                               </td>
+                              <td style={{ padding: '10px 6px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                                <button
+                                  type="button"
+                                  className="media-icon-btn"
+                                  onClick={e => togglePinFile(file.id, e)}
+                                  title={isPinned ? 'Ապագամել վերեւից' : 'Գամել վերեւում (Pin to top)'}
+                                  style={{
+                                    background: isPinned ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
+                                    border: isPinned ? '1px solid rgba(245, 158, 11, 0.5)' : 'none',
+                                    color: isPinned ? '#F59E0B' : 'var(--muted)',
+                                    borderRadius: '6px',
+                                    padding: '2px 4px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.8rem',
+                                    opacity: isPinned ? 1 : 0.35
+                                  }}
+                                >
+                                  📌
+                                </button>
+                              </td>
                               <td style={{ padding: '10px 12px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                   <div style={{ width: '28px', height: '28px', borderRadius: '4px', overflow: 'hidden', flexShrink: 0 }}>
                                     {renderThumbnail(file, 'small')}
                                   </div>
-                                  <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '300px' }}>
-                                    {file.name}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flexWrap: 'wrap' }}>
+                                    <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '320px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                      {isPinned && <span style={{ color: '#F59E0B', fontSize: '0.78rem' }}>📌</span>}
+                                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                                    </div>
                                   </div>
                                 </div>
                               </td>
@@ -3577,8 +4882,37 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                               </td>
                               <td style={{ padding: '10px 12px', textAlign: 'right' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
+                                    {/* «Կայքում» Action */}
                                     <button
                                       type="button"
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        setUsageInspectFile(file);
+                                      }}
+                                      title={isUsed ? `Օգտագործվում է կայքի ${file.usedIn!.length} հատվածում (Կտտացրեք՝ տեսնելու ցանկը)` : 'Ստուգել օգտագործումը կայքում'}
+                                      style={{
+                                        background: isUsed ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                                        color: isUsed ? '#10B981' : 'var(--muted)',
+                                        border: isUsed ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid var(--panel-border)',
+                                        padding: '3px 8px',
+                                        borderRadius: '6px',
+                                        fontWeight: 600,
+                                        fontSize: '0.72rem',
+                                        whiteSpace: 'nowrap',
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        transition: 'all 0.15s ease'
+                                      }}
+                                    >
+                                      <span>🔗</span>
+                                      <span>Կայքում{isUsed ? ` (${file.usedIn!.length})` : ''}</span>
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      className="media-icon-btn"
                                       onClick={e => copyUrl(file.url, e)}
                                       title="Պատճենել հղումը"
                                       style={{
@@ -3589,12 +4923,13 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                         fontSize: '0.9rem'
                                       }}
                                     >
-                                      🔗
+                                      📋
                                     </button>
                                     {file.isTrashed ? (
                                       <>
                                         <button
                                           type="button"
+                                          className="media-icon-btn"
                                           onClick={e => handleRestoreFile(file, e)}
                                           title="Վերականգնել նիշքը"
                                           style={{
@@ -3609,6 +4944,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                         </button>
                                         <button
                                           type="button"
+                                          className="media-icon-btn"
                                           onClick={e => handlePermanentDelete(file, e)}
                                           title="Ընդմիշտ ջնջել"
                                           style={{
@@ -3625,6 +4961,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                     ) : (
                                       <button
                                         type="button"
+                                        className="media-icon-btn"
                                         onClick={e => handleMoveToTrash(file, e)}
                                         title="Տեղափոխել աղբարկղ"
                                         style={{
@@ -3661,10 +4998,13 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   >
                     {filteredFiles.map(file => {
                       const isSelected = selectedFileIds.has(file.id);
+                      const isPinned = pinnedFileIds.has(file.id);
+                      const isUsed = file.usedIn && file.usedIn.length > 0;
 
                       return (
                         <div
                           key={file.id}
+                          className={`media-file-tile-item ${getExitingClass(file.id)}`}
                           draggable
                           onDragStart={e => handleDragStart(file.id, e)}
                           onDragEnd={handleDragEnd}
@@ -3677,7 +5017,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                             gap: '12px',
                             padding: '10px 12px',
                             background: isSelected ? 'rgba(59, 130, 246, 0.12)' : 'var(--bg)',
-                            border: `1px solid ${isSelected ? '#3B82F6' : 'var(--panel-border)'}`,
+                            border: `1px solid ${isSelected ? '#3B82F6' : (isPinned ? 'rgba(245, 158, 11, 0.5)' : 'var(--panel-border)')}`,
                             borderRadius: '12px',
                             cursor: 'pointer',
                             position: 'relative'
@@ -3694,19 +5034,69 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                 fontSize: '0.82rem',
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
+                                whiteSpace: 'nowrap',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
                               }}
                               title={file.name}
                             >
-                              {file.name}
+                              {isPinned && <span style={{ color: '#F59E0B', fontSize: '0.78rem' }}>📌</span>}
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
                             </div>
-                            <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '2px' }}>
-                              {file.extension.toUpperCase()} • {file.sizeFormatted}
+                            <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              <span>{file.extension.toUpperCase()} • {file.sizeFormatted}</span>
+                              {isUsed && (
+                                <button
+                                  type="button"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    setUsageInspectFile(file);
+                                  }}
+                                  title={`Օգտագործվում է կայքի ${file.usedIn!.length} հատվածում (Կտտացրեք՝ տեսնելու ցանկը)`}
+                                  style={{
+                                    background: 'rgba(16, 185, 129, 0.15)',
+                                    color: '#10B981',
+                                    border: '1px solid rgba(16, 185, 129, 0.35)',
+                                    padding: '1px 5px',
+                                    borderRadius: '4px',
+                                    fontWeight: 600,
+                                    fontSize: '0.65rem',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '2px'
+                                  }}
+                                >
+                                  <span>🔗</span>
+                                  <span>Կայքում ({file.usedIn!.length})</span>
+                                </button>
+                              )}
                             </div>
                           </div>
 
-                          <div onClick={e => toggleSelectFile(file.id, e)}>
-                            <input type="checkbox" checked={isSelected} readOnly />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <button
+                              type="button"
+                              className="media-icon-btn"
+                              onClick={e => togglePinFile(file.id, e)}
+                              title={isPinned ? 'Ապագամել վերեւից' : 'Գամել վերեւում (Pin to top)'}
+                              style={{
+                                background: isPinned ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
+                                border: isPinned ? '1px solid rgba(245, 158, 11, 0.5)' : 'none',
+                                color: isPinned ? '#F59E0B' : 'var(--muted)',
+                                borderRadius: '6px',
+                                padding: '3px 5px',
+                                cursor: 'pointer',
+                                fontSize: '0.8rem',
+                                opacity: isPinned ? 1 : 0.4
+                              }}
+                            >
+                              📌
+                            </button>
+                            <div onClick={e => toggleSelectFile(file.id, e)}>
+                              <input type="checkbox" checked={isSelected} readOnly style={{ cursor: 'pointer' }} />
+                            </div>
                           </div>
                         </div>
                       );
@@ -3752,12 +5142,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
       {/* ══════════════════════════════════════════════════════════════════════════
           MODAL: FOLDER CREATE & EDIT (With Custom Color Picker & Nesting)
           ══════════════════════════════════════════════════════════════════════════ */}
-      {isFolderModalOpen && (
+      {mounted && isFolderModalOpen && typeof document !== 'undefined' && createPortal(
         <div
           style={{
             position: 'fixed',
             inset: 0,
-            zIndex: 10000,
+            zIndex: 999999,
             background: 'rgba(0,0,0,0.65)',
             backdropFilter: 'blur(5px)',
             display: 'flex',
@@ -3852,7 +5242,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     cursor: 'pointer'
                   }}
                 >
-                  <option value="">Գլխավոր Մակարդակ (Root)</option>
+                  <option value="">🖥️ Անհատական Կայք (ԱԿ) (Գլխավոր)</option>
                   {folders
                     .filter(f => f.id !== editingFolderId)
                     .map(f => (
@@ -3999,18 +5389,19 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════════
           MODAL: MOVE TO FOLDER
           ══════════════════════════════════════════════════════════════════════════ */}
-      {isMoveModalOpen && (
+      {mounted && isMoveModalOpen && typeof document !== 'undefined' && createPortal(
         <div
           style={{
             position: 'fixed',
             inset: 0,
-            zIndex: 10000,
+            zIndex: 999999,
             background: 'rgba(0,0,0,0.65)',
             backdropFilter: 'blur(5px)',
             display: 'flex',
@@ -4066,7 +5457,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   fontSize: '0.85rem'
                 }}
               >
-                🖥️ Գլխավոր Մակարդակ (Root)
+                🖥️ Անհատական Կայք (ԱԿ) (Գլխավոր)
               </div>
 
               {folders.map(f => (
@@ -4131,18 +5522,19 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════════
           MODAL: FULL FILE INSPECTOR / PREVIEW
           ══════════════════════════════════════════════════════════════════════════ */}
-      {previewFile && (
+      {mounted && previewFile && typeof document !== 'undefined' && createPortal(
         <div
           style={{
             position: 'fixed',
             inset: 0,
-            zIndex: 10000,
+            zIndex: 999999,
             background: 'rgba(0,0,0,0.75)',
             backdropFilter: 'blur(8px)',
             display: 'flex',
@@ -4323,19 +5715,75 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   style={{
                     background: 'rgba(16, 185, 129, 0.12)',
                     border: '1px solid rgba(16, 185, 129, 0.3)',
-                    borderRadius: '10px',
-                    padding: '10px 14px',
-                    fontSize: '0.8rem'
+                    borderRadius: '12px',
+                    padding: '12px 14px',
+                    fontSize: '0.8rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
                   }}
                 >
-                  <div style={{ fontWeight: 700, color: '#10B981', marginBottom: '4px' }}>
-                    ✓ Օգտագործվում է կայքում.
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ fontWeight: 700, color: '#10B981', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>🔗</span>
+                      <span>Օգտագործվում է կայքում ({previewFile.usedIn.length})</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleUnlinkUsage(previewFile)}
+                      style={{
+                        background: 'rgba(239, 68, 68, 0.15)',
+                        color: '#EF4444',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        borderRadius: '6px',
+                        padding: '3px 8px',
+                        fontSize: '0.72rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <span>🔓</span>
+                      <span>Ապակապել բոլորը</span>
+                    </button>
                   </div>
-                  <ul style={{ margin: 0, paddingLeft: '18px', color: 'var(--fg)', lineHeight: 1.4 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {previewFile.usedIn.map((usage, idx) => (
-                      <li key={idx}>{usage}</li>
+                      <div
+                        key={idx}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          background: 'var(--bg)',
+                          padding: '6px 10px',
+                          borderRadius: '8px',
+                          border: '1px solid var(--panel-border)',
+                          fontSize: '0.78rem'
+                        }}
+                      >
+                        <span style={{ color: 'var(--fg)' }}>✓ {usage}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleUnlinkUsage(previewFile, usage)}
+                          style={{
+                            background: 'rgba(245, 158, 11, 0.15)',
+                            color: '#F59E0B',
+                            border: '1px solid rgba(245, 158, 11, 0.35)',
+                            borderRadius: '5px',
+                            padding: '2px 8px',
+                            fontSize: '0.7rem',
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Ապակապել
+                        </button>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
 
@@ -4352,7 +5800,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--panel-border)', paddingBottom: '6px' }}>
                   <span style={{ color: 'var(--muted)' }}>Պանակ</span>
                   <span style={{ fontWeight: 600 }}>
-                    {previewFile.folderId ? folderMap.get(previewFile.folderId)?.name || 'Պանակ' : 'Գլխավոր (Root)'}
+                    {previewFile.folderId ? folderMap.get(previewFile.folderId)?.name || 'Պանակ' : 'Անհատական Կայք (ԱԿ) (Գլխավոր)'}
                   </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--panel-border)', paddingBottom: '6px' }}>
@@ -4522,18 +5970,19 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════════
           MODAL: INLINE RENAME FILE
           ══════════════════════════════════════════════════════════════════════════ */}
-      {renamingFile && (
+      {mounted && renamingFile && typeof document !== 'undefined' && createPortal(
         <div
           style={{
             position: 'fixed',
             inset: 0,
-            zIndex: 10001,
+            zIndex: 999999,
             background: 'rgba(0,0,0,0.65)',
             display: 'flex',
             alignItems: 'center',
@@ -4611,18 +6060,19 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════════
           MODAL: TRASH SETTINGS (AUTO-CLEANUP & RETENTION DAYS)
           ══════════════════════════════════════════════════════════════════════════ */}
-      {isTrashSettingsModalOpen && (
+      {mounted && isTrashSettingsModalOpen && typeof document !== 'undefined' && createPortal(
         <div
           style={{
             position: 'fixed',
             inset: 0,
-            zIndex: 10002,
+            zIndex: 999999,
             background: 'rgba(0,0,0,0.65)',
             backdropFilter: 'blur(4px)',
             display: 'flex',
@@ -4738,6 +6188,36 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   />
                 </div>
               )}
+
+              {/* Fast Delete without Confirmation Toggle */}
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 14px',
+                  background: 'var(--bg)',
+                  borderRadius: '10px',
+                  border: '1px solid var(--panel-border)',
+                  cursor: 'pointer'
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--fg)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>⚡</span>
+                    <span>Արագ ջնջում (Առանց հաստատման)</span>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '2px' }}>
+                    Աղբարկղ տեղափոխելիս հաստատման հարցում չի ցուցադրվի (բացառությամբ կայքին կապված նիշքերի)
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={skipTrashConfirm}
+                  onChange={e => toggleSkipTrashConfirm(e.target.checked)}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--accent)' }}
+                />
+              </label>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '6px' }}>
@@ -4772,20 +6252,21 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════════
           RIGHT-CLICK CONTEXT MENU (WINDOWS-STYLE POPUP)
           ══════════════════════════════════════════════════════════════════════════ */}
-      {contextMenu.isOpen && (
+      {mounted && contextMenu.isOpen && typeof document !== 'undefined' && createPortal(
         <div
           onClick={e => e.stopPropagation()}
           style={{
             position: 'fixed',
             top: contextMenu.y,
             left: contextMenu.x,
-            zIndex: 99999,
+            zIndex: 999999,
             background: 'var(--panel)',
             border: '1px solid var(--panel-border)',
             borderRadius: '12px',
@@ -4805,256 +6286,364 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           {/* 1. FILE CONTEXT MENU */}
           {contextMenu.type === 'file' && (
             <>
-              {selectedFileIds.size <= 1 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const f = contextMenu.file || (selectedFileIds.size === 1 ? files.find(item => item.id === Array.from(selectedFileIds)[0]) : undefined);
-                    if (f) openPreview(f);
-                    setContextMenu(prev => ({ ...prev, isOpen: false }));
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '8px 12px',
-                    border: 'none',
-                    background: 'transparent',
-                    color: 'var(--fg)',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    width: '100%',
-                    fontWeight: 600
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
-                >
-                  <span style={{ fontSize: '1rem' }}>👁️</span>
-                  <span style={{ flex: 1 }}>Դիտել</span>
-                  <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>Enter</span>
-                </button>
-              )}
+              {(() => {
+                const isMultiSelected = Boolean(contextMenu.file && selectedFileIds.has(contextMenu.file.id) && selectedFileIds.size > 1);
+                const isUsed = Boolean(contextMenu.file?.usedIn && contextMenu.file.usedIn.length > 0);
+                const usedCount = contextMenu.file?.usedIn?.length || 0;
 
-              <button
-                type="button"
-                onClick={() => {
-                  const toDownload = selectedFileIds.size > 0 
-                    ? files.filter(f => selectedFileIds.has(f.id)) 
-                    : (contextMenu.file ? [contextMenu.file] : []);
-                  handleDownloadFiles(toDownload);
-                  setContextMenu(prev => ({ ...prev, isOpen: false }));
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  padding: '8px 12px',
-                  border: 'none',
-                  background: 'transparent',
-                  color: 'var(--fg)',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  width: '100%'
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
-              >
-                <span style={{ fontSize: '1rem' }}>{selectedFileIds.size > 1 ? '📦' : '⬇️'}</span>
-                <span style={{ flex: 1 }}>{selectedFileIds.size > 1 ? `Ներբեռնել ZIP-ով (${selectedFileIds.size})` : 'Ներբեռնել'}</span>
-              </button>
+                return (
+                  <>
+                    {!isMultiSelected && contextMenu.file && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (contextMenu.file) openPreview(contextMenu.file);
+                          setContextMenu(prev => ({ ...prev, isOpen: false }));
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '8px 12px',
+                          border: 'none',
+                          background: 'transparent',
+                          color: 'var(--fg)',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          width: '100%',
+                          fontWeight: 600
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
+                      >
+                        <span style={{ fontSize: '1rem' }}>👁️</span>
+                        <span style={{ flex: 1 }}>Դիտել</span>
+                        <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>Enter</span>
+                      </button>
+                    )}
 
-              <button
-                type="button"
-                onClick={() => {
-                  if (selectedFileIds.size > 1) {
-                    handleBatchCopyUrls();
-                  } else if (contextMenu.file) {
-                    copyUrl(contextMenu.file.url);
-                  }
-                  setContextMenu(prev => ({ ...prev, isOpen: false }));
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  padding: '8px 12px',
-                  border: 'none',
-                  background: 'transparent',
-                  color: 'var(--fg)',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  width: '100%'
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
-              >
-                <span style={{ fontSize: '1rem' }}>🔗</span>
-                <span style={{ flex: 1 }}>{selectedFileIds.size > 1 ? 'Պատճենել հղումները' : 'Պատճենել հղումը'}</span>
-              </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const toDownload = isMultiSelected
+                          ? files.filter(f => selectedFileIds.has(f.id))
+                          : (contextMenu.file ? [contextMenu.file] : []);
+                        handleDownloadFiles(toDownload);
+                        setContextMenu(prev => ({ ...prev, isOpen: false }));
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '8px 12px',
+                        border: 'none',
+                        background: 'transparent',
+                        color: 'var(--fg)',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        width: '100%'
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
+                    >
+                      <span style={{ fontSize: '1rem' }}>{isMultiSelected ? '📦' : '⬇️'}</span>
+                      <span style={{ flex: 1 }}>{isMultiSelected ? `Ներբեռնել ZIP-ով (${selectedFileIds.size})` : 'Ներբեռնել'}</span>
+                    </button>
 
-              {selectedFileIds.size <= 1 && contextMenu.file && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (contextMenu.file) {
-                      setRenamingFile(contextMenu.file);
-                      setNewFileName(contextMenu.file.name);
-                    }
-                    setContextMenu(prev => ({ ...prev, isOpen: false }));
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '8px 12px',
-                    border: 'none',
-                    background: 'transparent',
-                    color: 'var(--fg)',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    width: '100%'
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
-                >
-                  <span style={{ fontSize: '1rem' }}>✏️</span>
-                  <span style={{ flex: 1 }}>Անվանափոխել</span>
-                </button>
-              )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isMultiSelected) {
+                          handleBatchCopyUrls();
+                        } else if (contextMenu.file) {
+                          copyUrl(contextMenu.file.url);
+                        }
+                        setContextMenu(prev => ({ ...prev, isOpen: false }));
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '8px 12px',
+                        border: 'none',
+                        background: 'transparent',
+                        color: 'var(--fg)',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        width: '100%'
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
+                    >
+                      <span style={{ fontSize: '1rem' }}>🔗</span>
+                      <span style={{ flex: 1 }}>{isMultiSelected ? 'Պատճենել հղումները' : 'Պատճենել հղումը'}</span>
+                    </button>
 
-              {currentFolderId !== 'trash' && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMoveTargetFolderId(currentFolderId);
-                    setIsMoveModalOpen(true);
-                    setContextMenu(prev => ({ ...prev, isOpen: false }));
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '8px 12px',
-                    border: 'none',
-                    background: 'transparent',
-                    color: 'var(--fg)',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    width: '100%'
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
-                >
-                  <span style={{ fontSize: '1rem' }}>📁</span>
-                  <span style={{ flex: 1 }}>Տեղափոխել պանակ...</span>
-                </button>
-              )}
+                    {!isMultiSelected && contextMenu.file && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (contextMenu.file) {
+                            setRenamingFile(contextMenu.file);
+                            setNewFileName(contextMenu.file.name);
+                          }
+                          setContextMenu(prev => ({ ...prev, isOpen: false }));
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '8px 12px',
+                          border: 'none',
+                          background: 'transparent',
+                          color: 'var(--fg)',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          width: '100%'
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
+                      >
+                        <span style={{ fontSize: '1rem' }}>✏️</span>
+                        <span style={{ flex: 1 }}>Անվանափոխել</span>
+                      </button>
+                    )}
 
-              <hr style={{ border: 'none', borderTop: '1px solid var(--panel-border)', margin: '4px 0' }} />
+                    {currentFolderId !== 'trash' && !contextMenu.file?.isTrashed && (
+                      <button
+                        type="button"
+                        onClick={e => {
+                          if (isMultiSelected) {
+                            const allPinned = Array.from(selectedFileIds).every(id => pinnedFileIds.has(id));
+                            handleBatchPin(!allPinned);
+                          } else if (contextMenu.file) {
+                            togglePinFile(contextMenu.file.id, e);
+                          }
+                          setContextMenu(prev => ({ ...prev, isOpen: false }));
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '8px 12px',
+                          border: 'none',
+                          background: 'transparent',
+                          color: 'var(--fg)',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          width: '100%'
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
+                      >
+                        <span style={{ fontSize: '1rem' }}>📌</span>
+                        <span style={{ flex: 1 }}>
+                          {isMultiSelected
+                            ? (Array.from(selectedFileIds).every(id => pinnedFileIds.has(id)) ? 'Ապագամել նշվածները' : 'Գամել նշվածները վերեւում')
+                            : (contextMenu.file && pinnedFileIds.has(contextMenu.file.id) ? 'Ապագամել վերեւից' : 'Գամել վերեւում')}
+                        </span>
+                      </button>
+                    )}
 
-              {currentFolderId === 'trash' || contextMenu.file?.isTrashed ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (selectedFileIds.size > 1) {
-                        handleBatchRestore();
-                      } else if (contextMenu.file) {
-                        handleRestoreFile(contextMenu.file);
-                      }
-                      setContextMenu(prev => ({ ...prev, isOpen: false }));
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '8px 12px',
-                      border: 'none',
-                      background: 'transparent',
-                      color: '#10B981',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      width: '100%',
-                      fontWeight: 600
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(16, 185, 129, 0.15)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    <span style={{ fontSize: '1rem' }}>♻️</span>
-                    <span style={{ flex: 1 }}>Վերականգնել</span>
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (contextMenu.file && !isMultiSelected) {
+                          setSelectedFileIds(new Set([contextMenu.file.id]));
+                        }
+                        setMoveTargetFolderId(currentFolderId === 'trash' ? null : currentFolderId);
+                        setIsMoveModalOpen(true);
+                        setContextMenu(prev => ({ ...prev, isOpen: false }));
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '8px 12px',
+                        border: 'none',
+                        background: 'transparent',
+                        color: 'var(--fg)',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        width: '100%'
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
+                    >
+                      <span style={{ fontSize: '1rem' }}>📁</span>
+                      <span style={{ flex: 1 }}>Տեղափոխել պանակ...</span>
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (selectedFileIds.size > 1) {
-                        handleBatchPermanentDelete();
-                      } else if (contextMenu.file) {
-                        handlePermanentDelete(contextMenu.file);
-                      }
-                      setContextMenu(prev => ({ ...prev, isOpen: false }));
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '8px 12px',
-                      border: 'none',
-                      background: 'transparent',
-                      color: '#EF4444',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      width: '100%',
-                      fontWeight: 600
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    <span style={{ fontSize: '1rem' }}>💥</span>
-                    <span style={{ flex: 1 }}>Ընդմիշտ ջնջել</span>
-                    <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>Shift+Del</span>
-                  </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (selectedFileIds.size > 1) {
-                      handleBatchMoveToTrash();
-                    } else if (contextMenu.file) {
-                      handleMoveToTrash(contextMenu.file);
-                    }
-                    setContextMenu(prev => ({ ...prev, isOpen: false }));
-                  }}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: '8px 12px',
-                    border: 'none',
-                    background: 'transparent',
-                    color: '#EF4444',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    width: '100%',
-                    fontWeight: 600
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <span style={{ fontSize: '1rem' }}>🗑️</span>
-                  <span style={{ flex: 1 }}>Տեղափոխել աղբարկղ</span>
-                  <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>Del</span>
-                </button>
-              )}
+                    {/* «Կայքում» գործողություն context menu-ի մեջ */}
+                    {contextMenu.file && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (contextMenu.file) setUsageInspectFile(contextMenu.file);
+                            setContextMenu(prev => ({ ...prev, isOpen: false }));
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            padding: '8px 12px',
+                            border: 'none',
+                            background: 'transparent',
+                            color: isUsed ? '#10B981' : 'var(--fg)',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            width: '100%',
+                            fontWeight: 600
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(16, 185, 129, 0.15)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <span style={{ fontSize: '1rem' }}>🔗</span>
+                          <span style={{ flex: 1 }}>Կայքում {isUsed ? `(${usedCount})` : '(0)'}</span>
+                        </button>
+
+                        {isUsed && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (contextMenu.file) handleUnlinkUsage(contextMenu.file);
+                              setContextMenu(prev => ({ ...prev, isOpen: false }));
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '10px',
+                              padding: '8px 12px',
+                              border: 'none',
+                              background: 'transparent',
+                              color: '#F59E0B',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              width: '100%',
+                              fontWeight: 600
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(245, 158, 11, 0.15)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            <span style={{ fontSize: '1rem' }}>🔓</span>
+                            <span style={{ flex: 1 }}>Ապակապել կայքից</span>
+                          </button>
+                        )}
+                      </>
+                    )}
+
+                    <hr style={{ border: 'none', borderTop: '1px solid var(--panel-border)', margin: '4px 0' }} />
+
+                    {currentFolderId === 'trash' || contextMenu.file?.isTrashed ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isMultiSelected) {
+                              handleBatchRestore();
+                            } else if (contextMenu.file) {
+                              handleRestoreFile(contextMenu.file);
+                            }
+                            setContextMenu(prev => ({ ...prev, isOpen: false }));
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            padding: '8px 12px',
+                            border: 'none',
+                            background: 'transparent',
+                            color: '#10B981',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            width: '100%',
+                            fontWeight: 600
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(16, 185, 129, 0.15)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <span style={{ fontSize: '1rem' }}>♻️</span>
+                          <span style={{ flex: 1 }}>Վերականգնել</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isMultiSelected) {
+                              handleBatchPermanentDelete();
+                            } else if (contextMenu.file) {
+                              handlePermanentDelete(contextMenu.file);
+                            }
+                            setContextMenu(prev => ({ ...prev, isOpen: false }));
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            padding: '8px 12px',
+                            border: 'none',
+                            background: 'transparent',
+                            color: '#EF4444',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            width: '100%',
+                            fontWeight: 600
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <span style={{ fontSize: '1rem' }}>💥</span>
+                          <span style={{ flex: 1 }}>Ընդմիշտ ջնջել</span>
+                          <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>Shift+Del</span>
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isMultiSelected) {
+                            handleBatchMoveToTrash();
+                          } else if (contextMenu.file) {
+                            handleMoveToTrash(contextMenu.file);
+                          }
+                          setContextMenu(prev => ({ ...prev, isOpen: false }));
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '8px 12px',
+                          border: 'none',
+                          background: 'transparent',
+                          color: '#EF4444',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          width: '100%',
+                          fontWeight: 600
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <span style={{ fontSize: '1rem' }}>🗑️</span>
+                        <span style={{ flex: 1 }}>Տեղափոխել աղբարկղ</span>
+                        <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>Del</span>
+                      </button>
+                    )}
+                  </>
+                );
+              })()}
             </>
           )}
 
@@ -5345,11 +6934,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               )}
             </>
           )}
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Dynamic Floating Drag Avatar with Inertia Tilt (Square Card Preview) */}
-      {dragAvatar.isDragging && (
+      {/* Dynamic Floating Drag Avatar with Inertia Tilt (1.5x smaller compact 3-card stack) */}
+      {mounted && dragAvatar.isDragging && typeof document !== 'undefined' && createPortal(
         <div
           ref={dragAvatarRef}
           style={{
@@ -5358,101 +6948,917 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
             left: 0,
             zIndex: 999999,
             pointerEvents: 'none',
-            willChange: 'transform',
-            transformOrigin: 'top left',
-            width: '120px',
-            height: '120px',
-            aspectRatio: '1 / 1',
-            borderRadius: '14px',
-            background: 'var(--panel, #0f172a)',
-            border: '2px solid #3B82F6',
-            boxShadow: '0 20px 45px rgba(0, 0, 0, 0.7), 0 0 25px rgba(59, 130, 246, 0.45)',
+            willChange: 'transform, opacity',
+            transformOrigin: 'center center',
+            transform: `translate3d(${dragPhysicsRef.current.currentX.toFixed(1)}px, ${dragPhysicsRef.current.currentY.toFixed(1)}px, 0) scale(${dragPhysicsRef.current.scale.toFixed(3)})`,
+            opacity: dragPhysicsRef.current.opacity,
             display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '76px',
+            height: '76px',
             userSelect: 'none'
           }}
         >
-          {/* Top-Left Counter / Check Badge */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '6px',
-              left: '6px',
-              zIndex: 10,
-              background: '#3B82F6',
-              color: '#ffffff',
-              fontSize: '0.7rem',
-              fontWeight: 800,
-              padding: dragAvatar.count > 1 ? '2px 7px' : '2px 6px',
-              borderRadius: '6px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            {dragAvatar.count > 1 ? `+${dragAvatar.count}` : '✓'}
-          </div>
+          {dragAvatar.count <= 1 ? (
+            dragAvatar.files[0] && (
+              <div
+                style={{
+                  width: '76px',
+                  height: '76px',
+                  aspectRatio: '1 / 1',
+                  borderRadius: '10px',
+                  background: 'var(--panel, #0f172a)',
+                  border: '1.5px solid #3B82F6',
+                  boxShadow: '0 14px 32px rgba(0, 0, 0, 0.7), 0 0 16px rgba(59, 130, 246, 0.45)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                  position: 'relative'
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '4px',
+                    right: '4px',
+                    zIndex: 10,
+                    background: 'rgba(0,0,0,0.8)',
+                    backdropFilter: 'blur(4px)',
+                    color: '#ffffff',
+                    padding: '1px 4px',
+                    borderRadius: '4px',
+                    fontSize: '0.52rem',
+                    fontWeight: 700,
+                    textTransform: 'uppercase'
+                  }}
+                >
+                  {dragAvatar.files[0].extension}
+                </div>
+                <div style={{ flex: 1, width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
+                  {renderThumbnail(dragAvatar.files[0], 'small')}
+                </div>
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    background: 'linear-gradient(to top, rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.6) 70%, transparent 100%)',
+                    padding: '10px 4px 2px 4px',
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}
+                >
+                  <div style={{ fontSize: '0.58rem', fontWeight: 600, color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {dragAvatar.files[0].name}
+                  </div>
+                </div>
+              </div>
+            )
+          ) : dragAvatar.count === 2 ? (
+            <div style={{ position: 'relative', width: '76px', height: '76px' }}>
+              {/* 2nd Card (Underneath): Tilted right */}
+              {dragAvatar.files[1] && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: '10px',
+                    top: '5px',
+                    transform: 'rotate(6deg) scale(0.94)',
+                    zIndex: 1,
+                    width: '72px',
+                    height: '72px',
+                    borderRadius: '10px',
+                    background: 'var(--panel, #0f172a)',
+                    border: '1.2px solid rgba(59, 130, 246, 0.7)',
+                    boxShadow: '0 8px 18px rgba(0,0,0,0.55)',
+                    overflow: 'hidden',
+                    opacity: 0.94
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '3px',
+                      right: '3px',
+                      zIndex: 10,
+                      background: 'rgba(0,0,0,0.8)',
+                      backdropFilter: 'blur(4px)',
+                      color: '#ffffff',
+                      padding: '1px 4px',
+                      borderRadius: '4px',
+                      fontSize: '0.5rem',
+                      fontWeight: 700,
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    {dragAvatar.files[1].extension}
+                  </div>
+                  <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                    {renderThumbnail(dragAvatar.files[1], 'small')}
+                  </div>
+                </div>
+              )}
 
-          {/* Top-Right Extension Badge */}
-          {dragAvatar.file && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '6px',
-                right: '6px',
-                zIndex: 10,
-                background: 'rgba(0,0,0,0.7)',
-                backdropFilter: 'blur(4px)',
-                color: '#ffffff',
-                padding: '2px 6px',
-                borderRadius: '6px',
-                fontSize: '0.62rem',
-                fontWeight: 700,
-                textTransform: 'uppercase'
-              }}
-            >
-              {dragAvatar.file.extension}
+              {/* 1st Card (On Top of 2nd): Tilted left */}
+              {dragAvatar.files[0] && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: '-10px',
+                    top: '0px',
+                    transform: 'rotate(-8deg) scale(0.98)',
+                    zIndex: 2,
+                    width: '72px',
+                    height: '72px',
+                    borderRadius: '10px',
+                    background: 'var(--panel, #0f172a)',
+                    border: '1.5px solid #3B82F6',
+                    boxShadow: '0 12px 26px rgba(0,0,0,0.7), 0 0 14px rgba(59, 130, 246, 0.4)',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '3px',
+                      right: '3px',
+                      zIndex: 10,
+                      background: 'rgba(0,0,0,0.8)',
+                      backdropFilter: 'blur(4px)',
+                      color: '#ffffff',
+                      padding: '1px 4px',
+                      borderRadius: '4px',
+                      fontSize: '0.5rem',
+                      fontWeight: 700,
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    {dragAvatar.files[0].extension}
+                  </div>
+                  <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                    {renderThumbnail(dragAvatar.files[0], 'small')}
+                  </div>
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, transparent 100%)',
+                      padding: '8px 4px 2px 4px',
+                      fontSize: '0.58rem',
+                      fontWeight: 600,
+                      color: '#ffffff',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {dragAvatar.files[0].name}
+                  </div>
+                </div>
+              )}
+
+              {/* Badge */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '-7px',
+                  right: '-7px',
+                  zIndex: 10,
+                  background: '#3B82F6',
+                  color: '#ffffff',
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  padding: '2px 6px',
+                  borderRadius: '10px',
+                  boxShadow: '0 3px 10px rgba(0,0,0,0.5)',
+                  border: '1.5px solid #ffffff'
+                }}
+              >
+                +2
+              </div>
+            </div>
+          ) : (
+            <div style={{ position: 'relative', width: '76px', height: '76px' }}>
+              {/* 3rd Card (Bottom Layer, Under 2nd): Tilted right */}
+              {dragAvatar.files[2] && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: '22px',
+                    top: '7px',
+                    transform: 'rotate(10deg) scale(0.92)',
+                    zIndex: 1,
+                    width: '72px',
+                    height: '72px',
+                    borderRadius: '10px',
+                    background: 'var(--panel, #0f172a)',
+                    border: '1.2px solid rgba(59, 130, 246, 0.65)',
+                    boxShadow: '0 8px 18px rgba(0,0,0,0.55)',
+                    overflow: 'hidden',
+                    opacity: 0.92
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '3px',
+                      right: '3px',
+                      zIndex: 10,
+                      background: 'rgba(0,0,0,0.8)',
+                      backdropFilter: 'blur(4px)',
+                      color: '#ffffff',
+                      padding: '1px 4px',
+                      borderRadius: '4px',
+                      fontSize: '0.5rem',
+                      fontWeight: 700,
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    {dragAvatar.files[2].extension}
+                  </div>
+                  <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                    {renderThumbnail(dragAvatar.files[2], 'small')}
+                  </div>
+                </div>
+              )}
+
+              {/* 2nd Card (Middle Layer, Under 1st, On top of 3rd): Straight */}
+              {dragAvatar.files[1] && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: '3px',
+                    top: '3px',
+                    transform: 'rotate(0deg) scale(0.95)',
+                    zIndex: 2,
+                    width: '72px',
+                    height: '72px',
+                    borderRadius: '10px',
+                    background: 'var(--panel, #0f172a)',
+                    border: '1.2px solid rgba(59, 130, 246, 0.8)',
+                    boxShadow: '0 10px 22px rgba(0,0,0,0.65)',
+                    overflow: 'hidden',
+                    opacity: 0.96
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '3px',
+                      right: '3px',
+                      zIndex: 10,
+                      background: 'rgba(0,0,0,0.8)',
+                      backdropFilter: 'blur(4px)',
+                      color: '#ffffff',
+                      padding: '1px 4px',
+                      borderRadius: '4px',
+                      fontSize: '0.5rem',
+                      fontWeight: 700,
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    {dragAvatar.files[1].extension}
+                  </div>
+                  <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                    {renderThumbnail(dragAvatar.files[1], 'small')}
+                  </div>
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, transparent 100%)',
+                      padding: '8px 4px 2px 4px',
+                      fontSize: '0.56rem',
+                      fontWeight: 600,
+                      color: '#ffffff',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {dragAvatar.files[1].name}
+                  </div>
+                </div>
+              )}
+
+              {/* 1st Card (Top Layer, On top of 2nd): Tilted left */}
+              {dragAvatar.files[0] && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: '-16px',
+                    top: '0px',
+                    transform: 'rotate(-10deg) scale(0.98)',
+                    zIndex: 3,
+                    width: '72px',
+                    height: '72px',
+                    borderRadius: '10px',
+                    background: 'var(--panel, #0f172a)',
+                    border: '1.5px solid #3B82F6',
+                    boxShadow: '0 14px 30px rgba(0,0,0,0.75), 0 0 16px rgba(59, 130, 246, 0.45)',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '3px',
+                      right: '3px',
+                      zIndex: 10,
+                      background: 'rgba(0,0,0,0.8)',
+                      backdropFilter: 'blur(4px)',
+                      color: '#ffffff',
+                      padding: '1px 4px',
+                      borderRadius: '4px',
+                      fontSize: '0.5rem',
+                      fontWeight: 700,
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    {dragAvatar.files[0].extension}
+                  </div>
+                  <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+                    {renderThumbnail(dragAvatar.files[0], 'small')}
+                  </div>
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.6) 70%, transparent 100%)',
+                      padding: '10px 4px 2px 4px',
+                      display: 'flex',
+                      flexDirection: 'column'
+                    }}
+                  >
+                    <div style={{ fontSize: '0.58rem', fontWeight: 600, color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {dragAvatar.files[0].name}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Multi-item Count Badge */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '-8px',
+                  right: '-10px',
+                  zIndex: 10,
+                  background: '#3B82F6',
+                  color: '#ffffff',
+                  fontSize: '0.7rem',
+                  fontWeight: 800,
+                  padding: '2px 7px',
+                  borderRadius: '10px',
+                  boxShadow: '0 3px 10px rgba(0,0,0,0.5), 0 0 8px rgba(59,130,246,0.6)',
+                  border: '1.5px solid #ffffff'
+                }}
+              >
+                +{dragAvatar.count}
+              </div>
             </div>
           )}
-
-          {/* Square Thumbnail Preview */}
-          <div style={{ flex: 1, width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
-            {dragAvatar.file ? renderThumbnail(dragAvatar.file, 'medium') : null}
-          </div>
-
-          {/* Bottom Gradient Footer with Filename */}
+        </div>,
+        document.body
+      )}
+      {/* ══════════════════════════════════════════════════════════════════════════
+          MODAL: CUSTOM DIALOG / POPUP MODAL (REPLACES WINDOW.ALERT & CONFIRM)
+          ══════════════════════════════════════════════════════════════════════════ */}
+      {mounted && dialogModal.isOpen && typeof document !== 'undefined' && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000000,
+            background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            animation: 'fadeIn 0.15s ease'
+          }}
+          onClick={() => {
+            if (dialogModal.type === 'alert' || dialogModal.type === 'info') {
+              closeDialog();
+            } else if (dialogModal.onCancel) {
+              dialogModal.onCancel();
+            } else {
+              closeDialog();
+            }
+          }}
+        >
           <div
             style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.6) 70%, transparent 100%)',
-              padding: '16px 8px 6px 8px',
+              background: 'var(--panel)',
+              border: `1.5px solid ${
+                dialogModal.type === 'warning'
+                  ? '#F59E0B'
+                  : dialogModal.type === 'danger'
+                  ? '#EF4444'
+                  : 'var(--panel-border)'
+              }`,
+              borderRadius: '18px',
+              width: '100%',
+              maxWidth: dialogModal.usedInList && dialogModal.usedInList.length > 0 ? '500px' : '440px',
+              padding: '24px',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.6)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '1px'
+              gap: '16px'
             }}
+            onClick={e => e.stopPropagation()}
           >
-            <div
-              style={{
-                fontSize: '0.72rem',
-                fontWeight: 600,
-                color: '#ffffff',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              {dragAvatar.file?.name || 'Նիշք'}
+            {/* Header / Title */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+              <div
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '12px',
+                  background:
+                    dialogModal.type === 'warning'
+                      ? 'rgba(245, 158, 11, 0.15)'
+                      : dialogModal.type === 'danger'
+                      ? 'rgba(239, 68, 68, 0.15)'
+                      : 'rgba(59, 130, 246, 0.15)',
+                  color:
+                    dialogModal.type === 'warning'
+                      ? '#F59E0B'
+                      : dialogModal.type === 'danger'
+                      ? '#EF4444'
+                      : '#3B82F6',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.4rem',
+                  flexShrink: 0
+                }}
+              >
+                {dialogModal.type === 'warning'
+                  ? '⚠️'
+                  : dialogModal.type === 'danger'
+                  ? '🗑️'
+                  : dialogModal.type === 'alert'
+                  ? 'ℹ️'
+                  : '❓'}
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3
+                  style={{
+                    margin: 0,
+                    fontSize: '1.08rem',
+                    fontWeight: 700,
+                    color:
+                      dialogModal.type === 'warning'
+                        ? '#F59E0B'
+                        : dialogModal.type === 'danger'
+                        ? '#EF4444'
+                        : 'var(--fg)',
+                    lineHeight: 1.3
+                  }}
+                >
+                  {dialogModal.title}
+                </h3>
+                <div
+                  style={{
+                    fontSize: '0.86rem',
+                    color: 'var(--fg)',
+                    opacity: 0.9,
+                    marginTop: '6px',
+                    lineHeight: 1.5,
+                    whiteSpace: 'pre-line'
+                  }}
+                >
+                  {dialogModal.message}
+                </div>
+              </div>
             </div>
-            <div style={{ fontSize: '0.62rem', color: '#93c5fd' }}>
-              {dragAvatar.count > 1 ? `${dragAvatar.count} ընտրված նիշք` : (dragAvatar.file?.sizeFormatted || '')}
+
+            {/* Used In List Box (if file is active on the website) */}
+            {dialogModal.usedInList && dialogModal.usedInList.length > 0 && (
+              <div
+                style={{
+                  background: 'rgba(245, 158, 11, 0.08)',
+                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                  borderRadius: '12px',
+                  padding: '12px 14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    color: '#F59E0B',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <span>🔗</span>
+                  <span>Կայքում օգտագործման հատվածները ({dialogModal.usedInList.length}).</span>
+                </div>
+                <div
+                  style={{
+                    maxHeight: '130px',
+                    overflowY: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px'
+                  }}
+                >
+                  {dialogModal.usedInList.map((item, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        fontSize: '0.78rem',
+                        background: 'var(--bg)',
+                        padding: '6px 10px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--panel-border)',
+                        color: 'var(--fg)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <span style={{ color: '#10B981', fontWeight: 700 }}>✓</span>
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Skip Confirm Option Checkbox (only when showSkipConfirmToggle is enabled) */}
+            {dialogModal.showSkipConfirmToggle && (
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  padding: '8px 10px',
+                  background: 'var(--bg)',
+                  borderRadius: '8px',
+                  border: '1px solid var(--panel-border)',
+                  fontSize: '0.8rem',
+                  color: 'var(--muted)',
+                  userSelect: 'none'
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={dialogDontAskAgain}
+                  onChange={e => setDialogDontAskAgain(e.target.checked)}
+                  style={{ cursor: 'pointer', accentColor: 'var(--accent)' }}
+                />
+                <span>⚡ Չհարցնել կրկին (Միացնել արագ ջնջումը)</span>
+              </label>
+            )}
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '4px' }}>
+              {dialogModal.type !== 'alert' && dialogModal.type !== 'info' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (dialogModal.onCancel) dialogModal.onCancel();
+                    closeDialog();
+                  }}
+                  style={{
+                    background: 'var(--bg)',
+                    color: 'var(--fg)',
+                    border: '1px solid var(--panel-border)',
+                    borderRadius: '10px',
+                    padding: '9px 18px',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {dialogModal.cancelText || 'Չեղարկել'}
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  dialogModal.onConfirm(dialogDontAskAgain);
+                }}
+                style={{
+                  background:
+                    dialogModal.type === 'danger'
+                      ? '#EF4444'
+                      : dialogModal.type === 'warning'
+                      ? '#D97706'
+                      : 'var(--accent)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  padding: '9px 20px',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                }}
+              >
+                {dialogModal.confirmText || (dialogModal.type === 'alert' || dialogModal.type === 'info' ? 'Լավ' : 'Հաստատել')}
+              </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════════
+          MODAL: DETAILED USAGE INSPECTOR MODAL
+          ══════════════════════════════════════════════════════════════════════════ */}
+      {mounted && usageInspectFile && typeof document !== 'undefined' && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 999999,
+            background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            animation: 'fadeIn 0.15s ease'
+          }}
+          onClick={() => setUsageInspectFile(null)}
+        >
+          <div
+            style={{
+              background: 'var(--panel)',
+              border: '1px solid var(--panel-border)',
+              borderRadius: '20px',
+              width: '100%',
+              maxWidth: '540px',
+              padding: '24px',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.6)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '18px'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '10px',
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    color: '#10B981',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.2rem'
+                  }}
+                >
+                  🔗
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--fg)' }}>
+                    Կայքում Օգտագործման Վայրեր
+                  </h3>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '2px' }}>
+                    Նիշքը կապված է կայքի հետևյալ բաժիններին
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUsageInspectFile(null)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1.2rem' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* File Info Bar */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px',
+                background: 'var(--bg)',
+                borderRadius: '12px',
+                border: '1px solid var(--panel-border)'
+              }}
+            >
+              <div style={{ width: '48px', height: '48px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
+                {renderThumbnail(usageInspectFile, 'small')}
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontWeight: 600, fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {usageInspectFile.name}
+                </div>
+                <div style={{ fontSize: '0.74rem', color: 'var(--muted)', marginTop: '2px' }}>
+                  {usageInspectFile.sizeFormatted} • {usageInspectFile.extension.toUpperCase()} • {usageInspectFile.type}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => copyUrl(usageInspectFile.url)}
+                style={{
+                  background: 'rgba(59, 130, 246, 0.15)',
+                  color: '#3B82F6',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  borderRadius: '8px',
+                  padding: '6px 10px',
+                  fontSize: '0.76rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <span>📋</span>
+                <span>Հղում</span>
+              </button>
+            </div>
+
+            {/* Usages List */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--fg)' }}>
+                  Ակտիվ հղումներ ({usageInspectFile.usedIn?.length || 0})
+                </span>
+                <span style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 600 }}>
+                  ● Օգտագործվում է
+                </span>
+              </div>
+
+              <div
+                style={{
+                  maxHeight: '260px',
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  paddingRight: '4px'
+                }}
+              >
+                {usageInspectFile.usedIn && usageInspectFile.usedIn.length > 0 ? (
+                  usageInspectFile.usedIn.map((usage, idx) => {
+                    let icon = '📌';
+                    if (usage.includes('Քեյս') || usage.includes('Case')) icon = '💼';
+                    else if (usage.includes('Հավելված') || usage.includes('App')) icon = '📱';
+                    else if (usage.includes('Տառատեսակ') || usage.includes('Font')) icon = '🔤';
+                    else if (usage.includes('Կարծիք') || usage.includes('Testimonial')) icon = '⭐';
+                    else if (usage.includes('Բրենդինգ') || usage.includes('Branding')) icon = '🎨';
+                    else if (usage.includes('Կարգավորում') || usage.includes('Settings')) icon = '⚙️';
+
+                    return (
+                      <div
+                        key={idx}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '10px 14px',
+                          background: 'var(--bg)',
+                          borderRadius: '10px',
+                          border: '1px solid var(--panel-border)',
+                          fontSize: '0.82rem'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '1.1rem' }}>{icon}</span>
+                          <span style={{ fontWeight: 500, color: 'var(--fg)' }}>{usage}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span
+                            style={{
+                              background: 'rgba(16, 185, 129, 0.15)',
+                              color: '#10B981',
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              fontSize: '0.7rem',
+                              fontWeight: 600
+                            }}
+                          >
+                            Ակտիվ
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleUnlinkUsage(usageInspectFile, usage)}
+                            style={{
+                              background: 'rgba(245, 158, 11, 0.15)',
+                              color: '#F59E0B',
+                              border: '1px solid rgba(245, 158, 11, 0.35)',
+                              borderRadius: '6px',
+                              padding: '3px 10px',
+                              fontSize: '0.72rem',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <span>🔓</span>
+                            <span>Ապակապել</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div style={{ padding: '20px', textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>
+                    Այս նիշքը չի օգտագործվում կայքի ոչ մի հատվածում:
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Note & Action buttons */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
+                💡 Կայքից ապակապելուց հետո նիշքը կմնա պահոցում, բայց կայքում չի ցուցադրվի
+              </div>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {usageInspectFile.usedIn && usageInspectFile.usedIn.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleUnlinkUsage(usageInspectFile)}
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      color: '#EF4444',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      borderRadius: '8px',
+                      padding: '8px 14px',
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <span>🔓</span>
+                    <span>Ապակապել բոլորը</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    openPreview(usageInspectFile);
+                    setUsageInspectFile(null);
+                  }}
+                  style={{
+                    background: 'var(--bg)',
+                    color: 'var(--fg)',
+                    border: '1px solid var(--panel-border)',
+                    borderRadius: '8px',
+                    padding: '8px 14px',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  👁️ Նախադիտել
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUsageInspectFile(null)}
+                  style={{
+                    background: 'var(--accent)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '8px 18px',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Փակել
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -41,15 +41,22 @@
     "logo.svg": "folder-site-assets",
     "HDesign.ttf": "folder-fonts",
     "favicon.ico": "folder-site-assets",
-    "test_svg.svg": "folder-site-assets",
+    "test_svg.svg": null,
+    "/test_svg.svg": null,
     "signature.png": "folder-site-assets",
-    "branding/teal.png": "folder-branding",
+    "branding/teal.png": null,
     "profile_hrant.jpg": "folder-site-assets",
-    "profile_hrant.png": "folder-site-assets",
-    "branding/pasta.png": "folder-branding",
-    "branding/eleven.png": "folder-branding",
-    "branding/mobile.png": "folder-branding",
-    "branding/posters.png": "folder-branding",
+    "profile_hrant.png": null,
+    "/branding/teal.png": null,
+    "/profile_hrant.png": null,
+    "branding/pasta.png": null,
+    "/branding/pasta.png": null,
+    "branding/eleven.png": null,
+    "branding/mobile.png": null,
+    "/branding/eleven.png": null,
+    "/branding/mobile.png": null,
+    "branding/posters.png": null,
+    "/branding/posters.png": null,
     "icons/fonts/icomoon.eot": "folder-fonts",
     "icons/fonts/icomoon.svg": "folder-fonts",
     "icons/fonts/icomoon.ttf": "folder-fonts",
@@ -109,64 +116,7 @@
     "uploads/1783447583023_City_Fence_Banner_Mockup_2.png": "folder-uploads"
   },
   "customNames": {},
-  "trash": {
-    "supabase/branding/1783447355690_tr.png": {
-      "trashedAt": "2026-09-19T08:04:25.118Z",
-      "originalFolderId": null
-    },
-    "supabase/branding/1783448060951_tr.png": {
-      "trashedAt": "2026-09-19T08:04:25.118Z",
-      "originalFolderId": null
-    },
-    "supabase/branding/1785699368028_sdc.webp": {
-      "trashedAt": "2026-09-19T08:05:10.920Z",
-      "originalFolderId": null
-    },
-    "supabase/branding/1785699390723_sdc.webp": {
-      "trashedAt": "2026-09-19T08:04:52.658Z",
-      "originalFolderId": null
-    },
-    "supabase/branding/1782830534903_______.png": {
-      "trashedAt": "2026-09-19T08:22:36.226Z",
-      "originalFolderId": null
-    },
-    "supabase/branding/1783525639734_cover.webp": {
-      "trashedAt": "2026-09-19T08:04:25.118Z",
-      "originalFolderId": null
-    },
-    "supabase/branding/1787154253736_85_4x.webp": {
-      "trashedAt": "2026-09-19T08:04:52.658Z",
-      "originalFolderId": null
-    },
-    "supabase/branding/1783520153045_Untitled_1.png": {
-      "trashedAt": "2026-09-19T08:04:39.881Z",
-      "originalFolderId": null
-    },
-    "supabase/branding/1783525657572_billboard.webp": {
-      "trashedAt": "2026-09-19T08:04:25.118Z",
-      "originalFolderId": null
-    },
-    "supabase/branding/1783525852156_billboard.webp": {
-      "trashedAt": "2026-09-19T08:04:25.118Z",
-      "originalFolderId": null
-    },
-    "supabase/branding/1785699273418_Artboard_1_4x.webp": {
-      "trashedAt": "2026-09-19T08:05:10.920Z",
-      "originalFolderId": null
-    },
-    "supabase/branding/1785700783443_Artboard_1_4x.webp": {
-      "trashedAt": "2026-09-19T08:05:10.920Z",
-      "originalFolderId": null
-    },
-    "supabase/branding/1783447588324_Cube_Banner_Mockup_1.png": {
-      "trashedAt": "2026-09-19T08:04:25.118Z",
-      "originalFolderId": null
-    },
-    "supabase/branding/1784818069244_Screenshot_2026_07_23_184701.png": {
-      "trashedAt": "2026-09-19T09:35:14.612Z",
-      "originalFolderId": null
-    }
-  },
+  "trash": {},
   "trashSettings": {
     "autoDeleteEnabled": true,
     "retentionDays": 30

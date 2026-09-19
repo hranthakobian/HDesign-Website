@@ -890,3 +890,224 @@ export async function scanAllMediaFiles(): Promise<{
   }
 }
 
+/**
+ * Unlinks / disconnects media references from cases, apps, fonts, site settings, and JSON databases.
+ */
+export async function unlinkMediaUsage(
+  fileId: string,
+  url?: string,
+  targetUsage?: string
+): Promise<{ success: boolean; unlinkedCount: number; message: string }> {
+  let unlinkedCount = 0;
+  const storageClient = supabaseAdmin || supabase;
+
+  const matchChecker = (val: string): boolean => {
+    if (!val || typeof val !== 'string') return false;
+    const cleanVal = val.trim().toLowerCase();
+    if (!cleanVal) return false;
+
+    const targets = new Set<string>();
+    const addVariants = (s: string) => {
+      if (!s) return;
+      const clean = s.trim().toLowerCase();
+      targets.add(clean);
+      targets.add('/' + clean.replace(/^\/+/, ''));
+      targets.add(clean.replace(/^\/+/, ''));
+      try {
+        targets.add(decodeURIComponent(clean));
+        targets.add(encodeURI(clean));
+      } catch (e) {}
+      if (clean.includes('/storage/v1/object/public/')) {
+        const after = clean.split('/storage/v1/object/public/')[1];
+        if (after) {
+          targets.add(after);
+          targets.add(`supabase/${after}`);
+        }
+      }
+    };
+
+    addVariants(fileId);
+    if (url) addVariants(url);
+
+    if (targets.has(cleanVal) || targets.has(cleanVal.replace(/^\/+/, '')) || targets.has('/' + cleanVal.replace(/^\/+/, ''))) {
+      return true;
+    }
+
+    // Basename match
+    const b1 = path.basename(fileId).toLowerCase();
+    const b2 = url ? path.basename(url).toLowerCase() : '';
+    const bVal = path.basename(cleanVal).toLowerCase();
+    if (b1 && b1.length > 3 && bVal === b1) return true;
+    if (b2 && b2.length > 3 && bVal === b2) return true;
+
+    return false;
+  };
+
+  const cleanDeep = (value: any, entityLabel?: string): { cleaned: any; changed: boolean } => {
+    if (targetUsage && entityLabel) {
+      const cleanTarget = targetUsage.toLowerCase().trim();
+      const cleanLabel = entityLabel.toLowerCase().trim();
+      if (!cleanLabel.includes(cleanTarget) && !cleanTarget.includes(cleanLabel)) {
+        return { cleaned: value, changed: false };
+      }
+    }
+
+    if (typeof value === 'string') {
+      if (matchChecker(value)) {
+        return { cleaned: '', changed: true };
+      }
+      return { cleaned: value, changed: false };
+    }
+
+    if (Array.isArray(value)) {
+      let changed = false;
+      const cleaned = value.map(item => {
+        const res = cleanDeep(item, entityLabel);
+        if (res.changed) changed = true;
+        return res.cleaned;
+      }).filter(item => {
+        if (typeof item === 'string' && item === '' && value.some(old => typeof old === 'string' && matchChecker(old))) {
+          return false;
+        }
+        return true;
+      });
+      return { cleaned, changed };
+    }
+
+    if (value && typeof value === 'object') {
+      let changed = false;
+      const cleaned: Record<string, any> = {};
+      for (const [k, v] of Object.entries(value)) {
+        const res = cleanDeep(v, entityLabel);
+        if (res.changed) changed = true;
+        cleaned[k] = res.cleaned;
+      }
+      return { cleaned, changed };
+    }
+
+    return { cleaned: value, changed: false };
+  };
+
+  // 1. Unlink from Cases
+  try {
+    const { getCases, saveCase } = await import('./db');
+    const cases = await getCases();
+    for (const c of cases) {
+      const label = `Քեյս՝ ${c.title || (c as any).title_am || (c as any).title_en || 'Քեյս'}`;
+      let changed = false;
+      if (!targetUsage || label.toLowerCase().includes(targetUsage.toLowerCase()) || targetUsage.toLowerCase().includes(label.toLowerCase())) {
+        if (c.image_url && matchChecker(c.image_url)) {
+          c.image_url = '';
+          changed = true;
+        }
+        if (c.bg && matchChecker(c.bg)) {
+          c.bg = '#111827';
+          changed = true;
+        }
+        if (c.details) {
+          const res = cleanDeep(c.details, label);
+          if (res.changed) {
+            c.details = res.cleaned;
+            changed = true;
+          }
+        }
+        if (changed) {
+          await saveCase(c);
+          unlinkedCount++;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Error unlinking from cases:', err);
+  }
+
+  // 2. Unlink from Apps
+  try {
+    const { getApps, saveApp } = await import('./db');
+    const apps = await getApps();
+    for (const a of apps) {
+      const label = `Հավելված՝ ${a.title_am || a.title_en || 'Հավելված'}`;
+      if (!targetUsage || label.toLowerCase().includes(targetUsage.toLowerCase()) || targetUsage.toLowerCase().includes(label.toLowerCase())) {
+        const res = cleanDeep(a, label);
+        if (res.changed) {
+          await saveApp(res.cleaned);
+          unlinkedCount++;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Error unlinking from apps:', err);
+  }
+
+  // 3. Unlink from Fonts
+  try {
+    const { getFonts, saveFont } = await import('./db');
+    const fonts = await getFonts();
+    for (const f of fonts) {
+      const label = `Տառատեսակ՝ ${f.name_am || f.name_en || 'Տառատեսակ'}`;
+      if (!targetUsage || label.toLowerCase().includes(targetUsage.toLowerCase()) || targetUsage.toLowerCase().includes(label.toLowerCase())) {
+        const res = cleanDeep(f, label);
+        if (res.changed) {
+          await saveFont(res.cleaned);
+          unlinkedCount++;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Error unlinking from fonts:', err);
+  }
+
+  // 4. Unlink from Site Settings (Supabase)
+  if (storageClient) {
+    try {
+      const { data: dbSettings } = await storageClient.from('site_settings').select('*').limit(200);
+      if (Array.isArray(dbSettings)) {
+        for (const s of dbSettings) {
+          const label = `Կարգավորումներ՝ ${s.key || 'site'}`;
+          if (!targetUsage || label.toLowerCase().includes(targetUsage.toLowerCase()) || targetUsage.toLowerCase().includes(label.toLowerCase())) {
+            const res = cleanDeep(s.value, label);
+            if (res.changed) {
+              await saveSiteSetting(s.key, res.cleaned);
+              unlinkedCount++;
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Error unlinking from site_settings (cloud):', err);
+    }
+  }
+
+  // 5. Unlink from Local JSON Data files
+  try {
+    if (fsSync.existsSync(DATA_DIR)) {
+      const files = await fs.readdir(DATA_DIR);
+      for (const file of files) {
+        if (!file.endsWith('.json') || file === 'media_library.json') continue;
+        try {
+          const filePath = path.join(DATA_DIR, file);
+          const raw = await fs.readFile(filePath, 'utf-8');
+          if (!raw.trim()) continue;
+          const parsed = JSON.parse(raw);
+          const label = `Տվյալներ՝ ${file.replace('.json', '')}`;
+          const res = cleanDeep(parsed, label);
+          if (res.changed) {
+            await fs.writeFile(filePath, JSON.stringify(res.cleaned, null, 2), 'utf-8');
+            unlinkedCount++;
+          }
+        } catch (e) {}
+      }
+    }
+  } catch (err) {
+    console.warn('Error unlinking from local data JSON files:', err);
+  }
+
+  return {
+    success: true,
+    unlinkedCount,
+    message: unlinkedCount > 0
+      ? `Հաջողությամբ ապակապվեց կայքի ${unlinkedCount} հատված(ներ)ից:`
+      : 'Համապատասխանող ակտիվ կապ չգտնվեց:'
+  };
+}
+

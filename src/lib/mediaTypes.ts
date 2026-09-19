@@ -27,6 +27,7 @@ export interface MediaFile {
   trashedAt?: string;     // ISO date when trashed
   originalFolderId?: string | null; // folder where it belonged before trash
   daysRemaining?: number; // days until auto-deletion
+  isPinned?: boolean;     // true if pinned to top
 }
 
 export interface TrashItemMeta {
@@ -72,6 +73,11 @@ export interface StorageStats {
 
 export type ViewMode = 'large-icons' | 'medium-icons' | 'list' | 'details' | 'tiles';
 
-export type SortField = 'name' | 'size' | 'modifiedAt' | 'type';
+export type SortField = 'name' | 'size' | 'modifiedAt' | 'type' | 'folder';
 export type SortOrder = 'asc' | 'desc';
+
+export interface SortCriterion {
+  field: SortField;
+  order: SortOrder;
+}
 

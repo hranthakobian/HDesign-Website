@@ -32,6 +32,12 @@ export async function POST(request: Request) {
         // Also map clean url if needed
         const urlKey = '/' + cleanId.replace(/^\/+/, '');
         libraryData.fileAssignments[urlKey] = targetFolderId || null;
+
+        // Auto-restore from trash if file was in trash
+        if (libraryData.trash) {
+          delete libraryData.trash[cleanId];
+          delete libraryData.trash[urlKey];
+        }
       }
     }
 
