@@ -5812,7 +5812,7 @@ function AdminDashboardContent() {
                               style={{ paddingLeft: '40px' } as any}
                             />
                             <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5, pointerEvents: 'none', zIndex: 10, color: '#4a5568', display: 'flex' }}>
-                              <span className="icon-Search" style={{ fontSize: '1rem' }} />
+                              <span className="hd-icon icon-Search" style={{ fontSize: '1rem' }} />
                             </span>
                           </div>
                         </div>

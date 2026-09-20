@@ -348,7 +348,7 @@ export default function FontsListingPage() {
       {/* Empty State */}
       {!loading && !error && filteredFonts.length === 0 && (
         <div style={{ textAlign: "center", padding: "80px 0", color: "var(--muted)", border: "1px dashed var(--panel-border)", borderRadius: "20px" }}>
-          <span className="icon-Search" style={{ fontSize: "2.5rem", display: "block", marginBottom: "16px", opacity: 0.5 }} />
+          <span className="hd-icon icon-Search" style={{ fontSize: "2.5rem", display: "block", marginBottom: "16px", opacity: 0.5 }} />
           <span>{t("fonts", "no_fonts", "Տառատեսակներ չեն գտնվել:")}</span>
         </div>
       )}

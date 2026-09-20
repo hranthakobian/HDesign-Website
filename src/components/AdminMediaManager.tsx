@@ -3838,9 +3838,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   alignItems: 'center',
                   fontSize: '0.85rem'
                 }}
-              >
-                📋
-              </button>
+              ><span className="hd-icon icon-Copy" /></button>
 
               {/* Tiles */}
               <button
@@ -4129,7 +4127,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                           gap: '5px'
                         }}
                       >
-                        <span className="hd-icon icon-Map-Pin" />
+                        <span className="hd-icon icon-Pin" />
                         <span>{Array.from(selectedFileIds).every(id => pinnedFileIds.has(id)) ? 'Ապագամել' : 'Գամել վերեւում'}</span>
                       </button>
 
@@ -4727,7 +4725,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                         boxShadow: '0 2px 10px rgba(239, 68, 68, 0.3)'
                       }}
                     >
-                      <span>💥</span>
+                      <span className="hd-icon icon-Trash" style={{ marginRight: 4 }} />
                       <span>Դատարկել աղբարկղը</span>
                     </button>
                   </div>
@@ -5109,7 +5107,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                               }}
                               title={file.name}
                             >
-                              {isPinned && <span style={{ color: '#F59E0B', fontSize: '0.8rem' }}>📌</span>}
+                              {isPinned && <span className="hd-icon icon-Pin" style={{ color: '#F59E0B', fontSize: '0.8rem' }} />}
                               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
                             </div>
 
@@ -5255,7 +5253,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                               }}
                               title={file.name}
                             >
-                              {isPinned && <span style={{ color: '#F59E0B', fontSize: '0.72rem' }}>📌</span>}
+                              {isPinned && <span className="hd-icon icon-Pin" style={{ color: '#F59E0B', fontSize: '0.72rem' }} />}
                               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--muted)', marginTop: '2px' }}>
@@ -5359,7 +5357,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                   gap: '5px'
                                 }}
                               >
-                                {isPinned && <span style={{ color: '#F59E0B', fontSize: '0.8rem' }}>📌</span>}
+                                {isPinned && <span className="hd-icon icon-Pin" style={{ color: '#F59E0B', fontSize: '0.8rem' }} />}
                                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
                               </div>
                               <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
@@ -5395,8 +5393,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                             )}
                             <button
                               type="button"
-                              className="media-icon-btn"
-                              onClick={e => togglePinFile(file.id, e)}
+                              className="media-icon-btn" onClick={e => togglePinFile(file.id, e)}
                               title={isPinned ? 'Ապագամել վերեւից' : 'Գամել վերեւում (Pin to top)'}
                               style={{
                                 background: isPinned ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
@@ -5407,9 +5404,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                 cursor: 'pointer',
                                 fontSize: '0.85rem'
                               }}
-                            >
-                              📌
-                            </button>
+                            ><span className="hd-icon icon-Pin" /></button>
                             <button
                               type="button"
                               className="media-icon-btn"
@@ -5453,7 +5448,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                               onChange={handleSelectAll}
                             />
                           </th>
-                          <th style={{ padding: '10px 6px', width: '36px', textAlign: 'center' }}>📌</th>
+                          <th style={{ padding: '10px 6px', width: '36px', textAlign: 'center' }}><span className="hd-icon icon-Pin" /></th>
                           <th
                             className="media-table-header-cell"
                             style={{ padding: '10px 12px', cursor: 'pointer', userSelect: 'none' }}
@@ -5542,8 +5537,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                               <td style={{ padding: '10px 6px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
                                 <button
                                   type="button"
-                                  className="media-icon-btn"
-                                  onClick={e => togglePinFile(file.id, e)}
+                                  className="media-icon-btn" onClick={e => togglePinFile(file.id, e)}
                                   title={isPinned ? 'Ապագամել վերեւից' : 'Գամել վերեւում (Pin to top)'}
                                   style={{
                                     background: isPinned ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
@@ -5555,9 +5549,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                     fontSize: '0.8rem',
                                     opacity: isPinned ? 1 : 0.35
                                   }}
-                                >
-                                  📌
-                                </button>
+                                ><span className="hd-icon icon-Pin" /></button>
                               </td>
                               <td style={{ padding: '10px 12px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -5566,7 +5558,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                   </div>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flexWrap: 'wrap' }}>
                                     <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '320px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                      {isPinned && <span style={{ color: '#F59E0B', fontSize: '0.78rem' }}>📌</span>}
+                                      {isPinned && <span className="hd-icon icon-Pin" style={{ color: '#F59E0B', fontSize: '0.78rem' }} />}
                                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
                                     </div>
                                   </div>
@@ -5633,9 +5625,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                         cursor: 'pointer',
                                         fontSize: '0.9rem'
                                       }}
-                                    >
-                                      📋
-                                    </button>
+                                    ><span className="hd-icon icon-Copy" /></button>
                                     {file.isTrashed ? (
                                       <>
                                         <button
@@ -5650,9 +5640,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                             cursor: 'pointer',
                                             fontSize: '0.9rem'
                                           }}
-                                        >
-                                          ♻️
-                                        </button>
+                                        ><span className="hd-icon icon-Undo-Arrow" /></button>
                                         <button
                                           type="button"
                                           className="media-icon-btn"
@@ -5665,9 +5653,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                             cursor: 'pointer',
                                             fontSize: '0.9rem'
                                           }}
-                                        >
-                                          💥
-                                        </button>
+                                        ><span className="hd-icon icon-Trash" /></button>
                                       </>
                                     ) : (
                                       <button
@@ -5682,9 +5668,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                           cursor: 'pointer',
                                           fontSize: '0.9rem'
                                         }}
-                                      >
-                                        🗑️
-                                      </button>
+                                      ><span className="hd-icon icon-Trash" /></button>
                                     )}
                                   </div>
                               </td>
@@ -5753,7 +5737,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                               }}
                               title={file.name}
                             >
-                              {isPinned && <span style={{ color: '#F59E0B', fontSize: '0.78rem' }}>📌</span>}
+                              {isPinned && <span className="hd-icon icon-Pin" style={{ color: '#F59E0B', fontSize: '0.78rem' }} />}
                               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
                             </div>
                             <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
@@ -5788,8 +5772,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <button
                               type="button"
-                              className="media-icon-btn"
-                              onClick={e => togglePinFile(file.id, e)}
+                              className="media-icon-btn" onClick={e => togglePinFile(file.id, e)}
                               title={isPinned ? 'Ապագամել վերեւից' : 'Գամել վերեւում (Pin to top)'}
                               style={{
                                 background: isPinned ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
@@ -5801,9 +5784,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                 fontSize: '0.8rem',
                                 opacity: isPinned ? 1 : 0.4
                               }}
-                            >
-                              📌
-                            </button>
+                            ><span className="hd-icon icon-Pin" /></button>
                             <div onClick={e => toggleSelectFile(file.id, e)}>
                               <input type="checkbox" checked={isSelected} readOnly style={{ cursor: 'pointer' }} />
                             </div>
@@ -6370,12 +6351,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 </div>
               ) : previewFile.type === 'audio' ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', color: '#ffffff' }}>
-                  <div style={{ fontSize: '3rem' }}>🎵</div>
+                  <div style={{ fontSize: "2.5rem" }}><span className="hd-icon icon-Volume-Mute" /></div>
                   <audio controls src={previewFile.url} style={{ width: '280px' }} />
                 </div>
               ) : (
                 <div style={{ color: 'var(--muted)', textAlign: 'center' }}>
-                  <div style={{ fontSize: '3rem', marginBottom: '8px' }}>📄</div>
+                  <div style={{ fontSize: "2.5rem", marginBottom: "8px" }}><span className="hd-icon icon-Info" /></div>
                   <div>Նախադիտումը հասանելի չէ այս ֆորմատի համար:</div>
                 </div>
               )}
@@ -6434,7 +6415,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     marginTop: '4px'
                   }}
                 >
-                  ✏️ Անվանափոխել
+                  <span className="hd-icon icon-Pencil" style={{ marginRight: 4 }} /> Անվանափոխել
                 </button>
               </div>
 
@@ -6454,7 +6435,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ fontWeight: 700, color: '#10B981', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span>🔗</span>
+                      <span className="hd-icon icon-Link" />
                       <span>Օգտագործվում է կայքում ({previewFile.usedIn.length})</span>
                     </div>
                     <button
@@ -6474,7 +6455,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                         gap: '4px'
                       }}
                     >
-                      <span>🔓</span>
+                      <span className="hd-icon icon-Unlocked" />
                       <span>Ապակապել բոլորը</span>
                     </button>
                   </div>
@@ -6620,7 +6601,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                         gap: '6px'
                       }}
                     >
-                      <span>♻️</span>
+                      <span className="hd-icon icon-Undo-Arrow" style={{ marginRight: 4 }} />
                       <span>Վերականգնել նիշքը</span>
                     </button>
 
@@ -6642,7 +6623,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                         gap: '6px'
                       }}
                     >
-                      <span>💥</span>
+                      <span className="hd-icon icon-Trash" style={{ marginRight: 4 }} />
                       <span>Ընդմիշտ ջնջել Supabase-ից</span>
                     </button>
                   </>
@@ -6669,7 +6650,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                         gap: '6px'
                       }}
                     >
-                      <span>⬇</span>
+                      <span className="hd-icon icon-Download" style={{ marginRight: 4 }} />
                       <span>Ներբեռնել համակարգիչ</span>
                     </a>
 
@@ -6691,7 +6672,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                         gap: '6px'
                       }}
                     >
-                      <span>🗑️</span>
+                      <span className="hd-icon icon-Trash" style={{ marginRight: 4 }} />
                       <span>Տեղափոխել աղբարկղ</span>
                     </button>
                   </>
@@ -7060,7 +7041,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                         onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
                       >
-                        <span style={{ fontSize: '1rem' }}>👁️</span>
+                        <span className="hd-icon icon-Eye" style={{ fontSize: "1rem" }} />
                         <span style={{ flex: 1 }}>Դիտել</span>
                         <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>Enter</span>
                       </button>
@@ -7091,7 +7072,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                       onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
                     >
-                      <span style={{ fontSize: '1rem' }}>{isMultiSelected ? '📦' : '⬇️'}</span>
+                      <span className="hd-icon icon-Download" style={{ fontSize: "1rem" }} />
                       <span style={{ flex: 1 }}>{isMultiSelected ? `Ներբեռնել ZIP-ով (${selectedFileIds.size})` : 'Ներբեռնել'}</span>
                     </button>
 
@@ -7121,7 +7102,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                       onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
                     >
-                      <span style={{ fontSize: '1rem' }}>🔗</span>
+                      <span className="hd-icon icon-Link" style={{ fontSize: "1rem" }} />
                       <span style={{ flex: 1 }}>{isMultiSelected ? 'Պատճենել հղումները' : 'Պատճենել հղումը'}</span>
                     </button>
 
@@ -7151,7 +7132,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                         onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
                       >
-                        <span style={{ fontSize: '1rem' }}>✏️</span>
+                        <span className="hd-icon icon-Pencil" style={{ fontSize: "1rem" }} />
                         <span style={{ flex: 1 }}>Անվանափոխել</span>
                       </button>
                     )}
@@ -7184,7 +7165,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                         onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
                       >
-                        <span style={{ fontSize: '1rem' }}>📌</span>
+                        <span className="hd-icon icon-Pin" style={{ fontSize: "1rem" }} />
                         <span style={{ flex: 1 }}>
                           {isMultiSelected
                             ? (Array.from(selectedFileIds).every(id => pinnedFileIds.has(id)) ? 'Ապագամել նշվածները' : 'Գամել նշվածները վերեւում')
@@ -7219,7 +7200,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                       onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
                     >
-                      <span style={{ fontSize: '1rem' }}>📁</span>
+                      <FolderIcon size={16} />
                       <span style={{ flex: 1 }}>Տեղափոխել պանակ...</span>
                     </button>
 
@@ -7274,7 +7255,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(245, 158, 11, 0.15)')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                         >
-                          <span style={{ fontSize: '1rem' }}>🔓</span>
+                          <span className="hd-icon icon-Unlocked" style={{ fontSize: "1rem" }} />
                           <span style={{ flex: 1 }}>Ապակապել կայքից</span>
                         </button>
                       </>
@@ -7311,7 +7292,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(16, 185, 129, 0.15)')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                         >
-                          <span style={{ fontSize: '1rem' }}>♻️</span>
+                          <span className="hd-icon icon-Undo-Arrow" style={{ fontSize: "1rem" }} />
                           <span style={{ flex: 1 }}>Վերականգնել</span>
                         </button>
 
@@ -7342,7 +7323,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                         >
-                          <span style={{ fontSize: '1rem' }}>💥</span>
+                          <span className="hd-icon icon-Trash" style={{ fontSize: "1rem" }} />
                           <span style={{ flex: 1 }}>Ընդմիշտ ջնջել</span>
                           <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>Shift+Del</span>
                         </button>
@@ -7375,7 +7356,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                       >
-                        <span style={{ fontSize: '1rem' }}>🗑️</span>
+                        <span className="hd-icon icon-Trash" style={{ fontSize: "1rem" }} />
                         <span style={{ flex: 1 }}>Տեղափոխել աղբարկղ</span>
                         <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>Del</span>
                       </button>
@@ -8615,7 +8596,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                               gap: '4px'
                             }}
                           >
-                            <span>🔓</span>
+                            <span className="hd-icon icon-Unlocked" />
                             <span>Ապակապել</span>
                           </button>
                         </div>
@@ -8654,7 +8635,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                       gap: '4px'
                     }}
                   >
-                    <span>🔓</span>
+                    <span className="hd-icon icon-Unlocked" />
                     <span>Ապակապել բոլորը</span>
                   </button>
                 )}
