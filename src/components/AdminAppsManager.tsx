@@ -6,6 +6,7 @@ import MarkdownRenderer from "./MarkdownRenderer";
 import { HDesignStars } from "./RatingSystem";
 import MediaPickerModal from "./MediaPickerModal";
 import SoftwareIcon from "./SoftwareIcon";
+import FolderIcon from "./FolderIcon";
 import { MediaFileType } from "@/lib/mediaTypes";
 import { prefetchMediaLibrary } from "@/lib/mediaCache";
 
@@ -2927,7 +2928,9 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                                   })}
                                 >
                                   <span style={{ padding: '0 10px' }}>
-                                    <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Մեդիայից
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }}>
+                                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                                    </svg> Մեդիայից
                                   </span>
                                 </hd-button>
 

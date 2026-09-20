@@ -646,7 +646,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         showToast('Նիշքը ապագամվեց');
       } else {
         next.add(fileId);
-        showToast('📌 Նիշքը գամվեց վերեւում');
+        showToast('Նիշքը գամվեց վերեւում');
       }
       if (typeof window !== 'undefined') {
         try {
@@ -671,7 +671,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           localStorage.setItem('hdesign_media_pinned_ids', JSON.stringify(Array.from(next)));
         } catch (err) {}
       }
-      showToast(pin ? `📌 ${selected.length} նիշք գամվեց վերեւում` : `${selected.length} նիշք ապագամվեց`);
+      showToast(pin ? `${selected.length} նիշք գամվեց վերեւում` : `${selected.length} նիշք ապագամվեց`);
       return next;
     });
   };
