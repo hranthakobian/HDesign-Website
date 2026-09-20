@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import JSZip from 'jszip';
-import { MediaFolder, MediaFile, ViewMode, SortField, SortOrder, SortCriterion, MediaFileType, StorageStats, TrashSettings } from '@/lib/mediaTypes';
+import { MediaFolder, MediaFile, ViewMode, SortField, SortOrder, SortCriterion, MediaFileType, StorageStats, TrashSettings, FolderStats, formatBytes } from '@/lib/mediaTypes';
+import { getCachedMedia, notifyMediaCache, subscribeToMediaCache } from '@/lib/mediaCache';
 
 const COLOR_PRESETS = [
   { name: 'Կապույտ (Windows Blue)', hex: '#3B82F6' },
@@ -29,12 +30,22 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     setMounted(true);
   }, []);
 
-  // Data state
-  const [files, setFiles] = useState<MediaFile[]>([]);
-  const [folders, setFolders] = useState<MediaFolder[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Data state with instant cache initialization
+  const [files, setFiles] = useState<MediaFile[]>(() => getCachedMedia()?.files || []);
+  const [folders, setFolders] = useState<MediaFolder[]>(() => getCachedMedia()?.folders || []);
+  const [loading, setLoading] = useState(() => !getCachedMedia());
   const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<StorageStats | null>(null);
+  const [stats, setStats] = useState<StorageStats | null>(() => getCachedMedia()?.stats || null);
+
+  // Subscribe to external cache updates
+  useEffect(() => {
+    const unsubscribe = subscribeToMediaCache((cached) => {
+      setFiles(cached.files);
+      setFolders(cached.folders);
+      if (cached.stats) setStats(cached.stats);
+    });
+    return unsubscribe;
+  }, []);
 
   // Trash state
   const [isTrashSettingsModalOpen, setIsTrashSettingsModalOpen] = useState(false);
@@ -140,10 +151,10 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
   // Custom UI Dialog / Popup Modal state (replaces window.confirm & window.alert)
   interface DialogModalConfig {
-    type: 'confirm' | 'warning' | 'danger' | 'info' | 'alert';
+    type: 'confirm' | 'warning' | 'danger' | 'info' | 'alert' | 'success';
     title: string;
     message: string;
-    usedInList?: string[];
+    usedInList?: Array<string | { title: string; type: string }>;
     confirmText?: string;
     cancelText?: string;
     showSkipConfirmToggle?: boolean;
@@ -215,15 +226,19 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     }
   };
 
-  // Floating Drag Preview Avatar with Inertia Tilt (Supports multi-card fanned stack)
+  // Floating Drag Preview Avatar with Inertia Tilt (Supports multi-card fanned stack or folder preview)
   const [dragAvatar, setDragAvatar] = useState<{
     isDragging: boolean;
     count: number;
     files: MediaFile[];
+    folder?: MediaFolder | null;
+    folders?: MediaFolder[];
   }>({
     isDragging: false,
     count: 0,
-    files: []
+    files: [],
+    folder: null,
+    folders: []
   });
   const dragAvatarRef = useRef<HTMLDivElement | null>(null);
   const dragPhysicsRef = useRef<{
@@ -320,7 +335,25 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
   // Drag & drop state
   const [isDraggingOverDropzone, setIsDraggingOverDropzone] = useState(false);
   const [draggedFileIds, setDraggedFileIds] = useState<string[]>([]);
+  const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
+  const [draggedFolderIds, setDraggedFolderIds] = useState<string[]>([]);
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
+  const dragOverFolderIdRef = useRef<string | null>(null);
+
+  // Multi-folder selection state
+  const [selectedFolderIds, setSelectedFolderIds] = useState<Set<string>>(new Set());
+
+  // Marquee (rubber-band) drag-selection state
+  const [marqueeRect, setMarqueeRect] = useState<{
+    startX: number;
+    startY: number;
+    currentX: number;
+    currentY: number;
+  } | null>(null);
+  const marqueeInitialSelectionRef = useRef<Set<string>>(new Set());
+  const marqueeInitialFolderSelectionRef = useRef<Set<string>>(new Set());
+  const marqueeHasDraggedRef = useRef<boolean>(false);
+  const mainAreaRef = useRef<HTMLDivElement | null>(null);
 
   // Uploading state
   const [isUploading, setIsUploading] = useState(false);
@@ -364,7 +397,15 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
   // Load data from API
   const loadMedia = useCallback(async () => {
-    setLoading(true);
+    const cached = getCachedMedia();
+    if (!cached) {
+      setLoading(true);
+    } else {
+      setFiles(cached.files);
+      setFolders(cached.folders);
+      if (cached.stats) setStats(cached.stats);
+      setLoading(false);
+    }
     setError(null);
     try {
       const res = await fetch('/api/admin/media', {
@@ -379,6 +420,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
       setFiles(data.files || []);
       setFolders(data.folders || []);
       setStats(data.stats || null);
+      notifyMediaCache({
+        files: data.files || [],
+        folders: data.folders || [],
+        stats: data.stats || null,
+        timestamp: Date.now()
+      });
 
       if (data.trashSettings) {
         setTrashSettingsForm({
@@ -395,7 +442,9 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
       setExpandedFolderIds(prev => new Set([...prev, ...parentIdsWithChildren]));
     } catch (err: any) {
       console.error('Error fetching media:', err);
-      setError(err.message || 'Չհաջողվեց բեռնել մեդիա գրադարանը');
+      if (!getCachedMedia()) {
+        setError(err.message || 'Չհաջողվեց բեռնել մեդիա գրադարանը');
+      }
     } finally {
       setLoading(false);
     }
@@ -635,6 +684,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
   const navigateToFolder = (folderId: string | null, addToHistory = true) => {
     setCurrentFolderId(folderId);
     setSelectedFileIds(new Set());
+    setSelectedFolderIds(new Set());
     setLastSelectedFileId(null);
     if (addToHistory) {
       const newHist = history.slice(0, historyIndex + 1);
@@ -653,6 +703,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
       setHistoryIndex(newIdx);
       setCurrentFolderId(history[newIdx]);
       setSelectedFileIds(new Set());
+      setSelectedFolderIds(new Set());
       setLastSelectedFileId(null);
       updateUrlQuery({ folder: history[newIdx], preview: null }, false);
     }
@@ -666,6 +717,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
       setHistoryIndex(newIdx);
       setCurrentFolderId(history[newIdx]);
       setSelectedFileIds(new Set());
+      setSelectedFolderIds(new Set());
       setLastSelectedFileId(null);
       updateUrlQuery({ folder: history[newIdx], preview: null }, false);
     }
@@ -790,17 +842,78 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     return [...crumbs, ...trail];
   }, [currentFolderId, folderMap]);
 
-  // Folder item count helper
+  // Helper to check if a folder is a descendant of another folder
+  const isDescendantFolder = useCallback((parentFolderId: string, candidateId: string | null): boolean => {
+    if (!candidateId) return false;
+    let curr = folderMap.get(candidateId);
+    while (curr) {
+      if (curr.id === parentFolderId) return true;
+      curr = curr.parentId ? folderMap.get(curr.parentId) : undefined;
+    }
+    return false;
+  }, [folderMap]);
+
+  interface FolderStats {
+    count: number;
+    size: number;
+    sizeFormatted: string;
+  }
+
+  // Folder item count & total weight helper (including recursive subfolders)
+  const folderStats = useMemo(() => {
+    const statsMap = new Map<string, FolderStats>();
+
+    // Map each folder to all its descendant folder IDs (including itself)
+    const descendantsMap = new Map<string, Set<string>>();
+    folders.forEach(f => {
+      descendantsMap.set(f.id, new Set<string>([f.id]));
+    });
+
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const f of folders) {
+        if (f.parentId && descendantsMap.has(f.parentId)) {
+          const parentDesc = descendantsMap.get(f.parentId)!;
+          const selfDesc = descendantsMap.get(f.id)!;
+          for (const d of selfDesc) {
+            if (!parentDesc.has(d)) {
+              parentDesc.add(d);
+              changed = true;
+            }
+          }
+        }
+      }
+    }
+
+    folders.forEach(f => {
+      const descendants = descendantsMap.get(f.id) || new Set([f.id]);
+      let count = 0;
+      let size = 0;
+      files.forEach(file => {
+        if (!file.isTrashed && file.folderId && descendants.has(file.folderId)) {
+          count++;
+          size += (file.size || 0);
+        }
+      });
+      statsMap.set(f.id, {
+        count,
+        size,
+        sizeFormatted: formatBytes(size)
+      });
+    });
+
+    return statsMap;
+  }, [folders, files]);
+
+  // Folder item count helper (reads from folderStats for backward compatibility)
   const folderItemCounts = useMemo(() => {
     const counts = new Map<string, number>();
-    folders.forEach(f => counts.set(f.id, 0));
-    files.forEach(f => {
-      if (!f.isTrashed && f.folderId && counts.has(f.folderId)) {
-        counts.set(f.folderId, (counts.get(f.folderId) || 0) + 1);
-      }
+    folderStats.forEach((stat, id) => {
+      counts.set(id, stat.count);
     });
     return counts;
-  }, [folders, files]);
+  }, [folderStats]);
 
   // Filter and sort files
   const filteredFiles = useMemo(() => {
@@ -872,6 +985,31 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
       return 0;
     });
   }, [files, currentFolderId, searchQuery, typeFilter, usageFilter, pinnedFileIds, sortCriteria, folderMap]);
+
+  // Total weight / size of currently filtered files in view
+  const currentViewTotalSize = useMemo(() => {
+    return filteredFiles.reduce((acc, f) => acc + (f.size || 0), 0);
+  }, [filteredFiles]);
+
+  // Total weight / size of selected files
+  const selectedFilesTotalSize = useMemo(() => {
+    let total = 0;
+    for (const id of selectedFileIds) {
+      const f = files.find(file => file.id === id);
+      if (f) total += (f.size || 0);
+    }
+    return total;
+  }, [selectedFileIds, files]);
+
+  // Total weight / size of selected folders
+  const selectedFoldersTotalSize = useMemo(() => {
+    let total = 0;
+    for (const id of selectedFolderIds) {
+      const stat = folderStats.get(id);
+      if (stat) total += stat.size;
+    }
+    return total;
+  }, [selectedFolderIds, folderStats]);
 
   // Folder CRUD handlers
   const handleOpenCreateFolder = (parentId: string | null = (currentFolderId === 'gallery' ? null : currentFolderId)) => {
@@ -1057,6 +1195,70 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
       }
     } catch (err: any) {
       openDialog({ type: 'alert', title: 'Սխալ', message: err.message || 'Սխալ նիշքերը տեղափոխելիս', onConfirm: closeDialog });
+      loadMedia();
+    }
+  };
+
+  // Move a folder into another folder (or root)
+  const handleMoveFolder = async (folderId: string, targetParentId: string | null) => {
+    if (!folderId) return;
+    if (folderId === targetParentId) return;
+
+    const sourceFolder = folderMap.get(folderId);
+    if (!sourceFolder) return;
+
+    if (targetParentId === 'trash') {
+      openDialog({
+        type: 'warning',
+        title: 'Անհնար է տեղափոխել',
+        message: 'Պանակը հնարավոր չէ տեղափոխել աղբարկղ: Այն ջնջելու համար օգտագործեք պանակի ջնջման կոճակը:',
+        onConfirm: closeDialog
+      });
+      return;
+    }
+
+    if (isDescendantFolder(folderId, targetParentId)) {
+      openDialog({
+        type: 'warning',
+        title: 'Անհնար է տեղափոխել',
+        message: `«${sourceFolder.name}» պանակը չի կարող տեղափոխվել իր իսկ ենթապանակի մեջ:`,
+        onConfirm: closeDialog
+      });
+      return;
+    }
+
+    if (sourceFolder.parentId === targetParentId) return;
+
+    const targetName = targetParentId ? folderMap.get(targetParentId)?.name || 'պանակ' : 'Գլխավոր (ԱԿ)';
+    showToast(`«${sourceFolder.name}» պանակը տեղափոխվեց «${targetName}»`);
+
+    // Optimistic UI update
+    setFolders(prev => prev.map(f => f.id === folderId ? { ...f, parentId: targetParentId, updatedAt: new Date().toISOString() } : f));
+
+    // Automatically expand target folder in tree if it was collapsed
+    if (targetParentId) {
+      setExpandedFolderIds(prev => new Set(prev).add(targetParentId));
+    }
+
+    try {
+      const res = await fetch('/api/admin/media/folders', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: token || ''
+        },
+        body: JSON.stringify({
+          id: folderId,
+          parentId: targetParentId
+        })
+      });
+      const data = await res.json();
+      if (!data.success) {
+        openDialog({ type: 'alert', title: 'Սխալ', message: data.error || 'Չհաջողվեց տեղափոխել պանակը', onConfirm: closeDialog });
+        loadMedia();
+      }
+    } catch (err: any) {
+      openDialog({ type: 'alert', title: 'Սխալ', message: err.message || 'Սխալ պանակը տեղափոխելիս', onConfirm: closeDialog });
       loadMedia();
     }
   };
@@ -1854,12 +2056,135 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     setLastSelectedFileId(fileId);
   };
 
+  // Toggle selection for a folder
+  const toggleSelectFolder = (folderId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setSelectedFolderIds(prev => {
+      const next = new Set(prev);
+      if (next.has(folderId)) next.delete(folderId);
+      else next.add(folderId);
+      return next;
+    });
+  };
+
+  // Batch delete folders
+  const handleBatchDeleteFolders = async (folderIdsToDelete?: string[]) => {
+    const ids = folderIdsToDelete || Array.from(selectedFolderIds);
+    if (ids.length === 0) return;
+
+    const folderNames = ids.map(id => folderMap.get(id)?.name || 'պանակ').join(', ');
+    const totalFiles = ids.reduce((acc, fId) => acc + (folderStats.get(fId)?.count || 0), 0);
+    const confirmMessage = ids.length === 1
+      ? `«${folderNames}» պանակում առկա է ${totalFiles} նիշք: Ջնջելու դեպքում բոլոր նիշքերը կտեղափոխվեն վերադաս մակարդակ: Վստա՞հ եք, որ ցանկանում եք ջնջել պանակը:`
+      : `Վստա՞հ եք, որ ցանկանում եք ջնջել ընտրված ${ids.length} պանակները:\nԲոլոր նիշքերը կտեղափոխվեն վերադաս մակարդակ:`;
+
+    openDialog({
+      type: 'danger',
+      title: '🗑️ Պանակների ջնջում',
+      message: confirmMessage,
+      confirmText: 'Ջնջել պանակները',
+      cancelText: 'Չեղարկել',
+      onConfirm: async () => {
+        closeDialog();
+        showToast(`${ids.length} պանակ ջնջվում է...`);
+
+        // Optimistically remove from state
+        setFolders(prev => prev.filter(f => !ids.includes(f.id)));
+        setFiles(prev => prev.map(file => {
+          if (file.folderId && ids.includes(file.folderId)) {
+            const fObj = folderMap.get(file.folderId);
+            return { ...file, folderId: fObj?.parentId || null };
+          }
+          return file;
+        }));
+        setSelectedFolderIds(new Set());
+
+        if (currentFolderId && ids.includes(currentFolderId)) {
+          navigateToFolder(null);
+        }
+
+        try {
+          for (const fId of ids) {
+            await fetch(`/api/admin/media/folders?id=${encodeURIComponent(fId)}`, {
+              method: 'DELETE',
+              headers: { Authorization: token || '' }
+            });
+          }
+          showToast(`${ids.length} պանակ ջնջվեց`);
+          loadMedia();
+        } catch (err: any) {
+          openDialog({ type: 'alert', title: 'Սխալ', message: err.message || 'Սխալ պանակները ջնջելիս', onConfirm: closeDialog });
+          loadMedia();
+        }
+      }
+    });
+  };
+
+  // Batch move both selected folders and selected files
+  const handleBatchMoveSelected = async (targetFolderId: string | null) => {
+    const fileIds = Array.from(selectedFileIds);
+    const folderIds = Array.from(selectedFolderIds);
+
+    if (fileIds.length === 0 && folderIds.length === 0) {
+      setIsMoveModalOpen(false);
+      return;
+    }
+
+    if (targetFolderId === 'trash') {
+      openDialog({
+        type: 'warning',
+        title: 'Անհնար է տեղափոխել',
+        message: 'Պանակները հնարավոր չէ տեղափոխել աղբարկղ:',
+        onConfirm: closeDialog
+      });
+      return;
+    }
+
+    const invalidFolders = folderIds.filter(fId => fId === targetFolderId || isDescendantFolder(fId, targetFolderId));
+    if (invalidFolders.length > 0) {
+      openDialog({
+        type: 'warning',
+        title: 'Անհնար է տեղափոխել',
+        message: 'Պանակը չի կարող տեղափոխվել իր իսկ կամ իր ենթապանակի մեջ:',
+        onConfirm: closeDialog
+      });
+      return;
+    }
+
+    setIsMoveModalOpen(false);
+
+    if (fileIds.length > 0) {
+      await handleMoveFiles(targetFolderId, fileIds);
+    }
+
+    if (folderIds.length > 0) {
+      for (const fId of folderIds) {
+        await handleMoveFolder(fId, targetFolderId);
+      }
+      setSelectedFolderIds(new Set());
+    }
+  };
+
   const handleSelectAll = () => {
-    if (selectedFileIds.size === filteredFiles.length) {
+    const isAllFilesSelected = filteredFiles.length === 0 || selectedFileIds.size === filteredFiles.length;
+    const isAllFoldersSelected = currentSubfolders.length === 0 || selectedFolderIds.size === currentSubfolders.length;
+
+    if (isAllFilesSelected && isAllFoldersSelected && (selectedFileIds.size > 0 || selectedFolderIds.size > 0)) {
       setSelectedFileIds(new Set());
+      setSelectedFolderIds(new Set());
+      setLastSelectedFileId(null);
     } else {
       setSelectedFileIds(new Set(filteredFiles.map(f => f.id)));
+      if (currentFolderId !== 'trash' && currentFolderId !== 'gallery') {
+        setSelectedFolderIds(new Set(currentSubfolders.map(f => f.id)));
+      }
     }
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedFileIds(new Set());
+    setSelectedFolderIds(new Set());
+    setLastSelectedFileId(null);
   };
 
   // Global Keyboard Shortcuts (Ctrl+A, Delete, Escape, Arrow keys, Enter)
@@ -1876,10 +2201,10 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         return;
       }
 
-      // Ctrl+A / Cmd+A -> Select all files in current view
+      // Ctrl+A / Cmd+A -> Select all items in current view
       if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A' || e.key === 'ա' || e.key === 'Ա')) {
         e.preventDefault();
-        setSelectedFileIds(new Set(filteredFiles.map(f => f.id)));
+        handleSelectAll();
         return;
       }
 
@@ -1897,17 +2222,18 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           setIsTrashSettingsModalOpen(false);
         } else if (renamingFile) {
           setRenamingFile(null);
-        } else if (selectedFileIds.size > 0) {
-          setSelectedFileIds(new Set());
-          setLastSelectedFileId(null);
+        } else if (selectedFileIds.size > 0 || selectedFolderIds.size > 0) {
+          handleDeselectAll();
         }
         return;
       }
 
-      // Delete / Backspace -> Move to Trash or Permanent Delete selected items
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedFileIds.size > 0) {
+      // Delete / Backspace -> Move to Trash, Permanent Delete, or Delete selected folders
+      if ((e.key === 'Delete' || e.key === 'Backspace') && (selectedFileIds.size > 0 || selectedFolderIds.size > 0)) {
         e.preventDefault();
-        if (currentFolderId === 'trash') {
+        if (selectedFolderIds.size > 0) {
+          handleBatchDeleteFolders();
+        } else if (currentFolderId === 'trash') {
           handleBatchPermanentDelete();
         } else {
           handleBatchMoveToTrash();
@@ -1916,7 +2242,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
       }
 
       // Enter -> Open preview if single file is selected
-      if (e.key === 'Enter' && selectedFileIds.size === 1) {
+      if (e.key === 'Enter' && selectedFileIds.size === 1 && selectedFolderIds.size === 0) {
         const selId = Array.from(selectedFileIds)[0];
         const f = filteredFiles.find(item => item.id === selId);
         if (f) {
@@ -1926,7 +2252,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         }
       }
 
-      // Arrow keys navigation (ArrowUp, ArrowDown, ArrowLeft, ArrowRight)
+      // Arrow keys navigation (ArrowDown, ArrowUp, ArrowRight, ArrowLeft)
       if (['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft'].includes(e.key) && filteredFiles.length > 0) {
         e.preventDefault();
         let currIdx = -1;
@@ -1965,7 +2291,9 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
     filteredFiles,
+    currentSubfolders,
     selectedFileIds,
+    selectedFolderIds,
     lastSelectedFileId,
     previewFile,
     isMoveModalOpen,
@@ -1998,7 +2326,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     });
   };
 
-  // Drag avatar coordinate & inertia tilt tracking (Ultra-smooth 60fps physics loop with icon-to-mouse & return animation)
+  // Drag avatar coordinate & inertia tilt tracking (Ultra-smooth 60fps physics loop with icon-to-mouse & continuous floating levitation)
   const triggerDragEndAnimation = useCallback((targetFolderId?: string | null) => {
     const p = dragPhysicsRef.current;
     if (!p.active || p.isEnding) return;
@@ -2032,8 +2360,25 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
       p.targetScale = p.originScale;
     }
 
+    dragOverFolderIdRef.current = null;
     setDragOverFolderId(null);
   }, []);
+
+  const updateDragCoords = useCallback((clientX: number, clientY: number) => {
+    const now = performance.now();
+    const p = dragPhysicsRef.current;
+    if (!p.active || p.isEnding) return;
+    const dt = Math.max(1, now - p.lastEventTime);
+    const dx = clientX - p.lastEventX;
+    const speedX = dx / dt; // velocity in px/ms
+
+    p.targetX = clientX - (dragAvatar.folder || (dragAvatar.folders && dragAvatar.folders.length > 0) ? 45 : 38);
+    p.targetY = clientY - (dragAvatar.folder || (dragAvatar.folders && dragAvatar.folders.length > 0) ? 35 : 38);
+    // Clamped inertia tilt based on horizontal velocity
+    p.targetTilt = Math.max(-22, Math.min(22, speedX * 26));
+    p.lastEventX = clientX;
+    p.lastEventTime = now;
+  }, [dragAvatar.folder, dragAvatar.folders]);
 
   useEffect(() => {
     if (!dragAvatar.isDragging) return;
@@ -2085,8 +2430,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         p.targetTilt *= 0.88;
       }
 
+      // Continuous subtle organic floating/levitation motion (never completely static, even when holding still over drop target)
+      const hoverY = p.isEnding ? 0 : Math.sin(now * 0.0052) * 4.2;
+      const hoverTilt = p.isEnding ? 0 : Math.sin(now * 0.0034) * 2.4;
+
       if (dragAvatarRef.current) {
-        dragAvatarRef.current.style.transform = `translate3d(${p.currentX.toFixed(1)}px, ${p.currentY.toFixed(1)}px, 0) rotate(${p.currentTilt.toFixed(2)}deg) scale(${p.scale.toFixed(3)})`;
+        dragAvatarRef.current.style.transform = `translate3d(${p.currentX.toFixed(1)}px, ${(p.currentY + hoverY).toFixed(1)}px, 0) rotate(${(p.currentTilt + hoverTilt).toFixed(2)}deg) scale(${p.scale.toFixed(3)})`;
         dragAvatarRef.current.style.opacity = p.opacity.toFixed(3);
       }
 
@@ -2096,23 +2445,11 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     animId = requestAnimationFrame(updatePhysics);
 
     const handleGlobalDragOver = (e: DragEvent) => {
-      const now = performance.now();
-      const p = dragPhysicsRef.current;
-      if (p.isEnding) return;
-      const dt = Math.max(1, now - p.lastEventTime);
-      const dx = e.clientX - p.lastEventX;
-      const speedX = dx / dt; // velocity in px/ms
-
-      p.targetX = e.clientX - 38;
-      p.targetY = e.clientY - 38;
-      // Clamped inertia tilt based on horizontal velocity
-      p.targetTilt = Math.max(-22, Math.min(22, speedX * 26));
-      p.lastEventX = e.clientX;
-      p.lastEventTime = now;
+      updateDragCoords(e.clientX, e.clientY);
     };
 
     const handleGlobalDragEnd = () => {
-      triggerDragEndAnimation(dragOverFolderId);
+      triggerDragEndAnimation(dragOverFolderIdRef.current);
     };
 
     window.addEventListener('dragover', handleGlobalDragOver);
@@ -2125,7 +2462,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
       window.removeEventListener('dragend', handleGlobalDragEnd);
       window.removeEventListener('drop', handleGlobalDragEnd);
     };
-  }, [dragAvatar.isDragging, dragOverFolderId, triggerDragEndAnimation]);
+  }, [dragAvatar.isDragging, triggerDragEndAnimation, updateDragCoords]);
 
   // Drag and Drop files onto folder cards/tree items
   const handleDragStart = (fileId: string, e: React.DragEvent) => {
@@ -2200,28 +2537,115 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     });
   };
 
+  // Drag Start for folders (supports multi-folder drag)
+  const handleFolderDragStart = (folderId: string, e: React.DragEvent) => {
+    e.stopPropagation();
+    const toMoveFolderIds = selectedFolderIds.has(folderId) ? Array.from(selectedFolderIds) : [folderId];
+    setDraggedFolderId(folderId);
+    setDraggedFolderIds(toMoveFolderIds);
+    setDraggedFileIds([]);
+    e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'folders', folderIds: toMoveFolderIds }));
+    e.dataTransfer.effectAllowed = 'move';
+
+    const primaryFolder = folderMap.get(folderId);
+    const draggedFolderObjects = toMoveFolderIds.map(id => folderMap.get(id)).filter(Boolean) as MediaFolder[];
+
+    // Create transparent drag image to hide default browser drag ghost
+    try {
+      const img = new Image();
+      img.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxIiBoZWlnaHQ9IjEiLz4=';
+      e.dataTransfer.setDragImage(img, 0, 0);
+    } catch (err) {}
+
+    const el = e.currentTarget as HTMLElement | null;
+    let originX = e.clientX - 45;
+    let originY = e.clientY - 35;
+    let originScale = 1.4;
+
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      originX = rect.left + rect.width / 2 - 45;
+      originY = rect.top + rect.height / 2 - 35;
+      originScale = Math.max(0.8, Math.min(2.0, rect.width / 90));
+    }
+
+    const now = performance.now();
+    dragPhysicsRef.current = {
+      targetX: e.clientX - 45,
+      targetY: e.clientY - 35,
+      currentX: originX,
+      currentY: originY,
+      originX,
+      originY,
+      originScale,
+      targetTilt: 0,
+      currentTilt: 0,
+      scale: originScale,
+      targetScale: 1.0,
+      opacity: 1.0,
+      targetOpacity: 1.0,
+      lastEventX: e.clientX,
+      lastEventTime: now,
+      startTime: now,
+      spawnDuration: 260,
+      active: true,
+      isEnding: false,
+      endTime: 0,
+      endDuration: 240,
+      startX: originX,
+      startY: originY,
+      startScale: originScale
+    };
+
+    setDragAvatar({
+      isDragging: true,
+      count: toMoveFolderIds.length,
+      files: [],
+      folder: primaryFolder || null,
+      folders: draggedFolderObjects
+    });
+  };
+
   const handleDragEnd = () => {
-    triggerDragEndAnimation(dragOverFolderId);
+    triggerDragEndAnimation(dragOverFolderIdRef.current);
+    setDraggedFolderId(null);
+    setDraggedFolderIds([]);
+    setDraggedFileIds([]);
   };
 
   const handleFolderDragOver = (folderId: string | null, e: React.DragEvent) => {
     e.preventDefault();
-    e.stopPropagation();
+    updateDragCoords(e.clientX, e.clientY);
+
+    // When dragging folder(s), disallow dropping onto itself or its descendants or into trash
+    const currentFolderIds = draggedFolderIds.length > 0 ? draggedFolderIds : (draggedFolderId ? [draggedFolderId] : []);
+    if (currentFolderIds.length > 0) {
+      const isInvalid = currentFolderIds.some(fId => fId === folderId || isDescendantFolder(fId, folderId)) || folderId === 'trash';
+      if (isInvalid) {
+        e.dataTransfer.dropEffect = 'none';
+        if (dragOverFolderIdRef.current !== null) {
+          dragOverFolderIdRef.current = null;
+          setDragOverFolderId(null);
+        }
+        return;
+      }
+    }
+
     e.dataTransfer.dropEffect = 'move';
-    if (dragOverFolderId !== folderId) {
+    if (dragOverFolderIdRef.current !== folderId) {
+      dragOverFolderIdRef.current = folderId;
       setDragOverFolderId(folderId);
     }
   };
 
   const handleFolderDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
-    e.stopPropagation();
+    dragOverFolderIdRef.current = null;
     setDragOverFolderId(null);
   };
 
   const handleFolderDrop = (targetFolderId: string | null, e: React.DragEvent) => {
     e.preventDefault();
-    e.stopPropagation();
     triggerDragEndAnimation(targetFolderId);
 
     // Check if dragging files from computer
@@ -2230,10 +2654,132 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
       return;
     }
 
+    // Dropping folder(s)
+    const currentFolderIds = draggedFolderIds.length > 0 ? draggedFolderIds : (draggedFolderId ? [draggedFolderId] : []);
+    if (currentFolderIds.length > 0) {
+      setDraggedFolderId(null);
+      setDraggedFolderIds([]);
+      currentFolderIds.forEach(folderToMove => {
+        if (folderToMove !== targetFolderId && !isDescendantFolder(folderToMove, targetFolderId) && targetFolderId !== 'trash') {
+          handleMoveFolder(folderToMove, targetFolderId);
+        }
+      });
+      setSelectedFolderIds(new Set());
+      return;
+    }
+
+    // Dropping files
     if (draggedFileIds.length > 0) {
       handleMoveFiles(targetFolderId, draggedFileIds);
       setDraggedFileIds([]);
+      setSelectedFileIds(new Set());
     }
+  };
+
+  // Marquee (rubber-band) selection event listeners
+  useEffect(() => {
+    if (!marqueeRect) return;
+
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      const dx = Math.abs(e.clientX - marqueeRect.startX);
+      const dy = Math.abs(e.clientY - marqueeRect.startY);
+
+      if (dx > 4 || dy > 4) {
+        marqueeHasDraggedRef.current = true;
+      }
+
+      setMarqueeRect(prev => prev ? { ...prev, currentX: e.clientX, currentY: e.clientY } : null);
+
+      if (dx <= 4 && dy <= 4) return;
+
+      const left = Math.min(marqueeRect.startX, e.clientX);
+      const right = Math.max(marqueeRect.startX, e.clientX);
+      const top = Math.min(marqueeRect.startY, e.clientY);
+      const bottom = Math.max(marqueeRect.startY, e.clientY);
+
+      if (!mainAreaRef.current) return;
+      const fileCards = mainAreaRef.current.querySelectorAll<HTMLElement>('[data-file-id]');
+      const hitFileIds = new Set<string>();
+
+      fileCards.forEach(card => {
+        const fileId = card.getAttribute('data-file-id');
+        if (!fileId) return;
+        const rect = card.getBoundingClientRect();
+        const intersects = !(rect.right < left || rect.left > right || rect.bottom < top || rect.top > bottom);
+        if (intersects) {
+          hitFileIds.add(fileId);
+        }
+      });
+
+      const folderCards = mainAreaRef.current.querySelectorAll<HTMLElement>('.media-folder-card[data-folder-id]');
+      const hitFolderIds = new Set<string>();
+
+      folderCards.forEach(card => {
+        const folderId = card.getAttribute('data-folder-id');
+        if (!folderId) return;
+        const rect = card.getBoundingClientRect();
+        const intersects = !(rect.right < left || rect.left > right || rect.bottom < top || rect.top > bottom);
+        if (intersects) {
+          hitFolderIds.add(folderId);
+        }
+      });
+
+      if (e.shiftKey || e.ctrlKey || e.metaKey) {
+        const combinedFiles = new Set<string>(marqueeInitialSelectionRef.current);
+        hitFileIds.forEach(id => combinedFiles.add(id));
+        setSelectedFileIds(combinedFiles);
+
+        const combinedFolders = new Set<string>(marqueeInitialFolderSelectionRef.current);
+        hitFolderIds.forEach(id => combinedFolders.add(id));
+        setSelectedFolderIds(combinedFolders);
+      } else {
+        setSelectedFileIds(hitFileIds);
+        setSelectedFolderIds(hitFolderIds);
+      }
+    };
+
+    const handleGlobalMouseUp = (e: MouseEvent) => {
+      if (!marqueeHasDraggedRef.current && !(e.shiftKey || e.ctrlKey || e.metaKey)) {
+        setSelectedFileIds(new Set());
+        setSelectedFolderIds(new Set());
+        setLastSelectedFileId(null);
+      }
+      setMarqueeRect(null);
+      setTimeout(() => {
+        marqueeHasDraggedRef.current = false;
+      }, 60);
+    };
+
+    window.addEventListener('mousemove', handleGlobalMouseMove);
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [marqueeRect]);
+
+  const handleMainAreaMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+
+    if (target.closest('button, input, select, textarea, a, .media-file-card, .media-folder-card, .media-sidebar-nav-item, .media-file-list-item, .media-table-row, .media-file-tile-item, [data-interactive="true"], [data-file-id], [data-folder-id]')) {
+      return;
+    }
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    marqueeHasDraggedRef.current = false;
+    marqueeInitialSelectionRef.current = (e.shiftKey || e.ctrlKey || e.metaKey) ? new Set(selectedFileIds) : new Set();
+    marqueeInitialFolderSelectionRef.current = (e.shiftKey || e.ctrlKey || e.metaKey) ? new Set(selectedFolderIds) : new Set();
+
+    setMarqueeRect({
+      startX,
+      startY,
+      currentX: startX,
+      currentY: startY
+    });
   };
 
   // Window drop for direct desktop drag upload
@@ -2264,13 +2810,16 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     const isExpanded = expandedFolderIds.has(folder.id);
     const isSelected = currentFolderId === folder.id;
     const isDragTarget = dragOverFolderId === folder.id;
-    const count = folderItemCounts.get(folder.id) || 0;
+    const stat = folderStats.get(folder.id) || { count: 0, size: 0, sizeFormatted: '0 B' };
 
     return (
       <div key={folder.id} style={{ display: 'flex', flexDirection: 'column' }}>
         <div
           data-folder-id={folder.id}
           className={`media-sidebar-nav-item ${isSelected ? 'is-selected' : ''}`}
+          draggable={true}
+          onDragStart={e => handleFolderDragStart(folder.id, e)}
+          onDragEnd={handleDragEnd}
           onClick={() => navigateToFolder(folder.id)}
           onContextMenu={e => openContextMenu(e, 'folder', { folder })}
           onDragOver={e => handleFolderDragOver(folder.id, e)}
@@ -2282,7 +2831,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
             justifyContent: 'space-between',
             padding: `6px 8px 6px ${depth * 14 + 10}px`,
             borderRadius: '8px',
-            cursor: 'pointer',
+            cursor: 'grab',
             fontSize: '0.85rem',
             color: isSelected ? '#ffffff' : 'var(--fg)',
             background: isSelected 
@@ -2294,7 +2843,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
             transition: 'all 0.15s ease',
             userSelect: 'none'
           }}
-          title={folder.name}
+          title={`${folder.name} (${stat.count} նիշք • ${stat.sizeFormatted})`}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
             {hasChildren ? (
@@ -2352,10 +2901,15 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 borderRadius: '10px',
                 background: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--panel-border)',
                 color: isSelected ? '#ffffff' : 'var(--muted)',
-                fontWeight: 600
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '3px'
               }}
+              title={`${folder.name}՝ ${stat.count} նիշք • ${stat.sizeFormatted}`}
             >
-              {count}
+              <span>{stat.count}</span>
+              <span style={{ opacity: 0.7, fontSize: '0.66rem' }}>• {stat.sizeFormatted}</span>
             </span>
 
             {/* Actions button */}
@@ -2552,6 +3106,34 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           transform: translateY(-2px);
           border-color: rgba(59, 130, 246, 0.6) !important;
           box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12) !important;
+        }
+        .media-folder-card:hover .folder-checkbox {
+          opacity: 1 !important;
+        }
+        .media-folder-card.is-selected {
+          border-color: #3B82F6 !important;
+          background: rgba(59, 130, 246, 0.14) !important;
+          box-shadow: 0 4px 16px rgba(59, 130, 246, 0.22) !important;
+        }
+        @keyframes dragCardBobTop {
+          0% { transform: rotate(-10deg) translateY(0px) scale(0.98); }
+          50% { transform: rotate(-7deg) translateY(-4px) scale(0.99); }
+          100% { transform: rotate(-12deg) translateY(3px) scale(0.975); }
+        }
+        @keyframes dragCardBobMid {
+          0% { transform: rotate(0deg) translateY(0px) scale(0.95); }
+          50% { transform: rotate(3deg) translateY(3px) scale(0.96); }
+          100% { transform: rotate(-3deg) translateY(-3px) scale(0.945); }
+        }
+        @keyframes dragCardBobBottom {
+          0% { transform: rotate(10deg) translateY(0px) scale(0.92); }
+          50% { transform: rotate(13deg) translateY(-3px) scale(0.935); }
+          100% { transform: rotate(7deg) translateY(4px) scale(0.915); }
+        }
+        @keyframes dragSingleCardBob {
+          0% { transform: translateY(0px) scale(1); }
+          50% { transform: translateY(-3px) scale(1.015); }
+          100% { transform: translateY(3px) scale(0.99); }
         }
         .media-table-row {
           transition: background 0.12s ease;
@@ -2929,10 +3511,17 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   <button
                     type="button"
                     onClick={() => navigateToFolder(crumb.id)}
+                    onDragOver={e => !isLast && handleFolderDragOver(crumb.id, e)}
+                    onDragLeave={handleFolderDragLeave}
+                    onDrop={e => !isLast && handleFolderDrop(crumb.id, e)}
                     style={{
-                      background: isLast ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+                      background: dragOverFolderId === crumb.id 
+                        ? 'rgba(59, 130, 246, 0.35)' 
+                        : isLast 
+                        ? 'rgba(59, 130, 246, 0.15)' 
+                        : 'transparent',
                       color: isLast ? '#3B82F6' : 'var(--fg)',
-                      border: 'none',
+                      border: dragOverFolderId === crumb.id ? '1px dashed #3B82F6' : '1px solid transparent',
                       borderRadius: '6px',
                       padding: '4px 8px',
                       cursor: 'pointer',
@@ -2940,7 +3529,8 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                       fontWeight: isLast ? 700 : 500,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '5px'
+                      gap: '5px',
+                      transition: 'all 0.15s ease'
                     }}
                   >
                     {idx === 0 ? (
@@ -3313,56 +3903,150 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           ))}
         </div>
 
-        {/* Multi-Selection Bar */}
-        {selectedFileIds.size > 0 && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            background: 'linear-gradient(90deg, #1e3a8a 0%, #172554 100%)',
-            border: '1px solid #3b82f6',
-            color: '#ffffff',
-            padding: '10px 18px',
-            borderRadius: '12px',
-            boxShadow: '0 4px 16px rgba(59, 130, 246, 0.25)',
-            animation: 'fadeIn 0.2s ease',
-            flexWrap: 'wrap',
-            gap: '10px'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>
-              Ընտրված է {selectedFileIds.size} նիշք
-            </span>
-            <button
-              type="button"
-              onClick={handleSelectAll}
-              style={{
-                background: 'rgba(255,255,255,0.15)',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '6px',
-                padding: '4px 10px',
-                fontSize: '0.78rem',
-                cursor: 'pointer'
-              }}
-            >
-              {selectedFileIds.size === filteredFiles.length ? 'Ապանշել բոլորը' : 'Նշել բոլորը'}
-            </button>
-          </div>
+        {/* Persistent Multi-Selection / Status Bar */}
+        {selectedFileIds.size === 0 && selectedFolderIds.size === 0 ? (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'var(--panel)',
+              border: '1px solid var(--panel-border)',
+              color: 'var(--fg)',
+              padding: '10px 18px',
+              minHeight: '52px',
+              boxSizing: 'border-box',
+              borderRadius: '12px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              flexWrap: 'wrap',
+              gap: '10px',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '1.05rem' }}>{currentFolderId === 'trash' ? '🗑️' : '📁'}</span>
+                <span style={{ fontWeight: 600, fontSize: '0.88rem' }}>
+                  {currentFolderId === 'trash'
+                    ? `Աղբարկղում՝ ${filteredFiles.length} նիշք`
+                    : `Ընդհանուր՝ ${currentSubfolders.length > 0 ? `${currentSubfolders.length} պանակ, ` : ''}${filteredFiles.length} նիշք`}
+                </span>
+                <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>•</span>
+                <span style={{ color: 'var(--muted)', fontSize: '0.85rem', fontWeight: 500 }}>
+                  {formatBytes(currentViewTotalSize + currentSubfolders.reduce((acc, sf) => acc + (folderStats.get(sf.id)?.size || 0), 0))}
+                </span>
+              </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            {selectedFileIds.size === 1 && (
+              {(filteredFiles.length > 0 || currentSubfolders.length > 0) && (
+                <button
+                  type="button"
+                  onClick={handleSelectAll}
+                  style={{
+                    background: 'rgba(59, 130, 246, 0.12)',
+                    color: '#3B82F6',
+                    border: '1px solid rgba(59, 130, 246, 0.28)',
+                    borderRadius: '8px',
+                    padding: '6px 14px',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                  title="Նշել բոլորը (Ctrl + A)"
+                >
+                  Նշել բոլորը
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: 'var(--muted)' }}>
+              <span>💡 Քաշեք մկնիկով (Marquee) նիշքեր կամ պանակներ ընտրելու համար</span>
+            </div>
+          </div>
+        ) : (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'linear-gradient(90deg, #1e3a8a 0%, #172554 100%)',
+              border: '1px solid #3b82f6',
+              color: '#ffffff',
+              padding: '10px 18px',
+              minHeight: '52px',
+              boxSizing: 'border-box',
+              borderRadius: '12px',
+              boxShadow: '0 4px 16px rgba(59, 130, 246, 0.25)',
+              animation: 'fadeIn 0.2s ease',
+              flexWrap: 'wrap',
+              gap: '10px',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>
+                {selectedFolderIds.size > 0 && selectedFileIds.size > 0
+                  ? `Ընտրված է ${selectedFolderIds.size} պանակ, ${selectedFileIds.size} նիշք (${formatBytes(selectedFilesTotalSize + selectedFoldersTotalSize)})`
+                  : selectedFolderIds.size > 0
+                  ? `Ընտրված է ${selectedFolderIds.size} պանակ (${formatBytes(selectedFoldersTotalSize)})`
+                  : `Ընտրված է ${selectedFileIds.size} նիշք (${formatBytes(selectedFilesTotalSize)})`}
+              </span>
+              <button
+                type="button"
+                onClick={handleSelectAll}
+                style={{
+                  background: 'rgba(255,255,255,0.15)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '6px 14px',
+                  fontSize: '0.82rem',
+                  cursor: 'pointer'
+                }}
+              >
+                {(selectedFileIds.size === filteredFiles.length && (currentSubfolders.length === 0 || selectedFolderIds.size === currentSubfolders.length))
+                  ? 'Ապանշել բոլորը'
+                  : 'Նշել բոլորը'}
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              {selectedFileIds.size === 1 && selectedFolderIds.size === 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const selId = Array.from(selectedFileIds)[0];
+                    const selFile = files.find(f => f.id === selId);
+                    if (selFile) openPreview(selFile);
+                  }}
+                  style={{
+                    background: 'rgba(255,255,255,0.2)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '6px 14px',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}
+                >
+                  <span>👁️</span>
+                  <span>Դիտել</span>
+                </button>
+              )}
+
+              {/* Move button */}
               <button
                 type="button"
                 onClick={() => {
-                  const selId = Array.from(selectedFileIds)[0];
-                  const selFile = files.find(f => f.id === selId);
-                  if (selFile) openPreview(selFile);
+                  setMoveTargetFolderId(currentFolderId === 'trash' ? null : currentFolderId);
+                  setIsMoveModalOpen(true);
                 }}
                 style={{
-                  background: 'rgba(255,255,255,0.2)',
+                  background: '#3B82F6',
                   color: '#ffffff',
                   border: 'none',
                   borderRadius: '8px',
@@ -3375,205 +4059,178 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   gap: '5px'
                 }}
               >
-                <span>👁️</span>
-                <span>Դիտել</span>
+                <span>📁</span>
+                <span>Տեղափոխել...</span>
               </button>
-            )}
 
-            {currentFolderId === 'trash' ? (
-              <>
-                <button
-                  type="button"
-                  onClick={handleBatchRestore}
-                  style={{
-                    background: '#10B981',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '6px 14px',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px'
-                  }}
-                >
-                  <span>♻️</span>
-                  <span>Վերականգնել</span>
-                </button>
+              {currentFolderId === 'trash' ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleBatchRestore}
+                    style={{
+                      background: '#10B981',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '6px 14px',
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px'
+                    }}
+                  >
+                    <span>♻️</span>
+                    <span>Վերականգնել</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMoveTargetFolderId(null);
-                    setIsMoveModalOpen(true);
-                  }}
-                  style={{
-                    background: '#3B82F6',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '6px 14px',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px'
-                  }}
-                >
-                  <span>📁</span>
-                  <span>Տեղափոխել պանակ...</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleBatchPermanentDelete}
+                    style={{
+                      background: '#EF4444',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '6px 14px',
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    💥 Ընդմիշտ ջնջել
+                  </button>
+                </>
+              ) : (
+                <>
+                  {selectedFileIds.size > 0 && selectedFolderIds.size === 0 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allPinned = Array.from(selectedFileIds).every(id => pinnedFileIds.has(id));
+                          handleBatchPin(!allPinned);
+                        }}
+                        style={{
+                          background: Array.from(selectedFileIds).every(id => pinnedFileIds.has(id))
+                            ? '#F59E0B'
+                            : 'rgba(255,255,255,0.2)',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '6px 14px',
+                          fontSize: '0.82rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px'
+                        }}
+                      >
+                        <span>📌</span>
+                        <span>{Array.from(selectedFileIds).every(id => pinnedFileIds.has(id)) ? 'Ապագամել' : 'Գամել վերեւում'}</span>
+                      </button>
 
-                <button
-                  type="button"
-                  onClick={handleBatchPermanentDelete}
-                  style={{
-                    background: '#EF4444',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '6px 14px',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  💥 Ընդմիշտ ջնջել
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const allPinned = Array.from(selectedFileIds).every(id => pinnedFileIds.has(id));
-                    handleBatchPin(!allPinned);
-                  }}
-                  style={{
-                    background: Array.from(selectedFileIds).every(id => pinnedFileIds.has(id))
-                      ? '#F59E0B'
-                      : 'rgba(255,255,255,0.2)',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '6px 14px',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px'
-                  }}
-                >
-                  <span>📌</span>
-                  <span>{Array.from(selectedFileIds).every(id => pinnedFileIds.has(id)) ? 'Ապագամել' : 'Գամել վերեւում'}</span>
-                </button>
+                      <button
+                        type="button"
+                        onClick={handleBatchCopyUrls}
+                        style={{
+                          background: 'rgba(255,255,255,0.2)',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '6px 14px',
+                          fontSize: '0.82rem',
+                          fontWeight: 600,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        🔗 Պատճենել հղումները
+                      </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMoveTargetFolderId(currentFolderId);
-                    setIsMoveModalOpen(true);
-                  }}
-                  style={{
-                    background: '#3B82F6',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '6px 14px',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px'
-                  }}
-                >
-                  <span>📁</span>
-                  <span>Տեղափոխել պանակ...</span>
-                </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadFiles()}
+                        style={{
+                          background: 'rgba(255,255,255,0.2)',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '6px 14px',
+                          fontSize: '0.82rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px'
+                        }}
+                      >
+                        <span>{selectedFileIds.size > 1 ? '📦' : '⬇️'}</span>
+                        <span>{selectedFileIds.size > 1 ? 'Ներբեռնել ZIP-ով' : 'Ներբեռնել'}</span>
+                      </button>
+                    </>
+                  )}
 
-                <button
-                  type="button"
-                  onClick={handleBatchCopyUrls}
-                  style={{
-                    background: 'rgba(255,255,255,0.2)',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '6px 14px',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  🔗 Պատճենել հղումները
-                </button>
+                  {selectedFolderIds.size > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => handleBatchDeleteFolders()}
+                      style={{
+                        background: '#EF4444',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '6px 14px',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      🗑️ Ջնջել պանակները
+                    </button>
+                  )}
 
-                <button
-                  type="button"
-                  onClick={() => handleDownloadFiles()}
-                  style={{
-                    background: 'rgba(255,255,255,0.2)',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '6px 14px',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px'
-                  }}
-                >
-                  <span>{selectedFileIds.size > 1 ? '📦' : '⬇️'}</span>
-                  <span>{selectedFileIds.size > 1 ? 'Ներբեռնել ZIP-ով' : 'Ներբեռնել'}</span>
-                </button>
+                  {selectedFileIds.size > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => handleBatchMoveToTrash()}
+                      style={{
+                        background: '#EF4444',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '6px 14px',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      🗑️ Տեղափոխել աղբարկղ
+                    </button>
+                  )}
+                </>
+              )}
 
-                <button
-                  type="button"
-                  onClick={() => handleBatchMoveToTrash()}
-                  style={{
-                    background: '#EF4444',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '6px 14px',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  🗑️ Տեղափոխել աղբարկղ
-                </button>
-              </>
-            )}
-
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedFileIds(new Set());
-                setLastSelectedFileId(null);
-              }}
-              title="Չեղարկել ընտրությունը (Esc)"
-              style={{
-                background: 'transparent',
-                color: '#ffffff',
-                border: 'none',
-                fontSize: '1rem',
-                cursor: 'pointer',
-                padding: '4px 8px'
-              }}
-            >
-              ✕
-            </button>
+              <button
+                type="button"
+                onClick={handleDeselectAll}
+                title="Չեղարկել ընտրությունը (Esc)"
+                style={{
+                  background: 'transparent',
+                  color: '#ffffff',
+                  border: 'none',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  padding: '4px 8px'
+                }}
+              >
+                ✕
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
       </div>
 
@@ -3915,10 +4572,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
         {/* RIGHT MAIN AREA (Subfolders and Files) */}
         <div
+          ref={mainAreaRef}
+          onMouseDown={handleMainAreaMouseDown}
           onClick={(e) => {
-            if (selectedFileIds.size > 0) {
-              setSelectedFileIds(new Set());
-              setLastSelectedFileId(null);
+            if (marqueeHasDraggedRef.current) return;
+            if (selectedFileIds.size > 0 || selectedFolderIds.size > 0) {
+              handleDeselectAll();
             }
           }}
           onContextMenu={e => openContextMenu(e, 'empty')}
@@ -3930,7 +4589,8 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
             display: 'flex',
             flexDirection: 'column',
             gap: '18px',
-            minHeight: '550px'
+            minHeight: '550px',
+            userSelect: marqueeRect ? 'none' : 'auto'
           }}
         >
           {loading ? (
@@ -4008,9 +4668,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                         </span>
                       </div>
                       <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: '2px' }}>
-                        {trashSettingsForm.autoDeleteEnabled
-                          ? `Նիշքերը ավտոմատ կերպով ընդմիշտ կջնջվեն ${trashSettingsForm.retentionDays} օր հետո։`
-                          : 'Ավտոմատ ինքնաջնջումն անջատված է։ Նիշքերը պահպանվում են մինչև դատարկելը։'}
+                        Ջնջված նիշքերը պահվում են այստեղ մինչև 30 օր, ապա ավտոմատ մաքրվում են
                       </div>
                     </div>
                   </div>
@@ -4083,20 +4741,32 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, max(180px, calc(25% - 12px))), 1fr))',
                       gap: '12px'
                     }}
                   >
                     {currentSubfolders.map(subf => {
-                      const count = folderItemCounts.get(subf.id) || 0;
+                      const stat = folderStats.get(subf.id) || { count: 0, size: 0, sizeFormatted: '0 B' };
                       const isDragTarget = dragOverFolderId === subf.id;
+                      const isFolderSelected = selectedFolderIds.has(subf.id);
 
                       return (
                         <div
                           key={subf.id}
-                          className="media-folder-card"
+                          className={`media-folder-card ${isFolderSelected ? 'is-selected' : ''}`}
                           data-folder-id={subf.id}
+                          draggable={true}
+                          onDragStart={e => handleFolderDragStart(subf.id, e)}
+                          onDragEnd={handleDragEnd}
                           onClick={e => {
+                            e.stopPropagation();
+                            if (e.ctrlKey || e.metaKey || selectedFolderIds.size > 0) {
+                              toggleSelectFolder(subf.id, e);
+                            } else {
+                              navigateToFolder(subf.id);
+                            }
+                          }}
+                          onDoubleClick={e => {
                             e.stopPropagation();
                             navigateToFolder(subf.id);
                           }}
@@ -4105,20 +4775,55 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                           onDragLeave={handleFolderDragLeave}
                           onDrop={e => handleFolderDrop(subf.id, e)}
                           style={{
-                            background: isDragTarget ? 'rgba(59, 130, 246, 0.2)' : 'var(--bg)',
-                            border: `1px solid ${isDragTarget ? '#3B82F6' : 'var(--panel-border)'}`,
+                            background: isDragTarget
+                              ? 'rgba(59, 130, 246, 0.25)'
+                              : isFolderSelected
+                              ? 'rgba(59, 130, 246, 0.16)'
+                              : 'var(--bg)',
+                            border: `1px solid ${isDragTarget || isFolderSelected ? '#3B82F6' : 'var(--panel-border)'}`,
                             borderRadius: '12px',
                             padding: '12px',
-                            cursor: 'pointer',
+                            cursor: 'grab',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
                             gap: '10px',
                             transition: 'all 0.15s ease',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+                            boxShadow: isFolderSelected
+                              ? '0 4px 16px rgba(59, 130, 246, 0.22)'
+                              : '0 2px 8px rgba(0,0,0,0.04)',
+                            position: 'relative'
                           }}
+                          title={`${subf.name} (${stat.count} նիշք • ${stat.sizeFormatted})`}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                            {/* Selection Checkbox */}
+                            <div
+                              className="folder-checkbox"
+                              onClick={e => toggleSelectFolder(subf.id, e)}
+                              style={{
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: '18px',
+                                height: '18px',
+                                borderRadius: '4px',
+                                border: isFolderSelected ? '1px solid #3B82F6' : '1px solid var(--panel-border)',
+                                background: isFolderSelected ? '#3B82F6' : 'var(--panel)',
+                                opacity: isFolderSelected || selectedFolderIds.size > 0 ? 1 : 0,
+                                transition: 'opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease',
+                                flexShrink: 0
+                              }}
+                              title={isFolderSelected ? 'Ապանշել պանակը' : 'Նշել պանակը'}
+                            >
+                              {isFolderSelected && (
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3">
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              )}
+                            </div>
+
                             <svg
                               width="28"
                               height="28"
@@ -4137,13 +4842,16 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                   fontSize: '0.85rem',
                                   overflow: 'hidden',
                                   textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap'
+                                  whiteSpace: 'nowrap',
+                                  color: isFolderSelected ? '#3B82F6' : 'var(--fg)'
                                 }}
                               >
                                 {subf.name}
                               </div>
-                              <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
-                                {count} նիշք
+                              <div style={{ fontSize: '0.72rem', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span>{stat.count} նիշք</span>
+                                <span>•</span>
+                                <span>{stat.sizeFormatted}</span>
                               </div>
                             </div>
                           </div>
@@ -4269,7 +4977,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, max(180px, calc(25% - 16px))), 1fr))',
                       gap: '16px'
                     }}
                   >
@@ -4280,6 +4988,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                       return (
                         <div
                           key={file.id}
+                          data-file-id={file.id}
                           className={`media-file-card ${getExitingClass(file.id)}`}
                           draggable
                           onDragStart={e => handleDragStart(file.id, e)}
@@ -4418,11 +5127,9 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                     fontSize: '0.68rem',
                                     cursor: 'pointer',
                                     display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '3px'
+                                    alignItems: 'center'
                                   }}
                                 >
-                                  <span>🔗</span>
                                   <span>Կայքում ({file.usedIn.length})</span>
                                 </button>
                               )}
@@ -4565,11 +5272,9 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                     fontSize: '0.64rem',
                                     cursor: 'pointer',
                                     display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '2px'
+                                    alignItems: 'center'
                                   }}
                                 >
-                                  <span>🔗</span>
                                   <span>Կայքում ({file.usedIn.length})</span>
                                 </button>
                               )}
@@ -4593,6 +5298,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                       return (
                         <div
                           key={file.id}
+                          data-file-id={file.id}
                           className={`media-file-list-item ${getExitingClass(file.id)}`}
                           draggable
                           onDragStart={e => handleDragStart(file.id, e)}
@@ -4675,11 +5381,9 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                   fontWeight: 600,
                                   cursor: 'pointer',
                                   display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '4px'
+                                  alignItems: 'center'
                                 }}
                               >
-                                <span>🔗</span>
                                 <span>Կայքում ({file.usedIn.length})</span>
                               </button>
                             )}
@@ -4807,6 +5511,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                           return (
                             <tr
                               key={file.id}
+                              data-file-id={file.id}
                               className={`media-table-row ${getExitingClass(file.id)}`}
                               draggable
                               onDragStart={e => handleDragStart(file.id, e)}
@@ -4883,32 +5588,32 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                               <td style={{ padding: '10px 12px', textAlign: 'right' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
                                     {/* «Կայքում» Action */}
-                                    <button
-                                      type="button"
-                                      onClick={e => {
-                                        e.stopPropagation();
-                                        setUsageInspectFile(file);
-                                      }}
-                                      title={isUsed ? `Օգտագործվում է կայքի ${file.usedIn!.length} հատվածում (Կտտացրեք՝ տեսնելու ցանկը)` : 'Ստուգել օգտագործումը կայքում'}
-                                      style={{
-                                        background: isUsed ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                                        color: isUsed ? '#10B981' : 'var(--muted)',
-                                        border: isUsed ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid var(--panel-border)',
-                                        padding: '3px 8px',
-                                        borderRadius: '6px',
-                                        fontWeight: 600,
-                                        fontSize: '0.72rem',
-                                        whiteSpace: 'nowrap',
-                                        cursor: 'pointer',
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: '4px',
-                                        transition: 'all 0.15s ease'
-                                      }}
-                                    >
-                                      <span>🔗</span>
-                                      <span>Կայքում{isUsed ? ` (${file.usedIn!.length})` : ''}</span>
-                                    </button>
+                                    {isUsed && (
+                                      <button
+                                        type="button"
+                                        onClick={e => {
+                                          e.stopPropagation();
+                                          setUsageInspectFile(file);
+                                        }}
+                                        title={`Օգտագործվում է կայքի ${file.usedIn!.length} հատվածում (Կտտացրեք՝ տեսնելու ցանկը)`}
+                                        style={{
+                                          background: 'rgba(16, 185, 129, 0.15)',
+                                          color: '#10B981',
+                                          border: '1px solid rgba(16, 185, 129, 0.35)',
+                                          padding: '3px 8px',
+                                          borderRadius: '6px',
+                                          fontWeight: 600,
+                                          fontSize: '0.72rem',
+                                          whiteSpace: 'nowrap',
+                                          cursor: 'pointer',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          transition: 'all 0.15s ease'
+                                        }}
+                                      >
+                                        <span>Կայքում ({file.usedIn!.length})</span>
+                                      </button>
+                                    )}
 
                                     <button
                                       type="button"
@@ -4992,7 +5697,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, max(200px, calc(25% - 12px))), 1fr))',
                       gap: '12px'
                     }}
                   >
@@ -5004,6 +5709,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                       return (
                         <div
                           key={file.id}
+                          data-file-id={file.id}
                           className={`media-file-tile-item ${getExitingClass(file.id)}`}
                           draggable
                           onDragStart={e => handleDragStart(file.id, e)}
@@ -5064,11 +5770,9 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                     fontSize: '0.65rem',
                                     cursor: 'pointer',
                                     display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '2px'
+                                    alignItems: 'center'
                                   }}
                                 >
-                                  <span>🔗</span>
                                   <span>Կայքում ({file.usedIn!.length})</span>
                                 </button>
                               )}
@@ -5144,20 +5848,24 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           ══════════════════════════════════════════════════════════════════════════ */}
       {mounted && isFolderModalOpen && typeof document !== 'undefined' && createPortal(
         <div
+          data-modal-backdrop="true"
           style={{
             position: 'fixed',
             inset: 0,
             zIndex: 999999,
-            background: 'rgba(0,0,0,0.65)',
-            backdropFilter: 'blur(5px)',
+            background: 'rgba(0,0,0,0.72)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '20px'
+            padding: '20px',
+            animation: 'modalBackdropFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
           }}
           onClick={() => setIsFolderModalOpen(false)}
         >
           <div
+            data-modal-container="true"
             style={{
               background: 'var(--panel)',
               border: '1px solid var(--panel-border)',
@@ -5165,10 +5873,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               width: '100%',
               maxWidth: '460px',
               padding: '24px',
-              boxShadow: '0 16px 40px rgba(0,0,0,0.4)',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '18px'
+              gap: '18px',
+              animation: 'modalSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              willChange: 'transform, opacity'
             }}
             onClick={e => e.stopPropagation()}
           >
@@ -5178,20 +5888,28 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   width="24"
                   height="24"
                   viewBox="0 0 24 24"
-                  fill={folderFormColor}
-                  stroke={folderFormColor}
-                  strokeWidth="1.5"
+                  fill="none"
+                  stroke={folderFormColor || 'var(--accent)'}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
                   <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                 </svg>
-                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700 }}>
-                  {folderModalMode === 'create' ? 'Նոր Պանակ' : 'Խմբագրել Պանակը'}
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800 }}>
+                  {editingFolderId ? 'Խմբագրել Պանակը' : 'Նոր Պանակ'}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsFolderModalOpen(false)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--muted)', fontSize: '1.2rem', cursor: 'pointer' }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--muted)',
+                  fontSize: '1.2rem',
+                  cursor: 'pointer'
+                }}
               >
                 ✕
               </button>
@@ -5206,6 +5924,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 <input
                   type="text"
                   required
+                  autoFocus
                   value={folderFormName}
                   onChange={e => setFolderFormName(e.target.value)}
                   placeholder="Օրինակ՝ Լոգոներ, Քեյսեր, Պաստառներ..."
@@ -5222,7 +5941,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 />
               </div>
 
-              {/* Parent Folder (Allows nesting folders inside folders!) */}
+              {/* Parent Folder */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: '6px', color: 'var(--muted)' }}>
                   Ծնող Պանակ (Տեղադրել այլ պանակի մեջ)
@@ -5430,7 +6149,11 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               Տեղափոխել Պանակ
             </h3>
             <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--muted)' }}>
-              Ընտրեք թիրախային պանակը, ուր ցանկանում եք տեղափոխել ընտրված {selectedFileIds.size} նիշքերը:
+              {selectedFolderIds.size > 0 && selectedFileIds.size > 0
+                ? `Ընտրեք թիրախային պանակը, ուր ցանկանում եք տեղափոխել ընտրված ${selectedFolderIds.size} պանակները և ${selectedFileIds.size} նիշքերը:`
+                : selectedFolderIds.size > 0
+                ? `Ընտրեք թիրախային պանակը, ուր ցանկանում եք տեղափոխել ընտրված ${selectedFolderIds.size} պանակները:`
+                : `Ընտրեք թիրախային պանակը, ուր ցանկանում եք տեղափոխել ընտրված ${selectedFileIds.size} նիշքերը:`}
             </p>
 
             <div
@@ -5460,34 +6183,36 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 🖥️ Անհատական Կայք (ԱԿ) (Գլխավոր)
               </div>
 
-              {folders.map(f => (
-                <div
-                  key={f.id}
-                  onClick={() => setMoveTargetFolderId(f.id)}
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    background: moveTargetFolderId === f.id ? 'var(--accent)' : 'transparent',
-                    color: moveTargetFolderId === f.id ? '#ffffff' : 'var(--fg)',
-                    fontWeight: moveTargetFolderId === f.id ? 700 : 400,
-                    fontSize: '0.85rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                >
-                  <span
+              {folders
+                .filter(f => !selectedFolderIds.has(f.id) && !Array.from(selectedFolderIds).some(sfId => isDescendantFolder(sfId, f.id)))
+                .map(f => (
+                  <div
+                    key={f.id}
+                    onClick={() => setMoveTargetFolderId(f.id)}
                     style={{
-                      width: '10px',
-                      height: '10px',
-                      borderRadius: '50%',
-                      background: f.color || '#3B82F6'
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      background: moveTargetFolderId === f.id ? 'var(--accent)' : 'transparent',
+                      color: moveTargetFolderId === f.id ? '#ffffff' : 'var(--fg)',
+                      fontWeight: moveTargetFolderId === f.id ? 700 : 400,
+                      fontSize: '0.85rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
                     }}
-                  />
-                  <span>📁 {f.name}</span>
-                </div>
-              ))}
+                  >
+                    <span
+                      style={{
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        background: f.color || '#3B82F6'
+                      }}
+                    />
+                    <span>📁 {f.name}</span>
+                  </div>
+                ))}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
@@ -5507,7 +6232,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               </button>
               <button
                 type="button"
-                onClick={() => handleMoveFiles(moveTargetFolderId, Array.from(selectedFileIds))}
+                onClick={() => handleBatchMoveSelected(moveTargetFolderId)}
                 style={{
                   background: 'var(--accent)',
                   color: '#ffffff',
@@ -5531,20 +6256,24 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           ══════════════════════════════════════════════════════════════════════════ */}
       {mounted && previewFile && typeof document !== 'undefined' && createPortal(
         <div
+          data-modal-backdrop="true"
           style={{
             position: 'fixed',
             inset: 0,
             zIndex: 999999,
-            background: 'rgba(0,0,0,0.75)',
-            backdropFilter: 'blur(8px)',
+            background: 'rgba(0,0,0,0.8)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '24px'
+            padding: '24px',
+            animation: 'modalBackdropFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
           }}
           onClick={closePreview}
         >
           <div
+            data-modal-container="true"
             style={{
               background: 'var(--panel)',
               border: '1px solid var(--panel-border)',
@@ -5555,7 +6284,9 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               overflow: 'hidden',
               display: 'grid',
               gridTemplateColumns: '1.2fr 0.8fr',
-              boxShadow: '0 24px 60px rgba(0,0,0,0.5)'
+              boxShadow: '0 24px 70px rgba(0,0,0,0.6)',
+              animation: 'modalSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              willChange: 'transform, opacity'
             }}
             onClick={e => e.stopPropagation()}
           >
@@ -5979,19 +6710,24 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           ══════════════════════════════════════════════════════════════════════════ */}
       {mounted && renamingFile && typeof document !== 'undefined' && createPortal(
         <div
+          data-modal-backdrop="true"
           style={{
             position: 'fixed',
             inset: 0,
             zIndex: 999999,
-            background: 'rgba(0,0,0,0.65)',
+            background: 'rgba(0,0,0,0.72)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '20px'
+            padding: '20px',
+            animation: 'modalBackdropFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
           }}
           onClick={() => setRenamingFile(null)}
         >
           <div
+            data-modal-container="true"
             style={{
               background: 'var(--panel)',
               border: '1px solid var(--panel-border)',
@@ -6001,7 +6737,10 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               padding: '20px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '14px'
+              gap: '14px',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+              animation: 'modalSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              willChange: 'transform, opacity'
             }}
             onClick={e => e.stopPropagation()}
           >
@@ -6069,20 +6808,24 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           ══════════════════════════════════════════════════════════════════════════ */}
       {mounted && isTrashSettingsModalOpen && typeof document !== 'undefined' && createPortal(
         <div
+          data-modal-backdrop="true"
           style={{
             position: 'fixed',
             inset: 0,
             zIndex: 999999,
-            background: 'rgba(0,0,0,0.65)',
-            backdropFilter: 'blur(4px)',
+            background: 'rgba(0,0,0,0.72)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '20px'
+            padding: '20px',
+            animation: 'modalBackdropFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
           }}
           onClick={() => setIsTrashSettingsModalOpen(false)}
         >
           <div
+            data-modal-container="true"
             style={{
               background: 'var(--panel)',
               border: '1px solid var(--panel-border)',
@@ -6090,10 +6833,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               width: '100%',
               maxWidth: '440px',
               padding: '24px',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '18px'
+              gap: '18px',
+              animation: 'modalSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              willChange: 'transform, opacity'
             }}
             onClick={e => e.stopPropagation()}
           >
@@ -6480,8 +7225,8 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                       <span style={{ flex: 1 }}>Տեղափոխել պանակ...</span>
                     </button>
 
-                    {/* «Կայքում» գործողություն context menu-ի մեջ */}
-                    {contextMenu.file && (
+                    {/* «Կայքում» գործողություն context menu-ի մեջ (Միայն կապակցված նիշքերի համար, առանց շղթայի պատկերակի) */}
+                    {contextMenu.file && isUsed && (
                       <>
                         <button
                           type="button"
@@ -6492,11 +7237,10 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                           style={{
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '10px',
                             padding: '8px 12px',
                             border: 'none',
                             background: 'transparent',
-                            color: isUsed ? '#10B981' : 'var(--fg)',
+                            color: '#10B981',
                             borderRadius: '8px',
                             cursor: 'pointer',
                             textAlign: 'left',
@@ -6506,38 +7250,35 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(16, 185, 129, 0.15)')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                         >
-                          <span style={{ fontSize: '1rem' }}>🔗</span>
-                          <span style={{ flex: 1 }}>Կայքում {isUsed ? `(${usedCount})` : '(0)'}</span>
+                          <span style={{ flex: 1 }}>Կայքում ({usedCount})</span>
                         </button>
 
-                        {isUsed && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (contextMenu.file) handleUnlinkUsage(contextMenu.file);
-                              setContextMenu(prev => ({ ...prev, isOpen: false }));
-                            }}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '10px',
-                              padding: '8px 12px',
-                              border: 'none',
-                              background: 'transparent',
-                              color: '#F59E0B',
-                              borderRadius: '8px',
-                              cursor: 'pointer',
-                              textAlign: 'left',
-                              width: '100%',
-                              fontWeight: 600
-                            }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(245, 158, 11, 0.15)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                          >
-                            <span style={{ fontSize: '1rem' }}>🔓</span>
-                            <span style={{ flex: 1 }}>Ապակապել կայքից</span>
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (contextMenu.file) handleUnlinkUsage(contextMenu.file);
+                            setContextMenu(prev => ({ ...prev, isOpen: false }));
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            padding: '8px 12px',
+                            border: 'none',
+                            background: 'transparent',
+                            color: '#F59E0B',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            width: '100%',
+                            fontWeight: 600
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(245, 158, 11, 0.15)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <span style={{ fontSize: '1rem' }}>🔓</span>
+                          <span style={{ flex: 1 }}>Ապակապել կայքից</span>
+                        </button>
                       </>
                     )}
 
@@ -6960,7 +7701,140 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
             userSelect: 'none'
           }}
         >
-          {dragAvatar.count <= 1 ? (
+          {dragAvatar.folders && dragAvatar.folders.length > 1 ? (
+            <div style={{ position: 'relative', width: '84px', height: '84px' }}>
+              {/* 2nd Folder (Underneath) */}
+              {dragAvatar.folders[1] && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: '10px',
+                    top: '6px',
+                    transform: 'rotate(7deg) scale(0.94)',
+                    zIndex: 1,
+                    width: '78px',
+                    padding: '8px 6px',
+                    borderRadius: '10px',
+                    background: 'var(--panel, #0f172a)',
+                    border: `1.2px solid ${dragAvatar.folders[1].color || '#3B82F6'}`,
+                    boxShadow: '0 8px 18px rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '3px',
+                    animation: 'dragCardBobBottom 2.8s ease-in-out infinite alternate',
+                    animationDelay: '-1.4s'
+                  }}
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill={dragAvatar.folders[1].color || '#3B82F6'} stroke={dragAvatar.folders[1].color || '#3B82F6'} strokeWidth="1.5">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                  </svg>
+                  <div style={{ fontSize: '0.6rem', color: '#fff', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', textAlign: 'center' }}>
+                    {dragAvatar.folders[1].name}
+                  </div>
+                </div>
+              )}
+
+              {/* 1st Folder (On Top) */}
+              {dragAvatar.folders[0] && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: '-8px',
+                    top: '0px',
+                    transform: 'rotate(-7deg) scale(0.98)',
+                    zIndex: 2,
+                    width: '78px',
+                    padding: '8px 6px',
+                    borderRadius: '10px',
+                    background: 'var(--panel, #0f172a)',
+                    border: `1.5px solid ${dragAvatar.folders[0].color || '#3B82F6'}`,
+                    boxShadow: `0 12px 26px rgba(0,0,0,0.65), 0 0 14px ${dragAvatar.folders[0].color || '#3B82F6'}55`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '3px',
+                    animation: 'dragCardBobTop 2.6s ease-in-out infinite alternate'
+                  }}
+                >
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill={dragAvatar.folders[0].color || '#3B82F6'} stroke={dragAvatar.folders[0].color || '#3B82F6'} strokeWidth="1.5">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                  </svg>
+                  <div style={{ fontSize: '0.62rem', color: '#fff', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', textAlign: 'center' }}>
+                    {dragAvatar.folders[0].name}
+                  </div>
+                </div>
+              )}
+
+              {/* Multi Folder Badge */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '-7px',
+                  right: '-7px',
+                  zIndex: 10,
+                  background: '#3B82F6',
+                  color: '#ffffff',
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  padding: '2px 6px',
+                  borderRadius: '10px',
+                  boxShadow: '0 3px 10px rgba(0,0,0,0.5)',
+                  border: '1.5px solid #ffffff'
+                }}
+              >
+                +{dragAvatar.count}
+              </div>
+            </div>
+          ) : dragAvatar.folder ? (
+            <div
+              style={{
+                width: '88px',
+                padding: '10px 8px',
+                borderRadius: '12px',
+                background: 'var(--panel, #0f172a)',
+                border: `1.5px solid ${dragAvatar.folder.color || '#3B82F6'}`,
+                boxShadow: `0 14px 32px rgba(0, 0, 0, 0.7), 0 0 16px ${dragAvatar.folder.color || '#3B82F6'}66`,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '4px',
+                overflow: 'hidden',
+                pointerEvents: 'none',
+                animation: 'dragSingleCardBob 2.6s ease-in-out infinite alternate'
+              }}
+            >
+              <svg
+                width="30"
+                height="30"
+                viewBox="0 0 24 24"
+                fill={dragAvatar.folder.color || '#3B82F6'}
+                stroke={dragAvatar.folder.color || '#3B82F6'}
+                strokeWidth="1.5"
+              >
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+              </svg>
+              <div
+                style={{
+                  fontSize: '0.65rem',
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  textAlign: 'center',
+                  width: '100%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {dragAvatar.folder.name}
+              </div>
+              {folderStats.has(dragAvatar.folder.id) && (
+                <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.7)', textAlign: 'center' }}>
+                  {folderStats.get(dragAvatar.folder.id)?.sizeFormatted}
+                </div>
+              )}
+            </div>
+          ) : dragAvatar.count <= 1 ? (
             dragAvatar.files[0] && (
               <div
                 style={{
@@ -6974,7 +7848,8 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   display: 'flex',
                   flexDirection: 'column',
                   overflow: 'hidden',
-                  position: 'relative'
+                  position: 'relative',
+                  animation: 'dragSingleCardBob 2.6s ease-in-out infinite alternate'
                 }}
               >
                 <div
@@ -7034,7 +7909,9 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     border: '1.2px solid rgba(59, 130, 246, 0.7)',
                     boxShadow: '0 8px 18px rgba(0,0,0,0.55)',
                     overflow: 'hidden',
-                    opacity: 0.94
+                    opacity: 0.94,
+                    animation: 'dragCardBobBottom 2.8s ease-in-out infinite alternate',
+                    animationDelay: '-1.4s'
                   }}
                 >
                   <div
@@ -7076,7 +7953,8 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     background: 'var(--panel, #0f172a)',
                     border: '1.5px solid #3B82F6',
                     boxShadow: '0 12px 26px rgba(0,0,0,0.7), 0 0 14px rgba(59, 130, 246, 0.4)',
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    animation: 'dragCardBobTop 2.5s ease-in-out infinite alternate'
                   }}
                 >
                   <div
@@ -7159,7 +8037,9 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     border: '1.2px solid rgba(59, 130, 246, 0.65)',
                     boxShadow: '0 8px 18px rgba(0,0,0,0.55)',
                     overflow: 'hidden',
-                    opacity: 0.92
+                    opacity: 0.92,
+                    animation: 'dragCardBobBottom 2.9s ease-in-out infinite alternate',
+                    animationDelay: '-1.8s'
                   }}
                 >
                   <div
@@ -7202,7 +8082,9 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     border: '1.2px solid rgba(59, 130, 246, 0.8)',
                     boxShadow: '0 10px 22px rgba(0,0,0,0.65)',
                     overflow: 'hidden',
-                    opacity: 0.96
+                    opacity: 0.96,
+                    animation: 'dragCardBobMid 2.7s ease-in-out infinite alternate',
+                    animationDelay: '-0.9s'
                   }}
                 >
                   <div
@@ -7262,7 +8144,8 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     background: 'var(--panel, #0f172a)',
                     border: '1.5px solid #3B82F6',
                     boxShadow: '0 14px 30px rgba(0,0,0,0.75), 0 0 16px rgba(59, 130, 246, 0.45)',
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    animation: 'dragCardBobTop 2.4s ease-in-out infinite alternate'
                   }}
                 >
                   <div
@@ -7329,22 +8212,44 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         </div>,
         document.body
       )}
+
+      {/* Marquee (Rubber-Band) Selection Box */}
+      {mounted && marqueeRect && (Math.abs(marqueeRect.currentX - marqueeRect.startX) > 4 || Math.abs(marqueeRect.currentY - marqueeRect.startY) > 4) && typeof document !== 'undefined' && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            left: `${Math.min(marqueeRect.startX, marqueeRect.currentX)}px`,
+            top: `${Math.min(marqueeRect.startY, marqueeRect.currentY)}px`,
+            width: `${Math.abs(marqueeRect.currentX - marqueeRect.startX)}px`,
+            height: `${Math.abs(marqueeRect.currentY - marqueeRect.startY)}px`,
+            border: '1.5px solid #3B82F6',
+            background: 'rgba(59, 130, 246, 0.18)',
+            borderRadius: '4px',
+            boxShadow: '0 0 12px rgba(59, 130, 246, 0.3)',
+            pointerEvents: 'none',
+            zIndex: 99999
+          }}
+        />,
+        document.body
+      )}
       {/* ══════════════════════════════════════════════════════════════════════════
           MODAL: CUSTOM DIALOG / POPUP MODAL (REPLACES WINDOW.ALERT & CONFIRM)
           ══════════════════════════════════════════════════════════════════════════ */}
       {mounted && dialogModal.isOpen && typeof document !== 'undefined' && createPortal(
         <div
+          data-modal-backdrop="true"
           style={{
             position: 'fixed',
             inset: 0,
             zIndex: 1000000,
-            background: 'rgba(0,0,0,0.7)',
-            backdropFilter: 'blur(6px)',
+            background: 'rgba(0,0,0,0.75)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             padding: '20px',
-            animation: 'fadeIn 0.15s ease'
+            animation: 'modalBackdropFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
           }}
           onClick={() => {
             if (dialogModal.type === 'alert' || dialogModal.type === 'info') {
@@ -7357,6 +8262,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           }}
         >
           <div
+            data-modal-container="true"
             style={{
               background: 'var(--panel)',
               border: `1.5px solid ${
@@ -7370,10 +8276,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               width: '100%',
               maxWidth: dialogModal.usedInList && dialogModal.usedInList.length > 0 ? '500px' : '440px',
               padding: '24px',
-              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.6)',
+              boxShadow: '0 25px 60px -12px rgba(0,0,0,0.6)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '16px'
+              gap: '16px',
+              animation: 'modalSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              willChange: 'transform, opacity'
             }}
             onClick={e => e.stopPropagation()}
           >
@@ -7384,71 +8292,53 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   width: '44px',
                   height: '44px',
                   borderRadius: '12px',
-                  background:
-                    dialogModal.type === 'warning'
-                      ? 'rgba(245, 158, 11, 0.15)'
-                      : dialogModal.type === 'danger'
-                      ? 'rgba(239, 68, 68, 0.15)'
-                      : 'rgba(59, 130, 246, 0.15)',
-                  color:
-                    dialogModal.type === 'warning'
-                      ? '#F59E0B'
-                      : dialogModal.type === 'danger'
-                      ? '#EF4444'
-                      : '#3B82F6',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  flexShrink: 0,
                   fontSize: '1.4rem',
-                  flexShrink: 0
+                  background:
+                    dialogModal.type === 'danger'
+                      ? 'rgba(239, 68, 68, 0.15)'
+                      : dialogModal.type === 'warning'
+                      ? 'rgba(245, 158, 11, 0.15)'
+                      : dialogModal.type === 'success'
+                      ? 'rgba(16, 185, 129, 0.15)'
+                      : 'rgba(59, 130, 246, 0.15)',
+                  color:
+                    dialogModal.type === 'danger'
+                      ? '#EF4444'
+                      : dialogModal.type === 'warning'
+                      ? '#F59E0B'
+                      : dialogModal.type === 'success'
+                      ? '#10B981'
+                      : '#3B82F6'
                 }}
               >
-                {dialogModal.type === 'warning'
-                  ? '⚠️'
-                  : dialogModal.type === 'danger'
+                {dialogModal.type === 'danger'
                   ? '🗑️'
-                  : dialogModal.type === 'alert'
-                  ? 'ℹ️'
-                  : '❓'}
+                  : dialogModal.type === 'warning'
+                  ? '⚠️'
+                  : dialogModal.type === 'success'
+                  ? '✓'
+                  : 'ℹ️'}
               </div>
-              <div style={{ flex: 1 }}>
-                <h3
-                  style={{
-                    margin: 0,
-                    fontSize: '1.08rem',
-                    fontWeight: 700,
-                    color:
-                      dialogModal.type === 'warning'
-                        ? '#F59E0B'
-                        : dialogModal.type === 'danger'
-                        ? '#EF4444'
-                        : 'var(--fg)',
-                    lineHeight: 1.3
-                  }}
-                >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h3 style={{ margin: '0 0 4px 0', fontSize: '1.15rem', fontWeight: 800, color: 'var(--fg)' }}>
                   {dialogModal.title}
                 </h3>
-                <div
-                  style={{
-                    fontSize: '0.86rem',
-                    color: 'var(--fg)',
-                    opacity: 0.9,
-                    marginTop: '6px',
-                    lineHeight: 1.5,
-                    whiteSpace: 'pre-line'
-                  }}
-                >
+                <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--muted)', lineHeight: '1.5' }}>
                   {dialogModal.message}
-                </div>
+                </p>
               </div>
             </div>
 
-            {/* Used In List Box (if file is active on the website) */}
+            {/* If files are linked/in-use: display interactive usage preview */}
             {dialogModal.usedInList && dialogModal.usedInList.length > 0 && (
               <div
                 style={{
-                  background: 'rgba(245, 158, 11, 0.08)',
-                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                  background: 'rgba(239, 68, 68, 0.08)',
+                  border: '1px solid rgba(239, 68, 68, 0.25)',
                   borderRadius: '12px',
                   padding: '12px 14px',
                   display: 'flex',
@@ -7456,86 +8346,44 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   gap: '8px'
                 }}
               >
-                <div
-                  style={{
-                    fontSize: '0.8rem',
-                    fontWeight: 700,
-                    color: '#F59E0B',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}
-                >
-                  <span>🔗</span>
-                  <span>Կայքում օգտագործման հատվածները ({dialogModal.usedInList.length}).</span>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#EF4444', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>⚠️ Զգուշացում․ Այս նիշքն օգտագործվում է հետևյալ բաժիններում՝</span>
                 </div>
-                <div
-                  style={{
-                    maxHeight: '130px',
-                    overflowY: 'auto',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '6px'
-                  }}
-                >
-                  {dialogModal.usedInList.map((item, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        fontSize: '0.78rem',
-                        background: 'var(--bg)',
-                        padding: '6px 10px',
-                        borderRadius: '8px',
-                        border: '1px solid var(--panel-border)',
-                        color: 'var(--fg)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                      }}
-                    >
-                      <span style={{ color: '#10B981', fontWeight: 700 }}>✓</span>
-                      <span>{item}</span>
-                    </div>
-                  ))}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '140px', overflowY: 'auto' }}>
+                  {dialogModal.usedInList.map((u, i) => {
+                    const title = typeof u === 'string' ? u : u.title;
+                    const type = typeof u === 'string' ? '' : u.type;
+                    return (
+                      <div
+                        key={i}
+                        style={{
+                          fontSize: '0.8rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          background: 'var(--panel)',
+                          padding: '6px 10px',
+                          borderRadius: '8px',
+                          border: '1px solid var(--panel-border)'
+                        }}
+                      >
+                        <span style={{ fontWeight: 600 }}>{title}</span>
+                        {type && <span style={{ fontSize: '0.72rem', color: 'var(--muted)', textTransform: 'uppercase' }}>{type}</span>}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            {/* Skip Confirm Option Checkbox (only when showSkipConfirmToggle is enabled) */}
-            {dialogModal.showSkipConfirmToggle && (
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  cursor: 'pointer',
-                  padding: '8px 10px',
-                  background: 'var(--bg)',
-                  borderRadius: '8px',
-                  border: '1px solid var(--panel-border)',
-                  fontSize: '0.8rem',
-                  color: 'var(--muted)',
-                  userSelect: 'none'
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={dialogDontAskAgain}
-                  onChange={e => setDialogDontAskAgain(e.target.checked)}
-                  style={{ cursor: 'pointer', accentColor: 'var(--accent)' }}
-                />
-                <span>⚡ Չհարցնել կրկին (Միացնել արագ ջնջումը)</span>
-              </label>
-            )}
-
             {/* Action Buttons */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '4px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '4px' }}>
               {dialogModal.type !== 'alert' && dialogModal.type !== 'info' && (
                 <button
                   type="button"
                   onClick={() => {
                     if (dialogModal.onCancel) dialogModal.onCancel();
-                    closeDialog();
+                    else closeDialog();
                   }}
                   style={{
                     background: 'var(--bg)',
@@ -7555,12 +8403,13 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               <button
                 type="button"
                 onClick={() => {
-                  dialogModal.onConfirm(dialogDontAskAgain);
+                  if (dialogModal.onConfirm) dialogModal.onConfirm();
+                  closeDialog();
                 }}
                 style={{
                   background:
                     dialogModal.type === 'danger'
-                      ? '#EF4444'
+                      ? '#DC2626'
                       : dialogModal.type === 'warning'
                       ? '#D97706'
                       : 'var(--accent)',
@@ -7587,21 +8436,24 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           ══════════════════════════════════════════════════════════════════════════ */}
       {mounted && usageInspectFile && typeof document !== 'undefined' && createPortal(
         <div
+          data-modal-backdrop="true"
           style={{
             position: 'fixed',
             inset: 0,
             zIndex: 999999,
-            background: 'rgba(0,0,0,0.7)',
-            backdropFilter: 'blur(6px)',
+            background: 'rgba(0,0,0,0.75)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             padding: '20px',
-            animation: 'fadeIn 0.15s ease'
+            animation: 'modalBackdropFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
           }}
           onClick={() => setUsageInspectFile(null)}
         >
           <div
+            data-modal-container="true"
             style={{
               background: 'var(--panel)',
               border: '1px solid var(--panel-border)',
@@ -7609,10 +8461,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               width: '100%',
               maxWidth: '540px',
               padding: '24px',
-              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.6)',
+              boxShadow: '0 25px 60px -12px rgba(0,0,0,0.6)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '18px'
+              gap: '18px',
+              animation: 'modalSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              willChange: 'transform, opacity'
             }}
             onClick={e => e.stopPropagation()}
           >

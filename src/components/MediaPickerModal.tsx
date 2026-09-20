@@ -3,6 +3,12 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { MediaFolder, MediaFile, MediaFileType } from '@/lib/mediaTypes';
+import { 
+  getCachedMedia, 
+  subscribeToMediaCache, 
+  fetchMediaLibraryCached, 
+  updateMediaCacheOptimistic 
+} from '@/lib/mediaCache';
 
 export interface MediaPickerModalProps {
   isOpen: boolean;
@@ -25,11 +31,13 @@ export default function MediaPickerModal({
   token,
   currentValue
 }: MediaPickerModalProps) {
-  const [files, setFiles] = useState<MediaFile[]>([]);
-  const [folders, setFolders] = useState<MediaFolder[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [files, setFiles] = useState<MediaFile[]>(() => getCachedMedia()?.files || []);
+  const [folders, setFolders] = useState<MediaFolder[]>(() => getCachedMedia()?.folders || []);
+  const [loading, setLoading] = useState(() => !getCachedMedia());
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [shouldRender, setShouldRender] = useState(isOpen);
+  const [isClosing, setIsClosing] = useState(false);
 
   // Folder navigation
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -49,6 +57,57 @@ export default function MediaPickerModal({
 
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      setIsClosing(false);
+    } else if (shouldRender && !isClosing) {
+      setIsClosing(true);
+      const timer = setTimeout(() => {
+        setIsClosing(false);
+        setShouldRender(false);
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, shouldRender, isClosing]);
+
+  const handleClose = useCallback(() => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+    }, 240);
+  }, [isClosing, onClose]);
+
+  useEffect(() => {
+    if (!shouldRender) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        handleClose();
+      }
+    };
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [shouldRender, handleClose]);
+
+  // Subscribe to media cache updates
+  useEffect(() => {
+    const unsubscribe = subscribeToMediaCache((cached) => {
+      setFiles(cached.files);
+      setFolders(cached.folders);
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
+
   // Load initial values
   useEffect(() => {
     if (isOpen) {
@@ -66,21 +125,24 @@ export default function MediaPickerModal({
   }, [isOpen, currentValue]);
 
   // Fetch media library
-  const loadMedia = useCallback(async () => {
-    setLoading(true);
+  const loadMedia = useCallback(async (force = false) => {
+    const cached = getCachedMedia();
+    if (!cached) {
+      setLoading(true);
+    } else {
+      setFiles(cached.files);
+      setFolders(cached.folders);
+      setLoading(false);
+    }
     setError(null);
     try {
-      const res = await fetch('/api/admin/media', {
-        headers: {
-          Authorization: token || ''
-        }
-      });
-      if (!res.ok) throw new Error('Չհաջողվեց բեռնել մեդիան');
-      const data = await res.json();
+      const data = await fetchMediaLibraryCached(token, force);
       setFiles(data.files || []);
       setFolders(data.folders || []);
     } catch (err: any) {
-      setError(err.message || 'Սխալ մեդիան բեռնելիս');
+      if (!getCachedMedia()) {
+        setError(err.message || 'Սխալ մեդիան բեռնելիս');
+      }
     } finally {
       setLoading(false);
     }
@@ -88,7 +150,7 @@ export default function MediaPickerModal({
 
   useEffect(() => {
     if (isOpen) {
-      loadMedia();
+      loadMedia(false);
     }
   }, [isOpen, loadMedia]);
 
@@ -196,7 +258,7 @@ export default function MediaPickerModal({
     if (activeTab === 'url') {
       if (!customUrlInput.trim()) return;
       onSelect(multiple ? [customUrlInput.trim()] : customUrlInput.trim());
-      onClose();
+      handleClose();
       return;
     }
 
@@ -206,7 +268,7 @@ export default function MediaPickerModal({
     } else {
       onSelect(selectedUrls[0]);
     }
-    onClose();
+    handleClose();
   };
 
   // Upload new file directly inside picker modal
@@ -236,6 +298,11 @@ export default function MediaPickerModal({
         const data = await res.json();
         if (data.success && data.file) {
           setFiles(prev => [data.file, ...prev]);
+          updateMediaCacheOptimistic(prev => ({
+            ...prev,
+            files: [data.file, ...(prev?.files || [])],
+            timestamp: Date.now()
+          }));
           newUrls.push(data.file.url);
         }
       } catch (err) {
@@ -262,7 +329,7 @@ export default function MediaPickerModal({
       return (
         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#090a0f', overflow: 'hidden' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={file.url} alt={file.name} loading="lazy" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          <img src={file.url} alt={file.name} loading="lazy" decoding="async" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
         </div>
       );
     }
@@ -290,26 +357,32 @@ export default function MediaPickerModal({
     );
   };
 
-  if (!isOpen) return null;
+  if (!shouldRender) return null;
 
   const modalContent = (
     <div
+      className={`hd-modal-backdrop ${isClosing ? "closing" : ""}`}
+      data-modal-backdrop="true"
+      data-closing={isClosing ? "true" : undefined}
       style={{
         position: 'fixed',
         inset: 0,
         zIndex: 100000005,
         background: 'rgba(0, 0, 0, 0.82)',
-        backdropFilter: 'blur(10px)',
-        WebkitBackdropFilter: 'blur(10px)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: isFullscreen ? '0' : '20px',
         boxSizing: 'border-box'
       }}
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
+        className={`hd-modal-container ${isClosing ? "closing" : ""}`}
+        data-modal-container="true"
+        data-closing={isClosing ? "true" : undefined}
         style={{
           background: 'var(--panel)',
           border: isFullscreen ? 'none' : '1px solid var(--panel-border)',
@@ -322,7 +395,7 @@ export default function MediaPickerModal({
           flexDirection: 'column',
           boxShadow: isFullscreen ? 'none' : '0 24px 70px rgba(0,0,0,0.6)',
           overflow: 'hidden',
-          transition: 'all 0.2s ease'
+          willChange: 'transform, opacity'
         }}
         onClick={e => e.stopPropagation()}
       >
@@ -448,7 +521,7 @@ export default function MediaPickerModal({
 
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -599,6 +672,43 @@ export default function MediaPickerModal({
                     </React.Fragment>
                   ))}
                 </div>
+
+                {/* Type Filter Tabs */}
+                {(!allowedTypes || allowedTypes.length > 1) && (
+                  <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', maxWidth: '100%' }}>
+                    {[
+                      { id: 'all' as const, label: 'Բոլորը' },
+                      { id: 'image' as const, label: 'Նկարներ' },
+                      { id: 'vector' as const, label: 'Վեկտորներ' },
+                      { id: 'video' as const, label: 'Վիդեոներ' },
+                      { id: 'font' as const, label: 'Տառատեսակներ' },
+                      { id: 'document' as const, label: 'Փաստաթղթեր' },
+                    ].filter(tab => tab.id === 'all' || !allowedTypes || allowedTypes.includes(tab.id as MediaFileType)).map(tab => {
+                      const isActive = activeTypeTab === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setActiveTypeTab(tab.id)}
+                          style={{
+                            background: isActive ? 'var(--accent)' : 'transparent',
+                            color: isActive ? '#ffffff' : 'var(--muted)',
+                            border: `1px solid ${isActive ? 'transparent' : 'var(--panel-border)'}`,
+                            borderRadius: '6px',
+                            padding: '3px 8px',
+                            fontSize: '0.72rem',
+                            fontWeight: isActive ? 700 : 500,
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          {tab.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* Search & View Mode */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -860,7 +970,7 @@ export default function MediaPickerModal({
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               style={{
                 background: 'var(--panel)',
                 color: 'var(--fg)',

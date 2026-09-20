@@ -118,6 +118,7 @@ export async function POST(request: Request) {
       price,
       currency,
       download_url,
+      downloads,
       store_url,
       repository_url,
       repository_type,
@@ -155,6 +156,8 @@ export async function POST(request: Request) {
           ? languages.split(',').map((s: string) => s.trim()).filter(Boolean)
           : ['Հայերեն']);
 
+    const downloadsList = Array.isArray(downloads) ? downloads : [];
+
     const appToSave: AppItem = {
       id: finalId,
       title_am: finalTitleAm,
@@ -169,7 +172,8 @@ export async function POST(request: Request) {
       is_paid: !!is_paid,
       price: Number(price) || 0,
       currency: currency || 'AMD',
-      download_url: download_url || '',
+      download_url: download_url || (downloadsList[0]?.url || ''),
+      downloads: downloadsList,
       store_url: store_url || '',
       repository_url: repository_url || '',
       repository_type: repository_type || 'github',

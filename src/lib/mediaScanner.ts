@@ -151,7 +151,24 @@ export async function getMediaLibraryData(): Promise<MediaLibraryData> {
   return initialData;
 }
 
+let mediaScanCache: {
+  data: {
+    files: MediaFile[];
+    folders: MediaFolder[];
+    stats: StorageStats;
+  };
+  timestamp: number;
+} | null = null;
+
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds server-side cache
+
+export function invalidateMediaCache(): void {
+  mediaScanCache = null;
+}
+
 export async function saveMediaLibraryData(data: MediaLibraryData): Promise<void> {
+  invalidateMediaCache();
+
   // 1. Save to site_settings (Supabase)
   try {
     await saveSiteSetting('media_library_data', data);
@@ -561,11 +578,15 @@ async function getMediaUsageMap(): Promise<Map<string, string[]>> {
 /**
  * Scans public directory and Supabase storage safely for media files
  */
-export async function scanAllMediaFiles(): Promise<{
+export async function scanAllMediaFiles(forceRefresh = false): Promise<{
   files: MediaFile[];
   folders: MediaFolder[];
   stats: StorageStats;
 }> {
+  if (!forceRefresh && mediaScanCache && Date.now() - mediaScanCache.timestamp < CACHE_TTL_MS) {
+    return mediaScanCache.data;
+  }
+
   try {
     const libraryData = await getMediaLibraryData();
     const usageMap = await getMediaUsageMap();
@@ -833,7 +854,7 @@ export async function scanAllMediaFiles(): Promise<{
     const storageRemaining = Math.max(0, storageLimit - totalSize);
     const storagePercent = Math.min(100, Math.round((totalSize / storageLimit) * 1000) / 10);
 
-    return {
+    const result = {
       files,
       folders: libraryData.folders || DEFAULT_FOLDERS,
       stats: {
@@ -859,6 +880,13 @@ export async function scanAllMediaFiles(): Promise<{
         trashSizeFormatted: formatBytes(trashSize)
       }
     };
+
+    mediaScanCache = {
+      data: result,
+      timestamp: Date.now()
+    };
+
+    return result;
   } catch (criticalError: any) {
     console.error('Critical fallback in scanAllMediaFiles:', criticalError);
     return {
@@ -1102,6 +1130,10 @@ export async function unlinkMediaUsage(
     console.warn('Error unlinking from local data JSON files:', err);
   }
 
+  if (unlinkedCount > 0) {
+    invalidateMediaCache();
+  }
+
   return {
     success: true,
     unlinkedCount,
@@ -1110,4 +1142,3 @@ export async function unlinkMediaUsage(
       : 'Համապատասխանող ակտիվ կապ չգտնվեց:'
   };
 }
-

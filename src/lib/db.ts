@@ -1194,6 +1194,17 @@ export async function deleteSubscriber(id: string): Promise<boolean> {
 // APPS & PLUGINS
 // ══════════════════════════════════════════════════════════════════════════════
 
+export type AppDownloadOption = {
+  id?: string;
+  name: string;
+  url: string;
+  file_size?: string;
+  version?: string;
+  icon?: string;
+  os?: 'windows' | 'macos' | 'linux' | 'other';
+  host_app?: string;
+};
+
 export type AppItem = {
   id: string;
   title_am: string;
@@ -1205,10 +1216,12 @@ export type AppItem = {
   host_app: string;
   host_app_icon?: string;
   app_type: 'plugin' | 'standalone';
+  supported_os?: ('windows' | 'macos' | 'linux')[];
   is_paid: boolean;
   price: number;
   currency?: string;
   download_url?: string;
+  downloads?: AppDownloadOption[];
   store_url?: string;
   repository_url?: string;
   repository_type?: string;
@@ -1518,10 +1531,17 @@ export async function getApps(): Promise<AppItem[]> {
       if (!error && data) {
         dbApps = data.map((x: any): AppItem => {
           const isDraft = x.status === 'draft' || !!x.is_draft;
+          let parsedDownloads = [];
+          if (Array.isArray(x.downloads)) {
+            parsedDownloads = x.downloads;
+          } else if (typeof x.downloads === 'string' && x.downloads.trim()) {
+            try { parsedDownloads = JSON.parse(x.downloads); } catch (e) { parsedDownloads = []; }
+          }
           return {
             ...x,
             repository_url: x.repository_url || '',
             repository_type: x.repository_type || 'github',
+            downloads: parsedDownloads,
             gallery_images: Array.isArray(x.gallery_images)
               ? x.gallery_images
               : (typeof x.gallery_images === 'string' ? JSON.parse(x.gallery_images || '[]') : []),
@@ -1549,10 +1569,17 @@ export async function getApps(): Promise<AppItem[]> {
   // Normalize localApps as well
   const normalizedLocalApps: AppItem[] = localApps.map(x => {
     const isDraft = x.status === 'draft' || !!x.is_draft;
+    let parsedDownloads = [];
+    if (Array.isArray(x.downloads)) {
+      parsedDownloads = x.downloads;
+    } else if (typeof x.downloads === 'string' && (x.downloads as string).trim()) {
+      try { parsedDownloads = JSON.parse(x.downloads as string); } catch (e) { parsedDownloads = []; }
+    }
     return {
       ...x,
       repository_url: x.repository_url || '',
       repository_type: x.repository_type || 'github',
+      downloads: parsedDownloads,
       languages: Array.isArray(x.languages) ? x.languages : ['Հայերեն', 'English'],
       is_draft: isDraft,
       status: isDraft ? 'draft' : 'published'
@@ -1570,7 +1597,8 @@ export async function getApps(): Promise<AppItem[]> {
       return {
         ...item,
         repository_url: item.repository_url || local?.repository_url || '',
-        repository_type: item.repository_type || local?.repository_type || 'github'
+        repository_type: item.repository_type || local?.repository_type || 'github',
+        downloads: (item.downloads && item.downloads.length > 0) ? item.downloads : (local?.downloads || [])
       };
     });
     const localFiltered = normalizedLocalApps.filter(x => !new Set(dbApps.map(d => d.id)).has(x.id));
@@ -1595,11 +1623,14 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
         ? (app.languages as string).split(',').map(s => s.trim()).filter(Boolean)
         : ['Հայերեն']);
 
+  const downloadsList = Array.isArray(app.downloads) ? app.downloads : [];
+
   const newApp: AppItem = {
     ...app,
     repository_url: app.repository_url || '',
     repository_type: app.repository_type || 'github',
     languages: languagesList.length > 0 ? languagesList : ['Հայերեն'],
+    downloads: downloadsList,
     is_draft: isDraft,
     status: isDraft ? 'draft' : 'published',
     gallery_images: Array.isArray(app.gallery_images) ? app.gallery_images : [],
@@ -1617,8 +1648,8 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
         .single();
 
       // If column does not exist yet on Supabase, retry without new columns
-      if (error && error.message && (error.message.includes('languages') || error.message.includes('is_draft') || error.message.includes('status') || error.message.includes('repository_url') || error.message.includes('repository_type'))) {
-        const { languages, is_draft, status, repository_url, repository_type, ...legacyApp } = newApp as any;
+      if (error && error.message && (error.message.includes('downloads') || error.message.includes('languages') || error.message.includes('is_draft') || error.message.includes('status') || error.message.includes('repository_url') || error.message.includes('repository_type'))) {
+        const { downloads, languages, is_draft, status, repository_url, repository_type, ...legacyApp } = newApp as any;
         const retry = await adminClient.from('apps').upsert(legacyApp).select().single();
         data = retry.data;
         error = retry.error;
@@ -1797,14 +1828,18 @@ export async function getAppReviews(appId?: string, onlyApproved = true): Promis
     }
   }
 
+  const deletedSeeds = await getSiteSetting('deleted_seed_reviews', []);
+  const deletedSeedsSet = new Set(deletedSeeds || []);
+
   const currentDbReviews = supabaseSuccess ? dbReviews : [];
+  const dbIds = new Set(currentDbReviews.map((x: any) => x.id));
+  const nonDbLocalReviews = localReviews.filter(x => !dbIds.has(x.id));
   const dynamicIds = new Set([...currentDbReviews.map((x: any) => x.id), ...localReviews.map(x => x.id)]);
-  const filteredSeeds = defaultSeededAppReviews.filter((x: AppReview) => !dynamicIds.has(x.id));
+  const filteredSeeds = defaultSeededAppReviews.filter((x: AppReview) => !dynamicIds.has(x.id) && !deletedSeedsSet.has(x.id));
 
   let allReviews: AppReview[] = [];
   if (supabaseSuccess) {
-    const localFiltered = localReviews.filter(x => !dynamicIds.has(x.id));
-    allReviews = [...dbReviews, ...localFiltered, ...filteredSeeds];
+    allReviews = [...dbReviews, ...nonDbLocalReviews, ...filteredSeeds];
   } else {
     allReviews = [...localReviews, ...filteredSeeds];
   }
@@ -1837,7 +1872,21 @@ export async function saveAppReview(review: Omit<AppReview, 'id' | 'created_at'>
         .select()
         .single();
 
-      if (!error && data) return data;
+      if (!error && data) {
+        // Also sync locally
+        if (isServer) {
+          const fs = getFs();
+          try {
+            const content = await fs.readFile(APP_REVIEWS_FILE, 'utf-8');
+            const reviews = JSON.parse(content) as AppReview[];
+            const index = reviews.findIndex(x => x.id === id);
+            if (index !== -1) reviews[index] = data;
+            else reviews.unshift(data);
+            await fs.writeFile(APP_REVIEWS_FILE, JSON.stringify(reviews, null, 2), 'utf-8');
+          } catch (e) {}
+        }
+        return data;
+      }
       console.warn('Supabase saveAppReview error:', error?.message);
     } catch (err) {
       console.warn('Supabase saveAppReview failed, using local storage:', err);
@@ -1871,6 +1920,7 @@ export async function saveAppReview(review: Omit<AppReview, 'id' | 'created_at'>
 export async function updateAppReviewStatus(id: string, status: 'pending' | 'approved' | 'rejected'): Promise<boolean> {
   await ensureLocalDbFiles();
 
+  let updatedInDb = false;
   const adminClient = supabaseAdmin || supabase;
   if (adminClient) {
     try {
@@ -1879,13 +1929,14 @@ export async function updateAppReviewStatus(id: string, status: 'pending' | 'app
         .update({ status })
         .eq('id', id);
 
-      if (!error) return true;
+      if (!error) updatedInDb = true;
     } catch (err) {
       console.warn('Supabase updateAppReviewStatus failed:', err);
     }
   }
 
-  // Fallback to local JSON database
+  // Always update in local JSON database as well
+  let updatedLocally = false;
   if (isServer) {
     const fs = getFs();
     try {
@@ -1895,19 +1946,35 @@ export async function updateAppReviewStatus(id: string, status: 'pending' | 'app
       if (index !== -1) {
         reviews[index].status = status;
         await fs.writeFile(APP_REVIEWS_FILE, JSON.stringify(reviews, null, 2), 'utf-8');
-        return true;
+        updatedLocally = true;
+      } else {
+        // If it was a seed review, materialize it into local reviews
+        const seed = defaultSeededAppReviews.find(x => x.id === id);
+        if (seed) {
+          reviews.unshift({ ...seed, status });
+          await fs.writeFile(APP_REVIEWS_FILE, JSON.stringify(reviews, null, 2), 'utf-8');
+          updatedLocally = true;
+        }
       }
     } catch (err) {
       console.error('Error updating review status locally:', err);
     }
   }
 
-  return false;
+  return updatedInDb || updatedLocally;
 }
 
 export async function deleteAppReview(id: string): Promise<boolean> {
   await ensureLocalDbFiles();
 
+  // Add to deleted_seed_reviews in site_settings so seeds never resurrect
+  const deletedSeeds = await getSiteSetting('deleted_seed_reviews', []);
+  if (!deletedSeeds.includes(id)) {
+    deletedSeeds.push(id);
+    await saveSiteSetting('deleted_seed_reviews', deletedSeeds);
+  }
+
+  let deletedInDb = false;
   const adminClient = supabaseAdmin || supabase;
   if (adminClient) {
     try {
@@ -1916,13 +1983,14 @@ export async function deleteAppReview(id: string): Promise<boolean> {
         .delete()
         .eq('id', id);
 
-      if (!error) return true;
+      if (!error) deletedInDb = true;
     } catch (err) {
       console.warn('Supabase deleteAppReview failed:', err);
     }
   }
 
-  // Fallback to local JSON database
+  // Always delete from local JSON database as well
+  let deletedLocally = false;
   if (isServer) {
     const fs = getFs();
     try {
@@ -1930,13 +1998,13 @@ export async function deleteAppReview(id: string): Promise<boolean> {
       const reviews = JSON.parse(content) as AppReview[];
       const filtered = reviews.filter(x => x.id !== id);
       await fs.writeFile(APP_REVIEWS_FILE, JSON.stringify(filtered, null, 2), 'utf-8');
-      return true;
+      deletedLocally = true;
     } catch (err) {
       console.error('Error deleting review locally:', err);
     }
   }
 
-  return false;
+  return true;
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

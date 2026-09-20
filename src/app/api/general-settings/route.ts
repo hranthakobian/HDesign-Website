@@ -70,7 +70,8 @@ export async function GET() {
         design_system_video_en: sanitizeVideoUrl(generalSettings?.design_system_video_en),
         design_system_poster_hy: generalSettings?.design_system_poster_hy || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
         design_system_poster_en: generalSettings?.design_system_poster_en || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
-        smooth_scroll_enabled: !!generalSettings?.smooth_scroll_enabled
+        smooth_scroll_enabled: !!generalSettings?.smooth_scroll_enabled,
+        software_icons: generalSettings?.software_icons || {}
       },
       {
         headers: {
@@ -209,6 +210,9 @@ export async function POST(request: Request) {
     }
     if (body.smooth_scroll_enabled !== undefined) {
       updatedSettings.smooth_scroll_enabled = !!body.smooth_scroll_enabled;
+    }
+    if (body.software_icons !== undefined) {
+      updatedSettings.software_icons = body.software_icons;
     }
 
     // 4. Save to database/fallback

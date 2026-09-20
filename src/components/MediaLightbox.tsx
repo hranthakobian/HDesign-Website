@@ -32,9 +32,11 @@ export default function MediaLightbox({
   categoryLabel
 }: MediaLightboxProps) {
   const { locale } = useI18n();
+  const [mounted, setMounted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState<number>(initialIndex);
   const [isSlideshowPlaying, setIsSlideshowPlaying] = useState<boolean>(false);
-  const [mounted, setMounted] = useState(false);
+  const [shouldRender, setShouldRender] = useState(isOpen);
+  const [isClosing, setIsClosing] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -42,10 +44,19 @@ export default function MediaLightbox({
 
   useEffect(() => {
     if (isOpen) {
+      setShouldRender(true);
+      setIsClosing(false);
       setCurrentIndex(Math.max(0, Math.min(initialIndex, items.length - 1)));
       setIsSlideshowPlaying(false);
+    } else if (shouldRender && !isClosing) {
+      setIsClosing(true);
+      const timer = setTimeout(() => {
+        setIsClosing(false);
+        setShouldRender(false);
+      }, 250);
+      return () => clearTimeout(timer);
     }
-  }, [isOpen, initialIndex, items.length]);
+  }, [isOpen, initialIndex, items.length, shouldRender, isClosing]);
 
   const handleNext = useCallback(() => {
     if (items.length <= 1) return;
@@ -58,13 +69,17 @@ export default function MediaLightbox({
   }, [items.length]);
 
   const handleClose = useCallback(() => {
+    if (isClosing) return;
     setIsSlideshowPlaying(false);
-    onClose();
-  }, [onClose]);
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+    }, 240);
+  }, [isClosing, onClose]);
 
   // Keyboard navigation & Shortcuts
   useEffect(() => {
-    if (!isOpen) return;
+    if (!shouldRender) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -78,22 +93,22 @@ export default function MediaLightbox({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, handleClose, handleNext, handlePrev]);
+  }, [shouldRender, handleClose, handleNext, handlePrev]);
 
   // Slideshow interval
   useEffect(() => {
-    if (!isOpen || !isSlideshowPlaying || items.length <= 1) return;
+    if (!shouldRender || !isSlideshowPlaying || items.length <= 1) return;
 
     const interval = setInterval(() => {
       handleNext();
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [isOpen, isSlideshowPlaying, items.length, handleNext]);
+  }, [shouldRender, isSlideshowPlaying, items.length, handleNext]);
 
   // Prevent scroll when lightbox is open
   useEffect(() => {
-    if (!isOpen) return;
+    if (!shouldRender) return;
 
     const preventDefault = (e: Event) => {
       e.preventDefault();
@@ -114,9 +129,9 @@ export default function MediaLightbox({
       window.removeEventListener("touchmove", preventDefault);
       window.removeEventListener("keydown", handleKeyScroll);
     };
-  }, [isOpen]);
+  }, [shouldRender]);
 
-  if (!isOpen || !mounted || items.length === 0 || typeof window === "undefined") {
+  if (!shouldRender || !mounted || items.length === 0 || typeof window === "undefined") {
     return null;
   }
 
@@ -128,7 +143,7 @@ export default function MediaLightbox({
 
   return createPortal(
     <div
-      className="lightbox-root"
+      className={`lightbox-root ${isClosing ? "closing" : ""}`}
       onClick={handleClose}
       style={{
         position: "fixed",
@@ -140,8 +155,7 @@ export default function MediaLightbox({
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
-        padding: "24px",
-        animation: "fadeIn 0.3s ease-out"
+        padding: "24px"
       }}
     >
       {/* Top Bar / Header */}

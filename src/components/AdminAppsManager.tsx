@@ -5,7 +5,20 @@ import { createPortal } from "react-dom";
 import MarkdownRenderer from "./MarkdownRenderer";
 import { HDesignStars } from "./RatingSystem";
 import MediaPickerModal from "./MediaPickerModal";
+import SoftwareIcon from "./SoftwareIcon";
 import { MediaFileType } from "@/lib/mediaTypes";
+import { prefetchMediaLibrary } from "@/lib/mediaCache";
+
+export type AppDownloadOption = {
+  id?: string;
+  name: string;
+  url: string;
+  file_size?: string;
+  version?: string;
+  icon?: string;
+  os?: 'windows' | 'macos' | 'linux' | 'other';
+  host_app?: string;
+};
 
 type AppItem = {
   id: string;
@@ -18,10 +31,12 @@ type AppItem = {
   host_app: string;
   host_app_icon?: string;
   app_type: 'plugin' | 'standalone';
+  supported_os?: ('windows' | 'macos' | 'linux')[];
   is_paid: boolean;
   price: number;
   currency?: string;
   download_url?: string;
+  downloads?: AppDownloadOption[];
   store_url?: string;
   repository_url?: string;
   repository_type?: string;
@@ -78,6 +93,19 @@ const SOFTWARE_PRESETS = [
   { name: 'Unreal Engine', icon: '/icons/unreal.svg' }
 ];
 
+const OS_PRESETS: { key: 'windows' | 'macos' | 'linux'; label: string; icon: string }[] = [
+  { key: 'windows', label: 'Windows', icon: '/icons/windows.svg' },
+  { key: 'macos', label: 'macOS', icon: '/icons/apple.svg' },
+  { key: 'linux', label: 'Linux', icon: '/icons/linux.svg' }
+];
+
+const PLATFORM_PRESETS = [
+  { name: 'Windows (x64 / ARM)', icon: '/icons/windows.svg' },
+  { name: 'macOS (Universal / Apple Silicon)', icon: '/icons/apple.svg' },
+  { name: 'Linux (AppImage / Deb / RPM)', icon: '/icons/linux.svg' },
+  { name: 'Web / Browser Extension', icon: '/icons/browser.svg' }
+];
+
 const LANGUAGE_PRESETS = [
   "Հայերեն",
   "English",
@@ -114,13 +142,15 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
     short_desc_en: "",
     description_md_am: "",
     description_md_en: "",
-    host_app: "Adobe Illustrator",
+    host_app: "",
     host_app_icon: "/icons/illustrator.svg",
     app_type: "plugin",
+    supported_os: [],
     is_paid: false,
     price: 0,
     currency: "AMD",
     download_url: "",
+    downloads: [],
     store_url: "",
     repository_url: "",
     repository_type: "github",
@@ -155,12 +185,15 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
   const mdFileInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const downloadFileInputRef = useRef<HTMLInputElement>(null);
+  const itemFileInputRef = useRef<HTMLInputElement>(null);
+  const [currentUploadItemIndex, setCurrentUploadItemIndex] = useState<number | null>(null);
   const hostIconInputRef = useRef<HTMLInputElement>(null);
 
   // Media Picker Popup Modal state
   const [mediaPickerConfig, setMediaPickerConfig] = useState<{
     isOpen: boolean;
-    target: 'cover' | 'gallery' | 'download' | 'host_icon';
+    target: 'cover' | 'gallery' | 'download' | 'host_icon' | 'download_item';
+    itemIndex?: number;
     multiple?: boolean;
     allowedTypes?: MediaFileType[];
     title?: string;
@@ -169,7 +202,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
 
   const handleMediaPickerSelect = (selected: string | string[]) => {
     if (!mediaPickerConfig) return;
-    const { target } = mediaPickerConfig;
+    const { target, itemIndex } = mediaPickerConfig;
 
     if (target === 'gallery') {
       const urls = Array.isArray(selected) ? selected : [selected];
@@ -194,6 +227,21 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
       const url = Array.isArray(selected) ? selected[0] : selected;
       if (url) {
         setEditingApp(prev => ({ ...prev, download_url: url }));
+      }
+    } else if (target === 'download_item' && itemIndex !== undefined) {
+      const url = Array.isArray(selected) ? selected[0] : selected;
+      if (url) {
+        setEditingApp(prev => {
+          const list = [...(prev.downloads || [])];
+          if (list[itemIndex]) {
+            list[itemIndex] = { ...list[itemIndex], url };
+          }
+          return {
+            ...prev,
+            downloads: list,
+            download_url: prev.download_url || url
+          };
+        });
       }
     } else if (target === 'host_icon') {
       const url = Array.isArray(selected) ? selected[0] : selected;
@@ -243,6 +291,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
   };
 
   useEffect(() => {
+    if (token) prefetchMediaLibrary(token);
     loadData();
   }, [token]);
 
@@ -325,13 +374,15 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
       short_desc_en: "",
       description_md_am: "",
       description_md_en: "",
-      host_app: "Adobe Illustrator",
+      host_app: "",
       host_app_icon: "/icons/illustrator.svg",
       app_type: "plugin",
+      supported_os: [],
       is_paid: false,
       price: 0,
       currency: "AMD",
       download_url: "",
+      downloads: [],
       store_url: "",
       repository_url: "",
       repository_type: "github",
@@ -359,6 +410,41 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
           ? (app.languages as string).split(',').map(s => s.trim()).filter(Boolean)
           : ["Հայերեն", "English"]);
 
+    let downloadsList: AppDownloadOption[] = [];
+    if (Array.isArray(app.downloads)) {
+      downloadsList = app.downloads;
+    } else if (typeof (app as any).downloads === 'string' && (app as any).downloads.trim()) {
+      try {
+        downloadsList = JSON.parse((app as any).downloads);
+      } catch (e) {
+        downloadsList = [];
+      }
+    }
+
+    const detectedOS: ('windows' | 'macos' | 'linux')[] = [];
+    if (Array.isArray(app.supported_os) && app.supported_os.length > 0) {
+      app.supported_os.forEach((o: any) => {
+        const lo = String(o).toLowerCase();
+        if (['windows', 'macos', 'linux'].includes(lo) && !detectedOS.includes(lo as any)) {
+          detectedOS.push(lo as any);
+        }
+      });
+    } else {
+      downloadsList.forEach(d => {
+        if (d.os && ['windows', 'macos', 'linux'].includes(d.os.toLowerCase()) && !detectedOS.includes(d.os.toLowerCase() as any)) {
+          detectedOS.push(d.os.toLowerCase() as any);
+        } else if (d.name) {
+          const n = d.name.toLowerCase();
+          if (n.includes('win') && !detectedOS.includes('windows')) detectedOS.push('windows');
+          if (n.includes('mac') && !detectedOS.includes('macos')) detectedOS.push('macos');
+          if (n.includes('linux') && !detectedOS.includes('linux')) detectedOS.push('linux');
+        }
+      });
+    }
+    if (detectedOS.length === 0 && app.app_type === 'plugin' && app.host_app) {
+      detectedOS.push('windows');
+    }
+
     setEditingApp({
       id: app.id || "",
       title_am: app.title_am || "",
@@ -367,13 +453,15 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
       short_desc_en: app.short_desc_en || "",
       description_md_am: app.description_md_am || "",
       description_md_en: app.description_md_en || "",
-      host_app: app.host_app || "Adobe Illustrator",
+      host_app: app.host_app || "",
       host_app_icon: app.host_app_icon || "/icons/illustrator.svg",
       app_type: app.app_type || "plugin",
+      supported_os: detectedOS,
       is_paid: !!app.is_paid,
       price: app.price ?? 0,
       currency: app.currency || "AMD",
       download_url: app.download_url || "",
+      downloads: downloadsList,
       store_url: app.store_url || "",
       repository_url: app.repository_url || "",
       repository_type: app.repository_type || "github",
@@ -390,6 +478,217 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
     setCustomLanguageInput("");
     setMdPreviewTab("edit");
     setIsEditing(true);
+  };
+
+  // OS selection helpers
+  const selectedOSList: ('windows' | 'macos' | 'linux')[] = React.useMemo(() => {
+    if (editingApp.supported_os && Array.isArray(editingApp.supported_os) && editingApp.supported_os.length > 0) {
+      return editingApp.supported_os;
+    }
+    const detected: ('windows' | 'macos' | 'linux')[] = [];
+    (editingApp.downloads || []).forEach(d => {
+      if (d.os && ['windows', 'macos', 'linux'].includes(d.os as any) && !detected.includes(d.os as any)) {
+        detected.push(d.os as any);
+      } else if (d.name) {
+        const n = d.name.toLowerCase();
+        if (n.includes('win') && !detected.includes('windows')) detected.push('windows');
+        if (n.includes('mac') && !detected.includes('macos')) detected.push('macos');
+        if (n.includes('linux') && !detected.includes('linux')) detected.push('linux');
+      }
+    });
+    return detected;
+  }, [editingApp.supported_os, editingApp.downloads]);
+
+  const handleToggleOS = (osKey: 'windows' | 'macos' | 'linux') => {
+    const isSelected = selectedOSList.includes(osKey);
+    const nextOSList = isSelected
+      ? selectedOSList.filter(o => o !== osKey)
+      : [...selectedOSList, osKey];
+
+    setEditingApp(prev => {
+      let nextDownloads = [...(prev.downloads || [])];
+
+      if (prev.app_type === 'standalone') {
+        if (!isSelected) {
+          const hasOS = nextDownloads.some(d => d.os === osKey);
+          if (!hasOS) {
+            const osLabel = osKey === 'windows' ? 'Windows' : (osKey === 'macos' ? 'macOS' : 'Linux');
+            const osIcon = osKey === 'windows' ? '/icons/windows.svg' : (osKey === 'macos' ? '/icons/apple.svg' : '/icons/linux.svg');
+            nextDownloads.push({
+              id: 'dl-' + Math.random().toString(36).substring(2, 7),
+              name: `${osLabel} Installer`,
+              url: '',
+              icon: osIcon,
+              os: osKey,
+              version: prev.version || 'v1.0.0'
+            });
+          }
+        } else {
+          nextDownloads = nextDownloads.filter(d => {
+            if (d.os === osKey && !d.url?.trim()) return false;
+            return true;
+          });
+        }
+      } else {
+        // Plugin
+        if (!isSelected) {
+          selectedSoftwareList.forEach(sw => {
+            const hasSlot = nextDownloads.some(d => d.os === osKey && ((d.host_app && d.host_app.toLowerCase() === sw.toLowerCase()) || d.name.toLowerCase().includes(sw.toLowerCase())));
+            if (!hasSlot) {
+              const matchedPreset = SOFTWARE_PRESETS.find(p => p.name.toLowerCase() === sw.toLowerCase());
+              const osLabel = osKey === 'windows' ? 'Windows' : (osKey === 'macos' ? 'macOS' : 'Linux');
+              nextDownloads.push({
+                id: 'dl-' + Math.random().toString(36).substring(2, 7),
+                name: `${sw} (${osLabel})`,
+                url: '',
+                icon: matchedPreset ? matchedPreset.icon : (osKey === 'macos' ? '/icons/apple.svg' : osKey === 'linux' ? '/icons/linux.svg' : '/icons/windows.svg'),
+                os: osKey,
+                host_app: sw,
+                version: prev.version || 'v1.0.0'
+              });
+            }
+          });
+        } else {
+          nextDownloads = nextDownloads.filter(d => {
+            if (d.os === osKey && !d.url?.trim()) return false;
+            return true;
+          });
+        }
+      }
+
+      return {
+        ...prev,
+        supported_os: nextOSList,
+        downloads: nextDownloads
+      };
+    });
+  };
+
+  // Download options helpers
+  const handleSyncDownloadsWithSelectedSoftware = () => {
+    setEditingApp(prev => {
+      const currentList = prev.downloads || [];
+      const newItems = [...currentList];
+      const activeOS: ('windows' | 'macos' | 'linux')[] = selectedOSList.length > 0 ? selectedOSList : ['windows'];
+
+      selectedSoftwareList.forEach(sw => {
+        const swPreset = SOFTWARE_PRESETS.find(p => p.name.toLowerCase() === sw.toLowerCase());
+        activeOS.forEach(osKey => {
+          const hasSlot = newItems.some(d => d.os === osKey && ((d.host_app && d.host_app.toLowerCase() === sw.toLowerCase()) || d.name.toLowerCase().includes(sw.toLowerCase())));
+          if (!hasSlot) {
+            const osLabel = osKey === 'windows' ? 'Windows' : (osKey === 'macos' ? 'macOS' : 'Linux');
+            newItems.push({
+              id: 'dl-' + Math.random().toString(36).substring(2, 7),
+              name: `${sw} (${osLabel})`,
+              url: '',
+              icon: swPreset ? swPreset.icon : (osKey === 'macos' ? '/icons/apple.svg' : osKey === 'linux' ? '/icons/linux.svg' : '/icons/windows.svg'),
+              os: osKey,
+              host_app: sw,
+              version: prev.version || 'v1.0.0'
+            });
+          }
+        });
+      });
+
+      return { ...prev, downloads: newItems };
+    });
+  };
+
+  const handleAddDownloadOption = (presetName?: string, presetIcon?: string, osKey?: 'windows' | 'macos' | 'linux' | 'other', hostApp?: string) => {
+    setEditingApp(prev => ({
+      ...prev,
+      downloads: [
+        ...(prev.downloads || []),
+        {
+          id: 'dl-' + Math.random().toString(36).substring(2, 7),
+          name: presetName || "Նիշք",
+          url: "",
+          icon: presetIcon || (osKey === 'macos' ? "/icons/apple.svg" : osKey === 'linux' ? "/icons/linux.svg" : "/icons/windows.svg"),
+          os: osKey || (selectedOSList[0] || 'windows'),
+          host_app: hostApp || (selectedSoftwareList[0] || undefined)
+        }
+      ]
+    }));
+  };
+
+  const handleAddDownloadOptionForHostApp = (osKey: 'windows' | 'macos' | 'linux', hostAppName: string) => {
+    const swPreset = SOFTWARE_PRESETS.find(p => p.name.toLowerCase() === hostAppName.toLowerCase());
+    const osLabel = osKey === 'windows' ? 'Windows' : (osKey === 'macos' ? 'macOS' : 'Linux');
+    setEditingApp(prev => ({
+      ...prev,
+      downloads: [
+        ...(prev.downloads || []),
+        {
+          id: 'dl-' + Math.random().toString(36).substring(2, 7),
+          name: `${hostAppName} (${osLabel})`,
+          url: '',
+          icon: swPreset ? swPreset.icon : (osKey === 'macos' ? '/icons/apple.svg' : osKey === 'linux' ? '/icons/linux.svg' : '/icons/windows.svg'),
+          os: osKey,
+          host_app: hostAppName,
+          version: prev.version || 'v1.0.0'
+        }
+      ]
+    }));
+  };
+
+  const handleRemoveDownloadOption = (index: number) => {
+    setEditingApp(prev => {
+      const next = (prev.downloads || []).filter((_, i) => i !== index);
+      return { ...prev, downloads: next };
+    });
+  };
+
+  const handleUpdateDownloadOption = (index: number, updates: Partial<AppDownloadOption>) => {
+    setEditingApp(prev => {
+      const next = [...(prev.downloads || [])];
+      if (next[index]) {
+        next[index] = { ...next[index], ...updates };
+      }
+      return { ...prev, downloads: next };
+    });
+  };
+
+  const triggerItemFileUpload = (idx: number) => {
+    setCurrentUploadItemIndex(idx);
+    itemFileInputRef.current?.click();
+  };
+
+  const handleItemFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (currentUploadItemIndex === null) return;
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingFile(true);
+    try {
+      const url = await uploadFile(file, "apps");
+      const fileSizeStr = file.size
+        ? (file.size > 1024 * 1024
+            ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+            : `${Math.round(file.size / 1024)} KB`)
+        : "";
+      setEditingApp(prev => {
+        const list = [...(prev.downloads || [])];
+        if (list[currentUploadItemIndex]) {
+          list[currentUploadItemIndex] = {
+            ...list[currentUploadItemIndex],
+            url,
+            file_size: fileSizeStr || list[currentUploadItemIndex].file_size
+          };
+        }
+        return {
+          ...prev,
+          downloads: list,
+          download_url: prev.download_url || url
+        };
+      });
+      alert("Նիշքը հաջողությամբ բեռնվեց:");
+    } catch (err: any) {
+      alert("Նիշքի բեռնումը ձախողվեց: " + err.message);
+    } finally {
+      setUploadingFile(false);
+      setCurrentUploadItemIndex(null);
+      e.target.value = "";
+    }
   };
 
   // Language selection helpers
@@ -451,11 +750,48 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
       nextList = [...selectedSoftwareList, name];
     }
     const matchedPreset = SOFTWARE_PRESETS.find(p => nextList.some(item => item.toLowerCase() === p.name.toLowerCase()));
-    setEditingApp(p => ({
-      ...p,
-      host_app: nextList.join(', '),
-      host_app_icon: matchedPreset ? matchedPreset.icon : p.host_app_icon
-    }));
+    
+    setEditingApp(p => {
+      let nextDownloads = [...(p.downloads || [])];
+      const activeOS: ('windows' | 'macos' | 'linux')[] = selectedOSList.length > 0 ? selectedOSList : ['windows'];
+
+      if (!exists) {
+        // Adding software -> create slots for each selected OS
+        const swPreset = SOFTWARE_PRESETS.find(pr => pr.name.toLowerCase() === name.toLowerCase());
+        activeOS.forEach(osKey => {
+          const hasSlot = nextDownloads.some(d => d.os === osKey && ((d.host_app && d.host_app.toLowerCase() === name.toLowerCase()) || d.name.toLowerCase().includes(name.toLowerCase())));
+          if (!hasSlot) {
+            const osLabel = osKey === 'windows' ? 'Windows' : (osKey === 'macos' ? 'macOS' : 'Linux');
+            nextDownloads.push({
+              id: 'dl-' + Math.random().toString(36).substring(2, 7),
+              name: `${name} (${osLabel})`,
+              url: '',
+              icon: swPreset ? swPreset.icon : (osKey === 'macos' ? '/icons/apple.svg' : osKey === 'linux' ? '/icons/linux.svg' : '/icons/windows.svg'),
+              os: osKey,
+              host_app: name,
+              version: p.version || 'v1.0.0'
+            });
+          }
+        });
+      } else {
+        // Removing software -> remove download rows for this host_app that have no url filled
+        nextDownloads = nextDownloads.filter(d => {
+          const isThisApp = (d.host_app && d.host_app.toLowerCase() === name.toLowerCase()) ||
+                            (d.name && d.name.toLowerCase().includes(name.toLowerCase()));
+          if (isThisApp && !d.url?.trim()) {
+            return false;
+          }
+          return true;
+        });
+      }
+
+      return {
+        ...p,
+        host_app: nextList.join(', '),
+        host_app_icon: matchedPreset ? matchedPreset.icon : p.host_app_icon,
+        downloads: nextDownloads
+      };
+    });
   };
 
   const handleAddCustomSoftware = () => {
@@ -464,20 +800,48 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
     const exists = selectedSoftwareList.some(s => s.toLowerCase() === val.toLowerCase());
     if (!exists) {
       const nextList = [...selectedSoftwareList, val];
-      setEditingApp(p => ({
-        ...p,
-        host_app: nextList.join(', ')
-      }));
+      setEditingApp(p => {
+        let nextDownloads = [...(p.downloads || [])];
+        const activeOS: ('windows' | 'macos' | 'linux')[] = selectedOSList.length > 0 ? selectedOSList : ['windows'];
+        activeOS.forEach(osKey => {
+          const osLabel = osKey === 'windows' ? 'Windows' : (osKey === 'macos' ? 'macOS' : 'Linux');
+          nextDownloads.push({
+            id: 'dl-' + Math.random().toString(36).substring(2, 7),
+            name: `${val} (${osLabel})`,
+            url: '',
+            icon: (osKey === 'macos' ? '/icons/apple.svg' : osKey === 'linux' ? '/icons/linux.svg' : '/icons/windows.svg'),
+            os: osKey,
+            host_app: val,
+            version: p.version || 'v1.0.0'
+          });
+        });
+        return {
+          ...p,
+          host_app: nextList.join(', '),
+          downloads: nextDownloads
+        };
+      });
     }
     setCustomSoftwareInput("");
   };
 
   const handleRemoveSoftware = (name: string) => {
     const nextList = selectedSoftwareList.filter(s => s.toLowerCase() !== name.toLowerCase());
-    setEditingApp(p => ({
-      ...p,
-      host_app: nextList.join(', ')
-    }));
+    setEditingApp(p => {
+      const nextDownloads = (p.downloads || []).filter(d => {
+        const isThisApp = (d.host_app && d.host_app.toLowerCase() === name.toLowerCase()) ||
+                          (d.name && d.name.toLowerCase().includes(name.toLowerCase()));
+        if (isThisApp && !d.url?.trim()) {
+          return false;
+        }
+        return true;
+      });
+      return {
+        ...p,
+        host_app: nextList.join(', '),
+        downloads: nextDownloads
+      };
+    });
   };
 
   // Upload file helper
@@ -590,8 +954,12 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
         alert("Հրապարակելու համար խնդրում ենք լրացնել հավելվածի անվանումը (Հայերեն և Անգլերեն):");
         return;
       }
+      if (selectedOSList.length === 0) {
+        alert("Հրապարակելու համար խնդրում ենք նշել առնվազն մեկ Օպերացիոն Համակարգ (Windows, macOS կամ Linux):");
+        return;
+      }
       if (editingApp.app_type === 'plugin' && !editingApp.host_app?.trim()) {
-        alert("Հրապարակելու համար խնդրում ենք նշել առնվազն մեկ ծրագիր (Software):");
+        alert("Հրապարակելու համար խնդրում ենք նշել առնվազն մեկ հավելված (Software):");
         return;
       }
     }
@@ -599,6 +967,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
     const finalId = editingApp.id?.trim() || ("app-" + Math.random().toString(36).substring(2, 8));
     const finalTitleAm = editingApp.title_am?.trim() || editingApp.title_en?.trim() || (isDraft ? "Անանուն սևագիր" : "");
     const finalTitleEn = editingApp.title_en?.trim() || editingApp.title_am?.trim() || (isDraft ? "Untitled Draft" : "");
+    const validFirst = (editingApp.downloads || []).find(d => !!d.url?.trim());
 
     const appToSave: AppItem = {
       ...editingApp,
@@ -607,7 +976,9 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
       title_en: finalTitleEn,
       is_draft: isDraft,
       status: nextStatus,
-      languages: selectedLanguagesList
+      supported_os: selectedOSList,
+      languages: selectedLanguagesList,
+      download_url: editingApp.download_url || validFirst?.url || ""
     };
 
     setSavingApp(true);
@@ -1599,6 +1970,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
           ══════════════════════════════════════════════════════════════════════ */}
       {isEditing && typeof document !== 'undefined' && createPortal(
         <div
+          data-modal-backdrop="true"
           style={{
             position: 'fixed',
             inset: 0,
@@ -1612,7 +1984,8 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
             alignItems: 'center',
             justifyContent: 'center',
             padding: isFullscreen ? '0' : '20px',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            animation: 'modalBackdropFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
           }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
@@ -1621,6 +1994,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
           }}
         >
           <div
+            data-modal-container="true"
             style={{
               background: 'var(--panel)',
               borderRadius: isFullscreen ? '0' : '20px',
@@ -1632,7 +2006,9 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
-              position: 'relative'
+              position: 'relative',
+              animation: 'modalSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              willChange: 'transform, opacity'
             }}
           >
             {/* Modal Header */}
@@ -1857,8 +2233,465 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                 </div>
               </div>
 
-              {/* Software Selection (Checkboxes) - ONLY shown if Plugin */}
+              {/* Hidden file inputs for uploading files */}
+              <input
+                ref={downloadFileInputRef}
+                type="file"
+                style={{ display: 'none' }}
+                onChange={handleDownloadFileUpload}
+              />
+              <input
+                ref={itemFileInputRef}
+                type="file"
+                style={{ display: 'none' }}
+                onChange={handleItemFileChange}
+              />
+              <input
+                ref={hostIconInputRef}
+                type="file"
+                accept="image/*,.svg"
+                style={{ display: 'none' }}
+                onChange={handleHostIconUpload}
+              />
+
+              {/* ══════════════════════════════════════════════════════════════ */}
+              {/* BRANCH 1: ԽՐՎԱԿՆԵՐ (PLUGINS) FLOW - HIERARCHICAL / SUB-LISTS   */}
+              {/* ══════════════════════════════════════════════════════════════ */}
               {editingApp.app_type === 'plugin' && (
+                <div
+                  style={{
+                    background: 'var(--bg)',
+                    padding: '20px',
+                    borderRadius: '16px',
+                    border: `1.5px solid ${selectedOSList.length === 0 ? 'rgba(229, 57, 53, 0.4)' : 'var(--panel-border)'}`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '18px'
+                  }}
+                >
+                  {/* Header: Mandatory OS Selection */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>Օպերացիոն Համակարգեր (OS) և Հավելվածներ *</span>
+                        <span style={{ fontSize: '0.75rem', color: '#e53935', fontWeight: 700 }}>(Պարտադիր)</span>
+                      </label>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
+                        Ընտրեք ՕՀ-ն, բացված ենթացանկում ընտրեք համապատասխան հավելվածը և կցեք ներբեռնվող նյութերը:
+                      </span>
+                    </div>
+                    {selectedOSList.length > 0 && (
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', background: 'rgba(74, 137, 124, 0.15)', color: 'var(--accent)' }}>
+                        Ընտրված է {selectedOSList.length} ՕՀ
+                      </span>
+                    )}
+                  </div>
+
+                  {/* OS Selector Toggle Buttons */}
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {OS_PRESETS.map((os) => {
+                      const isSelected = selectedOSList.includes(os.key);
+                      return (
+                        <button
+                          key={os.key}
+                          type="button"
+                          onClick={() => handleToggleOS(os.key)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 18px',
+                            borderRadius: '10px',
+                            background: isSelected ? 'rgba(74, 137, 124, 0.2)' : 'var(--panel)',
+                            border: `1.5px solid ${isSelected ? 'var(--accent)' : 'var(--panel-border)'}`,
+                            color: isSelected ? 'var(--accent)' : 'var(--text)',
+                            fontSize: '0.88rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <SoftwareIcon name={os.label} iconUrl={os.icon} size={20} />
+                          <span>{os.label}</span>
+                          <span style={{ fontSize: '0.75rem', opacity: 0.85 }}>
+                            {isSelected ? '✓' : '+'}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {selectedOSList.length === 0 ? (
+                    <div style={{ fontSize: '0.82rem', color: '#e53935', background: 'rgba(229, 57, 53, 0.08)', padding: '12px 16px', borderRadius: '10px', fontWeight: 600 }}>
+                      ⚠️ Խնդրում ենք նախ ընտրել առնվազն մեկ ՕՀ (Windows, macOS կամ Linux)՝ դրա տակ հավելվածների և նյութերի ենթացանկը բացելու համար:
+                    </div>
+                  ) : (
+                    /* HIERARCHICAL TREE: Render per selected OS */
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '6px' }}>
+                      {selectedOSList.map((osKey) => {
+                        const osPreset = OS_PRESETS.find(p => p.key === osKey) || { label: osKey, icon: '/icons/browser.svg' };
+                        const isWin = osKey === 'windows';
+                        const isMac = osKey === 'macos';
+                        const isLinux = osKey === 'linux';
+                        const osBorderColor = isWin ? 'rgba(33, 150, 243, 0.4)' : (isMac ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 193, 7, 0.4)');
+                        const osAccentBg = isWin ? 'rgba(33, 150, 243, 0.1)' : (isMac ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 193, 7, 0.1)');
+
+                        return (
+                          <div
+                            key={osKey}
+                            style={{
+                              background: 'var(--panel)',
+                              borderRadius: '16px',
+                              border: `1.5px solid ${osBorderColor}`,
+                              padding: '18px 20px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '16px',
+                              boxShadow: 'var(--shadow)'
+                            }}
+                          >
+                            {/* OS Tree Header */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', borderBottom: '1px solid var(--panel-border)', paddingBottom: '12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{ background: osAccentBg, padding: '6px 10px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <SoftwareIcon name={osPreset.label} iconUrl={osPreset.icon} size={22} />
+                                  <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text)' }}>
+                                    {osPreset.label}
+                                  </span>
+                                </div>
+                                <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
+                                    (Ընտրեք հավելվածները {osPreset.label}-ի համար)
+                                </span>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handleToggleOS(osKey)}
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: 'var(--muted)',
+                                  fontSize: '0.78rem',
+                                  cursor: 'pointer',
+                                  textDecoration: 'underline'
+                                }}
+                              >
+                                Անջատել {osPreset.label}-ը
+                              </button>
+                            </div>
+
+                            {/* Sub-level 1: Host Apps selection grid for this OS */}
+                            <div>
+                              <label style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--text)', display: 'block', marginBottom: '8px' }}>
+                                ↳ Ընտրեք հավելվածները {osPreset.label}-ում՝
+                              </label>
+
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '8px' }}>
+                                {SOFTWARE_PRESETS.map((item) => {
+                                  const isSelected = selectedSoftwareList.some(s => s.toLowerCase() === item.name.toLowerCase());
+                                  return (
+                                    <div
+                                      key={item.name}
+                                      onClick={() => handleToggleSoftware(item.name)}
+                                      style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '7px',
+                                        padding: '7px 10px',
+                                        borderRadius: '8px',
+                                        background: isSelected ? 'rgba(74, 137, 124, 0.15)' : 'var(--bg)',
+                                        border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--panel-border)'}`,
+                                        color: isSelected ? 'var(--accent)' : 'var(--text)',
+                                        fontSize: '0.8rem',
+                                        fontWeight: isSelected ? 700 : 500,
+                                        cursor: 'pointer',
+                                        userSelect: 'none',
+                                        transition: 'all 0.2s ease'
+                                      }}
+                                    >
+                                      <hd-checkbox
+                                        suppressHydrationWarning
+                                        checked={isSelected}
+                                        data-thickness="2px"
+                                        data-size="14px"
+                                        onChange={() => handleToggleSoftware(item.name)}
+                                      />
+                                      <SoftwareIcon name={item.name} iconUrl={item.icon} size={15} />
+                                      <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Custom Software Input for this OS */}
+                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '10px' }}>
+                                <div style={{ flex: 1 }}>
+                                  <hd-input
+                                    suppressHydrationWarning
+                                    placeholder={`+ Այլ հավելված (օր․՝ CorelDRAW, Cinema 4D)...`}
+                                    value={customSoftwareInput}
+                                    onInput={(e: any) => setCustomSoftwareInput(e.target.value)}
+                                    data-width="100%"
+                                    data-height="34px"
+                                    data-thickness="2px"
+                                    data-font-size="11pt"
+                                  />
+                                </div>
+                                <hd-button
+                                  suppressHydrationWarning
+                                  data-height="34px"
+                                  data-thickness="2px"
+                                  data-font-size="0.78rem"
+                                  data-color="var(--accent)"
+                                  data-text-color="#ffffff"
+                                  onClick={handleAddCustomSoftware}
+                                >
+                                  <span style={{ padding: '0 12px' }}>Ավելացնել</span>
+                                </hd-button>
+                              </div>
+
+                              {customSoftwareTags.length > 0 && (
+                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+                                  {customSoftwareTags.map((tag) => (
+                                    <span
+                                      key={tag}
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        padding: '3px 9px',
+                                        borderRadius: '6px',
+                                        background: 'rgba(74, 137, 124, 0.15)',
+                                        color: 'var(--accent)',
+                                        border: '1px solid var(--accent)',
+                                        fontSize: '0.76rem',
+                                        fontWeight: 700
+                                      }}
+                                    >
+                                      {tag}
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRemoveSoftware(tag)}
+                                        style={{
+                                          background: 'transparent',
+                                          border: 'none',
+                                          color: 'inherit',
+                                          cursor: 'pointer',
+                                          fontSize: '12px',
+                                          padding: '0 2px'
+                                        }}
+                                      >
+                                        &times;
+                                      </button>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Sub-level 2: Nested Material upload for each selected host app under this OS */}
+                            {selectedSoftwareList.length > 0 ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '4px', borderTop: '1px dashed var(--panel-border)', paddingTop: '14px' }}>
+                                <span style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--text)' }}>
+                                  ↳ Բուն ծրագրային նիշքեր {osPreset.label}-ի համար ըստ հավելվածի՝
+                                </span>
+
+                                {selectedSoftwareList.map((swName) => {
+                                  const swPreset = SOFTWARE_PRESETS.find(p => p.name.toLowerCase() === swName.toLowerCase());
+                                  // Find downloads matching this OS and this host app
+                                  const appDownloads = (editingApp.downloads || []).map((dl, originalIdx) => ({ dl, originalIdx })).filter(({ dl }) => {
+                                    const matchOS = (dl.os === osKey) || (!dl.os && osKey === 'windows');
+                                    const matchApp = (dl.host_app && dl.host_app.toLowerCase() === swName.toLowerCase()) ||
+                                                     (dl.name && dl.name.toLowerCase().includes(swName.toLowerCase()));
+                                    return matchOS && matchApp;
+                                  });
+
+                                  return (
+                                    <div
+                                      key={swName}
+                                      style={{
+                                        background: 'var(--bg)',
+                                        borderRadius: '12px',
+                                        border: '1px solid var(--panel-border)',
+                                        padding: '14px 16px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '12px'
+                                      }}
+                                    >
+                                      {/* Sub-branch Header: Host App title */}
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                          <SoftwareIcon name={swName} iconUrl={swPreset?.icon} size={20} />
+                                          <span style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text)' }}>
+                                            {swName}
+                                          </span>
+                                          <span style={{ fontSize: '0.72rem', background: 'var(--panel)', padding: '2px 8px', borderRadius: '6px', color: 'var(--muted)', border: '1px solid var(--panel-border)' }}>
+                                            {osPreset.label}
+                                          </span>
+                                        </div>
+
+                                        <hd-button
+                                          suppressHydrationWarning
+                                          data-height="28px"
+                                          data-thickness="2px"
+                                          data-font-size="0.74rem"
+                                          data-color="rgba(74, 137, 124, 0.15)"
+                                          data-text-color="var(--accent)"
+                                          onClick={() => handleAddDownloadOptionForHostApp(osKey, swName)}
+                                        >
+                                          <span style={{ padding: '0 8px', fontWeight: 700 }}>
+                                            + Ավելացնել նիշք
+                                          </span>
+                                        </hd-button>
+                                      </div>
+
+                                      {/* Download Slots under this Host App and OS */}
+                                      {appDownloads.length > 0 ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                          {appDownloads.map(({ dl, originalIdx }, subIdx) => (
+                                            <div
+                                              key={dl.id || originalIdx}
+                                              style={{
+                                                background: 'var(--panel)',
+                                                border: '1px solid var(--panel-border)',
+                                                borderRadius: '10px',
+                                                padding: '12px 14px',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: '10px'
+                                              }}
+                                            >
+                                              {/* Download item row: info & delete */}
+                                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent)', background: 'rgba(74, 137, 124, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>
+                                                    Նիշք #{subIdx + 1}
+                                                  </span>
+                                                  {dl.file_size && (
+                                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted, var(--muted))', background: 'var(--bg)', border: '1px solid var(--panel-border)', padding: '2px 8px', borderRadius: '4px' }}>
+                                                      Չափ՝ {dl.file_size}
+                                                    </span>
+                                                  )}
+                                                </div>
+
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleRemoveDownloadOption(originalIdx)}
+                                                  title="Հեռացնել"
+                                                  style={{
+                                                    background: 'rgba(229, 57, 53, 0.1)',
+                                                    color: '#e53935',
+                                                    border: '1px solid rgba(229, 57, 53, 0.3)',
+                                                    borderRadius: '6px',
+                                                    width: '28px',
+                                                    height: '28px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    cursor: 'pointer',
+                                                    fontSize: '15px',
+                                                    fontWeight: 700
+                                                  }}
+                                                >
+                                                  &times;
+                                                </button>
+                                              </div>
+
+                                              {/* URL & Upload buttons row */}
+                                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                                <div style={{ flex: '1 1 200px' }}>
+                                                  <hd-input
+                                                    suppressHydrationWarning
+                                                    placeholder="Նիշքի հասցե (/uploads/apps/... կամ https://...)"
+                                                    value={dl.url || ""}
+                                                    onInput={(e: any) => handleUpdateDownloadOption(originalIdx, { url: e.target.value })}
+                                                    data-width="100%"
+                                                    data-height="34px"
+                                                    data-thickness="2px"
+                                                    data-font-size="10pt"
+                                                  />
+                                                </div>
+
+                                                <hd-button
+                                                  suppressHydrationWarning
+                                                  data-height="34px"
+                                                  data-thickness="2px"
+                                                  data-font-size="0.75rem"
+                                                  data-color="rgba(74, 137, 124, 0.15)"
+                                                  data-text-color="var(--accent)"
+                                                  onClick={() => setMediaPickerConfig({
+                                                    isOpen: true,
+                                                    target: 'download_item',
+                                                    itemIndex: originalIdx,
+                                                    allowedTypes: ['document', 'other', 'vector', 'image'],
+                                                    title: `Ընտրել Նիշք՝ ${dl.name || swName}`,
+                                                    currentValue: dl.url
+                                                  })}
+                                                >
+                                                  <span style={{ padding: '0 8px' }}>
+                                                    📁 Մեդիայից
+                                                  </span>
+                                                </hd-button>
+
+                                                <hd-button
+                                                  suppressHydrationWarning
+                                                  data-height="34px"
+                                                  data-thickness="2px"
+                                                  data-font-size="0.75rem"
+                                                  data-color="var(--accent)"
+                                                  data-text-color="#ffffff"
+                                                  onClick={() => triggerItemFileUpload(originalIdx)}
+                                                  disabled={uploadingFile}
+                                                >
+                                                  <span style={{ padding: '0 8px', fontWeight: 700 }}>
+                                                    {uploadingFile && currentUploadItemIndex === originalIdx ? "Բեռնվում է..." : "↑ Վերբեռնել"}
+                                                  </span>
+                                                </hd-button>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--panel)', borderRadius: '8px', border: '1px dashed var(--panel-border)', fontSize: '0.8rem', color: 'var(--muted)' }}>
+                                          <span>Այս հավելվածի համար նիշք դեռ կցված չէ:</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleAddDownloadOptionForHostApp(osKey, swName)}
+                                            style={{
+                                              background: 'transparent',
+                                              border: 'none',
+                                              color: 'var(--accent)',
+                                              fontWeight: 700,
+                                              cursor: 'pointer',
+                                              fontSize: '0.8rem'
+                                            }}
+                                          >
+                                            + Կցել նիշք հիմա
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div style={{ fontSize: '0.8rem', color: 'var(--muted)', background: 'var(--bg)', padding: '10px 14px', borderRadius: '8px' }}>
+                                💡 Ընտրեք առնվազն մեկ հավելված {osPreset.label}-ի տակ՝ բուն ծրագրային նիշքերը կցելու համար:
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ══════════════════════════════════════════════════════════════ */}
+              {/* BRANCH 2: ԱՌԱՆՁԻՆ ՀԱՎԵԼՎԱԾ (STANDALONE APP) FLOW              */}
+              {/* ══════════════════════════════════════════════════════════════ */}
+              {editingApp.app_type === 'standalone' && (
                 <div
                   style={{
                     background: 'var(--bg)',
@@ -1867,146 +2700,260 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                     border: '1px solid var(--panel-border)',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '14px'
+                    gap: '16px'
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                     <div>
-                      <label style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text)', display: 'block' }}>
-                        Ընտրեք ծրագրերը (Software) *
+                      <label style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text)', display: 'block' }}>
+                        Օպերացիոն Համակարգ (OS) *
                       </label>
                       <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
-                        Նշեք այն բոլոր ծրագրերը, որոնց համար նախատեսված է այս խրվակը:
+                        Նշեք այն համակարգերը (Windows, macOS, Linux), որոնց համար հասանելի է այս հավելվածը։
                       </span>
                     </div>
-                    {selectedSoftwareList.length > 0 && (
-                      <span
-                        style={{
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          padding: '3px 10px',
-                          borderRadius: '12px',
-                          background: 'rgba(74, 137, 124, 0.15)',
-                          color: 'var(--accent)'
-                        }}
-                      >
-                        Ընտրված է {selectedSoftwareList.length} ծրագիր
+                    {selectedOSList.length > 0 && (
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', background: 'rgba(74, 137, 124, 0.15)', color: 'var(--accent)' }}>
+                        Ընտրված է {selectedOSList.length} ՕՀ
                       </span>
                     )}
                   </div>
 
-                  {/* Checkboxes Grid */}
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-                      gap: '8px'
-                    }}
-                  >
-                    {SOFTWARE_PRESETS.map((item) => {
-                      const isSelected = selectedSoftwareList.some(s => s.toLowerCase() === item.name.toLowerCase());
+                  {/* OS Buttons for Standalone */}
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {OS_PRESETS.map((os) => {
+                      const isSelected = selectedOSList.includes(os.key);
                       return (
-                        <div
-                          key={item.name}
-                          onClick={() => handleToggleSoftware(item.name)}
+                        <button
+                          key={os.key}
+                          type="button"
+                          onClick={() => handleToggleOS(os.key)}
                           style={{
-                            display: 'flex',
+                            display: 'inline-flex',
                             alignItems: 'center',
                             gap: '8px',
-                            padding: '8px 10px',
-                            borderRadius: '8px',
-                            background: isSelected ? 'rgba(74, 137, 124, 0.15)' : 'var(--panel)',
-                            border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--panel-border)'}`,
+                            padding: '10px 18px',
+                            borderRadius: '10px',
+                            background: isSelected ? 'rgba(74, 137, 124, 0.2)' : 'var(--panel)',
+                            border: `1.5px solid ${isSelected ? 'var(--accent)' : 'var(--panel-border)'}`,
                             color: isSelected ? 'var(--accent)' : 'var(--text)',
-                            fontSize: '0.82rem',
-                            fontWeight: isSelected ? 700 : 500,
+                            fontSize: '0.88rem',
+                            fontWeight: 800,
                             cursor: 'pointer',
-                            userSelect: 'none',
                             transition: 'all 0.2s ease'
                           }}
                         >
-                          <hd-checkbox
-                            suppressHydrationWarning
-                            checked={isSelected}
-                            data-thickness="3px"
-                            data-size="16px"
-                            onChange={() => handleToggleSoftware(item.name)}
-                          />
-                          <span>{item.name}</span>
-                        </div>
+                          <SoftwareIcon name={os.label} iconUrl={os.icon} size={20} />
+                          <span>{os.label}</span>
+                          <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>
+                            {isSelected ? '✓' : '+'}
+                          </span>
+                        </button>
                       );
                     })}
                   </div>
 
-                  {/* Add Custom / Other Software Name */}
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '2px' }}>
-                    <div style={{ flex: 1 }}>
-                      <hd-input
-                        suppressHydrationWarning
-                        placeholder="+ Այլ ծրագիր..."
-                        value={customSoftwareInput}
-                        onInput={(e: any) => setCustomSoftwareInput(e.target.value)}
-                        data-width="100%"
-                        data-height="36px"
-                        data-thickness="2px"
-                        data-font-size="12pt"
-                      />
+                  {selectedOSList.length === 0 ? (
+                    <div style={{ fontSize: '0.8rem', color: '#e53935', background: 'rgba(229, 57, 53, 0.08)', padding: '10px 14px', borderRadius: '8px', fontWeight: 600 }}>
+                      ⚠️ Ընտրեք առնվազն մեկ ՕՀ (Windows, macOS կամ Linux)՝ տեղադրիչ նիշքերը կցելու համար:
                     </div>
-                    <hd-button
-                      suppressHydrationWarning
-                      data-height="36px"
-                      data-thickness="2px"
-                      data-font-size="0.8rem"
-                      data-color="var(--accent)"
-                      data-text-color="#ffffff"
-                      onClick={handleAddCustomSoftware}
-                    >
-                      <span style={{ padding: '0 12px' }}>Ավելացնել</span>
-                    </hd-button>
-                  </div>
-
-                  {/* Custom Software Tags */}
-                  {customSoftwareTags.length > 0 && (
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                      {customSoftwareTags.map((tag) => (
-                        <span
-                          key={tag}
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            padding: '3px 9px',
-                            borderRadius: '6px',
-                            background: 'rgba(74, 137, 124, 0.15)',
-                            color: 'var(--accent)',
-                            border: '1px solid var(--accent)',
-                            fontSize: '0.78rem',
-                            fontWeight: 700
-                          }}
-                        >
-                          {tag}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSoftware(tag)}
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: 'inherit',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              padding: '0 2px'
-                            }}
-                          >
-                            &times;
-                          </button>
+                  ) : (
+                    /* Download slots for Standalone App */
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text)' }}>
+                          Ներբեռնվող տեղադրիչներ (Installers)՝
                         </span>
-                      ))}
+                        <hd-button
+                          suppressHydrationWarning
+                          data-height="32px"
+                          data-thickness="2px"
+                          data-font-size="0.76rem"
+                          data-color="var(--accent)"
+                          data-text-color="#ffffff"
+                          onClick={() => handleAddDownloadOption("Այլ տարբերակ", "/icons/browser.svg")}
+                        >
+                          <span style={{ padding: '0 10px' }}>+ Ավելացնել տարբերակ</span>
+                        </hd-button>
+                      </div>
+
+                      {editingApp.downloads && editingApp.downloads.length > 0 ? (
+                        editingApp.downloads.map((dl, idx) => {
+                          const isWin = dl.os === 'windows' || (dl.name && dl.name.toLowerCase().includes('win'));
+                          const isMac = dl.os === 'macos' || (dl.name && dl.name.toLowerCase().includes('mac'));
+                          const isLinux = dl.os === 'linux' || (dl.name && dl.name.toLowerCase().includes('linux'));
+                          return (
+                            <div
+                              key={dl.id || idx}
+                              style={{
+                                background: 'var(--panel)',
+                                border: `1.5px solid ${isWin ? 'rgba(33, 150, 243, 0.35)' : (isMac ? 'rgba(255, 255, 255, 0.25)' : (isLinux ? 'rgba(255, 193, 7, 0.35)' : 'var(--panel-border)'))}`,
+                                borderRadius: '14px',
+                                padding: '16px 18px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '12px',
+                                boxShadow: 'var(--shadow)'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: '1 1 240px' }}>
+                                  <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--accent)', background: 'rgba(74, 137, 124, 0.15)', padding: '2px 8px', borderRadius: '6px' }}>
+                                    #{idx + 1}
+                                  </span>
+                                  <SoftwareIcon name={dl.os ? (dl.os === 'windows' ? 'Windows' : dl.os === 'macos' ? 'macOS' : 'Linux') : dl.name} iconUrl={dl.icon} size={24} />
+                                  <div style={{ flex: 1, minWidth: '180px' }}>
+                                    <hd-input
+                                      suppressHydrationWarning
+                                      placeholder="Անվանում (օր․՝ Windows x64 Installer, macOS DMG)..."
+                                      value={dl.name || ""}
+                                      onInput={(e: any) => handleUpdateDownloadOption(idx, { name: e.target.value })}
+                                      data-width="100%"
+                                      data-height="36px"
+                                      data-thickness="2px"
+                                      data-font-size="11pt"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                  {/* OS selector */}
+                                  <select
+                                    value={dl.os || (isWin ? 'windows' : (isMac ? 'macos' : (isLinux ? 'linux' : 'other')))}
+                                    onChange={(e) => {
+                                      const val = e.target.value as any;
+                                      const osIcon = val === 'windows' ? '/icons/windows.svg' : (val === 'macos' ? '/icons/apple.svg' : (val === 'linux' ? '/icons/linux.svg' : dl.icon));
+                                      handleUpdateDownloadOption(idx, { os: val, icon: osIcon });
+                                    }}
+                                    style={{
+                                      background: 'var(--bg)',
+                                      border: '1px solid var(--panel-border)',
+                                      color: 'var(--text)',
+                                      padding: '6px 10px',
+                                      borderRadius: '8px',
+                                      fontSize: '0.8rem',
+                                      fontWeight: 700,
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    <option value="windows">🪟 Windows</option>
+                                    <option value="macos">🍎 macOS</option>
+                                    <option value="linux">🐧 Linux</option>
+                                    <option value="other">🌐 Այլ (Other)</option>
+                                  </select>
+
+                                  <div style={{ width: '90px' }}>
+                                    <hd-input
+                                      suppressHydrationWarning
+                                      placeholder="Տարբերակ"
+                                      value={dl.version || ""}
+                                      onInput={(e: any) => handleUpdateDownloadOption(idx, { version: e.target.value })}
+                                      data-width="100%"
+                                      data-height="34px"
+                                      data-thickness="2px"
+                                      data-font-size="10pt"
+                                    />
+                                  </div>
+
+                                  <div style={{ width: '90px' }}>
+                                    <hd-input
+                                      suppressHydrationWarning
+                                      placeholder="Չափ (MB)"
+                                      value={dl.file_size || ""}
+                                      onInput={(e: any) => handleUpdateDownloadOption(idx, { file_size: e.target.value })}
+                                      data-width="100%"
+                                      data-height="34px"
+                                      data-thickness="2px"
+                                      data-font-size="10pt"
+                                    />
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveDownloadOption(idx)}
+                                    title="Հեռացնել այս տարբերակը"
+                                    style={{
+                                      background: 'rgba(229, 57, 53, 0.1)',
+                                      color: '#e53935',
+                                      border: '1px solid rgba(229, 57, 53, 0.3)',
+                                      borderRadius: '8px',
+                                      width: '34px',
+                                      height: '34px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      cursor: 'pointer',
+                                      fontSize: '15px',
+                                      fontWeight: 700
+                                    }}
+                                  >
+                                    &times;
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                <div style={{ flex: '1 1 240px' }}>
+                                  <hd-input
+                                    suppressHydrationWarning
+                                    placeholder={`${isWin ? 'Windows' : isMac ? 'macOS' : isLinux ? 'Linux' : 'Ներբեռնման'} նիշքի հասցե (/uploads/apps/... կամ https://...)`}
+                                    value={dl.url || ""}
+                                    onInput={(e: any) => handleUpdateDownloadOption(idx, { url: e.target.value })}
+                                    data-width="100%"
+                                    data-height="38px"
+                                    data-thickness="2px"
+                                    data-font-size="11pt"
+                                  />
+                                </div>
+
+                                <hd-button
+                                  suppressHydrationWarning
+                                  data-height="38px"
+                                  data-thickness="2px"
+                                  data-font-size="0.78rem"
+                                  data-color="rgba(74, 137, 124, 0.15)"
+                                  data-text-color="var(--accent)"
+                                  onClick={() => setMediaPickerConfig({
+                                    isOpen: true,
+                                    target: 'download_item',
+                                    itemIndex: idx,
+                                    allowedTypes: ['document', 'other', 'vector', 'image'],
+                                    title: `Ընտրել Տեղադրիչ՝ ${dl.name || `Տարբերակ #${idx + 1}`}`,
+                                    currentValue: dl.url
+                                  })}
+                                >
+                                  <span style={{ padding: '0 10px' }}>
+                                    📁 Մեդիայից
+                                  </span>
+                                </hd-button>
+
+                                <hd-button
+                                  suppressHydrationWarning
+                                  data-height="38px"
+                                  data-thickness="2px"
+                                  data-font-size="0.78rem"
+                                  data-color="var(--accent)"
+                                  data-text-color="#ffffff"
+                                  onClick={() => triggerItemFileUpload(idx)}
+                                  disabled={uploadingFile}
+                                >
+                                  <span style={{ padding: '0 10px', fontWeight: 700 }}>
+                                    {uploadingFile && currentUploadItemIndex === idx ? "Բեռնվում է..." : "↑ Վերբեռնել"}
+                                  </span>
+                                </hd-button>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : null}
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Languages Selection (Checkboxes / Chips + Custom) */}
+              {/* ══════════════════════════════════════════════════════════════ */}
+              {/* LANGUAGES SELECTION                                            */}
+              {/* ══════════════════════════════════════════════════════════════ */}
               <div
                 style={{
                   background: 'var(--bg)',
@@ -2148,7 +3095,9 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                 )}
               </div>
 
-              {/* Pricing & Download / Store URL */}
+              {/* ══════════════════════════════════════════════════════════════ */}
+              {/* PRICING SECTION (ԱՌԱՆՁԻՆ ՆԵՐՔԵՒՈՒՄ, ԻՐԱՐ ՀԵՏ ԿԱՊ ՉՈՒՆԵՆ)        */}
+              {/* ══════════════════════════════════════════════════════════════ */}
               <div
                 style={{
                   background: 'var(--bg)',
@@ -2160,6 +3109,15 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                   gap: '14px'
                 }}
               >
+                <div>
+                  <label style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--text)', display: 'block' }}>
+                    Գնագոյացում (Pricing)
+                  </label>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
+                    Որոշեք՝ հավելվածը անվճար է, թե վճարովի։ Այն գործում է անկախ վերևի նիշքերից:
+                  </span>
+                </div>
+
                 <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
                   <div
                     style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.88rem' }}
@@ -2190,8 +3148,8 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                   </div>
                 </div>
 
-                {editingApp.is_paid ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                {editingApp.is_paid && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginTop: '4px' }}>
                     <div>
                       <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>
                         Գին (AMD) *
@@ -2223,65 +3181,6 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                         data-thickness="2px"
                         data-font-size="13pt"
                       />
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>
-                      Ներբեռնման ֆայլ կամ հղում (Direct Download URL)
-                    </label>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <div style={{ flex: '1 1 240px' }}>
-                        <hd-input
-                          suppressHydrationWarning
-                          placeholder="/uploads/apps/... կամ https://..."
-                          value={editingApp.download_url || ""}
-                          onInput={(e: any) => setEditingApp(p => ({ ...p, download_url: e.target.value }))}
-                          data-width="100%"
-                          data-height="40px"
-                          data-thickness="2px"
-                          data-font-size="13pt"
-                        />
-                      </div>
-                      <input
-                        ref={downloadFileInputRef}
-                        type="file"
-                        style={{ display: 'none' }}
-                        onChange={handleDownloadFileUpload}
-                      />
-                      <hd-button
-                        suppressHydrationWarning
-                        data-height="40px"
-                        data-thickness="2px"
-                        data-font-size="0.8rem"
-                        data-color="rgba(74, 137, 124, 0.15)"
-                        data-text-color="var(--accent)"
-                        onClick={() => setMediaPickerConfig({
-                          isOpen: true,
-                          target: 'download',
-                          allowedTypes: ['document', 'other', 'vector', 'image'],
-                          title: 'Ընտրել Ներբեռնման Նիշք (Download File)',
-                          currentValue: editingApp.download_url
-                        })}
-                      >
-                        <span style={{ padding: '0 12px' }}>
-                          📁 Ընտրել Մեդիայից
-                        </span>
-                      </hd-button>
-                      <hd-button
-                        suppressHydrationWarning
-                        data-height="40px"
-                        data-thickness="2px"
-                        data-font-size="0.8rem"
-                        data-color="var(--bg)"
-                        data-text-color="var(--text)"
-                        onClick={() => downloadFileInputRef.current?.click()}
-                        disabled={uploadingFile}
-                      >
-                        <span style={{ padding: '0 12px' }}>
-                          {uploadingFile ? "Բեռնվում է..." : "↑ Վերբեռնել"}
-                        </span>
-                      </hd-button>
                     </div>
                   </div>
                 )}
@@ -2826,6 +3725,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
           ══════════════════════════════════════════════════════════════════════ */}
       {selectedBugReport && typeof document !== 'undefined' && createPortal(
         <div
+          data-modal-backdrop="true"
           style={{
             position: 'fixed',
             inset: 0,
@@ -2839,7 +3739,8 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
             alignItems: 'center',
             justifyContent: 'center',
             padding: '20px',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            animation: 'modalBackdropFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
           }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
@@ -2848,6 +3749,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
           }}
         >
           <div
+            data-modal-container="true"
             style={{
               background: 'var(--panel)',
               borderRadius: '20px',
@@ -2858,7 +3760,9 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
-              position: 'relative'
+              position: 'relative',
+              animation: 'modalSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              willChange: 'transform, opacity'
             }}
           >
             {/* Modal Header */}
@@ -3283,20 +4187,34 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
           ══════════════════════════════════════════════════════════════════════ */}
       {selectedMediaUrl && typeof document !== 'undefined' && createPortal(
         <div
+          data-modal-backdrop="true"
           style={{
             position: 'fixed',
             inset: 0,
             background: 'rgba(0,0,0,0.92)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
             zIndex: 100000000,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '20px'
+            padding: '20px',
+            animation: 'modalBackdropFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
           }}
           onClick={() => setSelectedMediaUrl(null)}
         >
           <div
-            style={{ position: 'relative', maxWidth: '92vw', maxHeight: '92vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+            data-modal-container="true"
+            style={{
+              position: 'relative',
+              maxWidth: '92vw',
+              maxHeight: '92vh',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              animation: 'modalSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              willChange: 'transform, opacity'
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <img

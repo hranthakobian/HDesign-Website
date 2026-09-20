@@ -8,6 +8,7 @@ import LoadingAnimation from "@/components/LoadingAnimation";
 import HdVideoPlayer from "@/components/HdVideoPlayer";
 import MediaPickerModal from "@/components/MediaPickerModal";
 import { MediaFileType } from "@/lib/mediaTypes";
+import { prefetchMediaLibrary } from "@/lib/mediaCache";
 
 /* ─── Types ─────────────────────────────────────────── */
 type BlockType = "text" | "image" | "embed" | "color_palette" | "typography_showcase";
@@ -540,6 +541,7 @@ export default function CaseEditor() {
     const t = typeof window !== "undefined" ? localStorage.getItem("hdesign_admin_token") : null;
     if (!t) { router.push("/admin"); return; }
     setToken(t);
+    prefetchMediaLibrary(t);
     load(t);
   }, [id]);
 

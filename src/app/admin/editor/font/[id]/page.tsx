@@ -6,6 +6,7 @@ import Link from "next/link";
 import LoadingAnimation from "@/components/LoadingAnimation";
 import MediaPickerModal from "@/components/MediaPickerModal";
 import { MediaFileType } from "@/lib/mediaTypes";
+import { prefetchMediaLibrary } from "@/lib/mediaCache";
 
 type FontBlock = 
   | { type: 'text'; title_am: string; title_en: string; content_am: string; content_en: string }
@@ -95,6 +96,7 @@ export default function FontWysiwygEditor() {
         return;
       }
       setToken(savedToken);
+      prefetchMediaLibrary(savedToken);
       loadFont(savedToken);
     }
   }, [id]);

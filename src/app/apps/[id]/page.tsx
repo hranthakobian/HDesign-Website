@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
@@ -9,6 +9,8 @@ import MarkdownRenderer from "@/components/MarkdownRenderer";
 import LoadingAnimation from "@/components/LoadingAnimation";
 import { HDesignStars } from "@/components/RatingSystem";
 import BugReportModal from "@/components/BugReportModal";
+import AppDownloadModal, { AppDownloadOption } from "@/components/AppDownloadModal";
+import SoftwareIcon from "@/components/SoftwareIcon";
 
 type Review = {
   id: string;
@@ -33,10 +35,12 @@ type AppDetail = {
   host_app: string;
   host_app_icon?: string;
   app_type: 'plugin' | 'standalone';
+  supported_os?: ('windows' | 'macos' | 'linux')[];
   is_paid: boolean;
   price: number;
   currency?: string;
   download_url?: string;
+  downloads?: AppDownloadOption[];
   store_url?: string;
   repository_url?: string;
   repository_type?: string;
@@ -65,6 +69,46 @@ export default function AppDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isBugModalOpen, setIsBugModalOpen] = useState(false);
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+
+  const supportedOSList = useMemo(() => {
+    if (!app) return [];
+    if (Array.isArray(app.supported_os) && app.supported_os.length > 0) {
+      return app.supported_os;
+    }
+    const detected = new Set<'windows' | 'macos' | 'linux'>();
+    (app.downloads || []).forEach(d => {
+      if (d.os && ['windows', 'macos', 'linux'].includes(d.os as any)) {
+        detected.add(d.os as any);
+      } else if (d.name) {
+        const n = d.name.toLowerCase();
+        if (n.includes('win')) detected.add('windows');
+        if (n.includes('mac') || n.includes('apple') || n.includes('dmg')) detected.add('macos');
+        if (n.includes('linux') || n.includes('deb') || n.includes('appimage')) detected.add('linux');
+      }
+    });
+    if (detected.size === 0 && (app.download_url || app.downloads?.length)) {
+      detected.add('windows');
+    }
+    return Array.from(detected);
+  }, [app]);
+
+  const validDownloads: import('@/lib/db').AppDownloadOption[] = React.useMemo(() => {
+    if (!app) return [];
+    const list = (app.downloads || []).filter(d => !!d.url?.trim());
+    if (list.length > 0) return list;
+    if (app.download_url?.trim()) {
+      return [{
+        name: app.host_app || (locale === 'hy' ? 'Հիմնական նիշք' : 'Primary File'),
+        url: app.download_url,
+        icon: app.host_app_icon,
+        os: 'windows' as const
+      }];
+    }
+    return [];
+  }, [app, locale]);
+
+  const hasMultipleDownloads = validDownloads.length > 1;
 
   // Sticky CTA and Description Collapsible States
   const heroCtaRef = useRef<HTMLDivElement>(null);
@@ -354,29 +398,24 @@ export default function AppDetailPage() {
 
             {/* Software Tag / Badges (Only for plugin if host_app is present) */}
             {app.app_type === "plugin" && app.host_app && (
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  background: "var(--bg)",
-                  padding: "6px 14px",
-                  borderRadius: "30px",
-                  border: "1px solid var(--panel-border)"
-                }}
-              >
-                {app.host_app_icon ? (
-                  <img src={app.host_app_icon} alt={app.host_app} style={{ width: "18px", height: "18px", objectFit: "contain" }} />
-                ) : (
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="2" y="3" width="20" height="14" rx="2" />
-                    <line x1="8" y1="21" x2="16" y2="21" />
-                    <line x1="12" y1="17" x2="12" y2="21" />
-                  </svg>
-                )}
-                <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text)" }}>
-                  {app.host_app}
-                </span>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                {app.host_app.split(',').map(s => s.trim()).filter(Boolean).map((h, i) => (
+                  <div
+                    key={i}
+                    title={h}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "var(--bg)",
+                      padding: "6px",
+                      borderRadius: "10px",
+                      border: "1px solid var(--panel-border)"
+                    }}
+                  >
+                    <SoftwareIcon name={h} iconUrl={app.host_app_icon} size={20} />
+                  </div>
+                ))}
               </div>
             )}
 
@@ -579,11 +618,7 @@ export default function AppDetailPage() {
                     </hd-button>
                   </a>
                 ) : (
-                  <a
-                    href={app.download_url || "#"}
-                    download
-                    style={{ textDecoration: "none", width: "100%", display: "block" }}
-                  >
+                  <div style={{ width: "100%" }} onClick={() => setIsDownloadModalOpen(true)}>
                     <hd-button
                       suppressHydrationWarning
                       data-width="100%"
@@ -599,10 +634,17 @@ export default function AppDetailPage() {
                           <polyline points="7 10 12 15 17 10" />
                           <line x1="12" y1="15" x2="12" y2="3" />
                         </svg>
-                        <span>{locale === "hy" ? "Ներբեռնել Անվճար" : "Direct Download (Free)"}</span>
+                        <span>
+                          {locale === "hy"
+                            ? (validDownloads.length > 1 ? `Ներբեռնել (${validDownloads.length} տարբերակ)` : "Ներբեռնել")
+                            : (validDownloads.length > 1 ? `Download (${validDownloads.length} options)` : "Download")}
+                        </span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
                       </span>
                     </hd-button>
-                  </a>
+                  </div>
                 )}
               </div>
 
@@ -1189,11 +1231,7 @@ export default function AppDetailPage() {
                           </hd-button>
                         </a>
                       ) : (
-                        <a
-                          href={app.download_url || "#"}
-                          download
-                          style={{ textDecoration: "none", width: "100%", display: "block" }}
-                        >
+                        <div style={{ width: "100%" }} onClick={() => setIsDownloadModalOpen(true)}>
                           <hd-button
                             suppressHydrationWarning
                             data-width="100%"
@@ -1209,10 +1247,14 @@ export default function AppDetailPage() {
                                 <polyline points="7 10 12 15 17 10" />
                                 <line x1="12" y1="15" x2="12" y2="3" />
                               </svg>
-                              <span>{locale === "hy" ? "ՆԵՐԲԵՌՆԵԼ" : "DOWNLOAD"}</span>
+                              <span>
+                                {locale === "hy"
+                                  ? (validDownloads.length > 1 ? `ՆԵՐԲԵՌՆԵԼ (${validDownloads.length})` : "ՆԵՐԲԵՌՆԵԼ")
+                                  : (validDownloads.length > 1 ? `DOWNLOAD (${validDownloads.length})` : "DOWNLOAD")}
+                              </span>
                             </span>
                           </hd-button>
-                        </a>
+                        </div>
                       )}
                     </div>
 
@@ -1289,10 +1331,63 @@ export default function AppDetailPage() {
                 </span>
               </div>
 
+              {/* Օպերացիոն Համակարգեր (ՕՀ / OS) */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px dashed var(--panel-border)", paddingBottom: "10px", gap: "8px" }}>
+                <span style={{ color: "var(--muted)" }}>{locale === "hy" ? "ՕՀ (OS)" : "Operating System"}</span>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "flex-end" }}>
+                  {supportedOSList.length > 0 ? (
+                    supportedOSList.map((osKey) => {
+                      const osLabel = osKey === 'windows' ? 'Windows' : (osKey === 'macos' ? 'macOS' : 'Linux');
+                      const osIcon = osKey === 'windows' ? '/icons/windows.svg' : (osKey === 'macos' ? '/icons/apple.svg' : '/icons/linux.svg');
+                      return (
+                        <span
+                          key={osKey}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "5px",
+                            padding: "3px 8px",
+                            borderRadius: "6px",
+                            background: "var(--bg)",
+                            border: "1px solid var(--panel-border)",
+                            fontWeight: 700,
+                            fontSize: "0.8rem",
+                            color: "var(--text)"
+                          }}
+                        >
+                          <SoftwareIcon name={osLabel} iconUrl={osIcon} size={15} />
+                          <span>{osLabel}</span>
+                        </span>
+                      );
+                    })
+                  ) : (
+                    <span style={{ fontWeight: 700, color: "var(--text)" }}>—</span>
+                  )}
+                </div>
+              </div>
+
               {app.app_type === "plugin" && app.host_app && (
-                <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px dashed var(--panel-border)", paddingBottom: "10px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px dashed var(--panel-border)", paddingBottom: "10px", gap: "8px" }}>
                   <span style={{ color: "var(--muted)" }}>{locale === "hy" ? "Ծրագիր" : "Software"}</span>
-                  <span style={{ fontWeight: 700, color: "var(--text)", textAlign: "right" }}>{app.host_app}</span>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "flex-end" }}>
+                    {app.host_app.split(',').map(s => s.trim()).filter(Boolean).map((h, i) => (
+                      <span
+                        key={i}
+                        title={h}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: "4px",
+                          borderRadius: "6px",
+                          background: "rgba(74, 137, 124, 0.1)",
+                          color: "var(--text)"
+                        }}
+                      >
+                        <SoftwareIcon name={h} iconUrl={app.host_app_icon} size={18} />
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -1389,6 +1484,18 @@ export default function AppDetailPage() {
           appId={app.id}
           appTitle={title}
           appVersion={app.version}
+        />
+      )}
+
+      {/* Download Modal for Multi-Target Apps */}
+      {app && (
+        <AppDownloadModal
+          isOpen={isDownloadModalOpen}
+          onClose={() => setIsDownloadModalOpen(false)}
+          appTitle={title}
+          appVersion={app.version}
+          downloads={validDownloads}
+          locale={locale}
         />
       )}
     </main>

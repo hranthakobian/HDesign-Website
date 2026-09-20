@@ -70,6 +70,17 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Պանակը չի կարող լինել իր սեփական ծնողը:' }, { status: 400 });
     }
 
+    if (parentId) {
+      let curr = libraryData.folders.find(f => f.id === parentId);
+      while (curr) {
+        if (curr.id === id) {
+          return NextResponse.json({ error: 'Պանակը չի կարող տեղափոխվել իր իսկ ենթապանակի մեջ:' }, { status: 400 });
+        }
+        const nextParentId = curr.parentId;
+        curr = nextParentId ? libraryData.folders.find(f => f.id === nextParentId) : undefined;
+      }
+    }
+
     if (name && typeof name === 'string' && name.trim()) {
       libraryData.folders[folderIndex].name = name.trim();
     }

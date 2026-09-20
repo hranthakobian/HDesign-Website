@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useI18n } from "@/lib/i18n";
 
 interface BugReportModalProps {
@@ -31,10 +31,53 @@ export default function BugReportModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [shouldRender, setShouldRender] = useState(isOpen);
+  const [isClosing, setIsClosing] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      setIsClosing(false);
+    } else if (shouldRender && !isClosing) {
+      setIsClosing(true);
+      const timer = setTimeout(() => {
+        setIsClosing(false);
+        setShouldRender(false);
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, shouldRender, isClosing]);
+
+  const handleClose = useCallback(() => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+    }, 240);
+  }, [isClosing, onClose]);
+
+  useEffect(() => {
+    if (!shouldRender) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        handleClose();
+      }
+    };
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [shouldRender, handleClose]);
+
+  if (!shouldRender) return null;
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -134,11 +177,15 @@ export default function BugReportModal({
 
   return (
     <div
+      className={`hd-modal-backdrop ${isClosing ? "closing" : ""}`}
+      data-modal-backdrop="true"
+      data-closing={isClosing ? "true" : undefined}
       style={{
         position: "fixed",
         inset: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.75)",
-        backdropFilter: "blur(6px)",
+        backgroundColor: "rgba(0, 0, 0, 0.78)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
         zIndex: 99999,
         display: "flex",
         alignItems: "center",
@@ -146,9 +193,12 @@ export default function BugReportModal({
         padding: "20px",
         overflowY: "auto"
       }}
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
+        className={`hd-modal-container ${isClosing ? "closing" : ""}`}
+        data-modal-container="true"
+        data-closing={isClosing ? "true" : undefined}
         style={{
           background: "var(--panel)",
           border: "1px solid var(--panel-border)",
@@ -158,9 +208,9 @@ export default function BugReportModal({
           maxHeight: "90vh",
           display: "flex",
           flexDirection: "column",
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+          boxShadow: "0 25px 60px -12px rgba(0, 0, 0, 0.6)",
           overflow: "hidden",
-          animation: "modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)"
+          willChange: "transform, opacity"
         }}
         onClick={e => e.stopPropagation()}
       >
@@ -214,7 +264,7 @@ export default function BugReportModal({
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             style={{
               background: "transparent",
               border: "none",
@@ -262,7 +312,7 @@ export default function BugReportModal({
               </p>
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 style={{
                   padding: "10px 24px",
                   background: "var(--accent)",
@@ -570,7 +620,7 @@ export default function BugReportModal({
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={handleClose}
                   disabled={isSubmitting}
                   style={{
                     padding: "10px 20px",

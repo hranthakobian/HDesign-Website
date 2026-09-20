@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 import LoadingAnimation from "@/components/LoadingAnimation";
 import { SingleHDesignStar } from "@/components/RatingSystem";
+import SoftwareIcon from "@/components/SoftwareIcon";
 
 export type AppData = {
   id: string;
@@ -19,6 +20,14 @@ export type AppData = {
   price: number;
   currency?: string;
   download_url?: string;
+  downloads?: {
+    id?: string;
+    name: string;
+    url: string;
+    file_size?: string;
+    version?: string;
+    icon?: string;
+  }[];
   store_url?: string;
   repository_url?: string;
   repository_type?: string;
@@ -601,22 +610,28 @@ export default function AppsListingPage() {
                       </span>
                     )}
                     {app.app_type === "plugin" && app.host_app && (
-                      <span
-                        style={{
-                          background: "rgba(0,0,0,0.65)",
-                          backdropFilter: "blur(8px)",
-                          color: "#fff",
-                          padding: "4px 10px",
-                          borderRadius: "20px",
-                          fontSize: "0.75rem",
-                          fontWeight: 600,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "6px"
-                        }}
-                      >
-                        {app.host_app}
-                      </span>
+                      <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", alignItems: "center" }}>
+                        {app.host_app.split(',').map(s => s.trim()).filter(Boolean).map((h, i) => (
+                          <span
+                            key={i}
+                            style={{
+                              background: "rgba(0,0,0,0.65)",
+                              backdropFilter: "blur(8px)",
+                              color: "#fff",
+                              padding: "3px 8px",
+                              borderRadius: "20px",
+                              fontSize: "0.72rem",
+                              fontWeight: 600,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "5px"
+                            }}
+                          >
+                            <SoftwareIcon name={h} iconUrl={app.host_app_icon} size={13} />
+                            {h}
+                          </span>
+                        ))}
+                      </div>
                     )}
                     <span
                       style={{

@@ -1,5 +1,35 @@
 [
   {
+    "id": "8h4bsp93adp",
+    "session_id": "session_mlbj2wl8p6fxdn5abp1s7",
+    "ip_address": "::ffff:127.0.0.1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:158.0) Gecko/20100101 Firefox/158.0",
+    "browser": "Firefox",
+    "os": "Windows",
+    "device": "desktop",
+    "country": "Unknown",
+    "city": "Unknown",
+    "referrer": "http://localhost:3000/apps/app-uaasrs",
+    "landing_page": "/apps/app-uaasrs",
+    "created_at": "2026-09-20T05:28:41.675Z",
+    "updated_at": "2026-09-20T05:28:41.675Z"
+  },
+  {
+    "id": "vhszguhspq",
+    "session_id": "session_1dtkhao86qgow4ga5c50x",
+    "ip_address": "::ffff:127.0.0.1",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:158.0) Gecko/20100101 Firefox/158.0",
+    "browser": "Firefox",
+    "os": "Windows",
+    "device": "desktop",
+    "country": "Unknown",
+    "city": "Unknown",
+    "referrer": "http://localhost:3000/admin?tab=media&view=details",
+    "landing_page": "/admin",
+    "created_at": "2026-09-20T05:28:17.965Z",
+    "updated_at": "2026-09-20T05:28:17.965Z"
+  },
+  {
     "id": "5sfaisbiia8",
     "session_id": "session_gqj11s9hdf71lld3103dvh",
     "ip_address": "::ffff:127.0.0.1",

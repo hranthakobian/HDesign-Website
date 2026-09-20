@@ -8,7 +8,9 @@ import LoadingAnimation from '@/components/LoadingAnimation';
 import AdminAppsManager from '@/components/AdminAppsManager';
 import AdminMediaManager from '@/components/AdminMediaManager';
 import MediaPickerModal from '@/components/MediaPickerModal';
+import SoftwareIcon from '@/components/SoftwareIcon';
 import { MediaFileType } from '@/lib/mediaTypes';
+import { prefetchMediaLibrary } from '@/lib/mediaCache';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, BarChart, Bar 
@@ -836,7 +838,7 @@ function AdminDashboardContent() {
   // Global Media Picker Modal state for Admin
   const [mediaPickerConfig, setMediaPickerConfig] = useState<{
     isOpen: boolean;
-    target: 'case_cover' | 'case_bg' | 'font_file' | 'site_font' | 'video_hy' | 'video_en' | 'poster_hy' | 'poster_en';
+    target: 'case_cover' | 'case_bg' | 'font_file' | 'site_font' | 'video_hy' | 'video_en' | 'poster_hy' | 'poster_en' | 'software_icon';
     multiple?: boolean;
     allowedTypes?: MediaFileType[];
     title?: string;
@@ -875,6 +877,13 @@ function AdminDashboardContent() {
         break;
       case 'poster_en':
         setDesignSystemPosterEn(url);
+        break;
+      case 'software_icon':
+        if (activeSoftwareKeyForIcon) {
+          setSoftwareIcons(prev => ({ ...prev, [activeSoftwareKeyForIcon]: url }));
+        } else {
+          setCustomSoftwareIconUrl(url);
+        }
         break;
     }
 
@@ -1170,6 +1179,14 @@ function AdminDashboardContent() {
 
   const [savingSettings, setSavingSettings] = useState(false);
 
+  // Software Icons State (Illustrator, Photoshop, etc.)
+  const [softwareIcons, setSoftwareIcons] = useState<Record<string, string>>({});
+  const [customSoftwareName, setCustomSoftwareName] = useState('');
+  const [customSoftwareIconUrl, setCustomSoftwareIconUrl] = useState('');
+  const [isUploadingSoftwareIcon, setIsUploadingSoftwareIcon] = useState(false);
+  const [activeSoftwareKeyForIcon, setActiveSoftwareKeyForIcon] = useState<string | null>(null);
+  const softwareIconFileInputRef = useRef<HTMLInputElement>(null);
+
   // Password Change Form State
   const [currentPasscode, setCurrentPasscode] = useState('');
   const [newPasscode, setNewPasscode] = useState('');
@@ -1430,6 +1447,9 @@ function AdminDashboardContent() {
   useEffect(() => {
     if (!isLoggedIn || !token) return;
 
+    // Prefetch media library in background so picker opens instantly
+    prefetchMediaLibrary(token);
+
     async function fetchData() {
       setLoadingData(true);
       setDataError(null);
@@ -1567,6 +1587,7 @@ function AdminDashboardContent() {
         if (generalSettingsData.site_font_url) setSiteFontUrl(generalSettingsData.site_font_url);
         if (generalSettingsData.site_font_name) setSiteFontName(generalSettingsData.site_font_name);
         if (generalSettingsData.site_font_weights) setSiteFontWeights(generalSettingsData.site_font_weights);
+        if (generalSettingsData.software_icons) setSoftwareIcons(generalSettingsData.software_icons);
         const sanitizeVideoUrl = (url?: string) => {
           if (!url || url.includes('/uploads/') || url.includes('1784817997323')) {
             return 'https://api.hakobian.am/libs/v1/promo/promo.mp4';
@@ -3140,7 +3161,8 @@ function AdminDashboardContent() {
           design_system_video_hy: designSystemVideoHy,
           design_system_video_en: designSystemVideoEn,
           design_system_poster_hy: designSystemPosterHy,
-          design_system_poster_en: designSystemPosterEn
+          design_system_poster_en: designSystemPosterEn,
+          software_icons: softwareIcons
         })
       });
 
@@ -3148,6 +3170,9 @@ function AdminDashboardContent() {
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('site-font-updated', { 
             detail: { fontUrl: siteFontUrl, fontName: siteFontName, fontWeights: siteFontWeights } 
+          }));
+          window.dispatchEvent(new CustomEvent('software-icons-updated', {
+            detail: { software_icons: softwareIcons }
           }));
         }
         alert('Կայքի կարգավորումները հաջողությամբ պահպանվեցին։');
@@ -3381,6 +3406,36 @@ function AdminDashboardContent() {
       }
     } catch (err) {
       alert('Սխալ վերբեռնման ընթացքում։');
+    }
+  };
+
+  const handleUploadSoftwareIconFile = async (file: File) => {
+    if (!token || !file) return;
+    setIsUploadingSoftwareIcon(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('bucket', 'apps');
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Authorization': token },
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        if (activeSoftwareKeyForIcon) {
+          setSoftwareIcons(prev => ({ ...prev, [activeSoftwareKeyForIcon]: data.url }));
+        } else {
+          setCustomSoftwareIconUrl(data.url);
+        }
+        alert('Ծրագրի պատկերակը հաջողությամբ վերբեռնվեց։ Սեղմեք «Պահպանել» կարգավորումներում։');
+      } else {
+        alert('Սխալ՝ ' + (data.error || 'Պատկերակի վերբեռնումը ձախողվեց։'));
+      }
+    } catch (err) {
+      alert('Սխալ պատկերակի վերբեռնման ընթացքում։');
+    } finally {
+      setIsUploadingSoftwareIcon(false);
     }
   };
 
@@ -4607,7 +4662,7 @@ function AdminDashboardContent() {
 
                       {/* Right Column: Sticky Quick Sidebar */}
                       {drawerType && drawerType.startsWith('case_') && drawerCaseOriginal && (
-                        <div style={{ background: 'var(--panel)', border: '1px solid var(--panel-border)', borderRadius: '24px', padding: '24px', position: 'sticky', top: '80px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 8px 30px rgba(0,0,0,0.1)' }}>
+                        <div style={{ background: 'var(--panel)', border: '1px solid var(--panel-border)', borderRadius: '24px', padding: '24px', position: 'sticky', top: '80px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 8px 30px rgba(0,0,0,0.1)', animation: 'modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--panel-border)', paddingBottom: '12px' }}>
                             <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                               {drawerType === 'case_preview' ? (
@@ -4915,7 +4970,7 @@ function AdminDashboardContent() {
 
                       {/* Right Column: Sticky Quick Sidebar for Fonts */}
                       {drawerType && drawerType.startsWith('font_') && drawerFontOriginal && (
-                        <div style={{ background: 'var(--panel)', border: '1px solid var(--panel-border)', borderRadius: '24px', padding: '24px', position: 'sticky', top: '80px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 8px 30px rgba(0,0,0,0.1)' }}>
+                        <div style={{ background: 'var(--panel)', border: '1px solid var(--panel-border)', borderRadius: '24px', padding: '24px', position: 'sticky', top: '80px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 8px 30px rgba(0,0,0,0.1)', animation: 'modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}>
                           <style dangerouslySetInnerHTML={{ __html: `
                             @font-face {
                               font-family: 'drawer-preview-${drawerFontId}';
@@ -9264,6 +9319,340 @@ function AdminDashboardContent() {
                             disabled={savingSettings}
                           >
                             {savingSettings ? 'Պահպանվում է...' : 'Պահպանել Տեսանյութերը'}
+                          </hd-button>
+                        </div>
+                      </form>
+                    </div>
+
+                    {/* Card: Software Icons Management (Ծրագրերի պատկերակներ) */}
+                    <div style={{
+                      background: 'var(--panel)',
+                      border: '1px solid var(--panel-border)',
+                      borderRadius: '16px',
+                      padding: '24px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '20px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                        <div>
+                          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span className="icon-Image" style={{ color: 'var(--accent)' }} />
+                            Ծրագրերի Պատկերակներ (Software Icons)
+                          </h3>
+                          <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: '4px 0 0 0', lineHeight: 1.5 }}>
+                            Կարգավորեք տարբեր ծրագրերի (Adobe Illustrator, Photoshop, Figma, Blender և այլն) գլոբալ պատկերակները։ Այստեղ սահմանված պատկերակները ավտոմատ կերպով կցուցադրվեն կայքի ողջ հավելվածներում և խրվակներում։
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Hidden file input for uploading software icon */}
+                      <input 
+                        ref={softwareIconFileInputRef}
+                        type="file" 
+                        accept="image/*,.svg" 
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            handleUploadSoftwareIconFile(e.target.files[0]);
+                          }
+                        }}
+                      />
+
+                      <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        {/* Preset programs grid */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text)' }}>
+                            Հիմնական ծրագրեր և պատկերակներ՝
+                          </span>
+                          
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+                            {[
+                              { name: 'Adobe Illustrator', defaultIcon: '/icons/illustrator.svg' },
+                              { name: 'Adobe Photoshop', defaultIcon: '/icons/photoshop.svg' },
+                              { name: 'Figma', defaultIcon: '/icons/figma.svg' },
+                              { name: 'Unity', defaultIcon: '/icons/unity.svg' },
+                              { name: 'After Effects', defaultIcon: '/icons/after-effects.svg' },
+                              { name: 'Blender', defaultIcon: '/icons/blender.svg' },
+                              { name: 'Adobe InDesign', defaultIcon: '/icons/indesign.svg' },
+                              { name: 'Adobe Premiere Pro', defaultIcon: '/icons/premiere.svg' },
+                              { name: 'Unreal Engine', defaultIcon: '/icons/unreal.svg' }
+                            ].map((sw) => {
+                              const currentIcon = softwareIcons[sw.name] || '';
+                              return (
+                                <div 
+                                  key={sw.name}
+                                  style={{
+                                    background: 'var(--bg)',
+                                    border: '1px solid var(--panel-border)',
+                                    borderRadius: '12px',
+                                    padding: '12px 14px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px'
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      width: '40px',
+                                      height: '40px',
+                                      borderRadius: '10px',
+                                      background: 'var(--panel)',
+                                      border: '1px solid var(--panel-border)',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      flexShrink: 0
+                                    }}
+                                  >
+                                    <SoftwareIcon name={sw.name} iconUrl={currentIcon || sw.defaultIcon} size={24} />
+                                  </div>
+
+                                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                      {sw.name}
+                                    </span>
+                                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveSoftwareKeyForIcon(sw.name);
+                                          setMediaPickerConfig({
+                                            isOpen: true,
+                                            target: 'software_icon',
+                                            allowedTypes: ['image'],
+                                            title: `Ընտրել պատկերակ (${sw.name})`,
+                                            currentValue: currentIcon
+                                          });
+                                        }}
+                                        style={{
+                                          background: 'rgba(74, 137, 124, 0.15)',
+                                          color: 'var(--accent)',
+                                          border: '1px solid var(--accent)',
+                                          borderRadius: '6px',
+                                          padding: '2px 8px',
+                                          fontSize: '0.7rem',
+                                          fontWeight: 600,
+                                          cursor: 'pointer'
+                                        }}
+                                      >
+                                        📁 Մեդիայից
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setActiveSoftwareKeyForIcon(sw.name);
+                                          softwareIconFileInputRef.current?.click();
+                                        }}
+                                        style={{
+                                          background: 'var(--panel)',
+                                          color: 'var(--text)',
+                                          border: '1px solid var(--panel-border)',
+                                          borderRadius: '6px',
+                                          padding: '2px 8px',
+                                          fontSize: '0.7rem',
+                                          fontWeight: 600,
+                                          cursor: 'pointer'
+                                        }}
+                                      >
+                                        ↑ Վերբեռնել
+                                      </button>
+                                      {currentIcon && (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setSoftwareIcons(prev => {
+                                              const copy = { ...prev };
+                                              delete copy[sw.name];
+                                              return copy;
+                                            });
+                                          }}
+                                          title="Վերականգնել լռելյայնը"
+                                          style={{
+                                            background: 'transparent',
+                                            border: 'none',
+                                            color: '#e53935',
+                                            cursor: 'pointer',
+                                            fontSize: '0.75rem',
+                                            padding: '2px 4px'
+                                          }}
+                                        >
+                                          ✕
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Custom software icons added by user */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', borderTop: '1px dashed var(--panel-border)', paddingTop: '14px' }}>
+                          <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text)' }}>
+                            Ավելացնել այլ ծրագրի պատկերակ՝
+                          </span>
+
+                          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <div style={{ flex: 1, minWidth: '160px' }}>
+                              <hd-input
+                                placeholder="Ծրագրի անվանում (օր․՝ Cinema 4D, CorelDRAW)..."
+                                value={customSoftwareName}
+                                onInput={(e: any) => setCustomSoftwareName(e.target.value)}
+                                data-width="100%"
+                                data-height="36px"
+                              />
+                            </div>
+                            <div style={{ flex: 1.2, minWidth: '200px' }}>
+                              <hd-input
+                                placeholder="Պատկերակի URL կամ վերբեռնեք աջից..."
+                                value={customSoftwareIconUrl}
+                                onInput={(e: any) => setCustomSoftwareIconUrl(e.target.value)}
+                                data-width="100%"
+                                data-height="36px"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveSoftwareKeyForIcon(null);
+                                setMediaPickerConfig({
+                                  isOpen: true,
+                                  target: 'software_icon',
+                                  allowedTypes: ['image'],
+                                  title: 'Ընտրել պատկերակ',
+                                  currentValue: customSoftwareIconUrl
+                                });
+                              }}
+                              style={{
+                                background: 'rgba(74, 137, 124, 0.15)',
+                                color: 'var(--accent)',
+                                border: '1px solid var(--accent)',
+                                borderRadius: '8px',
+                                padding: '8px 12px',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              📁 Մեդիայից
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setActiveSoftwareKeyForIcon(null);
+                                softwareIconFileInputRef.current?.click();
+                              }}
+                              style={{
+                                background: 'var(--panel)',
+                                color: 'var(--text)',
+                                border: '1px solid var(--panel-border)',
+                                borderRadius: '8px',
+                                padding: '8px 12px',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              ↑ Վերբեռնել
+                            </button>
+                            <hd-button
+                              type="button"
+                              data-height="36px"
+                              data-thickness="2px"
+                              data-font-size="0.78rem"
+                              data-color="var(--accent)"
+                              data-text-color="#ffffff"
+                              onClick={() => {
+                                if (!customSoftwareName.trim()) {
+                                  alert('Խնդրում ենք նշել ծրագրի անվանումը։');
+                                  return;
+                                }
+                                if (!customSoftwareIconUrl.trim()) {
+                                  alert('Խնդրում ենք նշել կամ վերբեռնել պատկերակը։');
+                                  return;
+                                }
+                                setSoftwareIcons(prev => ({
+                                  ...prev,
+                                  [customSoftwareName.trim()]: customSoftwareIconUrl.trim()
+                                }));
+                                setCustomSoftwareName('');
+                                setCustomSoftwareIconUrl('');
+                              }}
+                            >
+                              <span style={{ padding: '0 12px', fontWeight: 700 }}>+ Ավելացնել</span>
+                            </hd-button>
+                          </div>
+
+                          {/* Render custom non-standard software icons */}
+                          {Object.entries(softwareIcons).filter(([k]) => ![
+                            'Adobe Illustrator', 'Adobe Photoshop', 'Figma', 'Unity', 
+                            'After Effects', 'Blender', 'Adobe InDesign', 'Adobe Premiere Pro', 'Unreal Engine'
+                          ].includes(k)).length > 0 && (
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
+                              {Object.entries(softwareIcons).filter(([k]) => ![
+                                'Adobe Illustrator', 'Adobe Photoshop', 'Figma', 'Unity', 
+                                'After Effects', 'Blender', 'Adobe InDesign', 'Adobe Premiere Pro', 'Unreal Engine'
+                              ].includes(k)).map(([swName, swIcon]) => (
+                                <div
+                                  key={swName}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    background: 'var(--bg)',
+                                    border: '1px solid var(--accent)',
+                                    borderRadius: '8px',
+                                    padding: '4px 10px'
+                                  }}
+                                >
+                                  <SoftwareIcon name={swName} iconUrl={swIcon} size={18} />
+                                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text)' }}>
+                                    {swName}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSoftwareIcons(prev => {
+                                        const copy = { ...prev };
+                                        delete copy[swName];
+                                        return copy;
+                                      });
+                                    }}
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      color: '#e53935',
+                                      cursor: 'pointer',
+                                      fontSize: '12px',
+                                      padding: '0 2px'
+                                    }}
+                                  >
+                                    &times;
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {isUploadingSoftwareIcon && (
+                          <span style={{ fontSize: '0.8rem', color: 'var(--accent)' }}>
+                            Պատկերակը վերբեռնվում է...
+                          </span>
+                        )}
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+                          <hd-button 
+                            type="submit" 
+                            data-thickness="3px"
+                            data-width="210px"
+                            data-height="40px"
+                            data-font-size="0.85rem"
+                            disabled={savingSettings}
+                          >
+                            {savingSettings ? 'Պահպանվում է...' : 'Պահպանել Պատկերակները'}
                           </hd-button>
                         </div>
                       </form>
