@@ -2658,6 +2658,7 @@ body {
 [data-modal-backdrop="true"][data-closing="true"],
 [data-modal-backdrop="true"].closing {
   animation: modalBackdropFadeOut 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  pointer-events: none !important;
 }
 
 .hd-modal-container, [data-modal-container="true"] {
@@ -2671,6 +2672,7 @@ body {
 [data-modal-container="true"].closing {
   animation: modalSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
   will-change: transform, opacity;
+  pointer-events: none !important;
 }
 
 /* Case Details Modal Animations & Responsiveness */
@@ -2696,14 +2698,17 @@ body {
 
 .case-modal-overlay.closing {
   animation: fadeOut 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  pointer-events: none !important;
 }
 
 .case-modal-content.closing {
   animation: scaleDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  pointer-events: none !important;
 }
 
 .lightbox-root.closing {
   animation: fadeOut 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  pointer-events: none !important;
 }
 
 @media (max-width: 768px) {

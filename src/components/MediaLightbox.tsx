@@ -35,7 +35,7 @@ export default function MediaLightbox({
   const [mounted, setMounted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState<number>(initialIndex);
   const [isSlideshowPlaying, setIsSlideshowPlaying] = useState<boolean>(false);
-  const [shouldRender, setShouldRender] = useState(isOpen);
+  const [isRendered, setIsRendered] = useState(isOpen);
   const [isClosing, setIsClosing] = useState(false);
 
   useEffect(() => {
@@ -44,19 +44,24 @@ export default function MediaLightbox({
 
   useEffect(() => {
     if (isOpen) {
-      setShouldRender(true);
+      setIsRendered(true);
       setIsClosing(false);
       setCurrentIndex(Math.max(0, Math.min(initialIndex, items.length - 1)));
       setIsSlideshowPlaying(false);
-    } else if (shouldRender && !isClosing) {
-      setIsClosing(true);
-      const timer = setTimeout(() => {
+    } else if (isRendered) {
+      if (isClosing) {
+        setIsRendered(false);
         setIsClosing(false);
-        setShouldRender(false);
-      }, 250);
-      return () => clearTimeout(timer);
+      } else {
+        setIsClosing(true);
+        const timer = setTimeout(() => {
+          setIsRendered(false);
+          setIsClosing(false);
+        }, 250);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [isOpen, initialIndex, items.length, shouldRender, isClosing]);
+  }, [isOpen, initialIndex, items.length, isRendered, isClosing]);
 
   const handleNext = useCallback(() => {
     if (items.length <= 1) return;
@@ -79,7 +84,7 @@ export default function MediaLightbox({
 
   // Keyboard navigation & Shortcuts
   useEffect(() => {
-    if (!shouldRender) return;
+    if (!isRendered || isClosing) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -93,22 +98,22 @@ export default function MediaLightbox({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [shouldRender, handleClose, handleNext, handlePrev]);
+  }, [isRendered, isClosing, handleClose, handleNext, handlePrev]);
 
   // Slideshow interval
   useEffect(() => {
-    if (!shouldRender || !isSlideshowPlaying || items.length <= 1) return;
+    if (!isRendered || isClosing || !isSlideshowPlaying || items.length <= 1) return;
 
     const interval = setInterval(() => {
       handleNext();
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [shouldRender, isSlideshowPlaying, items.length, handleNext]);
+  }, [isRendered, isClosing, isSlideshowPlaying, items.length, handleNext]);
 
   // Prevent scroll when lightbox is open
   useEffect(() => {
-    if (!shouldRender) return;
+    if (!isRendered || isClosing) return;
 
     const preventDefault = (e: Event) => {
       e.preventDefault();
@@ -129,9 +134,9 @@ export default function MediaLightbox({
       window.removeEventListener("touchmove", preventDefault);
       window.removeEventListener("keydown", handleKeyScroll);
     };
-  }, [shouldRender]);
+  }, [isRendered, isClosing]);
 
-  if (!shouldRender || !mounted || items.length === 0 || typeof window === "undefined") {
+  if (!isRendered || !mounted || items.length === 0 || typeof window === "undefined") {
     return null;
   }
 

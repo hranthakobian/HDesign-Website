@@ -36,7 +36,7 @@ export default function MediaPickerModal({
   const [loading, setLoading] = useState(() => !getCachedMedia());
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [shouldRender, setShouldRender] = useState(isOpen);
+  const [isRendered, setIsRendered] = useState(isOpen);
   const [isClosing, setIsClosing] = useState(false);
 
   // Folder navigation
@@ -59,17 +59,22 @@ export default function MediaPickerModal({
 
   useEffect(() => {
     if (isOpen) {
-      setShouldRender(true);
+      setIsRendered(true);
       setIsClosing(false);
-    } else if (shouldRender && !isClosing) {
-      setIsClosing(true);
-      const timer = setTimeout(() => {
+    } else if (isRendered) {
+      if (isClosing) {
+        setIsRendered(false);
         setIsClosing(false);
-        setShouldRender(false);
-      }, 250);
-      return () => clearTimeout(timer);
+      } else {
+        setIsClosing(true);
+        const timer = setTimeout(() => {
+          setIsRendered(false);
+          setIsClosing(false);
+        }, 250);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [isOpen, shouldRender, isClosing]);
+  }, [isOpen, isRendered, isClosing]);
 
   const handleClose = useCallback(() => {
     if (isClosing) return;
@@ -80,7 +85,7 @@ export default function MediaPickerModal({
   }, [isClosing, onClose]);
 
   useEffect(() => {
-    if (!shouldRender) return;
+    if (!isRendered || isClosing) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -96,7 +101,7 @@ export default function MediaPickerModal({
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [shouldRender, handleClose]);
+  }, [isRendered, isClosing, handleClose]);
 
   // Subscribe to media cache updates
   useEffect(() => {
@@ -357,7 +362,7 @@ export default function MediaPickerModal({
     );
   };
 
-  if (!shouldRender) return null;
+  if (!isRendered) return null;
 
   const modalContent = (
     <div

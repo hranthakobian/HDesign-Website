@@ -33,22 +33,27 @@ export default function AppDownloadModal({
   downloads,
   locale
 }: AppDownloadModalProps) {
-  const [shouldRender, setShouldRender] = React.useState(isOpen);
+  const [isRendered, setIsRendered] = React.useState(isOpen);
   const [isClosing, setIsClosing] = React.useState(false);
 
   React.useEffect(() => {
     if (isOpen) {
-      setShouldRender(true);
+      setIsRendered(true);
       setIsClosing(false);
-    } else if (shouldRender && !isClosing) {
-      setIsClosing(true);
-      const timer = setTimeout(() => {
+    } else if (isRendered) {
+      if (isClosing) {
+        setIsRendered(false);
         setIsClosing(false);
-        setShouldRender(false);
-      }, 250);
-      return () => clearTimeout(timer);
+      } else {
+        setIsClosing(true);
+        const timer = setTimeout(() => {
+          setIsRendered(false);
+          setIsClosing(false);
+        }, 250);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [isOpen, shouldRender, isClosing]);
+  }, [isOpen, isRendered, isClosing]);
 
   const handleClose = React.useCallback(() => {
     if (isClosing) return;
@@ -59,7 +64,7 @@ export default function AppDownloadModal({
   }, [isClosing, onClose]);
 
   useEffect(() => {
-    if (!shouldRender) return;
+    if (!isRendered || isClosing) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -75,7 +80,7 @@ export default function AppDownloadModal({
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [shouldRender, handleClose]);
+  }, [isRendered, isClosing, handleClose]);
 
   const validDownloads = React.useMemo(() => {
     return (downloads || []).filter(d => !!d.url?.trim());
@@ -83,7 +88,7 @@ export default function AppDownloadModal({
 
   // Group downloads by OS
   const groupedDownloads = React.useMemo(() => {
-    if (!shouldRender) return [];
+    if (!isRendered) return [];
     const groups: { osKey: string; title: string; icon: string; items: AppDownloadOption[] }[] = [];
 
     const getOsKey = (item: AppDownloadOption): 'windows' | 'macos' | 'linux' | 'other' => {
@@ -139,9 +144,9 @@ export default function AppDownloadModal({
     }
 
     return groups;
-  }, [shouldRender, validDownloads, locale]);
+  }, [isRendered, validDownloads, locale]);
 
-  if (!shouldRender) return null;
+  if (!isRendered) return null;
 
   const modalContent = (
     <div
