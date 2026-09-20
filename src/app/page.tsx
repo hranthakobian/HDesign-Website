@@ -583,6 +583,8 @@ export default function Home() {
   // Dynamic cases and details modal states
   const [casesList, setCasesList] = useState<any[]>([]);
   const [selectedCase, setSelectedCase] = useState<any | null>(null);
+  const [displayedCase, setDisplayedCase] = useState<any | null>(null);
+  const [isClosingCase, setIsClosingCase] = useState<boolean>(false);
   const [ratings, setRatings] = useState<Record<string, { sum: number; count: number }>>({});
   const [aspectRatios, setAspectRatios] = useState<Record<string, number>>({});
   const [hoverColors, setHoverColors] = useState<Record<string, { overlay: string; line: string }>>({});
@@ -598,6 +600,34 @@ export default function Home() {
     poster_hy: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80",
     poster_en: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80"
   });
+
+  useEffect(() => {
+    if (selectedCase) {
+      setDisplayedCase(selectedCase);
+      setIsClosingCase(false);
+    }
+  }, [selectedCase]);
+
+  const handleCloseCase = useCallback(() => {
+    if (isClosingCase) return;
+    setIsClosingCase(true);
+    setTimeout(() => {
+      setSelectedCase(null);
+      setDisplayedCase(null);
+      setIsClosingCase(false);
+    }, 240);
+  }, [isClosingCase]);
+
+  useEffect(() => {
+    if (!displayedCase) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        handleCloseCase();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [displayedCase, handleCloseCase]);
 
   const renderCardRating = (workId: string) => {
     const item = ratings[workId];
@@ -1361,38 +1391,61 @@ export default function Home() {
 
   // Gallery slider states
   const [selectedGalleryIndex, setSelectedGalleryIndex] = useState<number | null>(null);
+  const [displayedGalleryIndex, setDisplayedGalleryIndex] = useState<number | null>(null);
+  const [isClosingGallery, setIsClosingGallery] = useState<boolean>(false);
   const [isSlideshowPlaying, setIsSlideshowPlaying] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (selectedGalleryIndex !== null) {
+      setDisplayedGalleryIndex(selectedGalleryIndex);
+      setIsClosingGallery(false);
+    }
+  }, [selectedGalleryIndex]);
+
+  const handleCloseGallery = useCallback(() => {
+    if (isClosingGallery) return;
+    setIsSlideshowPlaying(false);
+    setIsClosingGallery(true);
+    setTimeout(() => {
+      setSelectedGalleryIndex(null);
+      setDisplayedGalleryIndex(null);
+      setIsClosingGallery(false);
+    }, 240);
+  }, [isClosingGallery]);
 
   // Keyboard navigation & Slideshow for Gallery Lightbox
   useEffect(() => {
-    if (selectedGalleryIndex === null) return;
+    if (displayedGalleryIndex === null) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        setSelectedGalleryIndex(null);
-        setIsSlideshowPlaying(false);
+        handleCloseGallery();
       } else if (e.key === "ArrowRight") {
+        setDisplayedGalleryIndex(prev => (prev !== null ? (prev + 1) % galleryCases.length : null));
         setSelectedGalleryIndex(prev => (prev !== null ? (prev + 1) % galleryCases.length : null));
       } else if (e.key === "ArrowLeft") {
+        setDisplayedGalleryIndex(prev => (prev !== null ? (prev - 1 + galleryCases.length) % galleryCases.length : null));
         setSelectedGalleryIndex(prev => (prev !== null ? (prev - 1 + galleryCases.length) % galleryCases.length : null));
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedGalleryIndex, galleryCases.length]);
+  }, [displayedGalleryIndex, galleryCases.length, handleCloseGallery]);
 
   useEffect(() => {
-    if (!isSlideshowPlaying || selectedGalleryIndex === null) return;
+    if (!isSlideshowPlaying || displayedGalleryIndex === null) return;
 
     const interval = setInterval(() => {
+      setDisplayedGalleryIndex(prev => (prev !== null ? (prev + 1) % galleryCases.length : null));
       setSelectedGalleryIndex(prev => (prev !== null ? (prev + 1) % galleryCases.length : null));
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [isSlideshowPlaying, selectedGalleryIndex, galleryCases.length]);
+  }, [isSlideshowPlaying, displayedGalleryIndex, galleryCases.length]);
+
   useEffect(() => {
-    if (selectedGalleryIndex === null) return;
+    if (displayedGalleryIndex === null) return;
 
     const preventDefault = (e: Event) => {
       e.preventDefault();
@@ -1413,7 +1466,7 @@ export default function Home() {
       window.removeEventListener("touchmove", preventDefault);
       window.removeEventListener("keydown", handleKeyScroll);
     };
-  }, [selectedGalleryIndex]);
+  }, [displayedGalleryIndex]);
   // Helper to retrieve the correct branding details link
   const getBrandingLink = (card: any) => {
     const cardId = String(card.id);
