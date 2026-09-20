@@ -49,19 +49,15 @@ export default function MediaLightbox({
       setCurrentIndex(Math.max(0, Math.min(initialIndex, items.length - 1)));
       setIsSlideshowPlaying(false);
     } else if (isRendered) {
-      if (isClosing) {
+      setIsClosing(true);
+      setIsSlideshowPlaying(false);
+      const timer = setTimeout(() => {
         setIsRendered(false);
         setIsClosing(false);
-      } else {
-        setIsClosing(true);
-        const timer = setTimeout(() => {
-          setIsRendered(false);
-          setIsClosing(false);
-        }, 250);
-        return () => clearTimeout(timer);
-      }
+      }, 240);
+      return () => clearTimeout(timer);
     }
-  }, [isOpen, initialIndex, items.length, isRendered, isClosing]);
+  }, [isOpen, initialIndex, items.length, isRendered]);
 
   const handleNext = useCallback(() => {
     if (items.length <= 1) return;
@@ -73,22 +69,13 @@ export default function MediaLightbox({
     setCurrentIndex((prev) => (prev - 1 + items.length) % items.length);
   }, [items.length]);
 
-  const handleClose = useCallback(() => {
-    if (isClosing) return;
-    setIsSlideshowPlaying(false);
-    setIsClosing(true);
-    setTimeout(() => {
-      onClose();
-    }, 240);
-  }, [isClosing, onClose]);
-
   // Keyboard navigation & Shortcuts
   useEffect(() => {
     if (!isRendered || isClosing) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        handleClose();
+        onClose();
       } else if (e.key === "ArrowRight") {
         handleNext();
       } else if (e.key === "ArrowLeft") {
@@ -98,7 +85,7 @@ export default function MediaLightbox({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isRendered, isClosing, handleClose, handleNext, handlePrev]);
+  }, [isRendered, isClosing, onClose, handleNext, handlePrev]);
 
   // Slideshow interval
   useEffect(() => {
@@ -149,7 +136,7 @@ export default function MediaLightbox({
   return createPortal(
     <div
       className={`lightbox-root ${isClosing ? "closing" : ""}`}
-      onClick={handleClose}
+      onClick={onClose}
       style={{
         position: "fixed",
         inset: 0,
@@ -218,7 +205,7 @@ export default function MediaLightbox({
 
           {/* Close Button */}
           <div
-            onClick={handleClose}
+            onClick={onClose}
             style={{
               background: "rgba(255, 255, 255, 0.08)",
               border: "1px solid rgba(255, 255, 255, 0.12)",

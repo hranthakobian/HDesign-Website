@@ -606,40 +606,25 @@ export default function Home() {
       setDisplayedCase(selectedCase);
       setIsClosingCase(false);
     } else if (displayedCase) {
-      if (isClosingCase) {
+      setIsClosingCase(true);
+      const timer = setTimeout(() => {
         setDisplayedCase(null);
         setIsClosingCase(false);
-      } else {
-        setIsClosingCase(true);
-        const timer = setTimeout(() => {
-          setDisplayedCase(null);
-          setIsClosingCase(false);
-        }, 250);
-        return () => clearTimeout(timer);
-      }
+      }, 240);
+      return () => clearTimeout(timer);
     }
-  }, [selectedCase, displayedCase, isClosingCase]);
-
-  const handleCloseCase = useCallback(() => {
-    if (isClosingCase) return;
-    setIsClosingCase(true);
-    setTimeout(() => {
-      setSelectedCase(null);
-      setDisplayedCase(null);
-      setIsClosingCase(false);
-    }, 240);
-  }, [isClosingCase]);
+  }, [selectedCase, displayedCase]);
 
   useEffect(() => {
     if (!displayedCase || isClosingCase) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        handleCloseCase();
+        setSelectedCase(null);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [displayedCase, isClosingCase, handleCloseCase]);
+  }, [displayedCase, isClosingCase]);
 
   const renderCardRating = (workId: string) => {
     const item = ratings[workId];
@@ -1412,30 +1397,15 @@ export default function Home() {
       setDisplayedGalleryIndex(selectedGalleryIndex);
       setIsClosingGallery(false);
     } else if (displayedGalleryIndex !== null) {
-      if (isClosingGallery) {
+      setIsClosingGallery(true);
+      setIsSlideshowPlaying(false);
+      const timer = setTimeout(() => {
         setDisplayedGalleryIndex(null);
         setIsClosingGallery(false);
-      } else {
-        setIsClosingGallery(true);
-        const timer = setTimeout(() => {
-          setDisplayedGalleryIndex(null);
-          setIsClosingGallery(false);
-        }, 250);
-        return () => clearTimeout(timer);
-      }
+      }, 240);
+      return () => clearTimeout(timer);
     }
-  }, [selectedGalleryIndex, displayedGalleryIndex, isClosingGallery]);
-
-  const handleCloseGallery = useCallback(() => {
-    if (isClosingGallery) return;
-    setIsSlideshowPlaying(false);
-    setIsClosingGallery(true);
-    setTimeout(() => {
-      setSelectedGalleryIndex(null);
-      setDisplayedGalleryIndex(null);
-      setIsClosingGallery(false);
-    }, 240);
-  }, [isClosingGallery]);
+  }, [selectedGalleryIndex, displayedGalleryIndex]);
 
   // Keyboard navigation & Slideshow for Gallery Lightbox
   useEffect(() => {
@@ -1443,7 +1413,7 @@ export default function Home() {
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        handleCloseGallery();
+        setSelectedGalleryIndex(null);
       } else if (e.key === "ArrowRight") {
         const next = (displayedGalleryIndex + 1) % galleryCases.length;
         setDisplayedGalleryIndex(next);
@@ -1457,7 +1427,7 @@ export default function Home() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [displayedGalleryIndex, isClosingGallery, galleryCases.length, handleCloseGallery]);
+  }, [displayedGalleryIndex, isClosingGallery, galleryCases.length]);
 
   useEffect(() => {
     if (!isSlideshowPlaying || displayedGalleryIndex === null || isClosingGallery) return;
@@ -3932,7 +3902,7 @@ export default function Home() {
             className={`case-modal-overlay ${isClosingCase ? "closing" : ""}`}
             data-modal-backdrop="true"
             data-closing={isClosingCase ? "true" : undefined}
-            onClick={handleCloseCase}
+            onClick={() => setSelectedCase(null)}
             style={{
               position: "fixed",
               inset: 0,
@@ -3967,7 +3937,7 @@ export default function Home() {
             >
               {/* Close Button */}
               <div 
-                onClick={handleCloseCase}
+                onClick={() => setSelectedCase(null)}
                 style={{
                   position: "absolute",
                   top: "20px",
@@ -4074,7 +4044,7 @@ export default function Home() {
         {displayedGalleryIndex !== null && typeof window !== "undefined" && createPortal(
           <div 
             className={`lightbox-root ${isClosingGallery ? "closing" : ""}`}
-            onClick={handleCloseGallery}
+            onClick={() => setSelectedGalleryIndex(null)}
             style={{
               position: "fixed",
               inset: 0,
@@ -4137,7 +4107,7 @@ export default function Home() {
 
                 {/* Close Button */}
                 <div 
-                  onClick={handleCloseGallery}
+                  onClick={() => setSelectedGalleryIndex(null)}
                   style={{
                     background: "rgba(255, 255, 255, 0.08)",
                     border: "1px solid rgba(255, 255, 255, 0.12)",

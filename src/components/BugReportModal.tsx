@@ -41,34 +41,21 @@ export default function BugReportModal({
       setIsRendered(true);
       setIsClosing(false);
     } else if (isRendered) {
-      if (isClosing) {
+      setIsClosing(true);
+      const timer = setTimeout(() => {
         setIsRendered(false);
         setIsClosing(false);
-      } else {
-        setIsClosing(true);
-        const timer = setTimeout(() => {
-          setIsRendered(false);
-          setIsClosing(false);
-        }, 250);
-        return () => clearTimeout(timer);
-      }
+      }, 240);
+      return () => clearTimeout(timer);
     }
-  }, [isOpen, isRendered, isClosing]);
-
-  const handleClose = useCallback(() => {
-    if (isClosing) return;
-    setIsClosing(true);
-    setTimeout(() => {
-      onClose();
-    }, 240);
-  }, [isClosing, onClose]);
+  }, [isOpen, isRendered]);
 
   useEffect(() => {
     if (!isRendered || isClosing) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        handleClose();
+        onClose();
       }
     };
 
@@ -80,7 +67,7 @@ export default function BugReportModal({
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isRendered, isClosing, handleClose]);
+  }, [isRendered, isClosing, onClose]);
 
   if (!isRendered) return null;
 
@@ -198,7 +185,7 @@ export default function BugReportModal({
         padding: "20px",
         overflowY: "auto"
       }}
-      onClick={handleClose}
+      onClick={onClose}
     >
       <div
         className={`hd-modal-container ${isClosing ? "closing" : ""}`}
@@ -269,7 +256,7 @@ export default function BugReportModal({
 
           <button
             type="button"
-            onClick={handleClose}
+            onClick={onClose}
             style={{
               background: "transparent",
               border: "none",
@@ -317,7 +304,7 @@ export default function BugReportModal({
               </p>
               <button
                 type="button"
-                onClick={handleClose}
+                onClick={onClose}
                 style={{
                   padding: "10px 24px",
                   background: "var(--accent)",
@@ -625,7 +612,7 @@ export default function BugReportModal({
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
                 <button
                   type="button"
-                  onClick={handleClose}
+                  onClick={onClose}
                   disabled={isSubmitting}
                   style={{
                     padding: "10px 20px",

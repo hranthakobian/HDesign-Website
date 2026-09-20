@@ -62,34 +62,21 @@ export default function MediaPickerModal({
       setIsRendered(true);
       setIsClosing(false);
     } else if (isRendered) {
-      if (isClosing) {
+      setIsClosing(true);
+      const timer = setTimeout(() => {
         setIsRendered(false);
         setIsClosing(false);
-      } else {
-        setIsClosing(true);
-        const timer = setTimeout(() => {
-          setIsRendered(false);
-          setIsClosing(false);
-        }, 250);
-        return () => clearTimeout(timer);
-      }
+      }, 240);
+      return () => clearTimeout(timer);
     }
-  }, [isOpen, isRendered, isClosing]);
-
-  const handleClose = useCallback(() => {
-    if (isClosing) return;
-    setIsClosing(true);
-    setTimeout(() => {
-      onClose();
-    }, 240);
-  }, [isClosing, onClose]);
+  }, [isOpen, isRendered]);
 
   useEffect(() => {
     if (!isRendered || isClosing) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        handleClose();
+        onClose();
       }
     };
 
@@ -101,7 +88,7 @@ export default function MediaPickerModal({
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isRendered, isClosing, handleClose]);
+  }, [isRendered, isClosing, onClose]);
 
   // Subscribe to media cache updates
   useEffect(() => {
@@ -263,7 +250,7 @@ export default function MediaPickerModal({
     if (activeTab === 'url') {
       if (!customUrlInput.trim()) return;
       onSelect(multiple ? [customUrlInput.trim()] : customUrlInput.trim());
-      handleClose();
+      onClose();
       return;
     }
 
@@ -273,7 +260,7 @@ export default function MediaPickerModal({
     } else {
       onSelect(selectedUrls[0]);
     }
-    handleClose();
+    onClose();
   };
 
   // Upload new file directly inside picker modal
@@ -382,7 +369,7 @@ export default function MediaPickerModal({
         padding: isFullscreen ? '0' : '20px',
         boxSizing: 'border-box'
       }}
-      onClick={handleClose}
+      onClick={onClose}
     >
       <div
         className={`hd-modal-container ${isClosing ? "closing" : ""}`}
@@ -526,7 +513,7 @@ export default function MediaPickerModal({
 
             <button
               type="button"
-              onClick={handleClose}
+              onClick={onClose}
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -975,7 +962,7 @@ export default function MediaPickerModal({
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <button
               type="button"
-              onClick={handleClose}
+              onClick={onClose}
               style={{
                 background: 'var(--panel)',
                 color: 'var(--fg)',

@@ -41,34 +41,21 @@ export default function AppDownloadModal({
       setIsRendered(true);
       setIsClosing(false);
     } else if (isRendered) {
-      if (isClosing) {
+      setIsClosing(true);
+      const timer = setTimeout(() => {
         setIsRendered(false);
         setIsClosing(false);
-      } else {
-        setIsClosing(true);
-        const timer = setTimeout(() => {
-          setIsRendered(false);
-          setIsClosing(false);
-        }, 250);
-        return () => clearTimeout(timer);
-      }
+      }, 240);
+      return () => clearTimeout(timer);
     }
-  }, [isOpen, isRendered, isClosing]);
-
-  const handleClose = React.useCallback(() => {
-    if (isClosing) return;
-    setIsClosing(true);
-    setTimeout(() => {
-      onClose();
-    }, 240);
-  }, [isClosing, onClose]);
+  }, [isOpen, isRendered]);
 
   useEffect(() => {
     if (!isRendered || isClosing) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        handleClose();
+        onClose();
       }
     };
 
@@ -80,7 +67,7 @@ export default function AppDownloadModal({
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isRendered, isClosing, handleClose]);
+  }, [isRendered, isClosing, onClose]);
 
   const validDownloads = React.useMemo(() => {
     return (downloads || []).filter(d => !!d.url?.trim());
@@ -168,7 +155,7 @@ export default function AppDownloadModal({
         justifyContent: "center",
         padding: "20px"
       }}
-      onClick={handleClose}
+      onClick={onClose}
     >
       <div
         className={`hd-modal-container ${isClosing ? "closing" : ""}`}
@@ -233,7 +220,7 @@ export default function AppDownloadModal({
 
           <button
             type="button"
-            onClick={handleClose}
+            onClick={onClose}
             style={{
               background: "var(--panel)",
               border: "1px solid var(--panel-border)",
