@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { MediaFolder, MediaFile, MediaFileType } from '@/lib/mediaTypes';
+import FolderIcon from '@/components/FolderIcon';
 import { 
   getCachedMedia, 
   subscribeToMediaCache, 
@@ -328,7 +329,7 @@ export default function MediaPickerModal({
     if (file.type === 'video') {
       return (
         <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#1e1b4b', color: '#818cf8' }}>
-          <span style={{ fontSize: '1.4rem' }}>🎬</span>
+          <span className="hd-icon icon-Play" style={{ fontSize: '1.4rem' }} />
           <span style={{ fontSize: '0.65rem', fontWeight: 700, marginTop: '2px' }}>VIDEO</span>
         </div>
       );
@@ -343,7 +344,7 @@ export default function MediaPickerModal({
     }
     return (
       <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--panel)', color: 'var(--muted)' }}>
-        <span style={{ fontSize: '1.4rem' }}>📄</span>
+        <span className="hd-icon icon-Info" style={{ fontSize: '1.4rem' }} />
         <span style={{ fontSize: '0.65rem', fontWeight: 700 }}>{file.extension.toUpperCase()}</span>
       </div>
     );
@@ -412,7 +413,7 @@ export default function MediaPickerModal({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '1.3rem' }}>🖼️</span>
+            <span className="hd-icon icon-Image" style={{ fontSize: '1.3rem' }} />
             <div>
               <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--fg)' }}>
                 {title}
@@ -594,7 +595,7 @@ export default function MediaPickerModal({
                   gap: '8px'
                 }}
               >
-                <span>🖥️</span>
+                <span className="hd-icon icon-Monitor" style={{ fontSize: '1rem' }} />
                 <span>Գլխավոր (Root)</span>
               </div>
 
@@ -617,7 +618,7 @@ export default function MediaPickerModal({
                       gap: '8px'
                     }}
                   >
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: f.color || '#3B82F6' }} />
+                    <FolderIcon size={16} color={isSelected ? '#ffffff' : f.color || '#3B82F6'} />
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {f.name}
                     </span>
@@ -704,22 +705,25 @@ export default function MediaPickerModal({
 
                 {/* Search & View Mode */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="🔍 Որոնել..."
-                    style={{
-                      height: '32px',
-                      background: 'var(--bg)',
-                      border: '1px solid var(--panel-border)',
-                      borderRadius: '8px',
-                      padding: '0 10px',
-                      color: 'var(--fg)',
-                      fontSize: '0.8rem',
-                      width: '160px'
-                    }}
-                  />
+                  <div style={{ position: 'relative' }}>
+                    <span className="hd-icon icon-Search" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', fontSize: '0.85rem', pointerEvents: 'none' }} />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      placeholder="Որոնել..."
+                      style={{
+                        height: '32px',
+                        background: 'var(--bg)',
+                        border: '1px solid var(--panel-border)',
+                        borderRadius: '8px',
+                        padding: '0 10px 0 30px',
+                        color: 'var(--fg)',
+                        fontSize: '0.8rem',
+                        width: '160px'
+                      }}
+                    />
+                  </div>
 
                   <div style={{ display: 'flex', background: 'var(--bg)', border: '1px solid var(--panel-border)', borderRadius: '6px', padding: '2px' }}>
                     <button
@@ -772,7 +776,7 @@ export default function MediaPickerModal({
                   </div>
                 ) : filteredFiles.length === 0 && currentSubfolders.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--muted)' }}>
-                    <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📁</div>
+                    <FolderIcon size={32} style={{ marginBottom: '8px', opacity: 0.6 }} />
                     <div>Նիշքեր չեն գտնվել</div>
                     <button
                       type="button"
@@ -814,7 +818,7 @@ export default function MediaPickerModal({
                               fontWeight: 600
                             }}
                           >
-                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: subf.color || '#3B82F6' }} />
+                            <FolderIcon size={18} color={subf.color || '#3B82F6'} />
                             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {subf.name}
                             </span>

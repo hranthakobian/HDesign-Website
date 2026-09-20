@@ -335,7 +335,7 @@ export default function BugReportModal({
                     gap: "8px"
                   }}
                 >
-                  <span>⚠️</span>
+                  <span className="hd-icon icon-Warning" />
                   <span>{errorMessage}</span>
                 </div>
               )}
@@ -600,7 +600,7 @@ export default function BugReportModal({
                   gap: "8px"
                 }}
               >
-                <span>ℹ️</span>
+                <span className="hd-icon icon-Info" />
                 <span>
                   {locale === "hy"
                     ? "Զեկույցն ուղարկելիս Դուք կստանաք հաստատման նամակ noreply@hakobian.am-ից, իսկ մանրամասները կփոխանցվեն հեղինակին (hrant@hakobian.am)։"
@@ -652,7 +652,7 @@ export default function BugReportModal({
                     </>
                   ) : (
                     <>
-                      <span>🚀</span>
+                      <span className="hd-icon icon-Send" />
                       <span>{locale === "hy" ? "Ուղարկել Զեկույցը" : "Send Report"}</span>
                     </>
                   )}

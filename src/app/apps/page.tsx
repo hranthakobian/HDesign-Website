@@ -325,27 +325,27 @@ export default function AppsListingPage() {
               </span>
               <hd-button
                 suppressHydrationWarning
-                data-height="26px"
+                data-height="32px"
                 data-thickness="2px"
-                data-font-size="0.75rem"
+                data-font-size="0.82rem"
                 data-color={selectedHost === "all" ? "var(--accent)" : "var(--bg)"}
                 data-text-color={selectedHost === "all" ? "#fff" : "var(--text)"}
                 onClick={() => setSelectedHost("all")}
               >
-                <span style={{ padding: "0 8px" }}>{locale === "hy" ? "Բոլորը" : "All"}</span>
+                <span style={{ padding: "0 14px" }}>{locale === "hy" ? "Բոլորը" : "All"}</span>
               </hd-button>
               {hostAppsList.map(h => (
                 <hd-button
                   key={h}
                   suppressHydrationWarning
-                  data-height="26px"
+                  data-height="32px"
                   data-thickness="2px"
-                  data-font-size="0.75rem"
+                  data-font-size="0.82rem"
                   data-color={selectedHost === h ? "var(--accent)" : "var(--bg)"}
                   data-text-color={selectedHost === h ? "#fff" : "var(--text)"}
                   onClick={() => setSelectedHost(selectedHost === h ? "all" : h)}
                 >
-                  <span style={{ padding: "0 8px" }}>{h}</span>
+                  <span style={{ padding: "0 14px" }}>{h}</span>
                 </hd-button>
               ))}
             </div>
@@ -784,13 +784,13 @@ export default function AppsListingPage() {
 
                     <hd-button
                       suppressHydrationWarning
-                      data-height="30px"
+                      data-height="34px"
                       data-thickness="2px"
-                      data-font-size="0.78rem"
+                      data-font-size="0.85rem"
                       data-color="var(--accent)"
                       data-text-color="#ffffff"
                     >
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "0 10px", whiteSpace: "nowrap" }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "0 14px", whiteSpace: "nowrap" }}>
                         {locale === "hy" ? "Դիտել" : "View"}
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                           <polyline points="9 18 15 12 9 6" />

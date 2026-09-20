@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { 
   getMediaLibraryData, 
@@ -7,6 +7,7 @@ import {
   restoreFilesFromTrash, 
   emptyTrash, 
   permanentlyDeleteMediaFile,
+  unlinkMediaUsage,
   DEFAULT_TRASH_SETTINGS
 } from '@/lib/mediaScanner';
 
@@ -66,6 +67,11 @@ export async function POST(request: Request) {
     if (action === 'permanentDelete') {
       if (!Array.isArray(fileIds) || fileIds.length === 0) {
         return NextResponse.json({ error: 'Ֆայլերը նշված չեն:' }, { status: 400 });
+      }
+      try {
+        await unlinkMediaUsage(fileIds);
+      } catch (e) {
+        console.warn('Error batch unlinking:', e);
       }
       for (const id of fileIds) {
         await permanentlyDeleteMediaFile(id);

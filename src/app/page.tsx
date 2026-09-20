@@ -577,8 +577,13 @@ const downloadPng = (iconName: string) => {
 
 export default function Home() {
   const { t, locale } = useI18n();
+  const [mounted, setMounted] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
   const stickyPanelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   // Dynamic cases and details modal states
   const [casesList, setCasesList] = useState<any[]>([]);
@@ -2252,7 +2257,11 @@ export default function Home() {
                           <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>px</span>
                         </div>
                       </div>
-                      <hd-slider suppressHydrationWarning min="1" max="5" value={playgroundThickness.replace("px", "")} onInput={(e: any) => setPlaygroundThickness(`${e.target.value}px`)} />
+                      {mounted ? (
+                        <hd-slider suppressHydrationWarning min="1" max="5" value={playgroundThickness.replace("px", "")} onInput={(e: any) => setPlaygroundThickness(`${e.target.value}px`)} />
+                      ) : (
+                        <div style={{ height: "24px", width: "100%" }} />
+                      )}
                     </div>
 
                     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -2290,7 +2299,11 @@ export default function Home() {
                           <span style={{ fontSize: "0.75rem", opacity: 0.7 }}>px</span>
                         </div>
                       </div>
-                      <hd-slider suppressHydrationWarning min="0" max="24" value={playgroundRadius.replace("px", "")} onInput={(e: any) => setPlaygroundRadius(`${e.target.value}px`)} />
+                      {mounted ? (
+                        <hd-slider suppressHydrationWarning min="0" max="24" value={playgroundRadius.replace("px", "")} onInput={(e: any) => setPlaygroundRadius(`${e.target.value}px`)} />
+                      ) : (
+                        <div style={{ height: "24px", width: "100%" }} />
+                      )}
                     </div>
 
                     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -2513,7 +2526,11 @@ export default function Home() {
                     {playgroundActiveTab === "hd-scrollbar" && (
                       <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>{t('home', 'content_height', 'Պարունակության բարձրություն:')} {playgroundScrollContentHeight}px</span>
-                        <hd-slider suppressHydrationWarning min="150" max="500" value={playgroundScrollContentHeight} onInput={(e: any) => setPlaygroundScrollContentHeight(Number(e.target.value))} />
+                        {mounted ? (
+                          <hd-slider suppressHydrationWarning min="150" max="500" value={playgroundScrollContentHeight} onInput={(e: any) => setPlaygroundScrollContentHeight(Number(e.target.value))} />
+                        ) : (
+                          <div style={{ height: "24px", width: "100%" }} />
+                        )}
                       </label>
                     )}
 
@@ -2693,15 +2710,19 @@ export default function Home() {
                     }}
                   />
                 </div>
-                <hd-slider 
-                  suppressHydrationWarning
-                  min="100" 
-                  max="900" 
-                  step="100" 
-                  value={iconWeight}
-                  onInput={(e: any) => setIconWeight(Number(e.target.value))}
-                  data-width="100%"
-                />
+                {mounted ? (
+                  <hd-slider 
+                    suppressHydrationWarning
+                    min="100" 
+                    max="900" 
+                    step="100" 
+                    value={iconWeight}
+                    onInput={(e: any) => setIconWeight(Number(e.target.value))}
+                    data-width="100%"
+                  />
+                ) : (
+                  <div style={{ height: "24px", width: "100%" }} />
+                )}
               </div>
 
               {/* Icon Details Card */}
@@ -3405,15 +3426,19 @@ export default function Home() {
                           }}
                         />
                       </div>
-                      <hd-slider 
-                        suppressHydrationWarning
-                        min="100" 
-                        max="900" 
-                        step="10" 
-                        value={hdesignFontWeight}
-                        onInput={(e: any) => setHdesignFontWeight(Number(e.target.value))}
-                        data-width="100%"
-                      />
+                      {mounted ? (
+                        <hd-slider 
+                          suppressHydrationWarning
+                          min="100" 
+                          max="900" 
+                          step="10" 
+                          value={hdesignFontWeight}
+                          onInput={(e: any) => setHdesignFontWeight(Number(e.target.value))}
+                          data-width="100%"
+                        />
+                      ) : (
+                        <div style={{ height: "24px", width: "100%" }} />
+                      )}
                     </div>
 
                     {/* Slant / Italic Slider */}
@@ -3455,15 +3480,19 @@ export default function Home() {
                           }}
                         />
                       </div>
-                      <hd-slider 
-                        suppressHydrationWarning
-                        min="0" 
-                        max="1" 
-                        step="0.01" 
-                        value={hdesignFontSlant}
-                        onInput={(e: any) => setHdesignFontSlant(Number(e.target.value))}
-                        data-width="100%"
-                      />
+                      {mounted ? (
+                        <hd-slider 
+                          suppressHydrationWarning
+                          min="0" 
+                          max="1" 
+                          step="0.01" 
+                          value={hdesignFontSlant}
+                          onInput={(e: any) => setHdesignFontSlant(Number(e.target.value))}
+                          data-width="100%"
+                        />
+                      ) : (
+                        <div style={{ height: "24px", width: "100%" }} />
+                      )}
                     </div>
                   </>
                 ) : (

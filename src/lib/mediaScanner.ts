@@ -191,6 +191,13 @@ export async function saveMediaLibraryData(data: MediaLibraryData): Promise<void
  * Permanently deletes a media file from Supabase Cloud Storage and local disk
  */
 export async function permanentlyDeleteMediaFile(fileId: string, url?: string): Promise<{ success: boolean; error?: string }> {
+  // Always unlink media usages across all site databases & settings on permanent deletion
+  try {
+    await unlinkMediaUsage(fileId, url);
+  } catch (unlinkErr) {
+    console.warn('Error unlinking media file on permanent deletion:', unlinkErr);
+  }
+
   const storageClient = supabaseAdmin || supabase;
   const cloudBuckets = ['gallery', 'branding', 'fonts', 'apps', 'videos', 'uploads'];
   
@@ -342,7 +349,7 @@ export async function restoreFilesFromTrash(fileIds: string[]): Promise<void> {
 }
 
 /**
- * Permanently deletes all files in Trash
+ * Permanently deletes all files in Trash and unlinks them from website
  */
 export async function emptyTrash(): Promise<void> {
   const libraryData = await getMediaLibraryData();
@@ -350,6 +357,11 @@ export async function emptyTrash(): Promise<void> {
 
   const trashedIds = Object.keys(libraryData.trash);
   for (const id of trashedIds) {
+    try {
+      await unlinkMediaUsage(id);
+    } catch (e) {
+      console.warn('Error unlinking in emptyTrash:', e);
+    }
     await permanentlyDeleteMediaFile(id);
   }
 
@@ -922,53 +934,144 @@ export async function scanAllMediaFiles(forceRefresh = false): Promise<{
  * Unlinks / disconnects media references from cases, apps, fonts, site settings, and JSON databases.
  */
 export async function unlinkMediaUsage(
-  fileId: string,
+  fileIdOrIds: string | string[],
   url?: string,
   targetUsage?: string
 ): Promise<{ success: boolean; unlinkedCount: number; message: string }> {
   let unlinkedCount = 0;
   const storageClient = supabaseAdmin || supabase;
+  const fileIds = Array.isArray(fileIdOrIds) ? fileIdOrIds : [fileIdOrIds];
+
+  // Build comprehensive set of all possible URL & path variations for target files
+  const targets = new Set<string>();
+
+  const addTarget = (raw: string | undefined | null) => {
+    if (!raw || typeof raw !== 'string') return;
+    const clean = raw.trim();
+    if (!clean) return;
+
+    const lower = clean.toLowerCase();
+    targets.add(lower);
+    targets.add(clean);
+    targets.add('/' + lower.replace(/^\/+/, ''));
+    targets.add(lower.replace(/^\/+/, ''));
+
+    try {
+      targets.add(decodeURIComponent(lower));
+      targets.add(encodeURI(lower));
+    } catch (e) {}
+
+    // If HTTP / HTTPS URL
+    if (lower.startsWith('http://') || lower.startsWith('https://')) {
+      try {
+        const u = new URL(clean);
+        targets.add(u.pathname.toLowerCase());
+        targets.add(u.pathname.replace(/^\/+/, '').toLowerCase());
+        if (lower.includes('/storage/v1/object/public/')) {
+          const after = lower.split('/storage/v1/object/public/')[1];
+          if (after) {
+            targets.add(after.toLowerCase());
+            targets.add('/' + after.toLowerCase());
+            targets.add(`supabase/${after}`.toLowerCase());
+            const b = path.basename(after).toLowerCase();
+            if (b && b.length > 2) targets.add(b);
+          }
+        }
+      } catch (e) {}
+    }
+
+    // If starts with supabase/
+    if (lower.startsWith('supabase/')) {
+      const rel = lower.replace(/^supabase\//, '');
+      targets.add(rel.toLowerCase());
+      targets.add('/' + rel.toLowerCase());
+      targets.add('/uploads/' + rel.toLowerCase());
+      const b = path.basename(rel).toLowerCase();
+      if (b && b.length > 2) targets.add(b);
+    }
+
+    // If starts with uploads/ or /uploads/
+    if (lower.includes('uploads/')) {
+      const after = lower.split('uploads/')[1];
+      if (after) {
+        targets.add('uploads/' + after.toLowerCase());
+        targets.add('/uploads/' + after.toLowerCase());
+        targets.add(after.toLowerCase());
+        const b = path.basename(after).toLowerCase();
+        if (b && b.length > 2) targets.add(b);
+      }
+    }
+
+    const baseName = path.basename(clean).toLowerCase();
+    if (baseName && baseName.length > 2) {
+      targets.add(baseName);
+    }
+  };
+
+  for (const id of fileIds) {
+    addTarget(id);
+  }
+  if (url) addTarget(url);
 
   const matchChecker = (val: string): boolean => {
     if (!val || typeof val !== 'string') return false;
     const cleanVal = val.trim().toLowerCase();
     if (!cleanVal) return false;
 
-    const targets = new Set<string>();
-    const addVariants = (s: string) => {
-      if (!s) return;
-      const clean = s.trim().toLowerCase();
-      targets.add(clean);
-      targets.add('/' + clean.replace(/^\/+/, ''));
-      targets.add(clean.replace(/^\/+/, ''));
-      try {
-        targets.add(decodeURIComponent(clean));
-        targets.add(encodeURI(clean));
-      } catch (e) {}
-      if (clean.includes('/storage/v1/object/public/')) {
-        const after = clean.split('/storage/v1/object/public/')[1];
-        if (after) {
-          targets.add(after);
-          targets.add(`supabase/${after}`);
-        }
+    if (targets.has(cleanVal)) return true;
+    if (targets.has(cleanVal.replace(/^\/+/, ''))) return true;
+    if (targets.has('/' + cleanVal.replace(/^\/+/, ''))) return true;
+
+    // Supabase URL matching
+    if (cleanVal.includes('/storage/v1/object/public/')) {
+      const after = cleanVal.split('/storage/v1/object/public/')[1];
+      if (after && (targets.has(after.toLowerCase()) || targets.has('/' + after.toLowerCase()) || targets.has(`supabase/${after.toLowerCase()}`))) {
+        return true;
       }
-    };
+    }
 
-    addVariants(fileId);
-    if (url) addVariants(url);
-
-    if (targets.has(cleanVal) || targets.has(cleanVal.replace(/^\/+/, '')) || targets.has('/' + cleanVal.replace(/^\/+/, ''))) {
+    // Basename match (only if > 3 chars and valid)
+    const bVal = path.basename(cleanVal).toLowerCase();
+    if (bVal && bVal.length > 3 && targets.has(bVal)) {
       return true;
     }
 
-    // Basename match
-    const b1 = path.basename(fileId).toLowerCase();
-    const b2 = url ? path.basename(url).toLowerCase() : '';
-    const bVal = path.basename(cleanVal).toLowerCase();
-    if (b1 && b1.length > 3 && bVal === b1) return true;
-    if (b2 && b2.length > 3 && bVal === b2) return true;
-
     return false;
+  };
+
+  const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  const removeMatchingUrlsFromText = (text: string): { text: string; changed: boolean } => {
+    let changed = false;
+    let currentText = text;
+
+    for (const target of Array.from(targets)) {
+      if (!target || target.length < 4) continue;
+      if (['uploads', '/uploads', 'branding', '/branding', 'fonts', '/fonts'].includes(target)) continue;
+
+      if (currentText.toLowerCase().includes(target.toLowerCase())) {
+        // Markdown image syntax ![alt](target)
+        const mdRegex = new RegExp(`!\\[[^\\]]*\\]\\(${escapeRegex(target)}\\)`, 'gi');
+        if (mdRegex.test(currentText)) {
+          currentText = currentText.replace(mdRegex, '');
+          changed = true;
+        }
+        // HTML img syntax <img ... src="target" ... />
+        const htmlRegex = new RegExp(`<img[^>]*src=["']${escapeRegex(target)}["'][^>]*>`, 'gi');
+        if (htmlRegex.test(currentText)) {
+          currentText = currentText.replace(htmlRegex, '');
+          changed = true;
+        }
+        // Raw URL occurrence
+        if (currentText.toLowerCase().includes(target.toLowerCase())) {
+          const rawRegex = new RegExp(escapeRegex(target), 'gi');
+          currentText = currentText.replace(rawRegex, '');
+          changed = true;
+        }
+      }
+    }
+
+    return { text: currentText, changed };
   };
 
   const cleanDeep = (value: any, entityLabel?: string): { cleaned: any; changed: boolean } => {
@@ -984,6 +1087,10 @@ export async function unlinkMediaUsage(
       if (matchChecker(value)) {
         return { cleaned: '', changed: true };
       }
+      const textRes = removeMatchingUrlsFromText(value);
+      if (textRes.changed) {
+        return { cleaned: textRes.text, changed: true };
+      }
       return { cleaned: value, changed: false };
     }
 
@@ -994,7 +1101,10 @@ export async function unlinkMediaUsage(
         if (res.changed) changed = true;
         return res.cleaned;
       }).filter(item => {
-        if (typeof item === 'string' && item === '' && value.some(old => typeof old === 'string' && matchChecker(old))) {
+        if (typeof item === 'string' && item === '') {
+          return false;
+        }
+        if (item && typeof item === 'object' && item.url === '') {
           return false;
         }
         return true;
@@ -1022,25 +1132,10 @@ export async function unlinkMediaUsage(
     const cases = await getCases();
     for (const c of cases) {
       const label = `Քեյս՝ ${c.title || (c as any).title_am || (c as any).title_en || 'Քեյս'}`;
-      let changed = false;
       if (!targetUsage || label.toLowerCase().includes(targetUsage.toLowerCase()) || targetUsage.toLowerCase().includes(label.toLowerCase())) {
-        if (c.image_url && matchChecker(c.image_url)) {
-          c.image_url = '';
-          changed = true;
-        }
-        if (c.bg && matchChecker(c.bg)) {
-          c.bg = '#111827';
-          changed = true;
-        }
-        if (c.details) {
-          const res = cleanDeep(c.details, label);
-          if (res.changed) {
-            c.details = res.cleaned;
-            changed = true;
-          }
-        }
-        if (changed) {
-          await saveCase(c);
+        const res = cleanDeep(c, label);
+        if (res.changed) {
+          await saveCase(res.cleaned);
           unlinkedCount++;
         }
       }

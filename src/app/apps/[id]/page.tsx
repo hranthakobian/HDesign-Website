@@ -335,7 +335,7 @@ export default function AppDetailPage() {
             fontSize: '0.92rem'
           }}
         >
-          <span style={{ fontSize: '1.3rem' }}>⚠️</span>
+          <span className="hd-icon icon-Warning" style={{ fontSize: "1.3rem" }} />
           <span>
             {locale === "hy"
               ? "Այս հավելվածը պահպանված է որպես սևագիր և հասանելի է միայն ադմինիստրատորին:"

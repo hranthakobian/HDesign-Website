@@ -103,6 +103,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           initialFontUrl={generalSettings?.site_font_url} 
           initialFontName={generalSettings?.site_font_name} 
         />
+        <link rel="stylesheet" href="https://api.hakobian.am/libs/v1/icons/style.css" />
         <link rel="stylesheet" href="https://api.hakobian.am/libs/v1/components/style.css" />
 
         {/* Custom Head Scripts */}

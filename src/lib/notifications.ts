@@ -369,7 +369,7 @@ export async function sendBugReportEmails({
   const adminMessage = `
     <div style="font-family: sans-serif; max-width: 620px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 16px; background: #ffffff; color: #2d3748;">
       <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #e53e3e; padding-bottom: 12px; margin-bottom: 18px;">
-        <h2 style="color: #c53030; margin: 0; font-size: 1.3rem;">⚠️ Նոր Վրեպի Զեկույց (Bug Report)</h2>
+        <h2 style="color: #c53030; margin: 0; font-size: 1.3rem;"> Նոր Վրեպի Զեկույց (Bug Report)</h2>
         <span style="font-size: 0.8rem; background: #fed7d7; color: #9b2c2c; padding: 4px 10px; border-radius: 20px; font-weight: bold;">
           ${report.id}
         </span>

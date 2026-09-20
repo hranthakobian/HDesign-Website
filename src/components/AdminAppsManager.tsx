@@ -1851,8 +1851,9 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                         )}
 
                         {report.media_files && report.media_files.length > 0 && (
-                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#d97706', background: 'rgba(245, 158, 11, 0.12)', padding: '2px 8px', borderRadius: '8px' }}>
-                            📎 {report.media_files.length} նիշք
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#d97706', background: 'rgba(245, 158, 11, 0.12)', padding: '2px 8px', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <span className="hd-icon icon-Attech" />
+                            <span>{report.media_files.length} նիշք</span>
                           </span>
                         )}
 
@@ -1886,14 +1887,17 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                       {/* Reporter Info */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '0.82rem', color: 'var(--muted)', flexWrap: 'wrap' }}>
                         <span>
-                          👤 <strong>{report.user_name}</strong>
+                          <span className="hd-icon icon-Cursor" style={{ marginRight: '4px' }} />
+                          <strong>{report.user_name}</strong>
                         </span>
                         <span>
-                          ✉️ <a href={`mailto:${report.user_email}?subject=Re: [Վրեպի Զեկույց] ${encodeURIComponent(report.subject)}`} style={{ color: 'var(--accent)', textDecoration: 'underline' }}>{report.user_email}</a>
+                          <span className="hd-icon icon-Mail" style={{ marginRight: '4px' }} />
+                          <a href={`mailto:${report.user_email}?subject=Re: [Վրեպի Զեկույց] ${encodeURIComponent(report.subject)}`} style={{ color: 'var(--accent)', textDecoration: 'underline' }}>{report.user_email}</a>
                         </span>
                         {report.admin_notes && (
                           <span style={{ color: '#d97706', fontStyle: 'italic' }}>
-                            💬 Նշում՝ {report.admin_notes}
+                            <span className="hd-icon icon-Info" style={{ marginRight: '4px' }} />
+                            Նշում՝ {report.admin_notes}
                           </span>
                         )}
                       </div>
@@ -2323,7 +2327,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
 
                   {selectedOSList.length === 0 ? (
                     <div style={{ fontSize: '0.82rem', color: '#e53935', background: 'rgba(229, 57, 53, 0.08)', padding: '12px 16px', borderRadius: '10px', fontWeight: 600 }}>
-                      ⚠️ Խնդրում ենք նախ ընտրել առնվազն մեկ ՕՀ (Windows, macOS կամ Linux)՝ դրա տակ հավելվածների և նյութերի ենթացանկը բացելու համար:
+                      <span className="hd-icon icon-Warning" style={{ marginRight: 6 }} /> Խնդրում ենք նախ ընտրել առնվազն մեկ ՕՀ (Windows, macOS կամ Linux)՝ դրա տակ հավելվածների և նյութերի ենթացանկը բացելու համար:
                     </div>
                   ) : (
                     /* HIERARCHICAL TREE: Render per selected OS */
@@ -2629,8 +2633,8 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                                                     currentValue: dl.url
                                                   })}
                                                 >
-                                                  <span style={{ padding: '0 8px' }}>
-                                                    📁 Մեդիայից
+                                                  <span style={{ padding: '0 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                                    <span className="hd-icon icon-Image" /> Մեդիայից
                                                   </span>
                                                 </hd-button>
 
@@ -2755,7 +2759,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
 
                   {selectedOSList.length === 0 ? (
                     <div style={{ fontSize: '0.8rem', color: '#e53935', background: 'rgba(229, 57, 53, 0.08)', padding: '10px 14px', borderRadius: '8px', fontWeight: 600 }}>
-                      ⚠️ Ընտրեք առնվազն մեկ ՕՀ (Windows, macOS կամ Linux)՝ տեղադրիչ նիշքերը կցելու համար:
+                      <span className="hd-icon icon-Warning" style={{ marginRight: 6 }} /> Ընտրեք առնվազն մեկ ՕՀ (Windows, macOS կամ Linux)՝ տեղադրիչ նիշքերը կցելու համար:
                     </div>
                   ) : (
                     /* Download slots for Standalone App */
@@ -2836,10 +2840,10 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                                       cursor: 'pointer'
                                     }}
                                   >
-                                    <option value="windows">🪟 Windows</option>
-                                    <option value="macos">🍎 macOS</option>
-                                    <option value="linux">🐧 Linux</option>
-                                    <option value="other">🌐 Այլ (Other)</option>
+                                    <option value="windows">Windows</option>
+                                    <option value="macos">macOS</option>
+                                    <option value="linux">Linux</option>
+                                    <option value="other">Այլ (Other)</option>
                                   </select>
 
                                   <div style={{ width: '90px' }}>
@@ -2923,7 +2927,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                                   })}
                                 >
                                   <span style={{ padding: '0 10px' }}>
-                                    📁 Մեդիայից
+                                    <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Մեդիայից
                                   </span>
                                 </hd-button>
 
@@ -3345,7 +3349,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                         currentValue: editingApp.cover_image
                       })}
                     >
-                      <span style={{ padding: '0 10px' }}>📁 Ընտրել Գլխավոր Նկար</span>
+                      <span style={{ padding: '0 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><span className="hd-icon icon-Image" /> Ընտրել Գլխավոր Նկար</span>
                     </hd-button>
                   </div>
                   <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -3404,7 +3408,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                           currentValue: editingApp.gallery_images
                         })}
                       >
-                        <span style={{ padding: '0 10px' }}>📁 Ընտրել Մեդիայից</span>
+                        <span style={{ padding: '0 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><span className="hd-icon icon-Image" /> Ընտրել Մեդիայից</span>
                       </hd-button>
                       <hd-button
                         suppressHydrationWarning
@@ -3778,7 +3782,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '1.3rem' }}>🐛</span>
+                <span className="hd-icon icon-Info" style={{ fontSize: '1.3rem' }} />
                 <div>
                   <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--text)' }}>
                     Վրեպի Զեկույց
@@ -3805,10 +3809,10 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                     cursor: 'pointer'
                   }}
                 >
-                  <option value="new">🟠 Նոր</option>
-                  <option value="investigating">🔵 Ուսումնասիրվում է</option>
-                  <option value="resolved">🟢 Լուծված</option>
-                  <option value="closed">⚪ Փակված</option>
+                  <option value="new">Նոր</option>
+                  <option value="investigating">Ուսումնասիրվում է</option>
+                  <option value="resolved">Լուծված</option>
+                  <option value="closed">Փակված</option>
                 </select>
 
                 <button
@@ -3988,7 +3992,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                               onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
                               onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
                             >
-                              🔍 Դիտել
+                              <span className="hd-icon icon-Eye" style={{ marginRight: 4 }} /> Դիտել
                             </div>
                           </div>
                         );
@@ -4034,7 +4038,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                             wordBreak: 'break-all'
                           }}
                         >
-                          <span style={{ fontSize: '1.2rem' }}>📄</span>
+                          <span className="hd-icon icon-Info" style={{ fontSize: '1.2rem' }} />
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {filename}
                           </span>
@@ -4058,8 +4062,9 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <label style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text)' }}>
-                    📝 Ներքին Վարչական Նշումներ (Admin Notes)
+                  <label style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <span className="hd-icon icon-Pencil" />
+                    <span>Ներքին Վարչական Նշումներ (Admin Notes)</span>
                   </label>
                   <span style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>
                     Տեսանելի է միայն վարիչին
@@ -4133,10 +4138,14 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                   borderRadius: '10px',
                   fontSize: '0.84rem',
                   fontWeight: 600,
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
                 }}
               >
-                🗑 Ջնջել Զեկույցը
+                <span className="hd-icon icon-Trash" />
+                <span>Ջնջել Զեկույցը</span>
               </button>
 
               <div style={{ display: 'flex', gap: '10px' }}>
@@ -4156,7 +4165,8 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                     textDecoration: 'none'
                   }}
                 >
-                  ✉️ Պատասխանել էլ․ փոստով
+                  <span className="hd-icon icon-Mail" />
+                  <span>Պատասխանել էլ․ փոստով</span>
                 </a>
 
                 <button

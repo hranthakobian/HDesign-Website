@@ -9,6 +9,7 @@ import AdminAppsManager from '@/components/AdminAppsManager';
 import AdminMediaManager from '@/components/AdminMediaManager';
 import MediaPickerModal from '@/components/MediaPickerModal';
 import SoftwareIcon from '@/components/SoftwareIcon';
+import FolderIcon from '@/components/FolderIcon';
 import { MediaFileType } from '@/lib/mediaTypes';
 import { prefetchMediaLibrary } from '@/lib/mediaCache';
 import { 
@@ -292,10 +293,7 @@ const NAV_TABS = [
     label: 'Մեդիա',
     icon: (
       <span style={{ fontSize: '1.3rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-          <polygon points="12 11 12 17 17 14" fill="currentColor" stroke="none" />
-        </svg>
+        <FolderIcon size={22} color="currentColor" />
       </span>
     )
   },
@@ -4618,7 +4616,7 @@ function AdminDashboardContent() {
                                       data-height="30px"
                                       data-font-size="0.7rem"
                                     >
-                                      ✏ WYSIWYG
+                                      <span className="hd-icon icon-Pencil" style={{ marginRight: 6 }} /> WYSIWYG
                                     </hd-button>
                                   </a>
                                   <hd-button 
@@ -4628,7 +4626,7 @@ function AdminDashboardContent() {
                                     data-height="30px"
                                     data-font-size="0.7rem"
                                   >
-                                    👁 Դիտում
+                                    <span className="hd-icon icon-Eye" style={{ marginRight: 6 }} /> Դիտում
                                   </hd-button>
                                   <hd-button 
                                     onClick={() => openCaseDrawer(c, 'case_edit')}
@@ -4637,7 +4635,7 @@ function AdminDashboardContent() {
                                     data-height="30px"
                                     data-font-size="0.7rem"
                                   >
-                                    ⚙ Խմբագրել
+                                    <span className="hd-icon icon-Settings" style={{ marginRight: 6 }} /> Խմբագրել
                                   </hd-button>
                                   <hd-button 
                                     onClick={() => handleDeleteCase(c.id)}
@@ -4783,13 +4781,13 @@ function AdminDashboardContent() {
                                       cursor: 'pointer'
                                     }}
                                   >
-                                    📁 Ընտրել Մեդիայից
+                                    <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Ընտրել Մեդիայից
                                   </button>
                                 </div>
                                 <hd-input value={drawerCaseImageUrl} onInput={(e: any) => setDrawerCaseImageUrl(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
                               </div>
                               <div style={{ marginTop: '10px' }}>
-                                <hd-button type="submit" data-width="100%" data-height="38px" data-thickness="3px">💾 Պահպանել</hd-button>
+                                <hd-button type="submit" data-width="100%" data-height="38px" data-thickness="3px"><span className="hd-icon icon-Check" style={{ marginRight: 6 }} /> Պահպանել</hd-button>
                               </div>
                             </form>
                           )}
@@ -4931,7 +4929,7 @@ function AdminDashboardContent() {
                                       data-height="30px"
                                       data-font-size="0.7rem"
                                     >
-                                      ✏ WYSIWYG
+                                      <span className="hd-icon icon-Pencil" style={{ marginRight: 6 }} /> WYSIWYG
                                     </hd-button>
                                   </a>
                                   <hd-button 
@@ -4941,7 +4939,7 @@ function AdminDashboardContent() {
                                     data-height="30px"
                                     data-font-size="0.7rem"
                                   >
-                                    👁 Դիտում
+                                    <span className="hd-icon icon-Eye" style={{ marginRight: 6 }} /> Դիտում
                                   </hd-button>
                                   <hd-button 
                                     onClick={() => openFontDrawer(f, 'font_edit')}
@@ -4950,7 +4948,7 @@ function AdminDashboardContent() {
                                     data-height="30px"
                                     data-font-size="0.7rem"
                                   >
-                                    ⚙ Խմբագրել
+                                    <span className="hd-icon icon-Settings" style={{ marginRight: 6 }} /> Խմբագրել
                                   </hd-button>
                                   <hd-button 
                                     onClick={() => handleDeleteFont(f.id)}
@@ -5033,7 +5031,7 @@ function AdminDashboardContent() {
 
                               <div style={{ borderTop: '1px solid var(--panel-border)', paddingTop: '16px', marginTop: '8px' }}>
                                 <a href={`/admin/editor/font/${drawerFontId}`} style={{ textDecoration: 'none' }}>
-                                  <hd-button data-width="100%" data-height="36px" data-thickness="3px">✏ Բացել WYSIWYG խմբագրիչը</hd-button>
+                                  <hd-button data-width="100%" data-height="36px" data-thickness="3px"><span className="hd-icon icon-Pencil" style={{ marginRight: 6 }} /> Բացել WYSIWYG խմբագրիչը</hd-button>
                                 </a>
                               </div>
                             </div>
@@ -5096,7 +5094,7 @@ function AdminDashboardContent() {
                                       cursor: 'pointer'
                                     }}
                                   >
-                                    📁 Ընտրել Մեդիայից
+                                    <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Ընտրել Մեդիայից
                                   </button>
                                 </div>
                                 <hd-input value={drawerFontFileUrl} onInput={(e: any) => setDrawerFontFileUrl(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
@@ -5135,7 +5133,7 @@ function AdminDashboardContent() {
                               )}
 
                               <div style={{ marginTop: '10px' }}>
-                                <hd-button type="submit" data-width="100%" data-height="38px" data-thickness="3px">💾 Պահպանել</hd-button>
+                                <hd-button type="submit" data-width="100%" data-height="38px" data-thickness="3px"><span className="hd-icon icon-Check" style={{ marginRight: 6 }} /> Պահպանել</hd-button>
                               </div>
                             </form>
                           )}
@@ -5715,7 +5713,7 @@ function AdminDashboardContent() {
                             data-color="rgba(0,196,159,0.15)"
                             style={{ color: '#00C49F' }}
                           >
-                            ✔ Նշել բոլորը կարդացված
+                            <span className="hd-icon icon-Check" style={{ marginRight: 6 }} /> Նշել բոլորը կարդացված
                           </hd-button>
                         )}
                         
@@ -5727,7 +5725,7 @@ function AdminDashboardContent() {
                             data-color="rgba(255,107,107,0.15)"
                             style={{ color: '#ff6b6b' }}
                           >
-                            🗑 Դատարկել աղբամանը
+                            <span className="hd-icon icon-Trash" style={{ marginRight: 6 }} /> Դատարկել աղբամանը
                           </hd-button>
                         )}
                       </div>
@@ -6612,7 +6610,7 @@ function AdminDashboardContent() {
                     gap: '12px'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '1.1rem' }}>⚙️</span>
+                      <span className="hd-icon icon-Settings" style={{ fontSize: "1.1rem" }} />
                       <span style={{ fontSize: '0.88rem', fontWeight: 500, color: 'var(--muted)' }}>
                         {Object.keys(editingTrans).length > 0 ? (
                           <>Առկա են <strong style={{ color: '#00C49F' }}>{Object.keys(editingTrans).length}</strong> չպահպանված տեղական խմբագրումներ։</>
@@ -6656,7 +6654,7 @@ function AdminDashboardContent() {
                             data-height="36px"
                             data-font-size="0.82rem"
                           >
-                            {isSavingAllTrans ? '💾 Պահպանվում է...' : `💾 Պահպանել բոլորը (${Object.keys(editingTrans).length})`}
+                            {isSavingAllTrans ? 'Պահպանվում է...' : `<span className="hd-icon icon-Check" style={{ marginRight: 6 }} /> Պահպանել բոլորը (${Object.keys(editingTrans).length})`}
                           </hd-button>
                         </>
                       )}
@@ -8022,7 +8020,7 @@ function AdminDashboardContent() {
                       data-height="46px"
                       data-thickness="3px"
                     >
-                      {isSavingAbout ? '⏳ Պահպանվում է...' : '💾 Պահպանել «Մասին» տվյալները'}
+                      {isSavingAbout ? 'Պահպանվում է...' : '<span className="hd-icon icon-Check" style={{ marginRight: 6 }} /> Պահպանել «Մասին» տվյալները'}
                     </hd-button>
                   </div>
 
@@ -8839,12 +8837,12 @@ function AdminDashboardContent() {
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {[
-                          { key: 'home', title: 'Գլխավոր էջ (Home)', path: '/', icon: '🏠' },
-                          { key: 'works', title: 'Աշխատանքներ (Works)', path: '/works', icon: '💼' },
-                          { key: 'about', title: 'Մեր մասին (About)', path: '/about', icon: 'ℹ️' },
-                          { key: 'contact', title: 'Կապ (Contact)', path: '/contact', icon: '📞' },
-                          { key: 'fonts', title: 'Տառատեսակներ (Fonts)', path: '/fonts', icon: '🔤' },
-                          { key: 'hdesign', title: 'HDesign', path: '/hdesign', icon: '🎨' }
+                          { key: 'home', title: 'Գլխավոր էջ (Home)', path: '/', icon: <span className="hd-icon icon-Dashboard" /> },
+                          { key: 'works', title: 'Աշխատանքներ (Works)', path: '/works', icon: <span className="hd-icon icon-Pattern" /> },
+                          { key: 'about', title: 'Մեր մասին (About)', path: '/about', icon: <span className="hd-icon icon-Info" /> },
+                          { key: 'contact', title: 'Կապ (Contact)', path: '/contact', icon: <span className="hd-icon icon-Call" /> },
+                          { key: 'fonts', title: 'Տառատեսակներ (Fonts)', path: '/fonts', icon: <span className="hd-icon icon-Pencil" /> },
+                          { key: 'hdesign', title: 'HDesign', path: '/hdesign', icon: <span className="hd-icon icon-Pattern" /> }
                         ].map((page) => {
                           const isUpcoming = !!upcomingPages[page.key];
                           const isUpdating = togglingPageKey === page.key;
@@ -9017,7 +9015,7 @@ function AdminDashboardContent() {
                                 cursor: 'pointer'
                               }}
                             >
-                              📁 Ընտրել Մեդիայից
+                              <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Ընտրել Մեդիայից
                             </button>
                           </div>
                           <hd-input 
@@ -9142,7 +9140,7 @@ function AdminDashboardContent() {
                                   cursor: 'pointer'
                                 }}
                               >
-                                📁 Ընտրել Մեդիայից
+                                <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Ընտրել Մեդիայից
                               </button>
                             </div>
                             <hd-input 
@@ -9188,7 +9186,7 @@ function AdminDashboardContent() {
                                   cursor: 'pointer'
                                 }}
                               >
-                                📁 Ընտրել Մեդիայից
+                                <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Ընտրել Մեդիայից
                               </button>
                             </div>
                             <hd-input 
@@ -9239,7 +9237,7 @@ function AdminDashboardContent() {
                                   cursor: 'pointer'
                                 }}
                               >
-                                📁 Ընտրել Մեդիայից
+                                <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Ընտրել Մեդիայից
                               </button>
                             </div>
                             <hd-input 
@@ -9285,7 +9283,7 @@ function AdminDashboardContent() {
                                   cursor: 'pointer'
                                 }}
                               >
-                                📁 Ընտրել Մեդիայից
+                                <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Ընտրել Մեդիայից
                               </button>
                             </div>
                             <hd-input 
@@ -9436,7 +9434,7 @@ function AdminDashboardContent() {
                                           cursor: 'pointer'
                                         }}
                                       >
-                                        📁 Մեդիայից
+                                        <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Մեդիայից
                                       </button>
                                       <button
                                         type="button"
@@ -9536,7 +9534,7 @@ function AdminDashboardContent() {
                                 cursor: 'pointer'
                               }}
                             >
-                              📁 Մեդիայից
+                              <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Մեդիայից
                             </button>
                             <button
                               type="button"

@@ -337,6 +337,31 @@ hd-segment button {
   white-space: nowrap !important;
 }
 
+/* Enhanced Global Button Spacing and Typography */
+hd-button,
+.custom-button-wrapper {
+  font-size: 0.92rem;
+}
+
+hd-button > span,
+hd-button > div,
+hd-button > a,
+.custom-button-wrapper > span,
+.custom-button-wrapper > div {
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  font-size: 0.88rem !important;
+  line-height: 1.4 !important;
+  white-space: nowrap !important;
+}
+
+button:not(.no-default-btn-style) {
+  padding-left: 18px;
+  padding-right: 18px;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
 
 // input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="color"]):not([type="range"]):not([type="image"]):not([type="submit"]):not([type="button"]),
 // hd-input {

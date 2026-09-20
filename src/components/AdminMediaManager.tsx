@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import JSZip from 'jszip';
+import FolderIcon from '@/components/FolderIcon';
 import { MediaFolder, MediaFile, ViewMode, SortField, SortOrder, SortCriterion, MediaFileType, StorageStats, TrashSettings, FolderStats, formatBytes } from '@/lib/mediaTypes';
 import { getCachedMedia, notifyMediaCache, subscribeToMediaCache } from '@/lib/mediaCache';
 
@@ -819,13 +820,13 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     if (currentFolderId === 'trash') {
       return [
         { id: null, name: 'Անհատական Կայք (ԱԿ)' },
-        { id: 'trash', name: '🗑️ Աղբարկղ', color: '#EF4444' }
+        { id: 'trash', name: 'Աղբարկղ', color: '#EF4444' }
       ];
     }
     if (currentFolderId === 'gallery') {
       return [
         { id: null, name: 'Անհատական Կայք (ԱԿ)' },
-        { id: 'gallery', name: '🖼️ Պատկերասրահ (Բոլոր նիշքերը)', color: '#8B5CF6' }
+        { id: 'gallery', name: 'Պատկերասրահ (Բոլոր նիշքերը)', color: '#8B5CF6' }
       ];
     }
     const crumbs: Array<{ id: string | null; name: string; color?: string }> = [
@@ -1482,7 +1483,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     if (isUsed) {
       openDialog({
         type: 'warning',
-        title: '⚠️ Զգուշացում․ Նիշքն օգտագործվում է կայքում',
+        title: ' Զգուշացում․ Նիշքն օգտագործվում է կայքում',
         message: `«${file.name}» նիշքը ակտիվորեն օգտագործվում է կայքի ${file.usedIn!.length} հատվածում։ Աղբարկղ տեղափոխելու դեպքում այն կարող է այլևս չցուցադրվել կայքում։`,
         usedInList: file.usedIn,
         confirmText: 'Այնուամենայնիվ տեղափոխել աղբարկղ',
@@ -1555,7 +1556,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     if (usedFiles.length > 0) {
       openDialog({
         type: 'warning',
-        title: '⚠️ Զգուշացում․ Ընտրված նիշքերից որոշներն օգտագործվում են կայքում',
+        title: ' Զգուշացում․ Ընտրված նիշքերից որոշներն օգտագործվում են կայքում',
         message: `Ընտրված ${idsToTrash.length} նիշքերից ${usedFiles.length}-ը ներկայումս ակտիվորեն օգտագործվում են կայքում։ Աղբարկղ տեղափոխելու դեպքում դրանք կարող են այլևս չցուցադրվել կայքում։`,
         usedInList: allUsedLocations,
         confirmText: 'Այնուամենայնիվ տեղափոխել աղբարկղ',
@@ -1680,7 +1681,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
     openDialog({
       type: isUsed ? 'warning' : 'danger',
-      title: isUsed ? '⚠️ Զգուշացում․ Ընդմիշտ ջնջվող նիշքը օգտագործվում է կայքում' : '💥 Ընդմիշտ ջնջում',
+      title: isUsed ? ' Զգուշացում․ Ընդմիշտ ջնջվող նիշքը օգտագործվում է կայքում' : '💥 Ընդմիշտ ջնջում',
       message: isUsed
         ? `«${file.name}» նիշքը օգտագործվում է կայքի ${file.usedIn!.length} հատվածում: Ընդմիշտ ջնջելու դեպքում այն կջնջվի Supabase-ից անվերադարձ և կայքի այդ հատվածները կկոտրվեն:`
         : `Վստա՞հ եք, որ ցանկանում եք ԸՆԴՄԻՇՏ հեռացնել «${file.name}» նիշքը:\nԱյն կջնջվի Supabase պահոցից և սերվերից անվերադարձ:`,
@@ -1730,7 +1731,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
     openDialog({
       type: usedFiles.length > 0 ? 'warning' : 'danger',
-      title: usedFiles.length > 0 ? '⚠️ Զգուշացում․ Ընտրված նիշքերից որոշներն օգտագործվում են կայքում' : '💥 Ընդմիշտ ջնջում',
+      title: usedFiles.length > 0 ? ' Զգուշացում․ Ընտրված նիշքերից որոշներն օգտագործվում են կայքում' : '💥 Ընդմիշտ ջնջում',
       message: usedFiles.length > 0
         ? `Ընտրված ${idsToDelete.length} նիշքերից ${usedFiles.length}-ը ակտիվորեն օգտագործվում են կայքում: Դրանք ընդմիշտ կջնջվեն Supabase-ից անվերադարձ:`
         : `Վստա՞հ եք, որ ցանկանում եք ԸՆԴՄԻՇՏ հեռացնել ընտրված ${idsToDelete.length} նիշքերը:\nԴրանք կջնջվեն Supabase-ից և սերվերից անվերադարձ:`,
@@ -2869,17 +2870,11 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
             )}
 
             {/* Folder Icon tinted with custom color */}
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill={folder.color || '#3B82F6'}
-              stroke={isSelected ? '#ffffff' : folder.color || '#3B82F6'}
-              strokeWidth="1.5"
+            <FolderIcon
+              size={18}
+              color={isSelected ? '#ffffff' : folder.color || '#3B82F6'}
               style={{ flexShrink: 0, filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }}
-            >
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-            </svg>
+            />
 
             <span
               style={{
@@ -3534,7 +3529,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     }}
                   >
                     {idx === 0 ? (
-                      <span>🖥️</span>
+                      <span className="hd-icon icon-Monitor" style={{ fontSize: '0.9rem' }} />
                     ) : (
                       <span
                         style={{
@@ -3555,18 +3550,19 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
           {/* Search Box */}
           <div style={{ position: 'relative', width: '220px' }}>
+            <span className="hd-icon icon-Search" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)', fontSize: '0.85rem', pointerEvents: 'none' }} />
             <input
               type="text"
               value={searchQuery}
               onChange={e => changeSearchQuery(e.target.value)}
-              placeholder="🔍 Որոնել մեդիայում..."
+              placeholder="Որոնել մեդիայում..."
               style={{
                 width: '100%',
                 height: '38px',
                 background: 'var(--bg)',
                 border: '1px solid var(--panel-border)',
                 borderRadius: '10px',
-                padding: '0 30px 0 12px',
+                padding: '0 30px 0 32px',
                 color: 'var(--fg)',
                 fontSize: '0.85rem'
               }}
@@ -3587,7 +3583,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   fontSize: '0.85rem'
                 }}
               >
-                ✕
+                <span className="hd-icon icon-Close" />
               </button>
             )}
           </div>
@@ -3615,7 +3611,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 transition: 'all 0.15s ease'
               }}
             >
-              <span>📁＋</span>
+              <FolderIcon size={16} />
               <span>Նոր Պանակ</span>
             </button>
 
@@ -3638,7 +3634,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 boxShadow: '0 2px 10px rgba(59, 130, 246, 0.3)'
               }}
             >
-              <span>↑</span>
+              <span className="hd-icon icon-Chevrolt-Arrow-Top" style={{ fontSize: '0.8rem' }} />
               <span>{isUploading ? 'Վերբեռնվում է...' : 'Վերբեռնել Նիշք'}</span>
             </button>
 
@@ -3661,7 +3657,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 gap: '5px'
               }}
             >
-              <span>🔗</span>
+              <span className="hd-icon icon-Link" />
               <span>Կայքում օգտագործվողները</span>
             </button>
 
@@ -3684,7 +3680,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 gap: '5px'
               }}
             >
-              <span>💤</span>
+              <span className="hd-icon icon-Info" />
               <span>Չօգտագործվողները</span>
             </button>
           </div>
@@ -3873,12 +3869,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflowX: 'auto', paddingTop: '4px' }}>
           {[
             { id: 'all', label: 'Բոլորը', count: stats?.totalFiles || files.length },
-            { id: 'image', label: '🖼️ Նկարներ', count: stats?.imagesCount },
-            { id: 'vector', label: '📐 Վեկտոր/SVG', count: stats?.vectorsCount },
-            { id: 'video', label: '🎬 Տեսանյութեր', count: stats?.videosCount },
-            { id: 'font', label: '🔤 Տառատեսակներ', count: stats?.fontsCount },
-            { id: 'audio', label: '🎵 Աուդիո', count: undefined },
-            { id: 'document', label: '📄 Փաստաթղթեր', count: undefined }
+            { id: 'image', label: 'Նկարներ', count: stats?.imagesCount },
+            { id: 'vector', label: 'Վեկտոր/SVG', count: stats?.vectorsCount },
+            { id: 'video', label: 'Տեսանյութեր', count: stats?.videosCount },
+            { id: 'font', label: 'Տառատեսակներ', count: stats?.fontsCount },
+            { id: 'audio', label: 'Աուդիո', count: undefined },
+            { id: 'document', label: 'Փաստաթղթեր', count: undefined }
           ].map(tab => (
             <button
               key={tab.id}
@@ -3925,7 +3921,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '1.05rem' }}>{currentFolderId === 'trash' ? '🗑️' : '📁'}</span>
+                {currentFolderId === 'trash' ? <span className="hd-icon icon-Trash" /> : <FolderIcon size={18} />}
                 <span style={{ fontWeight: 600, fontSize: '0.88rem' }}>
                   {currentFolderId === 'trash'
                     ? `Աղբարկղում՝ ${filteredFiles.length} նիշք`
@@ -4033,7 +4029,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     gap: '5px'
                   }}
                 >
-                  <span>👁️</span>
+                  <span className="hd-icon icon-Eye" />
                   <span>Դիտել</span>
                 </button>
               )}
@@ -4059,7 +4055,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   gap: '5px'
                 }}
               >
-                <span>📁</span>
+                <FolderIcon size={14} color="#ffffff" />
                 <span>Տեղափոխել...</span>
               </button>
 
@@ -4082,7 +4078,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                       gap: '5px'
                     }}
                   >
-                    <span>♻️</span>
+                    <span className="hd-icon icon-Check" />
                     <span>Վերականգնել</span>
                   </button>
 
@@ -4097,10 +4093,14 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                       padding: '6px 14px',
                       fontSize: '0.82rem',
                       fontWeight: 600,
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px'
                     }}
                   >
-                    💥 Ընդմիշտ ջնջել
+                    <span className="hd-icon icon-Trash" />
+                    <span>Ընդմիշտ ջնջել</span>
                   </button>
                 </>
               ) : (
@@ -4129,7 +4129,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                           gap: '5px'
                         }}
                       >
-                        <span>📌</span>
+                        <span className="hd-icon icon-Map-Pin" />
                         <span>{Array.from(selectedFileIds).every(id => pinnedFileIds.has(id)) ? 'Ապագամել' : 'Գամել վերեւում'}</span>
                       </button>
 
@@ -4144,10 +4144,14 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                           padding: '6px 14px',
                           fontSize: '0.82rem',
                           fontWeight: 600,
-                          cursor: 'pointer'
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px'
                         }}
                       >
-                        🔗 Պատճենել հղումները
+                        <span className="hd-icon icon-Link" />
+                        <span>Պատճենել հղումները</span>
                       </button>
 
                       <button
@@ -4167,7 +4171,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                           gap: '5px'
                         }}
                       >
-                        <span>{selectedFileIds.size > 1 ? '📦' : '⬇️'}</span>
+                        <span className="hd-icon icon-Download" />
                         <span>{selectedFileIds.size > 1 ? 'Ներբեռնել ZIP-ով' : 'Ներբեռնել'}</span>
                       </button>
                     </>
@@ -4185,10 +4189,14 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                         padding: '6px 14px',
                         fontSize: '0.82rem',
                         fontWeight: 600,
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px'
                       }}
                     >
-                      🗑️ Ջնջել պանակները
+                      <span className="hd-icon icon-Trash" />
+                      <span>Ջնջել պանակները</span>
                     </button>
                   )}
 
@@ -4204,10 +4212,14 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                         padding: '6px 14px',
                         fontSize: '0.82rem',
                         fontWeight: 600,
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px'
                       }}
                     >
-                      🗑️ Տեղափոխել աղբարկղ
+                      <span className="hd-icon icon-Trash" />
+                      <span>Տեղափոխել աղբարկղ</span>
                     </button>
                   )}
                 </>
@@ -4293,7 +4305,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>🖥️</span>
+              <span className="hd-icon icon-Monitor" style={{ fontSize: '1rem' }} />
               <span style={{ fontWeight: currentFolderId === null ? 700 : 500 }}>Անհատական Կայք (ԱԿ)</span>
             </div>
             {files.filter(f => !f.isTrashed && f.folderId === null).length > 0 && (
@@ -4330,7 +4342,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>🖼️</span>
+              <span className="hd-icon icon-Image" />
               <span style={{ fontWeight: currentFolderId === 'gallery' ? 700 : 500 }}>Պատկերասրահ (Gallery)</span>
             </div>
             <span
@@ -4376,7 +4388,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>🗑️</span>
+              <span className="hd-icon icon-Trash" />
               <span style={{ fontWeight: currentFolderId === 'trash' ? 700 : 500 }}>Աղբարկղ</span>
             </div>
             <span
@@ -4824,17 +4836,11 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                               )}
                             </div>
 
-                            <svg
-                              width="28"
-                              height="28"
-                              viewBox="0 0 24 24"
-                              fill={subf.color || '#3B82F6'}
-                              stroke={subf.color || '#3B82F6'}
-                              strokeWidth="1.5"
+                            <FolderIcon
+                              size={28}
+                              color={subf.color || '#3B82F6'}
                               style={{ flexShrink: 0 }}
-                            >
-                              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                            </svg>
+                            />
                             <div style={{ minWidth: 0 }}>
                               <div
                                 style={{
@@ -4926,7 +4932,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                       color: 'var(--muted)'
                     }}
                   >
-                    <div style={{ fontSize: '2.4rem' }}>📁</div>
+                    <FolderIcon size={48} style={{ opacity: 0.6 }} />
                     <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--fg)' }}>
                       Այս պանակը դատարկ է
                     </div>
@@ -5884,18 +5890,10 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke={folderFormColor || 'var(--accent)'}
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                </svg>
+                <FolderIcon
+                  size={24}
+                  color={folderFormColor || 'var(--accent)'}
+                />
                 <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800 }}>
                   {editingFolderId ? 'Խմբագրել Պանակը' : 'Նոր Պանակ'}
                 </h3>
@@ -6180,7 +6178,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   fontSize: '0.85rem'
                 }}
               >
-                🖥️ Անհատական Կայք (ԱԿ) (Գլխավոր)
+                <span className="hd-icon icon-Monitor" style={{ marginRight: 6 }} /> Անհատական Կայք (ԱԿ) (Գլխավոր)
               </div>
 
               {folders
@@ -6595,7 +6593,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                       }}
                     >
                       <div style={{ fontWeight: 700, color: '#EF4444', marginBottom: '2px' }}>
-                        ⚠️ Այս նիշքը գտնվում է աղբարկղում
+                         Այս նիշքը գտնվում է աղբարկղում
                       </div>
                       <div style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>
                         {previewFile.daysRemaining !== undefined
@@ -7414,7 +7412,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
               >
-                <span style={{ fontSize: '1rem' }}>📂</span>
+                <FolderIcon size={16} color="currentColor" />
                 <span style={{ flex: 1 }}>Բացել</span>
               </button>
 
@@ -7440,7 +7438,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
               >
-                <span style={{ fontSize: '1rem' }}>📁＋</span>
+                <FolderIcon size={16} color="currentColor" />
                 <span style={{ flex: 1 }}>Նոր Ենթապանակ</span>
               </button>
 
@@ -7466,7 +7464,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
               >
-                <span style={{ fontSize: '1rem' }}>⚙️</span>
+                <span className="hd-icon icon-Settings" />
                 <span style={{ flex: 1 }}>Խմբագրել անունը / գույնը</span>
               </button>
 
@@ -7495,7 +7493,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
-                <span style={{ fontSize: '1rem' }}>🗑️</span>
+                <span className="hd-icon icon-Trash" />
                 <span style={{ flex: 1 }}>Ջնջել պանակը</span>
               </button>
             </>
@@ -7529,7 +7527,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
                   >
-                    <span style={{ fontSize: '1rem' }}>📁＋</span>
+                    <FolderIcon size={16} color="currentColor" />
                     <span style={{ flex: 1 }}>Նոր Պանակ</span>
                   </button>
 
@@ -7555,7 +7553,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
                   >
-                    <span style={{ fontSize: '1rem' }}>↑</span>
+                    <span className="hd-icon icon-Chevrolt-Arrow-Top" />
                     <span style={{ flex: 1 }}>Վերբեռնել Նիշք</span>
                   </button>
                 </>
@@ -7583,7 +7581,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
               >
-                <span style={{ fontSize: '1rem' }}>🔄</span>
+                <span className="hd-icon icon-Check" />
                 <span style={{ flex: 1 }}>Թարմացնել</span>
                 <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>F5</span>
               </button>
@@ -7612,7 +7610,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
               >
-                <span style={{ fontSize: '1rem' }}>⬚</span>
+                <span className="hd-icon icon-Check" />
                 <span style={{ flex: 1 }}>Նշել բոլորը</span>
                 <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>Ctrl+A</span>
               </button>
@@ -7641,7 +7639,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
                   >
-                    <span style={{ fontSize: '1rem' }}>⚙️</span>
+                    <span className="hd-icon icon-Settings" />
                     <span style={{ flex: 1 }}>Աղբարկղի կարգավորումներ</span>
                   </button>
 
@@ -7668,7 +7666,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
-                    <span style={{ fontSize: '1rem' }}>💥</span>
+                    <span className="hd-icon icon-Trash" />
                     <span style={{ flex: 1 }}>Դատարկել աղբարկղը</span>
                   </button>
                 </>
@@ -7726,9 +7724,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     animationDelay: '-1.4s'
                   }}
                 >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill={dragAvatar.folders[1].color || '#3B82F6'} stroke={dragAvatar.folders[1].color || '#3B82F6'} strokeWidth="1.5">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                  </svg>
+                  <FolderIcon size={24} color={dragAvatar.folders[1].color || '#3B82F6'} />
                   <div style={{ fontSize: '0.6rem', color: '#fff', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', textAlign: 'center' }}>
                     {dragAvatar.folders[1].name}
                   </div>
@@ -7757,9 +7753,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     animation: 'dragCardBobTop 2.6s ease-in-out infinite alternate'
                   }}
                 >
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill={dragAvatar.folders[0].color || '#3B82F6'} stroke={dragAvatar.folders[0].color || '#3B82F6'} strokeWidth="1.5">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                  </svg>
+                  <FolderIcon size={26} color={dragAvatar.folders[0].color || '#3B82F6'} />
                   <div style={{ fontSize: '0.62rem', color: '#fff', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', textAlign: 'center' }}>
                     {dragAvatar.folders[0].name}
                   </div>
@@ -7804,16 +7798,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 animation: 'dragSingleCardBob 2.6s ease-in-out infinite alternate'
               }}
             >
-              <svg
-                width="30"
-                height="30"
-                viewBox="0 0 24 24"
-                fill={dragAvatar.folder.color || '#3B82F6'}
-                stroke={dragAvatar.folder.color || '#3B82F6'}
-                strokeWidth="1.5"
-              >
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-              </svg>
+              <FolderIcon size={30} color={dragAvatar.folder.color || '#3B82F6'} />
               <div
                 style={{
                   fontSize: '0.65rem',
@@ -8318,7 +8303,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 {dialogModal.type === 'danger'
                   ? '🗑️'
                   : dialogModal.type === 'warning'
-                  ? '⚠️'
+                  ? ''
                   : dialogModal.type === 'success'
                   ? '✓'
                   : 'ℹ️'}
@@ -8347,7 +8332,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 }}
               >
                 <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#EF4444', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>⚠️ Զգուշացում․ Այս նիշքն օգտագործվում է հետևյալ բաժիններում՝</span>
+                  <span> Զգուշացում․ Այս նիշքն օգտագործվում է հետևյալ բաժիններում՝</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '140px', overflowY: 'auto' }}>
                   {dialogModal.usedInList.map((u, i) => {
