@@ -5064,7 +5064,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                               boxShadow: isPinned ? '0 0 10px rgba(245, 158, 11, 0.5)' : 'none'
                             }}
                           >
-                            📌
+                            <span className="hd-icon icon-Pin" style={{ fontSize: '0.75rem' }} />
                           </div>
 
                           {/* Extension Badge */}
@@ -5232,7 +5232,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                               boxShadow: isPinned ? '0 0 8px rgba(245, 158, 11, 0.5)' : 'none'
                             }}
                           >
-                            📌
+                            <span className="hd-icon icon-Pin" style={{ fontSize: '0.7rem' }} />
                           </div>
 
                           <div style={{ height: '100px', width: '100%' }}>
