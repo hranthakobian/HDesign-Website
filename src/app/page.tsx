@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useI18n, parseLangText } from "@/lib/i18n";
@@ -3900,10 +3900,12 @@ export default function Home() {
       </main>
 
       {/* Case Details Glassmorphic Modal */}
-        {selectedCase && (
+        {displayedCase && (
           <div 
-            className="case-modal-overlay" 
-            onClick={() => setSelectedCase(null)}
+            className={`case-modal-overlay ${isClosingCase ? "closing" : ""}`}
+            data-modal-backdrop="true"
+            data-closing={isClosingCase ? "true" : undefined}
+            onClick={handleCloseCase}
             style={{
               position: "fixed",
               inset: 0,
@@ -3913,12 +3915,13 @@ export default function Home() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: "20px",
-              animation: "fadeIn 0.3s ease-out"
+              padding: "20px"
             }}
           >
             <div 
-              className="case-modal-content" 
+              className={`case-modal-content ${isClosingCase ? "closing" : ""}`}
+              data-modal-container="true"
+              data-closing={isClosingCase ? "true" : undefined}
               onClick={(e) => e.stopPropagation()}
               style={{
                 background: "rgba(255, 255, 255, 0.05)",
@@ -3932,12 +3935,12 @@ export default function Home() {
                 display: "flex",
                 flexDirection: "column",
                 boxShadow: "0 24px 80px rgba(0, 0, 0, 0.5)",
-                animation: "scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)"
+                willChange: "transform, opacity"
               }}
             >
               {/* Close Button */}
               <div 
-                onClick={() => setSelectedCase(null)}
+                onClick={handleCloseCase}
                 style={{
                   position: "absolute",
                   top: "20px",
@@ -3965,7 +3968,7 @@ export default function Home() {
                 {/* Left Side: Image/Art */}
                 <div 
                   style={{ 
-                    background: selectedCase.bg || selectedCase.color, 
+                    background: displayedCase.bg || displayedCase.color, 
                     minHeight: "350px", 
                     display: "flex", 
                     alignItems: "center", 
@@ -3976,15 +3979,15 @@ export default function Home() {
                     borderBottomLeftRadius: "24px"
                   }}
                 >
-                  {selectedCase.image_url || selectedCase.image ? (
+                  {displayedCase.image_url || displayedCase.image ? (
                     <img 
-                      src={selectedCase.image_url || selectedCase.image} 
-                      alt={selectedCase.title}
+                      src={displayedCase.image_url || displayedCase.image} 
+                      alt={displayedCase.title} 
                       style={{ width: "100%", height: "100%", objectFit: "cover" }} 
                     />
                   ) : (
                     <div style={{ width: "80%", height: "80%", position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {getSvgForCase(selectedCase.id)}
+                      {getSvgForCase(displayedCase.id)}
                     </div>
                   )}
                 </div>
@@ -3999,36 +4002,36 @@ export default function Home() {
                       letterSpacing: "1.5px", 
                       fontWeight: 600 
                     }}>
-                      {parseLangText(selectedCase.category || selectedCase.subtitle || "", locale) || (locale === "en" ? "Case Study" : "Քեյս")}
+                      {parseLangText(displayedCase.category || displayedCase.subtitle || "", locale) || (locale === "en" ? "Case Study" : "Քեյս")}
                     </span>
                     <h2 style={{ fontSize: "2rem", fontWeight: "800", color: "#fff", margin: "6px 0 0" }}>
-                      {parseLangText(selectedCase.title, locale)}
+                      {parseLangText(displayedCase.title, locale)}
                     </h2>
                   </div>
 
                   <div style={{ display: "flex", gap: "24px", borderBottom: "1px solid rgba(255, 255, 255, 0.1)", paddingBottom: "20px" }}>
-                    {selectedCase.client && (
+                    {displayedCase.client && (
                       <div>
                         <div style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.4)", textTransform: "uppercase" }}>{locale === "en" ? "Client" : "Հաճախորդ"}</div>
-                        <div style={{ fontSize: "0.95rem", color: "#fff", fontWeight: 500 }}>{parseLangText(selectedCase.client, locale)}</div>
+                        <div style={{ fontSize: "0.95rem", color: "#fff", fontWeight: 500 }}>{parseLangText(displayedCase.client, locale)}</div>
                       </div>
                     )}
-                    {selectedCase.year && (
+                    {displayedCase.year && (
                       <div>
                         <div style={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.4)", textTransform: "uppercase" }}>{locale === "en" ? "Year" : "Տարեթիվ"}</div>
-                        <div style={{ fontSize: "0.95rem", color: "#fff", fontWeight: 500 }}>{selectedCase.year}</div>
+                        <div style={{ fontSize: "0.95rem", color: "#fff", fontWeight: 500 }}>{displayedCase.year}</div>
                       </div>
                     )}
                   </div>
 
                   <div style={{ color: "rgba(255, 255, 255, 0.8)", fontSize: "0.95rem", lineHeight: "1.7" }}>
                     <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>
-                      {parseLangText(selectedCase.details || "", locale) || (locale === "en" ? "No details available." : "Այս նախագծի համար մանրամասն նկարագրություն դեռևս ավելացված չէ:")}
+                      {parseLangText(displayedCase.details || "", locale) || (locale === "en" ? "No details available." : "Այս նախագծի համար մանրամասն նկարագրություն դեռևս ավելացված չէ:")}
                     </p>
                   </div>
 
                   <div style={{ marginTop: "auto", paddingTop: "12px", display: "flex", gap: "12px" }}>
-                    <Link href={`/works/${selectedCase.id.includes('local-b-') ? ['pasta', 'eleven', 'posters', 'teal-lines', 'mobile-ui'][parseInt(selectedCase.id.replace('local-b-', '')) - 1] || selectedCase.id : selectedCase.id}`} style={{ textDecoration: "none" }}>
+                    <Link href={`/works/${displayedCase.id.includes('local-b-') ? ['pasta', 'eleven', 'posters', 'teal-lines', 'mobile-ui'][parseInt(displayedCase.id.replace('local-b-', '')) - 1] || displayedCase.id : displayedCase.id}`} style={{ textDecoration: "none" }}>
                       <hd-button suppressHydrationWarning data-height="40px" data-thickness="3px" style={{ background: "var(--accent)", color: "#000", fontWeight: "bold" }}>
                         {locale === "en" ? "View Full Case Study" : "Տեսնել Ամբողջական Քեյսը"}
                       </hd-button>
@@ -4041,9 +4044,10 @@ export default function Home() {
         )}
 
         {/* ══ DYNAMIC GALLERY LIGHTBOX SLIDER ══ */}
-        {selectedGalleryIndex !== null && typeof window !== "undefined" && createPortal(
+        {displayedGalleryIndex !== null && typeof window !== "undefined" && createPortal(
           <div 
-            onClick={() => { setSelectedGalleryIndex(null); setIsSlideshowPlaying(false); }}
+            className={`lightbox-root ${isClosingGallery ? "closing" : ""}`}
+            onClick={handleCloseGallery}
             style={{
               position: "fixed",
               inset: 0,
@@ -4054,8 +4058,7 @@ export default function Home() {
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
-              padding: "24px",
-              animation: "fadeIn 0.3s ease-out"
+              padding: "24px"
             }}
           >
             {/* Top Bar / Header */}
@@ -4073,10 +4076,10 @@ export default function Home() {
             >
               <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                 <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>
-                  {locale === "en" ? "Gallery Preview" : "Պատկերասրահ"} ({selectedGalleryIndex + 1} / {galleryCases.length})
+                  {locale === "en" ? "Gallery Preview" : "Պատկերասրահ"} ({displayedGalleryIndex + 1} / {galleryCases.length})
                 </span>
                 <span style={{ fontSize: "1.1rem", fontWeight: 700 }}>
-                  {parseLangText(galleryCases[selectedGalleryIndex]?.title || "", locale)}
+                  {parseLangText(galleryCases[displayedGalleryIndex]?.title || "", locale)}
                 </span>
               </div>
 
@@ -4107,7 +4110,7 @@ export default function Home() {
 
                 {/* Close Button */}
                 <div 
-                  onClick={() => { setSelectedGalleryIndex(null); setIsSlideshowPlaying(false); }}
+                  onClick={handleCloseGallery}
                   style={{
                     background: "rgba(255, 255, 255, 0.08)",
                     border: "1px solid rgba(255, 255, 255, 0.12)",
@@ -4143,7 +4146,9 @@ export default function Home() {
               <div 
                 onClick={(e) => { 
                   e.stopPropagation(); 
-                  setSelectedGalleryIndex(prev => (prev !== null ? (prev - 1 + galleryCases.length) % galleryCases.length : null)); 
+                  const nextIdx = (displayedGalleryIndex - 1 + galleryCases.length) % galleryCases.length;
+                  setDisplayedGalleryIndex(nextIdx);
+                  setSelectedGalleryIndex(nextIdx); 
                 }}
                 style={{
                   position: "absolute",
@@ -4186,10 +4191,10 @@ export default function Home() {
                   animation: "fadeIn 0.25s ease-out"
                 }}
               >
-                {galleryCases[selectedGalleryIndex]?.image_url ? (
+                {galleryCases[displayedGalleryIndex]?.image_url ? (
                   <img 
-                    src={galleryCases[selectedGalleryIndex].image_url} 
-                    alt={galleryCases[selectedGalleryIndex].title} 
+                    src={galleryCases[displayedGalleryIndex].image_url} 
+                    alt={galleryCases[displayedGalleryIndex].title} 
                     style={{
                       maxWidth: "100%",
                       maxHeight: "calc(100vh - 310px)",
@@ -4200,7 +4205,7 @@ export default function Home() {
                   />
                 ) : (
                   <div style={{ width: "240px", height: "240px", display: "flex", alignItems: "center", justifyItems: "center", color: "#fff" }}>
-                    {getSvgForCase(galleryCases[selectedGalleryIndex]?.id)}
+                    {getSvgForCase(galleryCases[displayedGalleryIndex]?.id)}
                   </div>
                 )}
               </div>
@@ -4208,7 +4213,9 @@ export default function Home() {
               <div 
                 onClick={(e) => { 
                   e.stopPropagation(); 
-                  setSelectedGalleryIndex(prev => (prev !== null ? (prev + 1) % galleryCases.length : null)); 
+                  const nextIdx = (displayedGalleryIndex + 1) % galleryCases.length;
+                  setDisplayedGalleryIndex(nextIdx);
+                  setSelectedGalleryIndex(nextIdx); 
                 }}
                 style={{
                   position: "absolute",
@@ -4248,7 +4255,7 @@ export default function Home() {
             >
               {/* Active description detail */}
               <p style={{ margin: 0, fontSize: "0.88rem", opacity: 0.75, color: "#fff", textAlign: "center", maxWidth: "600px", minHeight: "20px" }}>
-                {parseLangText(galleryCases[selectedGalleryIndex]?.details || "", locale) || (locale === "en" ? "No details available." : "Այս նախագծի համար մանրամասն նկարագրություն դեռևս ավելացված չէ:")}
+                {parseLangText(galleryCases[displayedGalleryIndex]?.details || "", locale) || (locale === "en" ? "No details available." : "Այս նախագծի համար մանրամասն նկարագրություն դեռևս ավելացված չէ:")}
               </p>
 
               {/* Thumbnails strip */}
@@ -4265,16 +4272,19 @@ export default function Home() {
                 {galleryCases.map((work, idx) => (
                   <div
                     key={work.id}
-                    onClick={() => setSelectedGalleryIndex(idx)}
+                    onClick={() => {
+                      setDisplayedGalleryIndex(idx);
+                      setSelectedGalleryIndex(idx);
+                    }}
                     style={{
                       width: "60px",
                       height: "45px",
                       borderRadius: "8px",
                       overflow: "hidden",
                       cursor: "pointer",
-                      border: idx === selectedGalleryIndex ? "2px solid var(--accent)" : "2px solid transparent",
-                      opacity: idx === selectedGalleryIndex ? 1 : 0.4,
-                      transform: idx === selectedGalleryIndex ? "scale(1.05)" : "scale(1)",
+                      border: idx === displayedGalleryIndex ? "2px solid var(--accent)" : "2px solid transparent",
+                      opacity: idx === displayedGalleryIndex ? 1 : 0.4,
+                      transform: idx === displayedGalleryIndex ? "scale(1.05)" : "scale(1)",
                       transition: "all 0.2s ease",
                       background: work.bg || "#111",
                       display: "flex",
