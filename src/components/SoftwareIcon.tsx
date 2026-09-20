@@ -237,16 +237,16 @@ export default function SoftwareIcon({
     );
   }
 
-  // Windows
+  // Windows (Windows 11)
   if (n.includes("windows") || n.includes("win")) {
     return (
       <svg
         className={className}
         style={{ width: dimension, height: dimension, flexShrink: 0, ...style }}
         viewBox="0 0 24 24"
-        fill="#00ADEF"
+        fill="#0078D4"
       >
-        <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.551H10.949M0 12.6h9.75V22.05L0 20.7m10.949-8.1H24V24l-13.051-1.95" />
+        <path d="M1 1h10v10H1zM13 1h10v10H1zM1 13h10v10H1zM13 13h10v10H1z" />
       </svg>
     );
   }

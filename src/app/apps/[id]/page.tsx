@@ -11,6 +11,7 @@ import { HDesignStars } from "@/components/RatingSystem";
 import BugReportModal from "@/components/BugReportModal";
 import AppDownloadModal, { AppDownloadOption } from "@/components/AppDownloadModal";
 import SoftwareIcon from "@/components/SoftwareIcon";
+import SoftwareTooltip from "@/components/SoftwareTooltip";
 
 type Review = {
   id: string;
@@ -400,21 +401,21 @@ export default function AppDetailPage() {
             {app.app_type === "plugin" && app.host_app && (
               <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                 {app.host_app.split(',').map(s => s.trim()).filter(Boolean).map((h, i) => (
-                  <div
-                    key={i}
-                    title={h}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: "var(--bg)",
-                      padding: "6px",
-                      borderRadius: "10px",
-                      border: "1px solid var(--panel-border)"
-                    }}
-                  >
-                    <SoftwareIcon name={h} iconUrl={app.host_app_icon} size={20} />
-                  </div>
+                  <SoftwareTooltip key={i} name={h}>
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "var(--bg)",
+                        padding: "6px",
+                        borderRadius: "10px",
+                        border: "1px solid var(--panel-border)"
+                      }}
+                    >
+                      <SoftwareIcon name={h} iconUrl={app.host_app_icon} size={20} />
+                    </div>
+                  </SoftwareTooltip>
                 ))}
               </div>
             )}
@@ -1371,21 +1372,21 @@ export default function AppDetailPage() {
                   <span style={{ color: "var(--muted)" }}>{locale === "hy" ? "Ծրագիր" : "Software"}</span>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "flex-end" }}>
                     {app.host_app.split(',').map(s => s.trim()).filter(Boolean).map((h, i) => (
-                      <span
-                        key={i}
-                        title={h}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          padding: "4px",
-                          borderRadius: "6px",
-                          background: "rgba(74, 137, 124, 0.1)",
-                          color: "var(--text)"
-                        }}
-                      >
-                        <SoftwareIcon name={h} iconUrl={app.host_app_icon} size={18} />
-                      </span>
+                      <SoftwareTooltip key={i} name={h}>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: "4px",
+                            borderRadius: "6px",
+                            background: "rgba(74, 137, 124, 0.1)",
+                            color: "var(--text)"
+                          }}
+                        >
+                          <SoftwareIcon name={h} iconUrl={app.host_app_icon} size={18} />
+                        </span>
+                      </SoftwareTooltip>
                     ))}
                   </div>
                 </div>

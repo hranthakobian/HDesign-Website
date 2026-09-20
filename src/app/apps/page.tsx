@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n";
 import LoadingAnimation from "@/components/LoadingAnimation";
 import { SingleHDesignStar } from "@/components/RatingSystem";
 import SoftwareIcon from "@/components/SoftwareIcon";
+import SoftwareTooltip from "@/components/SoftwareTooltip";
 
 export type AppData = {
   id: string;
@@ -612,24 +613,22 @@ export default function AppsListingPage() {
                     {app.app_type === "plugin" && app.host_app && (
                       <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", alignItems: "center" }}>
                         {app.host_app.split(',').map(s => s.trim()).filter(Boolean).map((h, i) => (
-                          <span
-                            key={i}
-                            style={{
-                              background: "rgba(0,0,0,0.65)",
-                              backdropFilter: "blur(8px)",
-                              color: "#fff",
-                              padding: "3px 8px",
-                              borderRadius: "20px",
-                              fontSize: "0.72rem",
-                              fontWeight: 600,
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: "5px"
-                            }}
-                          >
-                            <SoftwareIcon name={h} iconUrl={app.host_app_icon} size={13} />
-                            {h}
-                          </span>
+                          <SoftwareTooltip key={i} name={h}>
+                            <span
+                              style={{
+                                background: "rgba(0,0,0,0.65)",
+                                backdropFilter: "blur(8px)",
+                                color: "#fff",
+                                padding: "4px 7px",
+                                borderRadius: "20px",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center"
+                              }}
+                            >
+                              <SoftwareIcon name={h} iconUrl={app.host_app_icon} size={14} />
+                            </span>
+                          </SoftwareTooltip>
                         ))}
                       </div>
                     )}
