@@ -1768,9 +1768,9 @@ export default function Home() {
                   <Link href="/about">
                     <hd-button 
                       suppressHydrationWarning
-                      data-width="160px"
+                      data-width="210px"
                       data-height="52px"
-                      data-thickness="3px"
+                      data-thickness="2px"
                       data-color="#083F39"
                       data-text-color="#fff"
                     >{t('home', 'more_about_btn', 'Ավելին')}</hd-button>
@@ -1814,9 +1814,9 @@ export default function Home() {
               <Link href="/works?category=design">
                 <hd-button 
                   suppressHydrationWarning
-                  data-width="160px"
+                  data-width="210px"
                   data-height="52px"
-                  data-thickness="3px"
+                  data-thickness="2px"
                 >{t('home', 'more_btn', 'Ավելի')}</hd-button>
               </Link>
             </div>

@@ -263,14 +263,23 @@ html[data-theme="green"] {
 
 hd-textarea,
 hd-input,
+hd-button,
 hd-segment,
 hd-select,
 hd-radio,
 .custom-input-wrapper,
+.custom-button-wrapper,
 .custom-segment-wrapper,
 .custom-select-wrapper,
 .custom-radio-wrapper {
   --line-thickness: 2px !important;
+}
+
+hd-button .fake-cursor,
+hd-button .fake-vertical-cur,
+.custom-button-wrapper .fake-cursor,
+.custom-button-wrapper .fake-vertical-cur {
+  width: 2px !important;
 }
 
 hd-checkbox,
@@ -348,9 +357,9 @@ hd-button > div,
 hd-button > a,
 .custom-button-wrapper > span,
 .custom-button-wrapper > div {
-  padding-left: 14px !important;
-  padding-right: 14px !important;
-  font-size: 0.88rem !important;
+  padding-left: 22px !important;
+  padding-right: 22px !important;
+  font-size: 0.9rem !important;
   line-height: 1.4 !important;
   white-space: nowrap !important;
 }
