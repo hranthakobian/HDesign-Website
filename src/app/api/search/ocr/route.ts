@@ -51,7 +51,12 @@ export async function POST(request: Request) {
       langs = ['eng'];
     }
 
-    worker = await createWorker(langs);
+    const path = await import('path');
+    const workerPath = path.join(process.cwd(), 'node_modules', 'tesseract.js', 'src', 'worker-script', 'node', 'index.js');
+
+    worker = await createWorker(langs, 1, {
+      workerPath
+    });
     const result = await worker.recognize(imageBuffer);
     const rawText = result.data?.text || '';
 

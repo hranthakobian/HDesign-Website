@@ -964,12 +964,6 @@ body.has-admin-bar {
   padding-top: var(--admin-bar-height, 0px);
 }
 
-@media (max-width: 1500px) {
-  body.has-admin-bar {
-    padding-top: calc(90px + var(--admin-bar-height, 0px)) !important;
-  }
-}
-
 .hdesign-admin-top-bar {
   position: fixed;
   top: 0;
@@ -1395,7 +1389,7 @@ html[data-theme="custom"] .portfolio-header::before {
 /* Scrolled state of Header - Floating capsules */
 .portfolio-header-wrapper.scrolled {
   padding: 16px 100px;
-  max-width: 1500px;
+  max-width: 1700px;
   margin: 0 auto;
   gap: 16px;
   
@@ -1413,9 +1407,9 @@ html[data-theme="custom"] .portfolio-header::before {
   }
 
   .portfolio-header {
-    flex: 1;
-    width: 100%;
-    max-width: 100%;
+    flex: 0 1 auto;
+    width: auto;
+    max-width: fit-content;
     height: 64px;
     padding: 0 36px;
     border-radius: 32px;
@@ -3067,176 +3061,274 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     }
   }
 }
-@media (max-width: 1500px) {
-  body {
-    padding-top: 90px !important;
+/* ══════════════════════════════════════════════════════════════════════════════
+   ADAPTIVE RESPONSIVE HEADER (DESKTOP & TABLET: 1500px down to 769px)
+   Logo, Nav, and Controls remain at top. Nav links progressively collapse
+   into "Ավելին" (More) dropdown, shortening the nav links panel.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.nav-more-container {
+  display: none !important;
+}
+
+.more-item-works,
+.more-divider-works,
+.more-item-fonts,
+.more-divider-fonts,
+.more-item-apps,
+.more-divider-apps,
+.more-item-hdesign,
+.more-divider-hdesign,
+.more-item-contact {
+  display: none;
+}
+
+/* Tier 1: <= 1700px: Collapse HDesign and Contact into "Ավելին" */
+@media (min-width: 768.1px) and (max-width: 1700px) {
+  .nav-collapse-hdesign,
+  .nav-collapse-contact {
+    display: none !important;
   }
 
-  .portfolio-header-wrapper {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    pointer-events: none !important;
-    z-index: 1000 !important;
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
+  .nav-more-container {
+    display: flex !important;
+  }
+
+  .more-item-hdesign {
+    display: flex !important;
+  }
+
+  .more-divider-hdesign {
     display: block !important;
   }
 
-  /* Completely disable all desktop/scrolled pseudo-element layers to force capsule transparency and blur */
-  .portfolio-logo-panel::before,
-  .portfolio-header::before,
-  .portfolio-header-controls::before,
-  .portfolio-header-wrapper.scrolled .portfolio-logo-panel::before,
-  .portfolio-header-wrapper.scrolled .portfolio-header::before,
-  .portfolio-header-wrapper.scrolled .portfolio-header-controls::before {
-    display: none !important;
-    content: none !important;
+  .more-item-contact {
+    display: block !important;
   }
 
-  /* Left panel (Logo) drops down to Bottom-Left dock */
+  .portfolio-header-wrapper {
+    padding: 0 32px;
+  }
+
   .portfolio-logo-panel {
-    position: fixed !important;
-    bottom: 24px !important;
-    left: 32px !important;
-    top: auto !important;
-    right: auto !important;
-    transform: none !important;
-    pointer-events: auto !important;
-    height: 56px !important;
-    padding: 0 24px !important;
-    border-radius: 28px !important;
-    border: 1px solid var(--panel-border) !important;
-    background: rgba(255, 255, 255, 0.85) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    z-index: 1001 !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 8px !important;
-    box-shadow: var(--shadow) !important;
-    text-decoration: none !important;
-    color: var(--text) !important;
-    transition: all 0.3s ease !important;
-
-    &::before {
-      display: none !important;
-    }
+    padding: 0 24px 0 36px;
   }
 
-  /* Right panel (Controls) drops down to Bottom-Right dock */
   .portfolio-header-controls {
-    position: fixed !important;
-    bottom: 24px !important;
-    right: 32px !important;
-    top: auto !important;
-    left: auto !important;
-    transform: none !important;
-    pointer-events: auto !important;
-    width: 250px !important;
-    min-width: 250px !important;
-    height: 56px !important;
-    padding: 0 16px !important;
-    border-radius: 28px !important;
-    border: 1px solid var(--panel-border) !important;
-    background: rgba(255, 255, 255, 0.85) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    z-index: 1001 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    box-shadow: var(--shadow) !important;
-    transition: all 0.3s ease !important;
+    padding: 0 36px 0 24px;
+    gap: 12px;
+  }
 
-    &::before {
-      display: none !important;
+  .portfolio-nav {
+    gap: 20px;
+  }
+
+  .portfolio-header-wrapper.scrolled {
+    padding: 14px 32px;
+    gap: 12px;
+    max-width: 100%;
+
+    .portfolio-logo-panel {
+      height: 56px;
+      padding: 0 22px;
     }
+
+    .portfolio-header {
+      height: 56px;
+      padding: 0 24px;
+    }
+
+    .portfolio-header-controls {
+      height: 56px;
+      padding: 0 20px;
+    }
+  }
+}
+
+/* Tier 2: <= 1250px: Also collapse Apps (Հավելվածներ) into "Ավելին" */
+@media (min-width: 768.1px) and (max-width: 1250px) {
+  .nav-collapse-apps {
+    display: none !important;
+  }
+
+  .more-item-apps {
+    display: block !important;
+  }
+
+  .more-divider-apps {
+    display: block !important;
+  }
+
+  .portfolio-header-wrapper {
+    padding: 0 24px;
+  }
+
+  .portfolio-logo-panel {
+    padding: 0 20px 0 24px;
+  }
+
+  .portfolio-header-controls {
+    padding: 0 24px 0 20px;
+    gap: 10px;
 
     #langSelectorDesktop {
-      --width: 90px !important;
-      width: 90px !important;
-      height: 34px !important;
+      --width: 95px !important;
+      width: 95px !important;
     }
 
     .desktop-theme-select-wrapper {
-      display: flex !important;
-      flex: 1 !important;
-      width: 125px !important;
-      min-width: 120px !important;
-      
       hd-select, #themeSelectorDesktop {
-        --width: 125px !important;
-        width: 125px !important;
-        height: 34px !important;
+        --width: 105px !important;
+        width: 105px !important;
       }
     }
-  }
 
-  /* Center panel (Nav Links) stays at Top-Center */
-  .portfolio-header {
-    position: fixed !important;
-    top: 20px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    bottom: auto !important;
-    right: auto !important;
-    margin: 0 !important;
-    pointer-events: auto !important;
-    height: 56px !important;
-    width: auto !important;
-    max-width: calc(100% - 64px) !important;
-    padding: 0 28px !important;
-    border-radius: 28px !important;
-    border: 1px solid var(--panel-border) !important;
-    background: rgba(255, 255, 255, 0.85) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    z-index: 1001 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    box-shadow: var(--shadow) !important;
-    box-sizing: border-box !important;
-    
-    &::before {
+    .search-shortcut-badge {
       display: none !important;
     }
   }
 
   .portfolio-nav {
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    background: none !important;
-    gap: 14px !important;
-  }
-  
-  .portfolio-nav-item {
-    padding: 4px 3px !important;
+    gap: 16px;
   }
 
-  /* Theme overrides for floating bottom/top docks */
-  html[data-theme="dark"] & {
-    .portfolio-logo-panel, .portfolio-header-controls, .portfolio-header {
-      background: rgba(15, 23, 42, 0.65) !important;
+  .portfolio-header-wrapper.scrolled {
+    padding: 12px 20px;
+    gap: 10px;
+
+    .portfolio-logo-panel {
+      height: 54px;
+      padding: 0 18px;
+    }
+
+    .portfolio-header {
+      height: 54px;
+      padding: 0 20px;
+    }
+
+    .portfolio-header-controls {
+      height: 54px;
+      padding: 0 16px;
     }
   }
-  html[data-theme="green"] & {
-    .portfolio-logo-panel, .portfolio-header-controls, .portfolio-header {
-      background: rgba(11, 74, 65, 0.65) !important;
+}
+
+/* Tier 3: <= 1080px: Also collapse Fonts (Տառատեսակներ) into "Ավելին" */
+@media (min-width: 768.1px) and (max-width: 1080px) {
+  .nav-collapse-fonts {
+    display: none !important;
+  }
+
+  .more-item-fonts {
+    display: block !important;
+  }
+
+  .more-divider-fonts {
+    display: block !important;
+  }
+
+  .portfolio-header-wrapper {
+    padding: 0 16px;
+  }
+
+  .portfolio-logo-panel {
+    padding: 0 16px 0 16px;
+  }
+
+  .portfolio-header-controls {
+    padding: 0 16px 0 16px;
+    gap: 8px;
+  }
+
+  .portfolio-nav {
+    gap: 12px;
+  }
+
+  .portfolio-header-wrapper.scrolled {
+    padding: 10px 14px;
+    gap: 8px;
+
+    .portfolio-logo-panel {
+      height: 52px;
+      padding: 0 14px;
+    }
+
+    .portfolio-header {
+      height: 52px;
+      padding: 0 16px;
+    }
+
+    .portfolio-header-controls {
+      height: 52px;
+      padding: 0 14px;
     }
   }
-  html[data-theme="custom"] & {
-    .portfolio-logo-panel, .portfolio-header-controls, .portfolio-header {
-      background: var(--dropdown-bg) !important;
-      opacity: 0.85 !important;
+}
+
+/* Tier 4: <= 920px (down to 769px): Also collapse Works (Աշխատանքներ) into "Ավելին" */
+@media (min-width: 768.1px) and (max-width: 920px) {
+  .nav-collapse-works {
+    display: none !important;
+  }
+
+  .more-item-works {
+    display: flex !important;
+  }
+
+  .more-divider-works {
+    display: block !important;
+  }
+
+  .portfolio-logo-panel {
+    padding: 0 12px 0 12px;
+    gap: 8px;
+
+    .logo-text span:first-child {
+      font-size: 0.88rem !important;
+    }
+    .logo-text span:last-child {
+      font-size: 0.78rem !important;
+    }
+  }
+
+  .portfolio-header-controls {
+    padding: 0 12px 0 12px;
+    gap: 6px;
+
+    #langSelectorDesktop {
+      --width: 82px !important;
+      width: 82px !important;
+    }
+
+    .desktop-theme-select-wrapper {
+      hd-select, #themeSelectorDesktop {
+        --width: 92px !important;
+        width: 92px !important;
+      }
+    }
+  }
+
+  .portfolio-nav {
+    gap: 10px;
+  }
+
+  .portfolio-header-wrapper.scrolled {
+    padding: 8px 10px;
+    gap: 6px;
+
+    .portfolio-logo-panel {
+      height: 50px;
+      padding: 0 12px;
+    }
+
+    .portfolio-header {
+      height: 50px;
+      padding: 0 12px;
+    }
+
+    .portfolio-header-controls {
+      height: 50px;
+      padding: 0 10px;
     }
   }
 }
@@ -3866,20 +3958,6 @@ hd-switch, hd-checkbox {
   }
 }
 
-/* Adaptive Responsive Header */
-.show-on-tablet-only {
-  display: none !important;
-}
-
-@media (min-width: 768.1px) and (max-width: 1150px) {
-  .hide-on-tablet {
-    display: none !important;
-  }
-  .show-on-tablet-only {
-    display: flex !important;
-  }
-}
-
 /* More Dropdown menu customized styling */
 .more-dropdown-menu {
   min-width: 210px !important;
@@ -3926,27 +4004,7 @@ hd-switch, hd-checkbox {
   border-top: 1px solid var(--panel-border);
 }
 
-/* Tablet Specific Header Compact Overrides (768px to 1150px) */
-@media (min-width: 768.1px) and (max-width: 1150px) {
-  .portfolio-logo-panel {
-    padding: 0 16px 0 24px !important;
-    backdrop-filter: blur(20px);
-  }
-  .portfolio-header-controls {
-    padding: 0 24px 0 16px !important;
-    gap: 8px !important;
-  }
-  .desktop-theme-select-wrapper {
-    display: none !important;
-  }
-  .portfolio-nav {
-    gap: 14px !important;
-    backdrop-filter: blur(20px);
-  }
-  .portfolio-nav-item {
-    padding: 4px 3px !important;
-  }
-}
+
 
 /* Scroll Reveal Animation System */
 hd-reveal, .hd-reveal {
@@ -4540,6 +4598,51 @@ html[data-theme="green"] .header-search-btn {
     flex-shrink: 0;
   }
 
+  .search-attached-image-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 8px 3px 4px;
+    background: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.08);
+    border: 1px solid hsla(var(--hue), var(--saturation), var(--text-lightness), 0.18);
+    border-radius: 8px;
+    flex-shrink: 0;
+
+    .chip-thumb {
+      width: 28px;
+      height: 28px;
+      border-radius: 5px;
+      object-fit: cover;
+    }
+
+    .chip-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.3px;
+    }
+
+    .chip-remove-btn {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0, 0, 0, 0.15);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      cursor: pointer;
+      line-height: 1;
+
+      &:hover {
+        background: #ef4444;
+        color: #ffffff;
+      }
+    }
+  }
+
   .hd-search-main-input {
     flex: 1;
     border: none;
@@ -4632,6 +4735,84 @@ html[data-theme="green"] .header-search-btn {
       border-color: var(--accent);
     }
   }
+}
+
+/* OCR Detected Text Bar */
+.hd-ocr-detected-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 22px;
+  background: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.04);
+  border-bottom: 1px solid var(--panel-border);
+  font-size: 0.8rem;
+  color: var(--muted);
+  overflow: hidden;
+
+  .hd-icon {
+    font-size: 0.95rem;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .ocr-title-label {
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .ocr-text-preview {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text);
+    font-style: italic;
+  }
+
+  .ocr-use-query-btn {
+    border: none;
+    background: var(--accent);
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: opacity 0.2s ease;
+
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+}
+
+/* User Custom Loader Container inside Modal */
+.hd-custom-loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  width: 100%;
+}
+
+/* Lens Match Badge on Results */
+.result-lens-match-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10B981;
+  white-space: nowrap;
 }
 
 /* Category Filter Tabs */

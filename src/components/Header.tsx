@@ -204,29 +204,29 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
               {renderNavLinkText("about", t('nav', 'about', 'Մասին'))}
             </Link>
              {/* Աշխատանքներ Dropdown */}
-             <div className="header-dropdown-container">
-               <Link href="/works" className={`portfolio-nav-item header-dropdown-trigger ${activeNav === "works" ? "active" : ""}`} style={{ cursor: "pointer", userSelect: "none" }}>
-                 {renderNavLinkText("works", t('nav', 'works', 'Աշխատանքներ'), true)}
-               </Link>
-               <div className="header-dropdown-menu">
-                 <div className="dropdown-menu-bg" />
-                 <Link href="/works?category=branding" className={`header-dropdown-item ${pathname === "/works" && currentCategory === "branding" ? "active" : ""}`}>
-                   {renderNavLinkText("works-branding", t('nav', 'works_branding', 'Բրենդինգներ'))}
-                 </Link>
-                 <Link href="/works?category=design" className={`header-dropdown-item ${pathname === "/works" && currentCategory === "design" ? "active" : ""}`}>
-                   {renderNavLinkText("works-design", t('nav', 'works_design', 'Պատկերասրահ'))}
-                 </Link>
-               </div>
-             </div>
-            <Link href="/fonts" className={`portfolio-nav-item ${activeNav === "fonts" ? "active" : ""}`}>
+            <div className="header-dropdown-container nav-collapse-works">
+              <Link href="/works" className={`portfolio-nav-item header-dropdown-trigger ${activeNav === "works" ? "active" : ""}`} style={{ cursor: "pointer", userSelect: "none" }}>
+                {renderNavLinkText("works", t('nav', 'works', 'Աշխատանքներ'), true)}
+              </Link>
+              <div className="header-dropdown-menu">
+                <div className="dropdown-menu-bg" />
+                <Link href="/works?category=branding" className={`header-dropdown-item ${pathname === "/works" && currentCategory === "branding" ? "active" : ""}`}>
+                  {renderNavLinkText("works-branding", t('nav', 'works_branding', 'Բրենդինգներ'))}
+                </Link>
+                <Link href="/works?category=design" className={`header-dropdown-item ${pathname === "/works" && currentCategory === "design" ? "active" : ""}`}>
+                  {renderNavLinkText("works-design", t('nav', 'works_design', 'Պատկերասրահ'))}
+                </Link>
+              </div>
+            </div>
+            <Link href="/fonts" className={`portfolio-nav-item nav-collapse-fonts ${activeNav === "fonts" ? "active" : ""}`}>
               {renderNavLinkText("fonts", t('nav', 'fonts', 'Տառատեսակներ'))}
             </Link>
-            <Link href="/apps" className={`portfolio-nav-item ${activeNav === "apps" ? "active" : ""}`}>
+            <Link href="/apps" className={`portfolio-nav-item nav-collapse-apps ${activeNav === "apps" ? "active" : ""}`}>
               {renderNavLinkText("apps", t('nav', 'apps', 'Հավելվածներ'))}
             </Link>
 
             {/* HDesign Dropdown as a regular link with dropdown list */}
-            <div className="header-dropdown-container hide-on-tablet">
+            <div className="header-dropdown-container nav-collapse-hdesign">
                <Link href="/hdesign" className={`portfolio-nav-item header-dropdown-trigger ${activeNav === "hdesign" ? "active" : ""}`} style={{ cursor: "pointer", userSelect: "none" }}>
                  {renderNavLinkText("hdesign", "HDesign", true)}
                </Link>
@@ -244,20 +244,44 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
               </div>
             </div>
 
-            <Link href="/contact" className={`portfolio-nav-item hide-on-tablet ${activeNav === "contact" ? "active" : ""}`}>
+            <Link href="/contact" className={`portfolio-nav-item nav-collapse-contact ${activeNav === "contact" ? "active" : ""}`}>
               {renderNavLinkText("contact", t('nav', 'contact', 'Կապ'))}
             </Link>
 
-            {/* Ավելին Dropdown (Visible on Tablet/Medium viewports only) */}
-            <div className="header-dropdown-container show-on-tablet-only">
+            {/* Ավելին Dropdown (Adaptive More Menu) */}
+            <div className="header-dropdown-container nav-more-container">
                <span className="portfolio-nav-item header-dropdown-trigger" style={{ cursor: "pointer", userSelect: "none" }}>
                  {renderNavLinkText("more", t('nav', 'more', 'Ավելին'), true)}
                </span>
                <div className="header-dropdown-menu more-dropdown-menu">
                  <div className="dropdown-menu-bg" />
                  
-                 {/* HDesign sub-group */}
-                 <div className="more-dropdown-sub-group">
+                 {/* Works sub-group (Collapses at <= 920px) */}
+                 <div className="more-dropdown-sub-group more-item-works">
+                   <span className="more-dropdown-sub-group-title">{t('nav', 'works', 'Աշխատանքներ')}</span>
+                   <Link href="/works?category=branding" className={`header-dropdown-item ${pathname === "/works" && currentCategory === "branding" ? "active" : ""}`}>
+                     {renderNavLinkText("works-branding-more", t('nav', 'works_branding', 'Բրենդինգներ'))}
+                   </Link>
+                   <Link href="/works?category=design" className={`header-dropdown-item ${pathname === "/works" && currentCategory === "design" ? "active" : ""}`}>
+                     {renderNavLinkText("works-design-more", t('nav', 'works_design', 'Պատկերասրահ'))}
+                   </Link>
+                 </div>
+                 <div className="more-dropdown-divider more-divider-works" />
+
+                 {/* Fonts item (Collapses at <= 1080px) */}
+                 <Link href="/fonts" className={`header-dropdown-item more-item-fonts ${pathname.startsWith("/fonts") ? "active" : ""}`}>
+                   {renderNavLinkText("fonts-more", t('nav', 'fonts', 'Տառատեսակներ'))}
+                 </Link>
+                 <div className="more-dropdown-divider more-divider-fonts" />
+
+                 {/* Apps item (Collapses at <= 1250px) */}
+                 <Link href="/apps" className={`header-dropdown-item more-item-apps ${pathname.startsWith("/apps") ? "active" : ""}`}>
+                   {renderNavLinkText("apps-more", t('nav', 'apps', 'Հավելվածներ'))}
+                 </Link>
+                 <div className="more-dropdown-divider more-divider-apps" />
+
+                 {/* HDesign sub-group (Collapses at <= 1450px) */}
+                 <div className="more-dropdown-sub-group more-item-hdesign">
                    <span className="more-dropdown-sub-group-title">HDesign</span>
                    <Link href="/hdesign" className={`header-dropdown-item ${pathname === "/hdesign" ? "active" : ""}`}>
                      {renderNavLinkText("hdesign-general-more", t('nav', 'general', 'Ընդհանուր'))}
@@ -269,11 +293,10 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
                      {renderNavLinkText("hdesign-samples-more", t('nav', 'samples', 'Փորձանմուշներ'))}
                    </Link>
                  </div>
+                 <div className="more-dropdown-divider more-divider-hdesign" />
                  
-                 <div className="more-dropdown-divider" />
-                 
-                 {/* Contact link */}
-                 <Link href="/contact" className={`header-dropdown-item ${pathname === "/contact" ? "active" : ""}`}>
+                 {/* Contact link (Collapses at <= 1450px) */}
+                 <Link href="/contact" className={`header-dropdown-item more-item-contact ${pathname === "/contact" ? "active" : ""}`}>
                    {renderNavLinkText("contact-more", t('nav', 'contact', 'Կապ'))}
                  </Link>
                </div>

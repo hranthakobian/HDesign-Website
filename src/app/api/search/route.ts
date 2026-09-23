@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getApps, getCases, getFonts } from '@/lib/db';
-import { scanAllMediaFiles } from '@/lib/mediaScanner';
+import { brandingCases as staticBrandingCases } from '@/lib/brandingData';
 
 export type SearchItemType = 'app' | 'case' | 'font' | 'image' | 'page' | 'doc';
 
@@ -20,8 +20,8 @@ export interface SearchIndexItem {
   metadata?: Record<string, any>;
 }
 
-// Static site pages to include in the index
-const STATIC_PAGES: SearchIndexItem[] = [
+// Published static site pages
+const PUBLISHED_PAGES: SearchIndexItem[] = [
   {
     id: 'page-home',
     type: 'page',
@@ -32,7 +32,7 @@ const STATIC_PAGES: SearchIndexItem[] = [
     description_hy: 'Բարի գալուստ HDesign: Գրաֆիկական դիզայն, բրենդինգ, տառատեսակներ և հավելվածներ:',
     description_en: 'Welcome to HDesign. Graphic design, branding, typography, and applications.',
     url: '/',
-    tags: ['home', 'տուն', 'գլխավոր', 'դիզայն', 'պորտֆոլիո', 'hrant', 'hakobyan']
+    tags: ['home', 'տուն', 'գլխավոր', 'դիզայն', 'պորտֆոլիո', 'hrant', 'hakobyan', 'հրանտ', 'հակոբյան']
   },
   {
     id: 'page-about',
@@ -44,7 +44,7 @@ const STATIC_PAGES: SearchIndexItem[] = [
     description_hy: 'Հրանտ Հակոբյան - Գրաֆիկական դիզայներ, տառատեսակների հեղինակ և ծրագրավորող:',
     description_en: 'Hrant Hakobyan - Graphic designer, type designer and developer.',
     url: '/about',
-    tags: ['about', 'մասին', 'ռեզյումե', 'resume', 'skills', 'հմտություններ', 'փորձ']
+    tags: ['about', 'մասին', 'ռեզյումե', 'resume', 'skills', 'հմտություններ', 'փորձ', 'հեղինակ', 'կենսագրություն']
   },
   {
     id: 'page-works',
@@ -68,7 +68,7 @@ const STATIC_PAGES: SearchIndexItem[] = [
     description_hy: 'Կորպորատիվ բրենդինգի և ինքնության մշակման աշխատանքներ:',
     description_en: 'Corporate branding and visual identity design projects.',
     url: '/works?category=branding',
-    tags: ['branding', 'բրենդինգ', 'լոգո', 'logo', 'փաթեթավորում']
+    tags: ['branding', 'բրենդինգ', 'լոգո', 'logo', 'տարբերանշան', 'փաթեթավորում', 'ինքնություն']
   },
   {
     id: 'page-works-design',
@@ -80,7 +80,7 @@ const STATIC_PAGES: SearchIndexItem[] = [
     description_hy: 'Գեղարվեստական պաստառներ, ցուցահանդեսային գրաֆիկա և արտ նախագծեր:',
     description_en: 'Art posters, exhibition graphics and artwork projects.',
     url: '/works?category=design',
-    tags: ['design', 'դիզայն', 'պաստառներ', 'posters', 'art', 'արտ', 'պատկերասրահ']
+    tags: ['design', 'դիզայն', 'պաստառներ', 'posters', 'art', 'արտ', 'պատկերասրահ', 'ցուցահանդես']
   },
   {
     id: 'page-fonts',
@@ -92,7 +92,7 @@ const STATIC_PAGES: SearchIndexItem[] = [
     description_hy: 'Ներբեռնեք կամ գնեք հեղինակային տառատեսակներ HDesign-ից:',
     description_en: 'Download or purchase bespoke fonts crafted by HDesign.',
     url: '/fonts',
-    tags: ['fonts', 'տառատեսակներ', 'տառատեսակ', 'font', 'տիպոգրաֆիկա', 'typography']
+    tags: ['fonts', 'տառատեսակներ', 'տառատեսակ', 'font', 'տիպոգրաֆիկա', 'typography', 'տառ']
   },
   {
     id: 'page-apps',
@@ -104,7 +104,7 @@ const STATIC_PAGES: SearchIndexItem[] = [
     description_hy: 'Adobe Photoshop, Illustrator, Premiere փլագիններ և ինքնուրույն հավելվածներ:',
     description_en: 'Adobe Photoshop, Illustrator, Premiere plugins and standalone tools.',
     url: '/apps',
-    tags: ['apps', 'հավելվածներ', 'փլագիններ', 'plugins', 'photoshop', 'illustrator', 'tools']
+    tags: ['apps', 'հավելվածներ', 'հավելված', 'ծրագիր', 'գործիք', 'փլագիններ', 'plugins', 'photoshop', 'illustrator', 'tools']
   },
   {
     id: 'page-hdesign',
@@ -116,7 +116,7 @@ const STATIC_PAGES: SearchIndexItem[] = [
     description_hy: 'HDesign UI վեբ-բաղադրիչներ, տոկեններ և փաստաթղթավորում:',
     description_en: 'HDesign UI web components, tokens and design system documentation.',
     url: '/hdesign',
-    tags: ['hdesign', 'design system', 'համակարգ', 'components', 'բաղադրիչներ']
+    tags: ['hdesign', 'design system', 'համակարգ', 'components', 'բաղադրիչներ', 'կոմպոնենտներ']
   },
   {
     id: 'page-hdesign-docs',
@@ -128,7 +128,7 @@ const STATIC_PAGES: SearchIndexItem[] = [
     description_hy: 'Ինչպես օգտագործել HDesign վեբ-կոմպոնենտները կոդի մեջ օրինակներով:',
     description_en: 'How to use HDesign web components with live code examples.',
     url: '/hdesign/docs',
-    tags: ['docs', 'փաստաթղթեր', 'hd-button', 'hd-input', 'hd-select', 'hd-switch', 'hd-slider', 'api']
+    tags: ['docs', 'փաստաթղթեր', 'hd-button', 'hd-input', 'hd-select', 'hd-switch', 'hd-slider', 'api', 'կոճակ', 'մուտքագրում']
   },
   {
     id: 'page-hdesign-samples',
@@ -140,7 +140,7 @@ const STATIC_PAGES: SearchIndexItem[] = [
     description_hy: 'HDesign կոմպոնենտների իրական օգտագործման ինտերակտիվ ցուցադրություն:',
     description_en: 'Interactive demonstration of HDesign components in action.',
     url: '/hdesign/samples',
-    tags: ['samples', 'փորձանմուշներ', 'demo', 'կոմպոնենտներ', 'ui']
+    tags: ['samples', 'փորձանմուշներ', 'demo', 'կոմպոնենտներ', 'ui', 'ցուցադրություն']
   },
   {
     id: 'page-contact',
@@ -152,19 +152,100 @@ const STATIC_PAGES: SearchIndexItem[] = [
     description_hy: 'Կապվեք Հրանտ Հակոբյանի հետ նոր նախագծերի և հարցումների համար:',
     description_en: 'Get in touch with Hrant Hakobyan for projects and inquiries.',
     url: '/contact',
-    tags: ['contact', 'կապ', 'էլ․ հասցե', 'email', 'հաղորդագրություն', 'message']
+    tags: ['contact', 'կապ', 'էլ․ հասցե', 'email', 'հաղորդագրություն', 'message', 'հեռախոս', 'սոցցանցեր']
+  }
+];
+
+// Published core branding images on the website
+const PUBLISHED_BRANDING_IMAGES = [
+  {
+    id: 'img-pasta',
+    title_hy: 'Pasta Բրենդինգ Շապիկ',
+    title_en: 'Pasta Branding Cover',
+    subtitle_hy: 'Իտալական խոհանոցի տեսողական ինքնություն • 1200×800px',
+    subtitle_en: 'Italian cuisine visual identity • 1200×800px',
+    url: '/works?case=pasta',
+    image: '/branding/pasta.png',
+    tags: ['pasta', 'պաստա', 'մակարոն', 'բրենդինգ', 'փաթեթավորում', 'իտալական', 'կարմիր']
+  },
+  {
+    id: 'img-eleven',
+    title_hy: '11... Ստեղծարար Պաստառներ',
+    title_en: '11... Creative Posters',
+    subtitle_hy: 'Մինիմալիստական երկրաչափություն և արվեստ • 1200×800px',
+    subtitle_en: 'Minimalist geometry & art • 1200×800px',
+    url: '/works?case=eleven',
+    image: '/branding/eleven.png',
+    tags: ['eleven', '11', 'տասնմեկ', 'պաստառ', 'մինիմալիզմ', 'երկրաչափություն', 'նարնջագույն']
+  },
+  {
+    id: 'img-posters',
+    title_hy: 'Posters Ցուցահանդեսի Գրաֆիկա',
+    title_en: 'Posters Exhibition Artwork',
+    subtitle_hy: 'Տառատեսակային պաստառային արվեստ • 1200×800px',
+    subtitle_en: 'Typography poster artwork • 1200×800px',
+    url: '/works?case=posters',
+    image: '/branding/posters.png',
+    tags: ['posters', 'պաստառներ', 'ցուցահանդես', 'արտ', 'տիպոգրաֆիկա', 'մորեգույն']
+  },
+  {
+    id: 'img-teal',
+    title_hy: 'Teal Lines Մինիմալիստական Արտ',
+    title_en: 'Teal Lines Minimalist Art',
+    subtitle_hy: 'Էկոլոգիական տեխնոլոգիաների գծային ինքնություն • 1200×800px',
+    subtitle_en: 'Eco-tech linear visual identity • 1200×800px',
+    url: '/works?case=teal-lines',
+    image: '/branding/teal.png',
+    tags: ['teal', 'կանաչ', 'էկո', 'տեխնոլոգիա', 'գծեր', 'աբստրակտ']
+  },
+  {
+    id: 'img-mobile',
+    title_hy: 'Mobile UI Մոբայլ Ինտերֆեյս',
+    title_en: 'Mobile UI Design Showcase',
+    subtitle_hy: 'Ֆինտեխ հավելվածի ինտերֆեյս և UX • 1200×800px',
+    subtitle_en: 'FinTech mobile app interface & UX • 1200×800px',
+    url: '/works?case=mobile-ui',
+    image: '/branding/mobile.png',
+    tags: ['mobile', 'հեռախոս', 'բջջային', 'ինտերֆեյս', 'ui', 'ux', 'հավելված', 'ֆինտեխ']
+  },
+  {
+    id: 'img-logo',
+    title_hy: 'HDesign Լոգո / Տարբերանշան',
+    title_en: 'HDesign Brand Mark',
+    subtitle_hy: 'Ստուդիայի պաշտոնական տարբերանշան',
+    subtitle_en: 'Official studio brand mark',
+    url: '/',
+    image: '/logo.png',
+    tags: ['logo', 'լոգո', 'տարբերանշան', 'hdesign', 'հրանտ', 'հակոբյան']
+  },
+  {
+    id: 'img-profile',
+    title_hy: 'Հրանտ Հակոբյան (Դիմանկար)',
+    title_en: 'Hrant Hakobyan (Portrait)',
+    subtitle_hy: 'Դիզայների պաշտոնական դիմանկար',
+    subtitle_en: 'Official portrait photo',
+    url: '/about',
+    image: '/profile_hrant.jpg',
+    tags: ['hrant', 'hakobyan', 'հրանտ', 'հակոբյան', 'դիզայներ', 'լուսանկար']
   }
 ];
 
 export async function GET() {
   try {
-    const items: SearchIndexItem[] = [...STATIC_PAGES];
+    const items: SearchIndexItem[] = [...PUBLISHED_PAGES];
 
-    // 1. Index Apps
+    // 1. Index ONLY Published Apps (Strict check)
     try {
-      const apps = await getApps();
-      for (const app of apps) {
-        if (app.is_draft || app.status === 'draft') continue;
+      const allApps = await getApps();
+      const publishedApps = allApps.filter(app => {
+        // Exclude drafts strictly
+        if (app.is_draft) return false;
+        if (app.status === 'draft') return false;
+        // Must have title and valid id
+        return !!(app.title_am || app.title_en);
+      });
+
+      for (const app of publishedApps) {
         items.push({
           id: `app-${app.id}`,
           type: 'app',
@@ -176,10 +257,12 @@ export async function GET() {
           description_en: app.short_desc_en || app.short_desc_am || '',
           url: `/apps/${app.id}`,
           image: app.cover_image || app.host_app_icon || '',
-          category: (app as any).category || app.host_app || 'Հավելված',
+          category: app.app_type || app.host_app || 'Հավելված',
           tags: [
             'app',
             'հավելված',
+            'ծրագիր',
+            'գործիք',
             app.host_app || '',
             ...(Array.isArray(app.languages) ? app.languages : []),
             ...(Array.isArray(app.supported_os) ? app.supported_os : [])
@@ -193,14 +276,55 @@ export async function GET() {
         });
       }
     } catch (err) {
-      console.warn('Failed to index apps for search:', err);
+      console.warn('Failed to index published apps for search:', err);
     }
 
-    // 2. Index Cases / Portfolio Works
+    // 2. Index Published Cases / Portfolio Works
     try {
-      const cases = await getCases();
-      for (const c of cases) {
-        // Split bilingual titles and subtitles if separated by "|"
+      // Index static published branding cases from brandingData.ts
+      for (const bc of staticBrandingCases) {
+        const titleParts = (bc.title || '').split('|').map(s => s.trim());
+        const titleHy = titleParts[0] || bc.title;
+        const titleEn = titleParts[1] || titleParts[0];
+
+        const taglineParts = (bc.tagline || '').split('|').map(s => s.trim());
+        const descParts = (bc.description || '').split('|').map(s => s.trim());
+
+        const imgMap: Record<string, string> = {
+          'pasta': '/branding/pasta.png',
+          'eleven': '/branding/eleven.png',
+          'posters': '/branding/posters.png',
+          'teal-lines': '/branding/teal.png',
+          'mobile-ui': '/branding/mobile.png'
+        };
+
+        items.push({
+          id: `case-branding-${bc.id}`,
+          type: 'case',
+          title_hy: titleHy,
+          title_en: titleEn,
+          subtitle_hy: taglineParts[0] || 'Բրենդինգ նախագիծ',
+          subtitle_en: taglineParts[1] || taglineParts[0] || 'Branding Project',
+          description_hy: descParts[0] || '',
+          description_en: descParts[1] || descParts[0] || '',
+          url: `/works?case=${encodeURIComponent(bc.id)}`,
+          image: imgMap[bc.id] || '',
+          category: 'Բրենդինգ',
+          tags: ['case', 'քեյս', 'բրենդինգ', 'աշխատանք', 'portfolio', bc.id, titleHy, titleEn],
+          metadata: {
+            color: bc.color
+          }
+        });
+      }
+
+      // Also index dynamic published cases from db
+      const dbCases = await getCases();
+      for (const c of dbCases) {
+        // Skip duplicate of seeds if already in staticBrandingCases
+        if (c.id === 'seed-1' || c.id === 'seed-2' || c.id === 'seed-3' || c.id === 'seed-4' || c.id === 'seed-5') {
+          continue;
+        }
+
         const titleParts = (c.title || '').split('|').map(s => s.trim());
         const titleHy = titleParts[0] || c.title || '';
         const titleEn = titleParts[1] || titleParts[0] || c.title || '';
@@ -216,13 +340,6 @@ export async function GET() {
         const catParts = (c.category || '').split('|').map(s => s.trim());
         const catHy = catParts[0] || c.category || 'Աշխատանք';
 
-        // Check if project has an image
-        const img = c.image_url || (c.id === 'seed-1' ? '/branding/pasta.png' : 
-                                    c.id === 'seed-2' ? '/branding/eleven.png' :
-                                    c.id === 'seed-3' ? '/branding/posters.png' :
-                                    c.id === 'seed-4' ? '/branding/teal.png' :
-                                    c.id === 'seed-5' ? '/branding/mobile.png' : '');
-
         items.push({
           id: `case-${c.id}`,
           type: 'case',
@@ -233,7 +350,7 @@ export async function GET() {
           description_hy: detailsHy,
           description_en: detailsEn,
           url: `/works?case=${encodeURIComponent(c.id)}`,
-          image: img,
+          image: c.image_url || '',
           category: catHy,
           tags: ['case', 'քեյս', 'աշխատանք', 'work', 'portfolio', c.client || '', c.year || ''].filter(Boolean),
           metadata: {
@@ -247,10 +364,12 @@ export async function GET() {
       console.warn('Failed to index cases for search:', err);
     }
 
-    // 3. Index Fonts
+    // 3. Index Published Fonts
     try {
       const fonts = await getFonts();
       for (const f of fonts) {
+        if (!f.font_file_url && !f.download_url && !f.name_am) continue;
+
         items.push({
           id: `font-${f.id}`,
           type: 'font',
@@ -263,7 +382,7 @@ export async function GET() {
           url: `/fonts/${f.id}`,
           image: f.font_file_url || '',
           category: f.category || 'Տառատեսակ',
-          tags: ['font', 'տառատեսակ', f.category || '', f.creator || ''].filter(Boolean),
+          tags: ['font', 'տառատեսակ', 'տառ', 'տիպոգրաֆիկա', f.category || '', f.creator || ''].filter(Boolean),
           metadata: {
             year: f.year,
             paid: f.paid,
@@ -275,44 +394,22 @@ export async function GET() {
       console.warn('Failed to index fonts for search:', err);
     }
 
-    // 4. Index Images & Media Library Assets
-    try {
-      const mediaData = await scanAllMediaFiles();
-      const files = mediaData.files || [];
-      const folders = mediaData.folders || [];
-      const folderMap = new Map<string, string>();
-      for (const f of folders) {
-        folderMap.set(f.id, f.name);
-      }
-
-      for (const file of files) {
-        if (file.type !== 'image' || file.isTrashed) continue;
-        const name = file.name || 'Image';
-        const folderName = (file.folderId && folderMap.get(file.folderId)) || 'Մեդիա';
-
-        items.push({
-          id: `img-${file.id}`,
-          type: 'image',
-          title_hy: name,
-          title_en: name,
-          subtitle_hy: `${file.dimensions ? `${file.dimensions.width}×${file.dimensions.height}px • ` : ''}${file.sizeFormatted || ''}`,
-          subtitle_en: `${file.dimensions ? `${file.dimensions.width}×${file.dimensions.height}px • ` : ''}${file.sizeFormatted || ''}`,
-          description_hy: `Նիշք: ${file.name} (${folderName})`,
-          description_en: `File: ${file.name} (${folderName})`,
-          url: file.url,
-          image: file.url,
-          category: folderName,
-          tags: ['image', 'պատկեր', 'նկար', file.extension || '', folderName, ...(file.tags || [])].filter(Boolean),
-          metadata: {
-            width: file.dimensions?.width,
-            height: file.dimensions?.height,
-            size: file.size,
-            url: file.url
-          }
-        });
-      }
-    } catch (err) {
-      console.warn('Failed to index media files for search:', err);
+    // 4. Index ONLY Published Site Images
+    for (const pImg of PUBLISHED_BRANDING_IMAGES) {
+      items.push({
+        id: pImg.id,
+        type: 'image',
+        title_hy: pImg.title_hy,
+        title_en: pImg.title_en,
+        subtitle_hy: pImg.subtitle_hy,
+        subtitle_en: pImg.subtitle_en,
+        description_hy: `Հրապարակված մեդիա պատկեր: ${pImg.title_hy}`,
+        description_en: `Published media image: ${pImg.title_en}`,
+        url: pImg.url,
+        image: pImg.image,
+        category: 'Պատկեր',
+        tags: ['image', 'պատկեր', 'նկար', ...pImg.tags]
+      });
     }
 
     return NextResponse.json({
