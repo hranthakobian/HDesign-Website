@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
 import { useEffect, useState } from "react";
 import { saveSettingsToSupabase } from "@/lib/settingsSync";
+import SearchModal from "./SearchModal";
 
 
 
@@ -20,6 +21,20 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
   const { locale, setLocale, t } = useI18n();
   const pathname = usePathname();
   const [theme, setTheme] = useState<'light' | 'dark' | 'green'>('light');
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+
+  // Global Ctrl+K / Cmd+K keyboard shortcut listener to toggle search modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setIsSearchModalOpen(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Portfolio Page Header States
   const [isScrolled, setIsScrolled] = useState(false);
@@ -163,7 +178,8 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
 
   if (isPortfolioPage) {
     return (
-      <div className={`portfolio-header-wrapper ${isScrolled ? "scrolled" : ""} ${isMobileMenuOpen ? "menu-open" : ""}`}>
+      <>
+        <div className={`portfolio-header-wrapper ${isScrolled ? "scrolled" : ""} ${isMobileMenuOpen ? "menu-open" : ""}`}>
         {/* Logo Section */}
         <Link href="/" className="portfolio-logo-panel" onClick={() => setIsMobileMenuOpen(false)}>
           <img 
@@ -311,6 +327,18 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
               <span value="green" {...(theme === 'green' ? { selected: true } : {})}>{t('nav', 'theme_green', 'Կանաչ')}</span>
             </hd-select>
           </div>
+
+          {/* Search Trigger Button right next to Theme Switcher */}
+          <button
+            type="button"
+            className="header-search-btn"
+            onClick={() => setIsSearchModalOpen(true)}
+            aria-label="Search"
+            title={`${locale === 'hy' ? 'Որոնել' : 'Search'} (Ctrl+K)`}
+          >
+            <span className="hd-icon hd-icon-search search-btn-icon" />
+            <kbd className="search-shortcut-badge">Ctrl+K</kbd>
+          </button>
         </div>
 
         {/* Mobile Menu Drawer Overlay */}
@@ -453,11 +481,34 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
                     </hd-select>
                   </div>
                 </div>
+
+                {/* Mobile Search Button */}
+                <div style={{ width: '100%', marginTop: '4px' }}>
+                  <button
+                    type="button"
+                    className="mobile-search-trigger-btn"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsSearchModalOpen(true);
+                    }}
+                    aria-label="Search"
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span className="hd-icon hd-icon-search" style={{ fontSize: '1.15rem' }} />
+                      <span style={{ fontWeight: 500, fontSize: '0.95rem' }}>
+                        {locale === 'hy' ? 'Որոնել կայքում...' : 'Search website...'}
+                      </span>
+                    </div>
+                    <kbd className="search-shortcut-badge">Ctrl+K</kbd>
+                  </button>
+                </div>
               </div>
             </div>
           </nav>
         </div>
       </div>
+      <SearchModal isOpen={isSearchModalOpen} onClose={() => setIsSearchModalOpen(false)} />
+      </>
     );
   }
 
@@ -520,9 +571,22 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
             <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>{t('nav', 'theme_dark', 'Մութ')}</span>
             <span value="green" {...(theme === 'green' ? { selected: true } : {})}>{t('nav', 'theme_green', 'Կանաչ')}</span>
           </hd-select>
+
+          {/* Search Trigger Button */}
+          <button
+            type="button"
+            className="header-search-btn"
+            onClick={() => setIsSearchModalOpen(true)}
+            aria-label="Search"
+            title={`${locale === 'hy' ? 'Որոնել' : 'Search'} (Ctrl+K)`}
+          >
+            <span className="hd-icon hd-icon-search search-btn-icon" />
+            <kbd className="search-shortcut-badge">Ctrl+K</kbd>
+          </button>
         </div>
       </div>
 
+      <SearchModal isOpen={isSearchModalOpen} onClose={() => setIsSearchModalOpen(false)} />
     </>
   );
 }

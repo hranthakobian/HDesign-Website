@@ -306,7 +306,7 @@ export default function AppDetailPage() {
   const ratingStars = Array.from({ length: 5 }, (_, i) => i + 1);
 
   return (
-    <main className="shell" style={{ marginTop: "130px", minHeight: "85vh", paddingBottom: "100px" }}>
+    <main className="shell apps-page-container" style={{ marginTop: "130px", minHeight: "85vh", paddingBottom: "100px" }}>
       {/* Breadcrumb Navigation */}
       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "28px", fontSize: "0.85rem", color: "var(--muted)" }}>
         <Link href="/" style={{ color: "inherit", textDecoration: "none" }}>HDesign</Link>

@@ -113,9 +113,9 @@ export default function ContactPage() {
                 <div style={{ marginTop: "12px" }}>
                   <hd-button 
                     onClick={() => setStatus("idle")} 
-                    data-width="220px" 
+                    data-width="180px" 
                     data-height="46px" 
-                    data-thickness="2px"
+                    data-thickness="3px"
                   >
                     {t('contact_page', 'new_msg_btn', 'Գրել նոր նամակ')}
                   </hd-button>
@@ -157,7 +157,7 @@ export default function ContactPage() {
                     data-width="100%"
                     data-height="48px"
                     data-thickness="3px"
-                    data-font-size="14pt" />
+                  data-font-size="14pt" />
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -179,9 +179,9 @@ export default function ContactPage() {
                 <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "10px" }}>
                   <hd-button 
                     onClick={handleSubmit}
-                    data-width="210px"
+                    data-width="160px"
                     data-height="52px"
-                    data-thickness="2px"
+                    data-thickness="3px"
                     disabled={status === "sending"}
                   >
                     {status === "sending" ? t('contact_page', 'submitting_btn', 'Ուղարկվում է...') : t('contact_page', 'submit_btn', 'Ուղարկել')}

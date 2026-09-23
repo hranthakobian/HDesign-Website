@@ -190,7 +190,7 @@ export default function AppsListingPage() {
   const getAppDesc = (app: AppData) => (locale === "hy" ? app.short_desc_am : app.short_desc_en);
 
   return (
-    <main className="shell" style={{ marginTop: "140px", minHeight: "85vh", paddingBottom: "80px" }}>
+    <main className="shell apps-page-container" style={{ marginTop: "140px", minHeight: "85vh", paddingBottom: "80px" }}>
       {/* Header Banner */}
       <div
         className="apps-header-banner"

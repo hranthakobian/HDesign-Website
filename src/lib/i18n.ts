@@ -250,6 +250,8 @@ theme_light = Բաց
 theme_dark = Մութ
 theme_green = Կանաչ
 theme_custom = Գույն
+search = Որոնում
+search_placeholder = Որոնել կայքում (Ctrl+K)
 
 [about]
 title = Մասին
@@ -613,6 +615,8 @@ theme_light = Light
 theme_dark = Dark
 theme_green = Green
 theme_custom = Custom
+search = Search
+search_placeholder = Search website (Ctrl+K)
 
 [about]
 title = About

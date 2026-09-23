@@ -3841,7 +3841,7 @@ function AdminDashboardContent() {
 
   // Dashboard UI View
   return (
-    <main style={{ 
+    <main className="admin-page-container" style={{ 
       background: 'var(--bg)', 
       color: 'var(--text)', 
       minHeight: '100vh',

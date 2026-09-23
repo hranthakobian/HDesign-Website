@@ -86,12 +86,12 @@ export default function AboutPage() {
             
             <div style={{ display: "flex", gap: "16px", marginTop: "12px", flexWrap: "wrap" }}>
               <Link href="/contact" style={{ textDecoration: "none" }}>
-                <hd-button data-width="210px" data-height="52px" data-thickness="2px">
+                <hd-button data-width="160px" data-height="52px" data-thickness="3px">
                   {t('about', 'contact_btn', 'Կապնվել')}
                 </hd-button>
               </Link>
               <Link href="/works" style={{ textDecoration: "none" }}>
-                <hd-button data-width="220px" data-height="52px" data-thickness="2px">
+                <hd-button data-width="180px" data-height="52px" data-thickness="3px">
                   {t('about', 'works_btn', 'Աշխատանքներ')}
                 </hd-button>
               </Link>
