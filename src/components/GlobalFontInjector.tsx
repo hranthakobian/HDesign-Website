@@ -68,7 +68,7 @@ export default function GlobalFontInjector({ initialFontUrl, initialFontName }: 
           font-weight: ${w};
           font-style: normal;
           font-display: swap;
-          unicode-range: U+0000-001F, U+0021-009F, U+00A1-E8FF, U+EA00-10FFFF;
+          unicode-range: U+0000-001F, U+0021-009F, U+00A1-DFFF, U+EA00-10FFFF;
         }
       `;
     })
@@ -80,7 +80,7 @@ export default function GlobalFontInjector({ initialFontUrl, initialFontName }: 
       if (!url) return '';
       return `
         @font-face {
-          font-family: 'icomoon';
+          font-family: 'HDIcons';
           src: url('${url}') format('truetype'), url('${url}');
           font-weight: ${w};
           font-style: normal;
@@ -93,7 +93,7 @@ export default function GlobalFontInjector({ initialFontUrl, initialFontName }: 
   const generatedHdIconRulesCss = hdIconRules
     .map((rule) => {
       const className = rule.id.startsWith('.') ? rule.id.substring(1) : (rule.id.startsWith('hd-icon-') || rule.id.startsWith('icon-') ? rule.id : `hd-icon-${rule.id}`);
-      const fontFamily = rule.font_family || 'icomoon';
+      const fontFamily = rule.font_family || 'HDIcons';
       const content = rule.content.replace(/^\\/, '\\');
       return `
         .${className}:before {
@@ -112,9 +112,13 @@ export default function GlobalFontInjector({ initialFontUrl, initialFontName }: 
     })
     .join('\n');
 
+  const sanitizedCustomIconCss = (customIconCss || '')
+    .replace(/url\((['"]?)varFonts\//g, "url($1https://api.hakobian.am/libs/v1/icons/varFonts/")
+    .replace(/font-family:\s*['"]HDesign['"]/g, "font-family: 'HDIcons'");
+
   return (
     <>
-      <link rel="stylesheet" href="https://api.hakobian.am/libs/v1/icons/style.css" />
+      <link rel="stylesheet" href={iconFontCssUrl || "https://api.hakobian.am/libs/v1/icons/style.css"} />
       <style dangerouslySetInnerHTML={{
         __html: `
           @font-face {
@@ -123,13 +127,13 @@ export default function GlobalFontInjector({ initialFontUrl, initialFontName }: 
             font-weight: 100 900;
             font-style: normal;
             font-display: swap;
-            unicode-range: U+0000-001F, U+0021-009F, U+00A1-E8FF, U+EA00-10FFFF;
+            unicode-range: U+0000-001F, U+0021-009F, U+00A1-DFFF, U+EA00-10FFFF;
           }
 
           ${customWeightsFontFaceCss}
           ${customIconWeightsFontFaceCss}
           ${generatedHdIconRulesCss}
-          ${customIconCss}
+          ${sanitizedCustomIconCss}
         `
       }} />
     </>

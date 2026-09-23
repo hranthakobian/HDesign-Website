@@ -4,85 +4,85 @@
  * Thin (100), ExtraLight (200), Light (300), Regular (400), Medium (500),
  * SemiBold (600), Bold (700), ExtraBold (800), Black (900).
  *
- * Font Family name: 'HDesign'
+ * Font Family name: 'HDIcons'
  */
 
 @font-face {
-  font-family: 'HDesign';
-  src: url('varFonts/HDesign-Thin.woff2') format('woff2'),
-       url('varFonts/HDesign-Thin.otf') format('opentype');
+  font-family: 'HDIcons';
+  src: url('/icons/varFonts/HDesign-Thin.woff2') format('woff2'),
+       url('/icons/varFonts/HDesign-Thin.otf') format('opentype');
   font-weight: 100;
   font-style: normal;
   font-display: block;
 }
 
 @font-face {
-  font-family: 'HDesign';
-  src: url('varFonts/HDesign-ExtraLight.woff2') format('woff2'),
-       url('varFonts/HDesign-ExtraLight.otf') format('opentype');
+  font-family: 'HDIcons';
+  src: url('/icons/varFonts/HDesign-ExtraLight.woff2') format('woff2'),
+       url('/icons/varFonts/HDesign-ExtraLight.otf') format('opentype');
   font-weight: 200;
   font-style: normal;
   font-display: block;
 }
 
 @font-face {
-  font-family: 'HDesign';
-  src: url('varFonts/HDesign-Light.woff2') format('woff2'),
-       url('varFonts/HDesign-Light.otf') format('opentype');
+  font-family: 'HDIcons';
+  src: url('/icons/varFonts/HDesign-Light.woff2') format('woff2'),
+       url('/icons/varFonts/HDesign-Light.otf') format('opentype');
   font-weight: 300;
   font-style: normal;
   font-display: block;
 }
 
 @font-face {
-  font-family: 'HDesign';
-  src: url('varFonts/HDesign-Regular.woff2') format('woff2'),
-       url('varFonts/HDesign-Regular.otf') format('opentype');
+  font-family: 'HDIcons';
+  src: url('/icons/varFonts/HDesign-Regular.woff2') format('woff2'),
+       url('/icons/varFonts/HDesign-Regular.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
   font-display: block;
 }
 
 @font-face {
-  font-family: 'HDesign';
-  src: url('varFonts/HDesign-Medium.woff2') format('woff2'),
-       url('varFonts/HDesign-Medium.otf') format('opentype');
+  font-family: 'HDIcons';
+  src: url('/icons/varFonts/HDesign-Medium.woff2') format('woff2'),
+       url('/icons/varFonts/HDesign-Medium.otf') format('opentype');
   font-weight: 500;
   font-style: normal;
   font-display: block;
 }
 
 @font-face {
-  font-family: 'HDesign';
-  src: url('varFonts/HDesign-SemiBold.woff2') format('woff2'),
-       url('varFonts/HDesign-SemiBold.otf') format('opentype');
+  font-family: 'HDIcons';
+  src: url('/icons/varFonts/HDesign-SemiBold.woff2') format('woff2'),
+       url('/icons/varFonts/HDesign-SemiBold.otf') format('opentype');
   font-weight: 600;
   font-style: normal;
   font-display: block;
 }
 
 @font-face {
-  font-family: 'HDesign';
-  src: url('varFonts/HDesign-Bold.woff2') format('woff2'),
-       url('varFonts/HDesign-Bold.otf') format('opentype');
+  font-family: 'HDIcons';
+  src: url('/icons/varFonts/HDesign-Bold.woff2') format('woff2'),
+       url('/icons/varFonts/HDesign-Bold.otf') format('opentype');
   font-weight: 700;
   font-style: normal;
   font-display: block;
 }
 
 @font-face {
-  font-family: 'HDesign';
-  src: url('varFonts/HDesign-ExtraBold.woff2') format('woff2'),
-       url('varFonts/HDesign-ExtraBold.otf') format('opentype');
+  font-family: 'HDIcons';
+  src: url('/icons/varFonts/HDesign-ExtraBold.woff2') format('woff2'),
+       url('/icons/varFonts/HDesign-ExtraBold.otf') format('opentype');
   font-weight: 800;
   font-style: normal;
   font-display: block;
 }
 
 @font-face {
-  font-family: 'HDesign';
-  src: url('varFonts/HDesign-Black.woff2') format('woff2'),
-       url('varFonts/HDesign-Black.otf') format('opentype');
+  font-family: 'HDIcons';
+  src: url('/icons/varFonts/HDesign-Black.woff2') format('woff2'),
+       url('/icons/varFonts/HDesign-Black.otf') format('opentype');
   font-weight: 900;
   font-style: normal;
   font-display: block;
@@ -92,7 +92,7 @@
 [class^="icon-"], [class*=" icon-"],
 [class^="hd-icon-"], [class*=" hd-icon-"],
 .hd-icon {
-  font-family: 'HDesign' !important;
+  font-family: 'HDIcons' !important;
   speak: never;
   font-style: normal;
   font-weight: 400; /* Regular by default */

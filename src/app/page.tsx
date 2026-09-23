@@ -1566,7 +1566,7 @@ export default function Home() {
           flexDirection: "column", 
           justifyContent: "center", 
           alignItems: "stretch", 
-          padding: "60px 20px 40px",
+          padding: "60px 0 40px",
           width: "100%",
           boxSizing: "border-box"
         }}>
@@ -1617,7 +1617,7 @@ export default function Home() {
         {/* ══ SECTION 2: BRANDING CASES (Բրենդինգի Քեյսեր) ══ */}
         <section>
           <hd-reveal data-direction="up" data-duration="800">
-            <h2 style={{ fontSize: "32pt", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "-20px", paddingLeft: "20px", color: "var(--text)" }}>
+            <h2 style={{ fontSize: "32pt", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "-20px", paddingLeft: "0px", color: "var(--text)" }}>
               {locale === "en" ? "Branding" : "Բրենդինգ"}
             </h2>
           </hd-reveal>

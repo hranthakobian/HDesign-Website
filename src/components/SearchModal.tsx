@@ -36,6 +36,11 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const { locale } = useI18n();
   const router = useRouter();
 
+  // Smooth entry & exit animation states
+  const [shouldRender, setShouldRender] = useState(isOpen);
+  const [isClosing, setIsClosing] = useState(false);
+  const isClosingRef = useRef(false);
+
   // Search input & state
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState<SearchTab>('all');
@@ -50,11 +55,47 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [lensMatchesMap, setLensMatchesMap] = useState<Map<string, number>>(new Map());
   const [ocrDetectedWords, setOcrDetectedWords] = useState<string[]>([]);
   const [ocrFullText, setOcrFullText] = useState<string>("");
+  const [ocrBlocks, setOcrBlocks] = useState<Array<{ text: string; box: [number, number, number, number] }>>([]);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  const [isLensExpanded, setIsLensExpanded] = useState(true);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsListRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Synchronize open/close with exit animation
+  useEffect(() => {
+    if (isOpen) {
+      isClosingRef.current = false;
+      setShouldRender(true);
+      setIsClosing(false);
+    } else {
+      if (shouldRender && !isClosingRef.current) {
+        isClosingRef.current = true;
+        setIsClosing(true);
+        const timer = setTimeout(() => {
+          setShouldRender(false);
+          setIsClosing(false);
+          isClosingRef.current = false;
+        }, 200);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [isOpen, shouldRender]);
+
+  // Smooth animated close trigger
+  const handleAnimatedClose = useCallback(() => {
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+      setShouldRender(false);
+      setIsClosing(false);
+      isClosingRef.current = false;
+    }, 200);
+  }, [onClose]);
 
   // Fetch search index on open
   useEffect(() => {
@@ -83,17 +124,17 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
   // Lock body scroll
   useEffect(() => {
-    if (!isOpen) return;
+    if (!shouldRender) return;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = originalOverflow;
     };
-  }, [isOpen]);
+  }, [shouldRender]);
 
   // Handle global keyboard navigation (ESC, Arrow keys, Enter)
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || isClosing) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -103,15 +144,16 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
           setLensMatchesMap(new Map());
           setOcrDetectedWords([]);
           setOcrFullText("");
+          setOcrBlocks([]);
         } else {
-          onClose();
+          handleAnimatedClose();
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, attachedImage, onClose]);
+  }, [isOpen, isClosing, attachedImage, handleAnimatedClose]);
 
   // ══════════════════════════════════════════════════════════════════
   // COMBINED MULTIMODAL LENS & OCR PROCESSING
@@ -164,6 +206,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
         if (data && data.text) {
           setOcrFullText(data.text);
           setOcrDetectedWords(Array.isArray(data.words) ? data.words : []);
+          setOcrBlocks(Array.isArray(data.blocks) ? data.blocks : []);
         }
       } catch (err) {
         console.warn('OCR processing error:', err);
@@ -252,6 +295,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
     setLensMatchesMap(new Map());
     setOcrDetectedWords([]);
     setOcrFullText("");
+    setOcrBlocks([]);
     inputRef.current?.focus();
   };
 
@@ -331,7 +375,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
       e.preventDefault();
       const selected = scoredResults[selectedIndex];
       if (selected) {
-        onClose();
+        handleAnimatedClose();
         router.push(selected.item.url);
       }
     }
@@ -406,18 +450,18 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
     }
   };
 
-  if (!isOpen) return null;
+  if (!shouldRender) return null;
 
   return createPortal(
     <div
-      className={`hd-search-modal-backdrop ${isDraggingOver ? 'dragging-over' : ''}`}
-      onClick={onClose}
+      className={`hd-search-modal-backdrop ${isClosing ? 'closing' : ''} ${isDraggingOver ? 'dragging-over' : ''}`}
+      onClick={handleAnimatedClose}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       <div
-        className="hd-search-modal-container"
+        className={`hd-search-modal-container ${isClosing ? 'closing' : ''}`}
         onClick={e => e.stopPropagation()}
       >
         {/* Hidden File Input */}
@@ -433,11 +477,11 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
         <div className="hd-search-input-wrapper">
           <span className="hd-icon hd-icon-search search-input-icon" />
 
-          {/* Attached Image Chip (Lens & OCR Combined) */}
+          {/* Attached Image Chip */}
           {attachedImage && (
-            <div className="search-attached-image-chip" title="Google Lens & OCR Active">
+            <div className="search-attached-image-chip" title={locale === 'hy' ? 'Կցված պատկեր' : 'Attached image'}>
               <img src={attachedImage} alt="Query thumb" className="chip-thumb" />
-              <span className="chip-badge">Lens & OCR</span>
+              <span className="chip-badge">{locale === 'hy' ? 'Պատկեր' : 'Image'}</span>
               <button
                 type="button"
                 className="chip-remove-btn"
@@ -470,20 +514,19 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
           />
 
           <div className="hd-search-actions-row">
-            {/* Camera / Lens Trigger Button */}
+            {/* Camera / Image Trigger Button */}
             <button
               type="button"
               className={`hd-lens-toggle-btn ${attachedImage ? 'active' : ''}`}
               onClick={() => fileInputRef.current?.click()}
               title={
                 locale === 'hy'
-                  ? 'Որոնել պատկերով (Google Lens & OCR համակցված)'
-                  : 'Search with image (Google Lens & OCR combined)'
+                  ? 'Որոնել պատկերով'
+                  : 'Search with image'
               }
               aria-label="Upload image"
             >
               <span className="hd-icon hd-icon-camera" />
-              <span className="lens-btn-label">Lens & OCR</span>
             </button>
 
             {/* Clear Query Button */}
@@ -503,28 +546,228 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
             )}
 
             {/* ESC Badge */}
-            <kbd className="hd-search-esc-badge" onClick={onClose}>ESC</kbd>
+            <kbd className="hd-search-esc-badge" onClick={handleAnimatedClose}>ESC</kbd>
           </div>
         </div>
 
-        {/* ══════ MULTIMODAL STATUS & OCR INFO BAR ══════ */}
-        {ocrFullText && !isAnalyzingImage && (
-          <div className="hd-ocr-detected-bar">
-            <span className="hd-icon hd-icon-text-cursor" />
-            <span className="ocr-title-label">{locale === 'hy' ? 'Ճանաչված տեքստ պատկերից՝' : 'OCR detected text:'}</span>
-            <span className="ocr-text-preview" title={ocrFullText}>
-              «{ocrFullText.length > 80 ? ocrFullText.slice(0, 80) + '...' : ocrFullText}»
-            </span>
-            <button
-              type="button"
-              className="ocr-use-query-btn"
-              onClick={() => {
-                setQuery(ocrFullText);
-                inputRef.current?.focus();
-              }}
-            >
-              {locale === 'hy' ? 'Կիրառել հարցման մեջ' : 'Set as Query'}
-            </button>
+        {/* ══════ MULTIMODAL INTERACTIVE TEXT & LENS SELECTOR ══════ */}
+        {attachedImage && (
+          <div className={`hd-lens-interactive-panel ${isLensExpanded ? 'expanded' : 'collapsed'}`}>
+            <div className="lens-panel-header">
+              <div className="lens-panel-title-area" onClick={() => setIsLensExpanded(!isLensExpanded)}>
+                <span className="hd-icon hd-icon-text-cursor" />
+                <span className="lens-panel-title">
+                  {locale === 'hy' ? 'Պատկերի տեքստային ընտրիչ' : 'Visual Text Selector'}
+                </span>
+                {isAnalyzingImage && (
+                  <span className="lens-analyzing-badge">
+                    <span className="lens-mini-spinner" />
+                    {analysisStatusText || (locale === 'hy' ? 'Վերլուծվում է...' : 'Analyzing...')}
+                  </span>
+                )}
+                {ocrDetectedWords.length > 0 && !isAnalyzingImage && (
+                  <span className="lens-words-count-badge">
+                    {ocrDetectedWords.length} {locale === 'hy' ? 'բառ' : 'words'}
+                  </span>
+                )}
+              </div>
+
+              <div className="lens-panel-actions">
+                {ocrFullText && (
+                  <>
+                    <button
+                      type="button"
+                      className="lens-action-btn"
+                      onClick={() => {
+                        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                          navigator.clipboard.writeText(ocrFullText);
+                          setIsCopied(true);
+                          setTimeout(() => setIsCopied(false), 2000);
+                        }
+                      }}
+                      title={locale === 'hy' ? 'Պատճենել տեքստը' : 'Copy Text'}
+                    >
+                      {isCopied
+                        ? (locale === 'hy' ? '✓ Պատճենվեց' : '✓ Copied')
+                        : (locale === 'hy' ? '📋 Պատճենել' : '📋 Copy')}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="lens-action-btn primary"
+                      onClick={() => {
+                        setQuery(ocrFullText);
+                        inputRef.current?.focus();
+                      }}
+                      title={locale === 'hy' ? 'Կիրառել ամբողջ տեքստը հարցման մեջ' : 'Use full text in query'}
+                    >
+                      {locale === 'hy' ? 'Որոնել ամբողջը' : 'Search All'}
+                    </button>
+                  </>
+                )}
+
+                <button
+                  type="button"
+                  className="lens-toggle-collapse-btn"
+                  onClick={() => setIsLensExpanded(!isLensExpanded)}
+                  title={isLensExpanded ? (locale === 'hy' ? 'Փակել' : 'Collapse') : (locale === 'hy' ? 'Բացել' : 'Expand')}
+                >
+                  <span className={`hd-icon hd-icon-arrow-${isLensExpanded ? 'up' : 'down'}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* Expanded Body: 2-Column Split View (Left: Image with Live Text Overlay, Right: Full Text & Words) */}
+            {isLensExpanded && (
+              <div className="lens-panel-body">
+                {isAnalyzingImage ? (
+                  <div className="lens-loading-placeholder">
+                    <div className="lens-scanning-line" />
+                    <span>{locale === 'hy' ? 'Կարդում ենք պատկերի տեքստը...' : 'Extracting text from image...'}</span>
+                  </div>
+                ) : ocrFullText ? (
+                  <div className="lens-split-container">
+                    {/* ════ LEFT COLUMN: IMAGE WITH DETECTION BOUNDING BOXES (Google Lens Style) ════ */}
+                    <div className="lens-split-left">
+                      <div className="lens-image-wrapper">
+                        <img src={attachedImage} alt="Uploaded query" className="lens-target-image" />
+                        
+                        {/* Interactive Bounding Box Highlights directly on detected text regions */}
+                        <div className="lens-image-boxes-layer">
+                          {ocrBlocks && ocrBlocks.length > 0 ? (
+                            ocrBlocks.map((block, bIdx) => {
+                              const ymin = block.box[0];
+                              const xmin = block.box[1];
+                              const ymax = block.box[2];
+                              const xmax = block.box[3];
+
+                              const top = Math.max(0, Math.min(96, (ymin / 1000) * 100));
+                              const left = Math.max(0, Math.min(96, (xmin / 1000) * 100));
+                              const width = Math.max(5, Math.min(100 - left, ((xmax - xmin) / 1000) * 100));
+                              const height = Math.max(5, Math.min(100 - top, ((ymax - ymin) / 1000) * 100));
+
+                              const isSelected = query.toLowerCase().includes(block.text.toLowerCase());
+
+                              return (
+                                <div
+                                  key={`block-${bIdx}`}
+                                  className={`lens-detection-box ${isSelected ? 'selected' : ''}`}
+                                  style={{
+                                    top: `${top}%`,
+                                    left: `${left}%`,
+                                    width: `${width}%`,
+                                    height: `${height}%`
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (isSelected) {
+                                      const regex = new RegExp(`(^|\\s)${block.text.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}(\\s|$)`, 'gi');
+                                      const newQ = query.replace(regex, ' ').replace(/\s+/g, ' ').trim();
+                                      setQuery(newQ);
+                                    } else {
+                                      if (!query.trim()) {
+                                        setQuery(block.text);
+                                      } else {
+                                        setQuery(`${query.trim()} ${block.text}`);
+                                      }
+                                    }
+                                    inputRef.current?.focus();
+                                  }}
+                                  title={locale === 'hy' ? `Հայտնաբերված հատված՝ «${block.text}» (Սեղմեք ընտրելու համար)` : `Detected region: "${block.text}" (Click to select)`}
+                                >
+                                  {/* Corner pins & Tooltip */}
+                                  <div className="lens-box-corner tl" />
+                                  <div className="lens-box-corner tr" />
+                                  <div className="lens-box-corner bl" />
+                                  <div className="lens-box-corner br" />
+                                  <span className="lens-box-tooltip">{block.text}</span>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            /* Fallback detection box if single full block */
+                            <div className="lens-detection-box single-full-box selected">
+                              <div className="lens-box-corner tl" />
+                              <div className="lens-box-corner tr" />
+                              <div className="lens-box-corner bl" />
+                              <div className="lens-box-corner br" />
+                              <span className="lens-box-tooltip">{ocrFullText}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Interactive Hint on Image */}
+                        <div className="lens-image-tag">
+                          <span className="hd-icon hd-icon-camera" />
+                          <span>{locale === 'hy' ? 'Ճանաչված հատվածներ' : 'Detected text areas'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ════ RIGHT COLUMN: FULL EXTRACTED TEXT & CLICKABLE WORDS ════ */}
+                    <div className="lens-split-right">
+                      <div className="lens-words-content">
+                        <div className="lens-instructions-hint">
+                          {locale === 'hy'
+                            ? 'Ճանաչված բառեր (սեղմեք՝ որոնելու համար)․'
+                            : 'Detected words (click to search):'}
+                        </div>
+
+                        {/* Clickable Word Chips */}
+                        <div className="lens-chips-cloud">
+                          {ocrDetectedWords.map((word, idx) => {
+                            const isSelected = query.toLowerCase().includes(word.toLowerCase());
+                            return (
+                              <button
+                                key={`${word}-${idx}`}
+                                type="button"
+                                className={`lens-word-chip ${isSelected ? 'selected' : ''}`}
+                                onClick={() => {
+                                  if (isSelected) {
+                                    const regex = new RegExp(`(^|\\s)${word.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}(\\s|$)`, 'gi');
+                                    const newQ = query.replace(regex, ' ').replace(/\s+/g, ' ').trim();
+                                    setQuery(newQ);
+                                  } else {
+                                    if (!query.trim()) {
+                                      setQuery(word);
+                                    } else {
+                                      setQuery(`${query.trim()} ${word}`);
+                                    }
+                                  }
+                                  inputRef.current?.focus();
+                                }}
+                                title={locale === 'hy' ? `Ընտրել «${word}»` : `Select "${word}"`}
+                              >
+                                <span className="chip-label">{word}</span>
+                                {isSelected && <span className="chip-status-check">✓</span>}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Selectable Raw Text Display */}
+                        <div className="lens-selectable-box">
+                          <div className="lens-selectable-label">
+                            {locale === 'hy' ? 'Ամբողջական ընթերցված տեքստ․' : 'Full detected text:'}
+                          </div>
+                          <div
+                            className="lens-selectable-content"
+                            tabIndex={0}
+                            title={locale === 'hy' ? 'Կարող եք նշել կամ պատճենել ցանկացած հատված' : 'Select any text fragment'}
+                          >
+                            {ocrFullText}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="lens-no-text-notice">
+                    {locale === 'hy' ? 'Պատկերի վրա տեքստ չի հայտնաբերվել' : 'No text detected in this image'}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -601,11 +844,11 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
               />
             </div>
           ) : isAnalyzingImage ? (
-            /* User's Custom Loading Animation during Lens & OCR analysis */
+            /* User's Custom Loading Animation during image analysis */
             <div className="hd-custom-loader-container">
               <LoadingAnimation
                 fullPage={false}
-                message={analysisStatusText || (locale === 'hy' ? 'Վերլուծում ենք պատկերը (Lens & OCR)...' : 'Analyzing image with Lens & OCR...')}
+                message={analysisStatusText || (locale === 'hy' ? 'Վերլուծում ենք պատկերը...' : 'Analyzing image...')}
               />
             </div>
           ) : scoredResults.length === 0 ? (
@@ -614,8 +857,8 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
               <h3>{locale === 'hy' ? 'Հրապարակված արդյունքներ չեն գտնվել' : 'No published results found'}</h3>
               <p>
                 {locale === 'hy'
-                  ? `«${query || 'ընտրված հարցմամբ'}» համապատասխանող հրապարակված նախագիծ կամ էջ չկա: Փորձեք իմաստային այլ բառ (օր․՝ «լոգո», «պաստառ», «հավելված», «տառատեսակ») կամ ներբեռնեք պատկեր Lens-ով որոնելու համար:`
-                  : `No published items match "${query}". Try another concept (e.g. "branding", "app", "poster", "font") or upload an image to search via Google Lens.`}
+                  ? `«${query || 'ընտրված հարցմամբ'}» համապատասխանող հրապարակված նախագիծ կամ էջ չկա: Փորձեք իմաստային այլ բառ (օր․՝ «լոգո», «պաստառ», «հավելված», «տառատեսակ») կամ ներբեռնեք պատկեր որոնելու համար:`
+                  : `No published items match "${query}". Try another concept (e.g. "branding", "app", "poster", "font") or upload an image to search.`}
               </p>
               <button
                 type="button"
@@ -623,7 +866,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                 onClick={() => fileInputRef.current?.click()}
               >
                 <span className="hd-icon hd-icon-camera" />
-                {locale === 'hy' ? 'Որոնել պատկերով (Lens & OCR)' : 'Search with Image (Lens & OCR)'}
+                {locale === 'hy' ? 'Որոնել պատկերով' : 'Search with image'}
               </button>
             </div>
           ) : (
@@ -641,7 +884,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   href={item.url}
                   className={`hd-search-result-item ${isSelected ? 'active' : ''}`}
                   data-active={isSelected ? "true" : undefined}
-                  onClick={onClose}
+                  onClick={handleAnimatedClose}
                   onMouseEnter={() => setSelectedIndex(index)}
                 >
                   {/* Thumbnail / Icon */}
@@ -667,11 +910,11 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     <div className="result-header-row">
                       <span className="result-title">{title}</span>
                       
-                      {/* Visual Match Badge if detected by Lens */}
+                      {/* Visual Match Badge */}
                       {visualSim >= 40 && (
                         <span className="result-lens-match-badge">
                           <span className="hd-icon hd-icon-camera" style={{ fontSize: '0.75rem' }} />
-                          Lens: {visualSim}% {locale === 'hy' ? 'նմանություն' : 'match'}
+                          {visualSim}% {locale === 'hy' ? 'նմանություն' : 'match'}
                         </span>
                       )}
 

@@ -32,7 +32,9 @@ export async function GET(request: Request) {
         });
         if (remoteRes.ok) {
           const cssText = await remoteRes.text();
-          iconsData.custom_icon_css = cssText;
+          iconsData.custom_icon_css = cssText
+            .replace(/url\((['"]?)varFonts\//g, "url($1https://api.hakobian.am/libs/v1/icons/varFonts/")
+            .replace(/font-family:\s*['"]HDesign['"]/g, "font-family: 'HDIcons'");
           const regex = /\.([a-zA-Z0-9_-]+):before\s*\{\s*content:\s*["']([^"']+)["']/g;
           let match;
           const visualItems: any[] = [];
