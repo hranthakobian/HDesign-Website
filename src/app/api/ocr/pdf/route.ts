@@ -50,18 +50,12 @@ export async function POST(request: Request) {
       const pageData = pages[i];
       if (!pageData.imageData) continue;
 
-      let imageBuffer: Buffer;
-      let isPng = false;
+      const rawData = String(pageData.imageData || '').trim();
+      if (!rawData) continue;
 
-      const matches = pageData.imageData.match(/^data:([A-Za-z0-9\-\+\/]+);base64,(.+)$/);
-      if (matches && matches[2]) {
-        if (matches[1] && matches[1].includes('png')) {
-          isPng = true;
-        }
-        imageBuffer = Buffer.from(matches[2], 'base64');
-      } else {
-        imageBuffer = Buffer.from(pageData.imageData, 'base64');
-      }
+      const isPng = rawData.startsWith('data:image/png');
+      const cleanBase64 = rawData.replace(/^data:[^;]+;base64,/, '').replace(/\s+/g, '');
+      const imageBuffer = Buffer.from(cleanBase64, 'base64');
 
       let embeddedImg: any = null;
       try {
@@ -71,7 +65,6 @@ export async function POST(request: Request) {
           embeddedImg = await doc.embedJpg(imageBuffer);
         }
       } catch (embedFirstErr) {
-        // Fallback: try other format
         try {
           if (isPng) {
             embeddedImg = await doc.embedJpg(imageBuffer);

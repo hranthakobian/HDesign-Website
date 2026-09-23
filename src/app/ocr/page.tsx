@@ -39,12 +39,26 @@ function fileToJpegDataUrl(file: File): Promise<string> {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        canvas.width = img.naturalWidth || img.width || 1200;
-        canvas.height = img.naturalHeight || img.height || 1600;
+        const maxDim = 1800;
+        let w = img.naturalWidth || img.width || 1200;
+        let h = img.naturalHeight || img.height || 1600;
+
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+        }
+
+        canvas.width = w;
+        canvas.height = h;
         const ctx = canvas.getContext("2d");
         if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          resolve(canvas.toDataURL("image/jpeg", 0.92));
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL("image/jpeg", 0.88));
         } else {
           resolve(src);
         }
@@ -419,30 +433,149 @@ export default function OcrPage() {
         setIsBatchProcessing(false);
       }
 
-      // 2. Send all pages to /api/ocr/pdf
-      const payloadPages = currentPages.map((p) => ({
-        imageData: p.jpegDataUrl,
-        text: p.text,
-        blocks: p.blocks,
-      }));
+      // 2. Generate Searchable PDF (Try client-side first for instant speed & zero payload limits)
+      let pdfBlob: Blob | null = null;
 
-      const res = await fetch("/api/ocr/pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pages: payloadPages,
-          docTitle: "Searchable Document",
-        }),
-      });
+      try {
+        const { PDFDocument, rgb, TextRenderingMode, setTextRenderingMode } = await import("pdf-lib");
+        const fontkitModule = await import("@pdf-lib/fontkit");
+        const fontkit = fontkitModule.default || fontkitModule;
 
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.error || "Searchable PDF ստեղծումը ձախողվեց։");
+        const doc = await PDFDocument.create();
+        doc.registerFontkit(fontkit);
+
+        let customFont: any = null;
+        try {
+          const fontRes = await fetch("/HDesign.ttf");
+          if (fontRes.ok) {
+            const fontBytes = await fontRes.arrayBuffer();
+            customFont = await doc.embedFont(fontBytes);
+          }
+        } catch (_) {}
+
+        for (let i = 0; i < currentPages.length; i++) {
+          const page = currentPages[i];
+          if (!page.jpegDataUrl) continue;
+
+          const base64Data = page.jpegDataUrl.replace(/^data:[^;]+;base64,/, "").replace(/\s+/g, "");
+          const binaryStr = window.atob(base64Data);
+          const bytes = new Uint8Array(binaryStr.length);
+          for (let k = 0; k < binaryStr.length; k++) {
+            bytes[k] = binaryStr.charCodeAt(k);
+          }
+
+          let embeddedImg: any = null;
+          try {
+            embeddedImg = await doc.embedJpg(bytes);
+          } catch (_) {
+            try {
+              embeddedImg = await doc.embedPng(bytes);
+            } catch (e) {
+              continue;
+            }
+          }
+
+          if (!embeddedImg) continue;
+
+          const imgWidth = embeddedImg.width;
+          const imgHeight = embeddedImg.height;
+          const pdfPage = doc.addPage([imgWidth, imgHeight]);
+
+          pdfPage.drawImage(embeddedImg, { x: 0, y: 0, width: imgWidth, height: imgHeight });
+
+          if (customFont) {
+            pdfPage.pushOperators(setTextRenderingMode(TextRenderingMode.Invisible));
+
+            const blocks = page.blocks || [];
+            if (blocks.length > 0) {
+              for (const block of blocks) {
+                const rawText = (block.text || "").replace(/[\r\n\x00-\x08\x0B\x0C\x0E-\x1F]/g, " ").trim();
+                if (!rawText) continue;
+
+                const [ymin, xmin, ymax, xmax] = block.box;
+                const x = (xmin / 1000) * imgWidth;
+                const boxHeight = Math.max(6, ((ymax - ymin) / 1000) * imgHeight);
+                const y = imgHeight - (ymax / 1000) * imgHeight;
+                const fontSize = Math.max(6, Math.min(boxHeight * 0.85, 48));
+
+                try {
+                  pdfPage.drawText(rawText, {
+                    x: Math.max(0, x),
+                    y: Math.max(0, y),
+                    size: fontSize,
+                    font: customFont,
+                    color: rgb(0, 0, 0),
+                  });
+                } catch (_) {}
+              }
+            } else if (page.text && page.text.trim()) {
+              const lines = page.text.split("\n").map((l) => l.trim()).filter(Boolean);
+              const lineHeight = Math.min(24, Math.max(10, imgHeight / (lines.length + 4)));
+              let currentY = imgHeight - lineHeight * 2;
+
+              for (const line of lines) {
+                if (currentY < lineHeight) break;
+                try {
+                  pdfPage.drawText(line, {
+                    x: 40,
+                    y: currentY,
+                    size: Math.max(8, lineHeight * 0.8),
+                    font: customFont,
+                    color: rgb(0, 0, 0),
+                  });
+                } catch (_) {}
+                currentY -= lineHeight;
+              }
+            }
+
+            pdfPage.pushOperators(setTextRenderingMode(TextRenderingMode.Fill));
+          }
+        }
+
+        if (doc.getPageCount() > 0) {
+          const pdfBytes = await doc.save();
+          pdfBlob = new Blob([pdfBytes as any], { type: "application/pdf" });
+        }
+      } catch (clientPdfErr) {
+        console.warn("Client-side PDF failed, trying server API fallback...", clientPdfErr);
+      }
+
+      // If client-side produced no pages, fall back to server API
+      if (!pdfBlob) {
+        const payloadPages = currentPages.map((p) => ({
+          imageData: p.jpegDataUrl,
+          text: p.text,
+          blocks: p.blocks,
+        }));
+
+        const res = await fetch("/api/ocr/pdf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            pages: payloadPages,
+            docTitle: "Searchable Document",
+          }),
+        });
+
+        if (!res.ok) {
+          let errDetail = "";
+          try {
+            const errText = await res.text();
+            try {
+              const parsed = JSON.parse(errText);
+              errDetail = parsed.error || parsed.message;
+            } catch (_) {
+              errDetail = errText.slice(0, 200);
+            }
+          } catch (_) {}
+          throw new Error(errDetail || `Սերվերի սխալ (Կոդ: ${res.status})`);
+        }
+
+        pdfBlob = await res.blob();
       }
 
       // 3. Download the generated PDF blob
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
+      const url = window.URL.createObjectURL(pdfBlob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `searchable_document_${Date.now()}.pdf`;
@@ -452,7 +585,7 @@ export default function OcrPage() {
       window.URL.revokeObjectURL(url);
     } catch (err: any) {
       console.error("PDF generation error:", err);
-      setErrorMsg(err.message || "Failed to generate Searchable PDF.");
+      setErrorMsg(err.message || "Searchable PDF ստեղծումը ձախողվեց։");
     } finally {
       setIsGeneratingPdf(false);
       setIsBatchProcessing(false);
