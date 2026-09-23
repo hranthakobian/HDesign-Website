@@ -246,18 +246,31 @@ export async function POST(request: Request) {
 
     if (contentType.includes('multipart/form-data')) {
       const formData = await request.formData();
-      const file = formData.get('image') as File | null;
+      const fileOrString = formData.get('image');
       mode = (formData.get('mode') as string) || 'full';
       userApiKey = formData.get('apiKey') as string | null;
       lang = (formData.get('lang') as string) || 'eng+hye';
 
-      if (!file) {
+      if (!fileOrString) {
         return NextResponse.json({ error: 'Նիշքը (image) չի գտնվել' }, { status: 400 });
       }
 
-      mimeType = file.type || 'image/jpeg';
-      const arrayBuffer = await file.arrayBuffer();
-      imageBuffer = Buffer.from(arrayBuffer);
+      if (typeof fileOrString === 'string') {
+        const matches = fileOrString.match(/^data:([A-Za-z0-9\-\+\/]+);base64,(.+)$/);
+        if (matches && matches[1]) {
+          mimeType = matches[1];
+          imageBuffer = Buffer.from(matches[2], 'base64');
+        } else {
+          imageBuffer = Buffer.from(fileOrString, 'base64');
+        }
+      } else if (fileOrString && typeof (fileOrString as any).arrayBuffer === 'function') {
+        const file = fileOrString as File;
+        mimeType = file.type || 'image/jpeg';
+        const arrayBuffer = await file.arrayBuffer();
+        imageBuffer = Buffer.from(arrayBuffer);
+      } else {
+        return NextResponse.json({ error: 'Անհայտ նկարի ֆորմատ' }, { status: 400 });
+      }
     } else {
       const body = await request.json();
       const { image, mode: bMode, apiKey: bKey, lang: bLang } = body;
