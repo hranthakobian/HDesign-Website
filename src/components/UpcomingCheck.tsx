@@ -56,8 +56,8 @@ export default function UpcomingCheck({ initialUpcomingMode, initialUpcomingHdes
     }
   }, []);
 
-  // Check if current path starts with admin or api (which bypasses upcoming block)
-  const isBypassed = pathname.startsWith('/admin') || pathname.startsWith('/api');
+  // Check if current path starts with admin, api, or ocr (which bypasses upcoming block)
+  const isBypassed = pathname.startsWith('/admin') || pathname.startsWith('/api') || pathname.startsWith('/ocr');
   const isHdesignPage = pathname.startsWith('/hdesign');
 
   const getPageKey = (path: string): string | null => {
