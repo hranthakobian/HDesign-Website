@@ -22,6 +22,11 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
   const pathname = usePathname();
   const [theme, setTheme] = useState<'light' | 'dark' | 'green'>('light');
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Global Ctrl+K / Cmd+K keyboard shortcut listener to toggle search modal
   useEffect(() => {
@@ -323,32 +328,40 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
 
         {/* Desktop Controls (Language & Theme Switcher) */}
         <div className="portfolio-header-controls">
-          <hd-segment
-            id="langSelectorDesktop"
-            value={locale}
-            onChange={(e: any) => setLocale(e.target.value)}
-            data-width="130px"
-            data-height="34px"
-            data-thickness="3px"
-          >
-            <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
-            <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
-          </hd-segment>
-
-          <div className="desktop-theme-select-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <hd-select
-              id="themeSelectorDesktop"
-              value={theme}
-              onChange={(e: any) => changeTheme(e.target.value)}
-              data-width="125px"
+          {mounted ? (
+            <hd-segment
+              id="langSelectorDesktop"
+              value={locale}
+              onChange={(e: any) => setLocale(e.target.value)}
+              data-width="130px"
               data-height="34px"
               data-thickness="3px"
-              placeholder={t('nav', 'theme', 'Թեմա')}
             >
-              <span value="light" {...(theme === 'light' ? { selected: true } : {})}>{t('nav', 'theme_light', 'Բաց')}</span>
-              <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>{t('nav', 'theme_dark', 'Մութ')}</span>
-              <span value="green" {...(theme === 'green' ? { selected: true } : {})}>{t('nav', 'theme_green', 'Կանաչ')}</span>
-            </hd-select>
+              <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
+              <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
+            </hd-segment>
+          ) : (
+            <div style={{ width: '130px', height: '34px' }} />
+          )}
+
+          <div className="desktop-theme-select-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {mounted ? (
+              <hd-select
+                id="themeSelectorDesktop"
+                value={theme}
+                onChange={(e: any) => changeTheme(e.target.value)}
+                data-width="125px"
+                data-height="34px"
+                data-thickness="3px"
+                placeholder={t('nav', 'theme', 'Թեմա')}
+              >
+                <span value="light" {...(theme === 'light' ? { selected: true } : {})}>{t('nav', 'theme_light', 'Բաց')}</span>
+                <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>{t('nav', 'theme_dark', 'Մութ')}</span>
+                <span value="green" {...(theme === 'green' ? { selected: true } : {})}>{t('nav', 'theme_green', 'Կանաչ')}</span>
+              </hd-select>
+            ) : (
+              <div style={{ width: '125px', height: '34px' }} />
+            )}
           </div>
 
           {/* Search Trigger Button right next to Theme Switcher */}
