@@ -1766,14 +1766,20 @@ export default function Home() {
                 </div>
                 <div>
                   <Link href="/about">
-                    <hd-button 
-                      suppressHydrationWarning
-                      data-width="160px"
-                      data-height="52px"
-                      data-thickness="3px"
-                      data-color="#083F39"
-                      data-text-color="#fff"
-                    >{t('home', 'more_about_btn', 'Ավելին')}</hd-button>
+                    {mounted ? (
+                      <hd-button 
+                        suppressHydrationWarning
+                        data-width="160px"
+                        data-height="52px"
+                        data-thickness="3px"
+                        data-color="#083F39"
+                        data-text-color="#fff"
+                      >{t('home', 'more_about_btn', 'Ավելին')}</hd-button>
+                    ) : (
+                      <button
+                        style={{ width: "160px", height: "52px", background: "#083F39", color: "#fff", border: "3px solid #083F39", borderRadius: "24px", fontWeight: "bold", cursor: "pointer" }}
+                      >{t('home', 'more_about_btn', 'Ավելին')}</button>
+                    )}
                   </Link>
                 </div>
               </div>
@@ -1812,12 +1818,18 @@ export default function Home() {
 
             <div style={{ display: "flex", justifyContent: "center", marginTop: "36px" }}>
               <Link href="/works?category=design">
-                <hd-button 
-                  suppressHydrationWarning
-                  data-width="160px"
-                  data-height="52px"
-                  data-thickness="3px"
-                >{t('home', 'more_btn', 'Ավելի')}</hd-button>
+                {mounted ? (
+                  <hd-button 
+                    suppressHydrationWarning
+                    data-width="160px"
+                    data-height="52px"
+                    data-thickness="3px"
+                  >{t('home', 'more_btn', 'Ավելի')}</hd-button>
+                ) : (
+                  <button
+                    style={{ width: "160px", height: "52px", background: "var(--primary-color)", color: "#fff", border: "3px solid var(--primary-color)", borderRadius: "24px", fontWeight: "bold", cursor: "pointer" }}
+                  >{t('home', 'more_btn', 'Ավելի')}</button>
+                )}
               </Link>
             </div>
           </hd-reveal>
@@ -2101,7 +2113,9 @@ export default function Home() {
                 boxShadow: "0 12px 30px rgba(0, 0, 0, 0.25)"
               }}>
                 <div style={{ width: "100%", maxWidth: "320px", display: "flex", justifyContent: "center", color: "#1a1a1a" }}>
-                  {renderPlaygroundActiveComponent()}
+                  {mounted ? renderPlaygroundActiveComponent() : (
+                    <div style={{ height: "120px", display: "flex", alignItems: "center", justifyContent: "center" }} />
+                  )}
                 </div>
               </div>
 
@@ -2197,28 +2211,36 @@ export default function Home() {
                     {playgroundWidth !== "auto" && (
                       <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <span style={{ fontSize: "0.8rem", opacity: 0.7 }}>Լայնություն (Width)</span>
-                        <hd-select suppressHydrationWarning value={playgroundWidth} onChange={(e: any) => setPlaygroundWidth(e.target.value)} data-height="34px" data-thickness="2px">
-                          <span value="100%">100%</span>
-                          <span value="240px">240px</span>
-                          <span value="180px">180px</span>
-                        </hd-select>
+                        {mounted ? (
+                          <hd-select suppressHydrationWarning value={playgroundWidth} onChange={(e: any) => setPlaygroundWidth(e.target.value)} data-height="34px" data-thickness="2px">
+                            <span value="100%">100%</span>
+                            <span value="240px">240px</span>
+                            <span value="180px">180px</span>
+                          </hd-select>
+                        ) : (
+                          <div style={{ height: "34px", width: "100%" }} />
+                        )}
                       </label>
                     )}
 
                     {playgroundHeight !== "auto" && playgroundActiveTab !== "hd-scrollbar" && (
                       <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <span style={{ fontSize: "0.8rem", opacity: 0.7 }}>Բարձրություն (Height)</span>
-                        <hd-select suppressHydrationWarning value={playgroundHeight} onChange={(e: any) => setPlaygroundHeight(e.target.value)} data-height="34px" data-thickness="2px">
-                          <span value="38px">38px</span>
-                          <span value="50px">50px</span>
-                          <span value="62px">62px</span>
-                          {playgroundActiveTab === "hd-textarea" || playgroundActiveTab === "hd-color-panel" ? (
-                            <>
-                              <span value="120px">120px</span>
-                              <span value="180px">180px</span>
-                            </>
-                          ) : null}
-                        </hd-select>
+                        {mounted ? (
+                          <hd-select suppressHydrationWarning value={playgroundHeight} onChange={(e: any) => setPlaygroundHeight(e.target.value)} data-height="34px" data-thickness="2px">
+                            <span value="38px">38px</span>
+                            <span value="50px">50px</span>
+                            <span value="62px">62px</span>
+                            {playgroundActiveTab === "hd-textarea" || playgroundActiveTab === "hd-color-panel" ? (
+                              <>
+                                <span value="120px">120px</span>
+                                <span value="180px">180px</span>
+                              </>
+                            ) : null}
+                          </hd-select>
+                        ) : (
+                          <div style={{ height: "34px", width: "100%" }} />
+                        )}
                       </label>
                     )}
 
@@ -2342,19 +2364,35 @@ export default function Home() {
                       <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                         <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.8rem", opacity: 0.85, cursor: "pointer" }}>
                           <span>Ավտոնվագարկում (Autoplay)</span>
-                          <hd-switch suppressHydrationWarning checked={playgroundVideoAutoplay} onChange={(e: any) => setPlaygroundVideoAutoplay(e.target.checked)} data-size="18px" />
+                          {mounted ? (
+                            <hd-switch suppressHydrationWarning checked={playgroundVideoAutoplay} onChange={(e: any) => setPlaygroundVideoAutoplay(e.target.checked)} data-size="18px" />
+                          ) : (
+                            <div style={{ width: "36px", height: "18px" }} />
+                          )}
                         </label>
                         <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.8rem", opacity: 0.85, cursor: "pointer" }}>
                           <span>Կրկնել (Loop)</span>
-                          <hd-switch suppressHydrationWarning checked={playgroundVideoLoop} onChange={(e: any) => setPlaygroundVideoLoop(e.target.checked)} data-size="18px" />
+                          {mounted ? (
+                            <hd-switch suppressHydrationWarning checked={playgroundVideoLoop} onChange={(e: any) => setPlaygroundVideoLoop(e.target.checked)} data-size="18px" />
+                          ) : (
+                            <div style={{ width: "36px", height: "18px" }} />
+                          )}
                         </label>
                         <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.8rem", opacity: 0.85, cursor: "pointer" }}>
                           <span>Առանց ձայնի (Muted)</span>
-                          <hd-switch suppressHydrationWarning checked={playgroundVideoMuted} onChange={(e: any) => setPlaygroundVideoMuted(e.target.checked)} data-size="18px" />
+                          {mounted ? (
+                            <hd-switch suppressHydrationWarning checked={playgroundVideoMuted} onChange={(e: any) => setPlaygroundVideoMuted(e.target.checked)} data-size="18px" />
+                          ) : (
+                            <div style={{ width: "36px", height: "18px" }} />
+                          )}
                         </label>
                         <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.8rem", opacity: 0.85, cursor: "pointer" }}>
                           <span>Ղեկավարում (Controls)</span>
-                          <hd-switch suppressHydrationWarning checked={playgroundVideoControls} onChange={(e: any) => setPlaygroundVideoControls(e.target.checked)} data-size="18px" />
+                          {mounted ? (
+                            <hd-switch suppressHydrationWarning checked={playgroundVideoControls} onChange={(e: any) => setPlaygroundVideoControls(e.target.checked)} data-size="18px" />
+                          ) : (
+                            <div style={{ width: "36px", height: "18px" }} />
+                          )}
                         </label>
                       </div>
                     )}
@@ -2379,7 +2417,11 @@ export default function Home() {
                           />
                         </label>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                          <hd-checkbox suppressHydrationWarning checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          {mounted ? (
+                            <hd-checkbox suppressHydrationWarning checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          ) : (
+                            <div style={{ width: "20px", height: "20px" }} />
+                          )}
                           <span style={{ fontSize: "0.8rem" }}>Պասիվ (Disabled)</span>
                         </label>
                       </>
@@ -2405,7 +2447,11 @@ export default function Home() {
                           />
                         </label>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                          <hd-checkbox suppressHydrationWarning checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          {mounted ? (
+                            <hd-checkbox suppressHydrationWarning checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          ) : (
+                            <div style={{ width: "20px", height: "20px" }} />
+                          )}
                           <span style={{ fontSize: "0.8rem" }}>Պասիվ (Disabled)</span>
                         </label>
                       </>
@@ -2413,7 +2459,11 @@ export default function Home() {
 
                     {playgroundActiveTab === "hd-textarea" && (
                       <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                        <hd-checkbox suppressHydrationWarning checked={playgroundTextareaDisableResize} onChange={(e: any) => setPlaygroundTextareaDisableResize(e.target.checked)} />
+                        {mounted ? (
+                          <hd-checkbox suppressHydrationWarning checked={playgroundTextareaDisableResize} onChange={(e: any) => setPlaygroundTextareaDisableResize(e.target.checked)} />
+                        ) : (
+                          <div style={{ width: "20px", height: "20px" }} />
+                        )}
                         <span style={{ fontSize: "0.8rem" }}>Արգելել չափափոխումը</span>
                       </label>
                     )}
@@ -2432,7 +2482,11 @@ export default function Home() {
                           />
                         </label>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                          <hd-checkbox suppressHydrationWarning checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          {mounted ? (
+                            <hd-checkbox suppressHydrationWarning checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          ) : (
+                            <div style={{ width: "20px", height: "20px" }} />
+                          )}
                           <span style={{ fontSize: "0.8rem" }}>{t('home', 'disabled_label', 'Պասիվ')}</span>
                         </label>
                       </>
@@ -2441,11 +2495,19 @@ export default function Home() {
                     {playgroundActiveTab === "hd-checkbox" && (
                       <>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                          <hd-checkbox suppressHydrationWarning checked={playgroundCheckedState} onChange={(e: any) => setPlaygroundCheckedState(e.target.checked)} />
+                          {mounted ? (
+                            <hd-checkbox suppressHydrationWarning checked={playgroundCheckedState} onChange={(e: any) => setPlaygroundCheckedState(e.target.checked)} />
+                          ) : (
+                            <div style={{ width: "20px", height: "20px" }} />
+                          )}
                           <span style={{ fontSize: "0.8rem" }}>{t('home', 'checked_state', 'Ընտրված (Checked)')}</span>
                         </label>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                          <hd-checkbox suppressHydrationWarning checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          {mounted ? (
+                            <hd-checkbox suppressHydrationWarning checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          ) : (
+                            <div style={{ width: "20px", height: "20px" }} />
+                          )}
                           <span style={{ fontSize: "0.8rem" }}>{t('home', 'disabled_label', 'Պասիվ')}</span>
                         </label>
                       </>
@@ -2454,11 +2516,19 @@ export default function Home() {
                     {playgroundActiveTab === "hd-radio" && (
                       <>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                          <hd-checkbox suppressHydrationWarning checked={playgroundRadioState} onChange={(e: any) => setPlaygroundRadioState(e.target.checked)} />
+                          {mounted ? (
+                            <hd-checkbox suppressHydrationWarning checked={playgroundRadioState} onChange={(e: any) => setPlaygroundRadioState(e.target.checked)} />
+                          ) : (
+                            <div style={{ width: "20px", height: "20px" }} />
+                          )}
                           <span style={{ fontSize: "0.8rem" }}>{t('home', 'checked_state', 'Ընտրված (Checked)')}</span>
                         </label>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                          <hd-checkbox suppressHydrationWarning checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          {mounted ? (
+                            <hd-checkbox suppressHydrationWarning checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          ) : (
+                            <div style={{ width: "20px", height: "20px" }} />
+                          )}
                           <span style={{ fontSize: "0.8rem" }}>{t('home', 'disabled_label', 'Պասիվ')}</span>
                         </label>
                       </>
@@ -2467,11 +2537,19 @@ export default function Home() {
                     {playgroundActiveTab === "hd-switch" && (
                       <>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                          <hd-checkbox suppressHydrationWarning checked={playgroundSwitchState} onChange={(e: any) => setPlaygroundSwitchState(e.target.checked)} />
+                          {mounted ? (
+                            <hd-checkbox suppressHydrationWarning checked={playgroundSwitchState} onChange={(e: any) => setPlaygroundSwitchState(e.target.checked)} />
+                          ) : (
+                            <div style={{ width: "20px", height: "20px" }} />
+                          )}
                           <span style={{ fontSize: "0.8rem" }}>{t('home', 'active_label', 'Միացված (Active)')}</span>
                         </label>
                         <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                          <hd-checkbox suppressHydrationWarning checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          {mounted ? (
+                            <hd-checkbox suppressHydrationWarning checked={playgroundIsDisabled} onChange={(e: any) => setPlaygroundIsDisabled(e.target.checked)} />
+                          ) : (
+                            <div style={{ width: "20px", height: "20px" }} />
+                          )}
                           <span style={{ fontSize: "0.8rem" }}>{t('home', 'disabled_label', 'Պասիվ')}</span>
                         </label>
                       </>
@@ -2480,22 +2558,30 @@ export default function Home() {
                     {playgroundActiveTab === "hd-select" && (
                       <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>{t('home', 'value_label', 'Արժեք')}</span>
-                        <hd-select suppressHydrationWarning value={playgroundSelectVal} onChange={(e: any) => setPlaygroundSelectVal(e.target.value)} data-height="34px" data-thickness="2px">
-                          {playgroundSelectOptions.split(",").map((opt, i) => (
-                            <span key={i} value={`option${i+1}`}>{opt.trim()}</span>
-                          ))}
-                        </hd-select>
+                        {mounted ? (
+                          <hd-select suppressHydrationWarning value={playgroundSelectVal} onChange={(e: any) => setPlaygroundSelectVal(e.target.value)} data-height="34px" data-thickness="2px">
+                            {playgroundSelectOptions.split(",").map((opt, i) => (
+                              <span key={i} value={`option${i+1}`}>{opt.trim()}</span>
+                            ))}
+                          </hd-select>
+                        ) : (
+                          <div style={{ height: "34px", width: "100%" }} />
+                        )}
                       </label>
                     )}
 
                     {playgroundActiveTab === "hd-segment" && (
                       <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <span style={{ fontSize: "0.78rem", opacity: 0.7 }}>{t('home', 'active_tab', 'Ակտիվ տաբ')}</span>
-                        <hd-select suppressHydrationWarning value={playgroundSegmentVal} onChange={(e: any) => setPlaygroundSegmentVal(e.target.value)} data-height="34px" data-thickness="2px">
-                          {playgroundSegmentOptions.split(",").map((opt, i) => (
-                            <span key={i} value={`tab${i+1}`}>{opt.trim()}</span>
-                          ))}
-                        </hd-select>
+                        {mounted ? (
+                          <hd-select suppressHydrationWarning value={playgroundSegmentVal} onChange={(e: any) => setPlaygroundSegmentVal(e.target.value)} data-height="34px" data-thickness="2px">
+                            {playgroundSegmentOptions.split(",").map((opt, i) => (
+                              <span key={i} value={`tab${i+1}`}>{opt.trim()}</span>
+                            ))}
+                          </hd-select>
+                        ) : (
+                          <div style={{ height: "34px", width: "100%" }} />
+                        )}
                       </label>
                     )}
 
@@ -2637,32 +2723,46 @@ export default function Home() {
                 flexDirection: "column",
                 gap: "16px"
               }}>
-                <hd-input 
-                  placeholder={t('home', 'search_icon', 'Որոնել պատկերակ...')} 
-                  value={iconSearch}
-                  onInput={(e: any) => setIconSearch(e.target.value)}
-                  data-width="100%"
-                  data-height="46px"
-                  data-thickness="3px"
-                data-font-size="14pt" />
+                {mounted ? (
+                  <hd-input 
+                    placeholder={t('home', 'search_icon', 'Որոնել պատկերակ...')} 
+                    value={iconSearch}
+                    onInput={(e: any) => setIconSearch(e.target.value)}
+                    data-width="100%"
+                    data-height="46px"
+                    data-thickness="3px"
+                    data-font-size="14pt" 
+                  />
+                ) : (
+                  <input 
+                    placeholder={t('home', 'search_icon', 'Որոնել պատկերակ...')}
+                    value={iconSearch}
+                    onChange={(e: any) => setIconSearch(e.target.value)}
+                    style={{ width: "100%", height: "46px", background: "var(--input-bg)", border: "1px solid var(--panel-border)", borderRadius: "8px", padding: "0 12px", color: "var(--text)", outline: "none" }}
+                  />
+                )}
 
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <span style={{ fontSize: "0.82rem", color: "var(--muted)", fontWeight: "600" }}>
                     {t('home', 'sort_by', 'Դասավորել')}
                   </span>
-                  <hd-segment
-                    value={iconSortOrder}
-                    onChange={(e: any) => setIconSortOrder(e.target.value)}
-                    data-height="34px"
-                    data-thickness="2px"
-                  >
-                    <span value="default" {...(iconSortOrder === "default" ? { selected: true } : {})}>
-                      {t('home', 'sort_default', 'Խմբավորված')}
-                    </span>
-                    <span value="alphabetical" {...(iconSortOrder === "alphabetical" ? { selected: true } : {})}>
-                      A-Z
-                    </span>
-                  </hd-segment>
+                  {mounted ? (
+                    <hd-segment
+                      value={iconSortOrder}
+                      onChange={(e: any) => setIconSortOrder(e.target.value)}
+                      data-height="34px"
+                      data-thickness="2px"
+                    >
+                      <span value="default" {...(iconSortOrder === "default" ? { selected: true } : {})}>
+                        {t('home', 'sort_default', 'Խմբավորված')}
+                      </span>
+                      <span value="alphabetical" {...(iconSortOrder === "alphabetical" ? { selected: true } : {})}>
+                        A-Z
+                      </span>
+                    </hd-segment>
+                  ) : (
+                    <div style={{ height: "34px", width: "160px" }} />
+                  )}
                 </div>
               </div>
 
@@ -2816,34 +2916,54 @@ export default function Home() {
                   width: "100%",
                   justifyContent: "center"
                 }}>
-                  <hd-button
-                    suppressHydrationWarning
-                    onClick={() => downloadSvg(selectedIconDetail)}
-                    data-width="50%"
-                    data-height="40px"
-                    data-thickness="3px"
-                    data-color="transparent"
-                    data-text-color="var(--text)"
-                    title={t('home', 'download_svg', 'Ներբեռնել SVG')}
-                    style={{ flex: 1 }}
-                  >
-                    <span className="icon-Download" style={{ fontSize: "0.85rem", marginRight: "6px" }} />
-                    SVG
-                  </hd-button>
-                  <hd-button
-                    suppressHydrationWarning
-                    onClick={() => downloadPng(selectedIconDetail)}
-                    data-width="50%"
-                    data-height="40px"
-                    data-thickness="3px"
-                    data-color="var(--primary-color)"
-                    data-text-color="#ffffff"
-                    title={t('home', 'download_png', 'Ներբեռնել PNG')}
-                    style={{ flex: 1 }}
-                  >
-                    <span className="icon-Download" style={{ fontSize: "0.85rem", marginRight: "6px" }} />
-                    PNG
-                  </hd-button>
+                  {mounted ? (
+                    <hd-button
+                      suppressHydrationWarning
+                      onClick={() => downloadSvg(selectedIconDetail)}
+                      data-width="50%"
+                      data-height="40px"
+                      data-thickness="3px"
+                      data-color="transparent"
+                      data-text-color="var(--text)"
+                      title={t('home', 'download_svg', 'Ներբեռնել SVG')}
+                      style={{ flex: 1 }}
+                    >
+                      <span className="icon-Download" style={{ fontSize: "0.85rem", marginRight: "6px" }} />
+                      SVG
+                    </hd-button>
+                  ) : (
+                    <button
+                      onClick={() => downloadSvg(selectedIconDetail)}
+                      style={{ flex: 1, height: "40px", background: "transparent", color: "var(--text)", border: "1px solid var(--panel-border)", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                    >
+                      <span className="icon-Download" style={{ fontSize: "0.85rem" }} />
+                      SVG
+                    </button>
+                  )}
+                  {mounted ? (
+                    <hd-button
+                      suppressHydrationWarning
+                      onClick={() => downloadPng(selectedIconDetail)}
+                      data-width="50%"
+                      data-height="40px"
+                      data-thickness="3px"
+                      data-color="var(--primary-color)"
+                      data-text-color="#ffffff"
+                      title={t('home', 'download_png', 'Ներբեռնել PNG')}
+                      style={{ flex: 1 }}
+                    >
+                      <span className="icon-Download" style={{ fontSize: "0.85rem", marginRight: "6px" }} />
+                      PNG
+                    </hd-button>
+                  ) : (
+                    <button
+                      onClick={() => downloadPng(selectedIconDetail)}
+                      style={{ flex: 1, height: "40px", background: "var(--primary-color)", color: "#ffffff", border: "none", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                    >
+                      <span className="icon-Download" style={{ fontSize: "0.85rem" }} />
+                      PNG
+                    </button>
+                  )}
                 </div>
 
                 {/* Code Snippets Section */}
@@ -3750,21 +3870,29 @@ export default function Home() {
                     {/* Options Toggles using <hd-checkbox> */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingTop: "8px", borderTop: "1px dashed var(--panel-border)" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }} onClick={() => setShowMatrixGrid(!showMatrixGrid)}>
-                        <hd-checkbox 
-                          suppressHydrationWarning 
-                          checked={showMatrixGrid} 
-                          onChange={(e: any) => setShowMatrixGrid(e.target.checked)} 
-                        />
+                        {mounted ? (
+                          <hd-checkbox 
+                            suppressHydrationWarning 
+                            checked={showMatrixGrid} 
+                            onChange={(e: any) => setShowMatrixGrid(e.target.checked)} 
+                          />
+                        ) : (
+                          <div style={{ width: "20px", height: "20px" }} />
+                        )}
                         <span style={{ fontSize: "0.8rem", color: "var(--text)", fontWeight: "600" }}>
                           {t('home', 'show_grid_lines', 'Ցուցադրել ցանցի կետագծերը')}
                         </span>
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }} onClick={() => setShowMatrixWatermark(!showMatrixWatermark)}>
-                        <hd-checkbox 
-                          suppressHydrationWarning 
-                          checked={showMatrixWatermark} 
-                          onChange={(e: any) => setShowMatrixWatermark(e.target.checked)} 
-                        />
+                        {mounted ? (
+                          <hd-checkbox 
+                            suppressHydrationWarning 
+                            checked={showMatrixWatermark} 
+                            onChange={(e: any) => setShowMatrixWatermark(e.target.checked)} 
+                          />
+                        ) : (
+                          <div style={{ width: "20px", height: "20px" }} />
+                        )}
                         <span style={{ fontSize: "0.8rem", color: "var(--text)", fontWeight: "600" }}>
                           {t('home', 'show_watermark', 'Ցուցադրել ֆոնային տառը (Watermark)')}
                         </span>
@@ -4058,9 +4186,15 @@ export default function Home() {
 
                   <div style={{ marginTop: "auto", paddingTop: "12px", display: "flex", gap: "12px" }}>
                     <Link href={`/works/${displayedCase.id.includes('local-b-') ? ['pasta', 'eleven', 'posters', 'teal-lines', 'mobile-ui'][parseInt(displayedCase.id.replace('local-b-', '')) - 1] || displayedCase.id : displayedCase.id}`} style={{ textDecoration: "none" }}>
-                      <hd-button suppressHydrationWarning data-height="40px" data-thickness="3px" style={{ background: "var(--accent)", color: "#000", fontWeight: "bold" }}>
-                        {locale === "en" ? "View Full Case Study" : "Տեսնել Ամբողջական Քեյսը"}
-                      </hd-button>
+                      {mounted ? (
+                        <hd-button suppressHydrationWarning data-height="40px" data-thickness="3px" style={{ background: "var(--accent)", color: "#000", fontWeight: "bold" }}>
+                          {locale === "en" ? "View Full Case Study" : "Տեսնել Ամբողջական Քեյսը"}
+                        </hd-button>
+                      ) : (
+                        <button style={{ height: "40px", padding: "0 20px", background: "var(--accent)", color: "#000", fontWeight: "bold", border: "none", borderRadius: "8px", cursor: "pointer" }}>
+                          {locale === "en" ? "View Full Case Study" : "Տեսնել Ամբողջական Քեյսը"}
+                        </button>
+                      )}
                     </Link>
                   </div>
                 </div>
