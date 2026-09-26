@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import HdVideoPlayer from "@/components/HdVideoPlayer";
 
@@ -12,6 +12,12 @@ interface ComponentItem {
 }
 
 export default function HDesignSamplesPage() {
+  const [mounted, setMounted] = useState<boolean>(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [activeTab, setActiveTab] = useState<string>("hd-button");
   const [copied, setCopied] = useState<boolean>(false);
 
@@ -677,7 +683,9 @@ export default function HDesignSamplesPage() {
               color: "#1a1a1a"
             }}>
               <div style={{ width: "100%", maxWidth: "320px", display: "flex", justifyContent: "center", color: "#1a1a1a" }}>
-                {renderActiveComponent()}
+                {mounted ? renderActiveComponent() : (
+                  <div style={{ height: "120px", display: "flex", alignItems: "center", justifyContent: "center" }} />
+                )}
               </div>
             </div>
           </div>
@@ -766,7 +774,8 @@ export default function HDesignSamplesPage() {
             ԿԱՐԳԱՎՈՐՈՒՄՆԵՐ
           </h3>
 
-          <hd-scrollbar style={{ height: "420px", overflow: "auto", overscrollBehavior: "contain" }}>
+          {mounted ? (
+            <hd-scrollbar style={{ height: "420px", overflow: "auto", overscrollBehavior: "contain" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "20px", paddingRight: "10px" }}>
               
               {/* --- Stylistic Attributes Section --- */}
@@ -1397,16 +1406,20 @@ export default function HDesignSamplesPage() {
 
             </div>
           </hd-scrollbar>
-        </div>
-
+        ) : (
+          <div style={{ height: "420px" }} />
+        )}
       </div>
 
-      {/* Structured Forms Showcase Section */}
-      <div>
-        <h2 style={{ fontSize: "1.8rem", fontWeight: "800", color: "var(--text)", marginBottom: "32px", textAlign: "center" }}>
-          Կոմպոնենտների Համատեղ Կիրառում
-        </h2>
-        
+    </div>
+
+    {/* Structured Forms Showcase Section */}
+    <div>
+      <h2 style={{ fontSize: "1.8rem", fontWeight: "800", color: "var(--text)", marginBottom: "32px", textAlign: "center" }}>
+        Կոմպոնենտների Համատեղ Կիրառում
+      </h2>
+      
+      {mounted ? (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "40px" }} className="samples-showcase-grid">
           
           {/* Card 1: Sample Form */}
@@ -1491,8 +1504,10 @@ export default function HDesignSamplesPage() {
 
             </div>
           </div>
-
         </div>
+      ) : (
+        <div style={{ minHeight: "300px" }} />
+      )}
       </div>
     </main>
   );
