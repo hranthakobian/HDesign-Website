@@ -1307,7 +1307,7 @@ function AdminDashboardContent() {
       bio_p1_en: enDyn['bio_p1'] || enTranslations['about']?.['bio_p1'] || "Hello, I'm Hrant Hakobyan, a 4th-year architecture student at the National University of Architecture and Construction of Armenia.",
       bio_p2_hy: hyDyn['bio_p2'] || hyTranslations['about']?.['bio_p2'] || 'Իմ նախագծերում ես համատեղում եմ ճարտարապետական կառուցվածքայնությունն ու գրաֆիկական դիզայնի ճկունությունը: Յուրաքանչյուր տառատեսակ և տարբերանշան ինձ համար կառույց է, որն ունի իր սեփական հիմքերը, համամասնությունն ու գեղագիտական արժեքը:',
       bio_p2_en: enDyn['bio_p2'] || enTranslations['about']?.['bio_p2'] || 'In my projects, I combine architectural structure with graphic design flexibility. Every typeface and logo is a building for me, with its own foundations, proportion, and aesthetic value.',
-      contact_btn_hy: hyDyn['contact_btn'] || hyTranslations['about']?.['contact_btn'] || 'Կապնվել',
+      contact_btn_hy: hyDyn['contact_btn'] || hyTranslations['about']?.['contact_btn'] || 'Կապվել',
       contact_btn_en: enDyn['contact_btn'] || enTranslations['about']?.['contact_btn'] || 'Contact',
       works_btn_hy: hyDyn['works_btn'] || hyTranslations['about']?.['works_btn'] || 'Աշխատանքներ',
       works_btn_en: enDyn['works_btn'] || enTranslations['about']?.['works_btn'] || 'Works',
@@ -1338,7 +1338,7 @@ function AdminDashboardContent() {
       home_about_p1_en: enDynHome['about_p1'] || enTranslations['home']?.['about_p1'] || "Hello, I'm Hrant Hakobyan, a 4th-year architecture student at the National University of Architecture and Construction of Armenia.",
       home_about_p2_hy: hyDynHome['about_p2'] || hyTranslations['home']?.['about_p2'] || '',
       home_about_p2_en: enDynHome['about_p2'] || enTranslations['home']?.['about_p2'] || '',
-      home_contact_btn_hy: hyDynHome['contact_btn'] || hyTranslations['home']?.['contact_btn'] || 'Կապնվել',
+      home_contact_btn_hy: hyDynHome['contact_btn'] || hyTranslations['home']?.['contact_btn'] || 'Կապվել',
       home_contact_btn_en: enDynHome['contact_btn'] || enTranslations['home']?.['contact_btn'] || 'Contact',
       home_other_works_hy: hyDynHome['other_works'] || hyTranslations['home']?.['other_works'] || 'Այլ աշխատանքներ',
       home_other_works_en: enDynHome['other_works'] || enTranslations['home']?.['other_works'] || 'Other Works',
@@ -7736,10 +7736,10 @@ function AdminDashboardContent() {
                     {/* Contact Button */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                       <div>
-                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Կապնվելու կոճակ (Հայերեն)</label>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Կապվելու կոճակ (Հայերեն)</label>
                         <hd-input 
                           type="text"
-                          placeholder="Կապնվել..."
+                          placeholder="Կապվել..."
                           value={aboutTranslations.contact_btn_hy}
                           onInput={(e: any) => setAboutTranslations(prev => ({ ...prev, contact_btn_hy: e.target.value }))}
                           data-width="100%"

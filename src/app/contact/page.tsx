@@ -109,7 +109,7 @@ export default function ContactPage() {
               }}>
                 <span className="icon-Check" style={{ fontSize: "3rem", color: "#4a897c" }} />
                 <h3 style={{ fontSize: "1.4rem", fontWeight: "bold", margin: 0, color: "var(--text)" }}>{t('contact_page', 'success_title', 'Հաղորդագրությունը հաջողությամբ ուղարկվել է:')}</h3>
-                <p style={{ color: "var(--text)", opacity: 0.8, margin: 0 }}>{t('contact_page', 'success_desc', 'Շնորհակալություն կապնվելու համար: Ես կպատասխանեմ ձեզ շուտով:')}</p>
+                <p style={{ color: "var(--text)", opacity: 0.8, margin: 0 }}>{t('contact_page', 'success_desc', 'Շնորհակալություն Կապվելու համար: Ես կպատասխանեմ ձեզ շուտով:')}</p>
                 <div style={{ marginTop: "12px" }}>
                   <hd-button 
                     onClick={() => setStatus("idle")} 
