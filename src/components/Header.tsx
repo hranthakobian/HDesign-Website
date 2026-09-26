@@ -485,36 +485,44 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
                 {/* Language Toggle */}
                 <div style={{ width: '100%' }}>
                   <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block", marginBottom: "6px" }}>{t('nav', 'language', 'Լեզու')}</span>
-                  <hd-segment
-                    id="langSelectorMobile"
-                    value={locale}
-                    onChange={(e: any) => setLocale(e.target.value)}
-                    data-width="100%"
-                    data-height="36px"
-                    data-thickness="3px"
-                  >
-                    <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
-                    <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
-                  </hd-segment>
+                  {mounted ? (
+                    <hd-segment
+                      id="langSelectorMobile"
+                      value={locale}
+                      onChange={(e: any) => setLocale(e.target.value)}
+                      data-width="100%"
+                      data-height="36px"
+                      data-thickness="3px"
+                    >
+                      <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
+                      <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
+                    </hd-segment>
+                  ) : (
+                    <div style={{ width: '100%', height: '36px' }} />
+                  )}
                 </div>
 
                 {/* Theme Switcher Toggle */}
                 <div style={{ width: '100%' }}>
                   <span style={{ fontSize: "0.8rem", color: "var(--muted)", display: "block", marginBottom: "6px" }}>{t('nav', 'theme', 'Թեմա')}</span>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', width: '100%' }}>
-                    <hd-select
-                      id="themeSelectorMobile"
-                      value={theme}
-                      onChange={(e: any) => changeTheme(e.target.value)}
-                      data-width="100%"
-                      data-height="36px"
-                      data-thickness="3px"
-                      placeholder={t('nav', 'theme', 'Թեմա')}
-                    >
-                      <span value="light" {...(theme === 'light' ? { selected: true } : {})}>{t('nav', 'theme_light', 'Բաց')}</span>
-                      <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>{t('nav', 'theme_dark', 'Մութ')}</span>
-                      <span value="green" {...(theme === 'green' ? { selected: true } : {})}>{t('nav', 'theme_green', 'Կանաչ')}</span>
-                    </hd-select>
+                    {mounted ? (
+                      <hd-select
+                        id="themeSelectorMobile"
+                        value={theme}
+                        onChange={(e: any) => changeTheme(e.target.value)}
+                        data-width="100%"
+                        data-height="36px"
+                        data-thickness="3px"
+                        placeholder={t('nav', 'theme', 'Թեմա')}
+                      >
+                        <span value="light" {...(theme === 'light' ? { selected: true } : {})}>{t('nav', 'theme_light', 'Բաց')}</span>
+                        <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>{t('nav', 'theme_dark', 'Մութ')}</span>
+                        <span value="green" {...(theme === 'green' ? { selected: true } : {})}>{t('nav', 'theme_green', 'Կանաչ')}</span>
+                      </hd-select>
+                    ) : (
+                      <div style={{ width: '100%', height: '36px' }} />
+                    )}
                   </div>
                 </div>
 
@@ -580,33 +588,41 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
         </Link>
 
         {/* Smooth Language Switcher Toggle */}
-        <hd-segment
-          id="langSelector"
-          value={locale}
-          onChange={(e: any) => setLocale(e.target.value)}
-          data-width="130px"
-          data-height="36px"
-          data-thickness="3px"
-        >
-          <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
-          <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
-        </hd-segment>
+        {mounted ? (
+          <hd-segment
+            id="langSelector"
+            value={locale}
+            onChange={(e: any) => setLocale(e.target.value)}
+            data-width="130px"
+            data-height="36px"
+            data-thickness="3px"
+          >
+            <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
+            <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
+          </hd-segment>
+        ) : (
+          <div style={{ width: '130px', height: '36px' }} />
+        )}
 
         {/* Premium Theme Switcher 4-Way Toggle */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <hd-select
-            id="themeSelectorLegacy"
-            value={theme}
-            onChange={(e: any) => changeTheme(e.target.value)}
-            data-width="120px"
-            data-height="36px"
-            data-thickness="3px"
-            placeholder={t('nav', 'theme', 'Թեմա')}
-          >
-            <span value="light" {...(theme === 'light' ? { selected: true } : {})}>{t('nav', 'theme_light', 'Բաց')}</span>
-            <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>{t('nav', 'theme_dark', 'Մութ')}</span>
-            <span value="green" {...(theme === 'green' ? { selected: true } : {})}>{t('nav', 'theme_green', 'Կանաչ')}</span>
-          </hd-select>
+          {mounted ? (
+            <hd-select
+              id="themeSelectorLegacy"
+              value={theme}
+              onChange={(e: any) => changeTheme(e.target.value)}
+              data-width="120px"
+              data-height="36px"
+              data-thickness="3px"
+              placeholder={t('nav', 'theme', 'Թեմա')}
+            >
+              <span value="light" {...(theme === 'light' ? { selected: true } : {})}>{t('nav', 'theme_light', 'Բաց')}</span>
+              <span value="dark" {...(theme === 'dark' ? { selected: true } : {})}>{t('nav', 'theme_dark', 'Մութ')}</span>
+              <span value="green" {...(theme === 'green' ? { selected: true } : {})}>{t('nav', 'theme_green', 'Կանաչ')}</span>
+            </hd-select>
+          ) : (
+            <div style={{ width: '120px', height: '36px' }} />
+          )}
 
           {/* Search Trigger Button */}
           <button
