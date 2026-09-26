@@ -7476,7 +7476,7 @@ function AdminDashboardContent() {
                           data-height="40px"
                         data-font-size="14pt" />
                         <span style={{ fontSize: '0.75rem', color: 'var(--muted)', display: 'block', marginTop: '6px' }}>
-                          Այս բանալին սովորաբար գտնվում է Tidio-ի կոդի մեջ՝ <code>//code.tidio.co/{"{widget_id}"}.js</code>
+                          Այս բանալին սովորաբար գտնվում է Tidio-ի կոդի մեջ՝ <code>{'//'}code.tidio.co/{"{widget_id}"}.js</code>
                         </span>
                       </div>
                     )}

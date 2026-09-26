@@ -1,0 +1,277 @@
+{
+  "activeThemeId": "default",
+  "themeVariables": {
+    "--theme-color": "#083f39",
+    "--footer-bg": "#051f1c",
+    "--theme-accent": "#14b8a6",
+    "--bg-main": "#ffffff",
+    "--text-main": "#0f172a"
+  },
+  "siteTitle": {
+    "hy": "HDesign",
+    "en": "HDesign Studio"
+  },
+  "navigation": {
+    "items": [
+      {
+        "id": "nav-item-1",
+        "title": { "hy": "Տուն", "en": "Home" },
+        "path": "/",
+        "isVisible": true,
+        "children": []
+      },
+      {
+        "id": "nav-item-2",
+        "title": { "hy": "Մասին", "en": "About" },
+        "path": "/about",
+        "isVisible": true,
+        "children": []
+      },
+      {
+        "id": "nav-item-3",
+        "title": { "hy": "Աշխատանքներ", "en": "Works" },
+        "path": "/works",
+        "isVisible": true,
+        "children": [
+          {
+            "id": "nav-item-3-1",
+            "title": { "hy": "Բրենդինգներ", "en": "Branding" },
+            "path": "/works?category=branding",
+            "isVisible": true
+          },
+          {
+            "id": "nav-item-3-2",
+            "title": { "hy": "Պատկերասրահ", "en": "Gallery" },
+            "path": "/works?category=design",
+            "isVisible": true
+          }
+        ]
+      },
+      {
+        "id": "nav-item-4",
+        "title": { "hy": "Տառատեսակներ", "en": "Fonts" },
+        "path": "/fonts",
+        "isVisible": true,
+        "children": []
+      },
+      {
+        "id": "nav-item-5",
+        "title": { "hy": "Հավելվածներ", "en": "Apps" },
+        "path": "/apps",
+        "isVisible": true,
+        "children": []
+      },
+      {
+        "id": "nav-item-6",
+        "title": { "hy": "HDesign", "en": "HDesign" },
+        "path": "/hdesign",
+        "isVisible": true,
+        "children": [
+          {
+            "id": "nav-item-6-1",
+            "title": { "hy": "Ընդհանուր", "en": "General" },
+            "path": "/hdesign",
+            "isVisible": true
+          },
+          {
+            "id": "nav-item-6-2",
+            "title": { "hy": "Փաստաթղթեր", "en": "Docs" },
+            "path": "/hdesign/docs",
+            "isVisible": true
+          },
+          {
+            "id": "nav-item-6-3",
+            "title": { "hy": "Փորձանմուշներ", "en": "Samples" },
+            "path": "/hdesign/samples",
+            "isVisible": true
+          }
+        ]
+      },
+      {
+        "id": "nav-item-7",
+        "title": { "hy": "Կապ", "en": "Contact" },
+        "path": "/contact",
+        "isVisible": true,
+        "children": []
+      }
+    ],
+    "headerLinks": [
+      { "id": "nav-home", "labelHy": "Գլխավոր", "labelEn": "Home", "href": "/" },
+      { "id": "nav-works", "labelHy": "Քեյսեր", "labelEn": "Works", "href": "/works" },
+      { "id": "nav-about", "labelHy": "Մեր մասին", "labelEn": "About", "href": "/about" },
+      { "id": "nav-contact", "labelHy": "Կապ", "labelEn": "Contact", "href": "/contact" }
+    ],
+    "footerLinks": [
+      { "id": "foot-privacy", "labelHy": "Գաղտնիություն", "labelEn": "Privacy", "href": "/privacy" },
+      { "id": "foot-terms", "labelHy": "Օգտագործման Պայմաններ", "labelEn": "Terms", "href": "/terms" }
+    ]
+  },
+  "pages": [
+    {
+      "id": "page-home",
+      "slug": "index",
+      "title": "Գլխավոր Էջ",
+      "is_published": true,
+      "meta": {
+        "meta_title": "HDesign | Դիզայնի և Բրենդավորման Ստուդիա",
+        "meta_description": "Պրոֆեսիոնալ գրաֆիկական դիզայն, բրենդինգ, հայերեն տիպոգրաֆիկա և UI/UX փորձառություն:"
+      },
+      "blocks": [
+        {
+          "id": "block-hero",
+          "type": "hero",
+          "hidden": false,
+          "order": 0,
+          "settings": {
+            "title": "HDesign Studio",
+            "subtitle": "Դիզայնի և Բրենդավորման Ստուդիա",
+            "description": "Ստեղծում ենք բարձրակարգ վիզուալ ինքնություն, հայերեն տիպոգրաֆիկա և թվային պրոդուկտներ:",
+            "btn_text": "Դիտել Քեյսերը",
+            "btn_url": "#branding",
+            "padding": "120px 0 60px"
+          }
+        },
+        {
+          "id": "block-branding",
+          "type": "branding",
+          "hidden": false,
+          "order": 1,
+          "settings": {
+            "title": "Բրենդինգ և Քեյսեր",
+            "subtitle": "Ընտրված աշխատանքներ",
+            "padding": "60px 0"
+          }
+        },
+        {
+          "id": "block-about",
+          "type": "about",
+          "hidden": false,
+          "order": 2,
+          "settings": {
+            "title": "Մեր Մասին",
+            "subtitle": "Առաքելություն և տեսլական",
+            "content": "HDesign-ը ստեղծարար ստուդիա է, որտեղ միահյուսվում են տիպոգրաֆիկան, ճշգրտությունը և թվային ինովացիան:",
+            "padding": "80px 0"
+          }
+        },
+        {
+          "id": "block-works",
+          "type": "works",
+          "hidden": false,
+          "order": 3,
+          "settings": {
+            "title": "Պատկերասրահ",
+            "subtitle": "Գրաֆիկական դիզայն և նկարազարդումներ",
+            "padding": "60px 0"
+          }
+        },
+        {
+          "id": "block-video",
+          "type": "video",
+          "hidden": false,
+          "order": 4,
+          "settings": {
+            "title": "Ստուդիայի Վիդեո Պրոմո",
+            "video_url": "https://api.hakobian.am/libs/v1/promo/promo.mp4",
+            "padding": "60px 0"
+          }
+        },
+        {
+          "id": "block-playground",
+          "type": "playground",
+          "hidden": false,
+          "order": 5,
+          "settings": {
+            "title": "Տառատեսակի Փորձադաշտ",
+            "subtitle": "HDesign Variable Font Testing Arena",
+            "padding": "60px 0"
+          }
+        },
+        {
+          "id": "block-icons",
+          "type": "icons",
+          "hidden": false,
+          "order": 6,
+          "settings": {
+            "title": "Վեկտորային Իկոնկաներ",
+            "subtitle": "70+ հեղինակային վեկտորային պատկերակներ",
+            "padding": "60px 0"
+          }
+        },
+        {
+          "id": "block-glyphs",
+          "type": "glyphs",
+          "hidden": false,
+          "order": 7,
+          "settings": {
+            "title": "Հայերեն Գլիֆերի Քարտեզ",
+            "subtitle": "Տառերի, նշանների և թվերի լրիվ հավաքածու",
+            "padding": "60px 0"
+          }
+        },
+        {
+          "id": "block-footer",
+          "type": "footer",
+          "hidden": false,
+          "order": 8,
+          "settings": {
+            "title": "HDesign",
+            "copyright": "© 2026 HDesign Studio. Բոլոր իրավունքները պաշտպանված են:",
+            "footer_bg": "var(--footer-bg, #051f1c)",
+            "contact_email": "hrant@hakobian.am",
+            "contact_tel": "+374 98 000 000"
+          }
+        }
+      ]
+    },
+    {
+      "id": "page-about",
+      "slug": "about",
+      "title": "Մեր Մասին",
+      "is_published": true,
+      "meta": {
+        "meta_title": "Մեր Մասին | HDesign",
+        "meta_description": "HDesign Studio-ի պատմությունը, փորձը և արժեքները:"
+      },
+      "blocks": [
+        {
+          "id": "about-text",
+          "type": "text",
+          "hidden": false,
+          "order": 0,
+          "settings": {
+            "title": "Մեր Ստեղծագործական Ճանապարհը",
+            "content": "Մենք օգնում ենք բրենդներին գտնել իրենց եզակի ձայնն ու տեսողական լեզուն: Յուրաքանչյուր նախագիծ մշակվում է խորը հետազոտության և ճշգրիտ դիզայնի համադրությամբ:"
+          }
+        },
+        {
+          "id": "about-features",
+          "type": "features",
+          "hidden": false,
+          "order": 1,
+          "settings": {
+            "title": "Մեր Առավելությունները",
+            "subtitle": "Ինչու՞ վստահել HDesign-ին",
+            "items": [
+              {
+                "icon": "icon-Star",
+                "title": "Հեղինակային Տառատեսակներ",
+                "desc": "Յուրահատուկ տիպոգրաֆիկա՝ ստեղծված հատուկ ձեր բրենդի համար:"
+              },
+              {
+                "icon": "icon-Dashboard",
+                "title": "Ժամանակակից Տեխնոլոգիաներ",
+                "desc": "Next.js, React 19 և անիմացիոն առաջատար լուծումներ:"
+              },
+              {
+                "icon": "icon-Check",
+                "title": "Ամբողջական Փաթեթ",
+                "desc": "Լոգոյից մինչև թվային պլատֆորմներ և տպագիր նյութեր:"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

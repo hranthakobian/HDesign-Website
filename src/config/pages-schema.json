@@ -1,0 +1,205 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "2.0.0",
+  "title": "HDesign Page Builder Pages Schema",
+  "worlds": {
+    "static_and_system": {
+      "id": "static_and_system",
+      "name": "Static & System Pages",
+      "name_hy": "Սովորական և Համակարգային Էջեր",
+      "description": "Կայքի ստատիկ հիմնական էջեր և Next.js համակարգային էջեր (404/500):"
+    },
+    "dynamic_templates": {
+      "id": "dynamic_templates",
+      "name": "Dynamic Templates",
+      "name_hy": "Դինամիկ Էջերի Կաղապարներ (Master Templates)",
+      "description": "Մեկական Master Template յուրաքանչյուր դինամիկ երթուղու համար (Blog, Product, Work):"
+    }
+  },
+  "pages": [
+    {
+      "id": "page-home",
+      "slug": "index",
+      "route": "/",
+      "title": "Գլխավոր Էջ (Home)",
+      "type": "static",
+      "world": "static_and_system",
+      "width": 1440,
+      "height": 960,
+      "category": "Main Pages"
+    },
+    {
+      "id": "page-about",
+      "slug": "about",
+      "route": "/about",
+      "title": "Ստուդիայի Մասին (About)",
+      "type": "static",
+      "world": "static_and_system",
+      "width": 1440,
+      "height": 960,
+      "category": "Main Pages"
+    },
+    {
+      "id": "page-works",
+      "slug": "works",
+      "route": "/works",
+      "title": "Աշխատանքներ (Works)",
+      "type": "static",
+      "world": "static_and_system",
+      "width": 1440,
+      "height": 960,
+      "category": "Main Pages"
+    },
+    {
+      "id": "page-contact",
+      "slug": "contact",
+      "route": "/contact",
+      "title": "Կապ (Contact)",
+      "type": "static",
+      "world": "static_and_system",
+      "width": 1440,
+      "height": 960,
+      "category": "Main Pages"
+    },
+    {
+      "id": "page-system-404",
+      "slug": "404",
+      "route": "/404",
+      "title": "404 Էջը Չի Գտնվել (Not Found)",
+      "type": "system",
+      "world": "static_and_system",
+      "width": 1280,
+      "height": 800,
+      "category": "System Pages",
+      "description": "Next.js not-found.jsx համակարգային էջ"
+    },
+    {
+      "id": "page-system-500",
+      "slug": "500",
+      "route": "/500",
+      "title": "500 Սերվերի Սխալ (Server Error)",
+      "type": "system",
+      "world": "static_and_system",
+      "width": 1280,
+      "height": 800,
+      "category": "System Pages",
+      "description": "Next.js error.jsx համակարգային էջ"
+    },
+    {
+      "id": "master-blog",
+      "slug": "blog-master",
+      "route": "/blog/master-template",
+      "title": "Blog Master Template",
+      "type": "dynamic_master",
+      "world": "dynamic_templates",
+      "width": 1440,
+      "height": 960,
+      "category": "Master Templates",
+      "defaultMockId": "post-1",
+      "mockDatasets": [
+        {
+          "id": "post-1",
+          "label": "Post #1: Տառարվեստի Ապագան 2026",
+          "data": {
+            "title": "Հայկական Տառարվեստի և Տիպոգրաֆիկայի Ապագան 2026-ին",
+            "category": "Տիպոգրաֆիկա & Դիզայն",
+            "author": "Հրանտ Հակոբյան",
+            "date": "2026-09-26",
+            "cover_image": "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=1200&q=80",
+            "content": "Ժամանակակից թվային դարաշրջանում հայերեն գրատեսակների մշակույթը թևակոխում է նոր փուլ: Դիզայներների համար առաջնային է դառնում ոչ միայն տեսողական էսթետիկան, այլև տառատեսակի ճշգրիտ ընթեռնելիությունը թվային էկրաններին և բջջային սարքերում:"
+          }
+        },
+        {
+          "id": "post-2",
+          "label": "Post #2: Next.js 16 Visual Builder Ճարտարապետություն",
+          "data": {
+            "title": "Ինչպես կառուցել 0ms Delay Visual Builder Next.js-ով",
+            "category": "Վեբ Մշակում",
+            "author": "HDesign Engineering",
+            "date": "2026-09-20",
+            "cover_image": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80",
+            "content": "Figma-style canvas-ի կառուցվածքը պահանջում է iframe-ների հետ postMessage-ով սահուն և անմիջական կապ: Իմացեք, թե ինչպես է EditorBridgeProvider-ը կատարում ակնթարթային hydration առանց էջի վերաբեռնման:"
+          }
+        }
+      ]
+    },
+    {
+      "id": "master-product",
+      "slug": "product-master",
+      "route": "/products/master-template",
+      "title": "Product Master Template",
+      "type": "dynamic_master",
+      "world": "dynamic_templates",
+      "width": 1440,
+      "height": 960,
+      "category": "Master Templates",
+      "defaultMockId": "prod-1",
+      "mockDatasets": [
+        {
+          "id": "prod-1",
+          "label": "Product #1: HDesign Pro Font Family",
+          "data": {
+            "title": "HDesign Armenian Pro Font Family (8 Քաշեր)",
+            "category": "Տառատեսակների Փաթեթ",
+            "price": "֏ 24,000",
+            "author": "HDesign Foundry",
+            "date": "2026-09-15",
+            "cover_image": "https://images.unsplash.com/photo-1558655146-d09347e92766?auto=format&fit=crop&w=1200&q=80",
+            "content": "Ամբողջական հայերեն և լատիներեն տառատեսակային ընտանիք: Ներառում է Thin, Regular, Medium, Bold, Black քաշերը, հատուկ կցագրեր և դրամի նշանի (֏) բոլոր տարբերակները:"
+          }
+        },
+        {
+          "id": "prod-2",
+          "label": "Product #2: 50+ SVG Icon System",
+          "data": {
+            "title": "HDesign Studio Vector Icons (50+ SVG)",
+            "category": "Գրաֆիկական Փաթեթ",
+            "price": "֏ 12,000",
+            "author": "HDesign Studio",
+            "date": "2026-08-10",
+            "cover_image": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80",
+            "content": "Մաքուր, երկրաչափական SVG պատկերակների համակարգ, որը նախատեսված է ժամանակակից UI/UX հավելվածների և կայքերի համար:"
+          }
+        }
+      ]
+    },
+    {
+      "id": "master-work",
+      "slug": "work-master",
+      "route": "/works/master-template",
+      "title": "Work Master Template",
+      "type": "dynamic_master",
+      "world": "dynamic_templates",
+      "width": 1440,
+      "height": 960,
+      "category": "Master Templates",
+      "defaultMockId": "work-pasta",
+      "mockDatasets": [
+        {
+          "id": "work-pasta",
+          "label": "Case #1: Pasta House Branding",
+          "data": {
+            "title": "Pasta House Identity & Packaging System",
+            "category": "Բրենդավորում և Փաթեթավորում",
+            "author": "Հրանտ Հակոբյան",
+            "date": "2026",
+            "cover_image": "/brandings/pasta/pasta1.png",
+            "content": "Իտալական խոհանոցի հայկական ռեստորանի բրենդային նույնականացում: Լոգոտիպի, տպագրական նյութերի, մենյուի և փաթեթավորման ամբողջական ստեղծում:"
+          }
+        },
+        {
+          "id": "work-11",
+          "label": "Case #2: 11... Project Branding",
+          "data": {
+            "title": "11... Typography & Digital Art Direction",
+            "category": "Արվեստ & Տիպոգրաֆիկա",
+            "author": "HDesign Studio",
+            "date": "2026",
+            "cover_image": "https://images.unsplash.com/photo-1600132806370-bf17e65e942f?auto=format&fit=crop&w=1200&q=80",
+            "content": "Տեսողական արվեստի փորձարարական նախագիծ՝ կառուցված 11 թվի երկրաչափական մոդուլների և հայկական մոտիվների վրա:"
+          }
+        }
+      ]
+    }
+  ]
+}

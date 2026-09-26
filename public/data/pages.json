@@ -1,0 +1,203 @@
+[
+  {
+    "id": "page-home",
+    "slug": "index",
+    "title": "Գլխավոր Էջ (Home)",
+    "theme_id": "default",
+    "is_published": true,
+    "blocks": [
+      {
+        "id": "block-hero-01",
+        "type": "hero",
+        "hidden": false,
+        "settings": {
+          "line1": "ՍՏԵՂԾԱ",
+          "line2": "ԵՒ ԳՈՐԾՆԱԿԱՆ",
+          "quote": "«Ամեն ոք չի կարող մեծ վարպետ դառնալ, բայց մեծ վարպետը կարող է գալ ամենուրից»",
+          "signature_url": "/signature.png"
+        }
+      },
+      {
+        "id": "block-branding-01",
+        "type": "branding",
+        "hidden": false,
+        "settings": {
+          "title": "ԲՐԵՆԴԻՆԳ",
+          "title_en": "Branding"
+        }
+      },
+      {
+        "id": "block-about-01",
+        "type": "about",
+        "hidden": false,
+        "settings": {
+          "bio": "Ողջույն, ես Հրանտ Հակոբյանն եմ և Ճարտարապետության և շինարարության Հայաստանի Ազգային Համալսարանի ճարտարապետության ֆակուլտետի 4-րդ կուրսի ուսանող եմ։",
+          "title": "Մասին",
+          "btn_text": "Ավելին",
+          "title_en": "About",
+          "image_url": "/profile_hrant.jpg",
+          "author_name": "Հրանտ Հակոբյան",
+          "author_role": "Հիմնադիր & Lead Designer"
+        }
+      },
+      {
+        "id": "block-works-01",
+        "type": "works",
+        "hidden": false,
+        "settings": {
+          "title": "Այլ աշխատանքներ",
+          "btn_text": "Ավելի",
+          "title_en": "Other Works"
+        }
+      },
+      {
+        "id": "block-video-01",
+        "type": "video",
+        "hidden": false,
+        "settings": {
+          "title": "Պրոմո Տեսանյութ",
+          "subtitle": "Ծանոթացեք HDesign ստուդիայի դիզայնի համակարգին",
+          "video_url": "https://api.hakobian.am/libs/v1/promo/promo.mp4",
+          "video_poster": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80"
+        }
+      },
+      {
+        "id": "block-playground-01",
+        "type": "playground",
+        "hidden": false,
+        "settings": {
+          "badge": "ԲԵՏԱ",
+          "title": "Դիզայնի Համակարգը",
+          "subtitle": "Տառատեսակի Թեսթեր և Կառավարման Գործիքներ"
+        }
+      },
+      {
+        "id": "block-icons-01",
+        "type": "icons",
+        "hidden": false,
+        "settings": {
+          "title": "Ստուդիայի Պատկերակներ",
+          "subtitle": "50+ հատուկ SVG պատկերակների համակարգ և QR գեներատոր"
+        }
+      },
+      {
+        "id": "block-glyphs-01",
+        "type": "glyphs",
+        "hidden": false,
+        "settings": {
+          "title": "Հայերեն Գրանշաններ",
+          "subtitle": "Հայկական գրանշանների, կցագրերի (ﬓ, ﬔ, ﬕ) և դրամի նշանի (֏) քարտեզ"
+        }
+      }
+    ],
+    "meta": {},
+    "updated_at": "2026-09-23T21:59:21.481Z"
+  },
+  {
+    "id": "page-about",
+    "slug": "about",
+    "title": "Մասին (About)",
+    "theme_id": "default",
+    "is_published": true,
+    "blocks": [
+      {
+        "id": "block-about-main",
+        "type": "about",
+        "hidden": false,
+        "settings": {
+          "title": "Ստուդիայի Մասին",
+          "title_en": "About Studio",
+          "author_name": "Հրանտ Հակոբյան",
+          "author_role": "Հիմնադիր & Lead Designer",
+          "image_url": "/profile_hrant.jpg",
+          "bio": "Ողջույն, ես Հրանտ Հակոբյանն եմ և Ճարտարապետության և շինարարության Հայաստանի Ազգային Համալսարանի ճարտարապետության ֆակուլտետի 4-րդ կուրսի ուսանող եմ։",
+          "btn_text": "Կապ"
+        }
+      },
+      {
+        "id": "block-features-about",
+        "type": "features",
+        "hidden": false,
+        "settings": {
+          "title": "Սկզբունքներ և Ուղղություններ",
+          "subtitle": "Ինչպես ենք ստեղծում բացառիկ տեսողական արդյունք",
+          "items": [
+            {
+              "icon": "icon-Pattern",
+              "title": "Ճշգրիտ Գրաֆիկա",
+              "desc": "Մաթեմատիկական հստակություն և էսթետիկա:"
+            },
+            {
+              "icon": "icon-Monitor",
+              "title": "Ինտուիտիվ UI/UX",
+              "desc": "Մտածված փոխազդեցություն օգտատիրոջ հետ:"
+            },
+            {
+              "icon": "icon-Dashboard",
+              "title": "Հայկական Տառատեսակներ",
+              "desc": "Ժամանակակից հայերեն տիպոգրաֆիկա:"
+            }
+          ]
+        }
+      }
+    ],
+    "meta": {
+      "meta_description": "HDesign ստուդիայի և հիմնադրի մասին տեղեկատվություն"
+    },
+    "updated_at": "2026-09-23T21:15:00.000Z"
+  },
+  {
+    "id": "page-works",
+    "slug": "works",
+    "title": "Աշխատանքներ (Works)",
+    "theme_id": "default",
+    "is_published": true,
+    "blocks": [
+      {
+        "id": "block-branding-works",
+        "type": "branding",
+        "hidden": false,
+        "settings": {
+          "title": "ԲՐԵՆԴԻՆԳԻ ՆԱԽԱԳԾԵՐ",
+          "title_en": "Branding Projects"
+        }
+      },
+      {
+        "id": "block-works-grid",
+        "type": "works",
+        "hidden": false,
+        "settings": {
+          "title": "Ընտրված Քեյսեր",
+          "title_en": "Selected Cases",
+          "btn_text": "Դիտել բոլորը"
+        }
+      }
+    ],
+    "meta": {
+      "meta_description": "HDesign ստուդիայի պորտֆոլիո, բրենդինգ և գրաֆիկ դիզայն"
+    },
+    "updated_at": "2026-09-23T21:15:00.000Z"
+  },
+  {
+    "id": "page-contact",
+    "slug": "contact",
+    "title": "Կապ (Contact)",
+    "theme_id": "default",
+    "is_published": true,
+    "blocks": [
+      {
+        "id": "block-contact-text",
+        "type": "text",
+        "hidden": false,
+        "settings": {
+          "title": "Կապվեք Մեզ Հետ",
+          "content": "Պատրա՞ստ եք սկսել Ձեր հաջորդ նախագիծը: Ուղարկեք մեզ հաղորդագրություն կամ գրեք մեր էլ. հասցեին:"
+        }
+      }
+    ],
+    "meta": {
+      "meta_description": "Կապվեք HDesign դիզայն ստուդիայի հետ"
+    },
+    "updated_at": "2026-09-23T21:15:00.000Z"
+  }
+]

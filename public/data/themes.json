@@ -1,0 +1,39 @@
+[
+  {
+    "id": "default",
+    "name": "HDesign Original (Հիմնական Թեմա)",
+    "version": "1.0.0",
+    "description": "HDesign-ի պաշտոնական իրական դիզայնը՝ հայերեն տիպոգրաֆիկայով, ալիքաձև վերնագրով, բրենդինգի քեյսերով, պրոֆիլով և ժամանակակից սպիտակ ֆոնով:",
+    "author": "HDesign Studio (Hrant Hakobyan)",
+    "preview_image": "/assets/themes/default-preview.jpg",
+    "is_active": true,
+    "settings": {
+      "primary_color": "#083f39",
+      "accent_color": "#14b8a6",
+      "bg_color": "#ffffff",
+      "text_color": "#0f172a",
+      "logo_text": "HDesign",
+      "logo_url": "",
+      "header_sticky": true,
+      "header_style": "glass",
+      "footer_text": "© 2026 HDesign. Բոլոր իրավունքները պաշտպանված են:"
+    },
+    "supported_blocks": [
+      "hero",
+      "branding",
+      "about",
+      "works",
+      "video",
+      "playground",
+      "icons",
+      "glyphs",
+      "features",
+      "text",
+      "container",
+      "contact",
+      "cta",
+      "footer"
+    ],
+    "updated_at": "2026-09-24T02:00:00.000Z"
+  }
+]

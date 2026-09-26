@@ -1,0 +1,539 @@
+{
+  "activeThemeId": "default",
+  "staticPages": {
+    "home": {
+      "id": "page-home",
+      "slug": "index",
+      "title": "Գլխավոր Էջ",
+      "is_published": true,
+      "meta": {
+        "meta_title": "HDesign | Դիզայնի և Բրենդավորման Ստուդիա",
+        "meta_description": "Պրոֆեսիոնալ գրաֆիկական դիզայն, բրենդինգ, հայերեն տիպոգրաֆիկա և UI/UX փորձառություն:"
+      },
+      "blocks": [
+        {
+          "id": "block-hero",
+          "type": "hero",
+          "hidden": false,
+          "order": 0,
+          "settings": {
+            "title": "HDesign Studio",
+            "subtitle": "Դիզայնի և Բրենդավորման Ստուդիա",
+            "description": "Ստեղծում ենք բարձրակարգ վիզուալ ինքնություն, հայերեն տիպոգրաֆիկա և թվային պրոդուկտներ:",
+            "btn_text": "Դիտել Քեյսերը",
+            "btn_url": "/works",
+            "padding": "120px 0 60px"
+          }
+        },
+        {
+          "id": "block-about",
+          "type": "about",
+          "hidden": false,
+          "order": 1,
+          "settings": {
+            "title": "Մեր Մասին",
+            "subtitle": "Առաքելություն և տեսլական",
+            "content": "HDesign-ը ստեղծարար ստուդիա է, որտեղ միահյուսվում են տիպոգրաֆիկան, ճշգրտությունը և թվային ինովացիան:",
+            "padding": "80px 0"
+          }
+        },
+        {
+          "id": "block-features",
+          "type": "features",
+          "hidden": false,
+          "order": 2,
+          "settings": {
+            "title": "Մեր Առավելությունները",
+            "subtitle": "Ինչո՞ւ վստահել HDesign-ին",
+            "items": [
+              {
+                "icon": "✍️",
+                "title": "Հեղինակային Տառատեսակներ",
+                "desc": "Յուրահատուկ տիպոգրաֆիկա՝ ստեղծված հատուկ ձեր բրենդի համար:"
+              },
+              {
+                "icon": "⚡",
+                "title": "Ժամանակակից Տեխնոլոգիաներ",
+                "desc": "Next.js App Router, React 19 և 0ms Live Builder ճարտարապետություն:"
+              },
+              {
+                "icon": "💎",
+                "title": "Ամբողջական Փաթեթ",
+                "desc": "Լոգոյից մինչև թվային պլատֆորմներ և տպագիր նյութեր:"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "about": {
+      "id": "page-about",
+      "slug": "about",
+      "title": "Մեր Մասին",
+      "is_published": true,
+      "meta": {
+        "meta_title": "Մեր Մասին | HDesign",
+        "meta_description": "HDesign Studio-ի պատմությունը, փորձը և արժեքները:"
+      },
+      "blocks": [
+        {
+          "id": "block-hero",
+          "type": "hero",
+          "hidden": false,
+          "order": 0,
+          "settings": {
+            "title": "Մեր Ստեղծագործական Ճանապարհը",
+            "subtitle": "Տիպոգրաֆիկա, ճշգրտություն և ինովացիա",
+            "description": "Մենք օգնում ենք բրենդներին գտնել իրենց եզակի ձայնն ու տեսողական լեզուն:",
+            "btn_text": "Կապ Հաստատել",
+            "btn_url": "/contact"
+          }
+        },
+        {
+          "id": "block-text",
+          "type": "text",
+          "hidden": false,
+          "order": 1,
+          "settings": {
+            "title": "Փիլիսոփայությունը",
+            "content": "Յուրաքանչյուր նախագիծ մշակվում է խորը հետազոտության, ճշգրիտ երկրաչափության և հայկական տառարվեստի ավանդույթների համադրությամբ:"
+          }
+        }
+      ]
+    },
+    "contact": {
+      "id": "page-contact",
+      "slug": "contact",
+      "title": "Կապ",
+      "is_published": true,
+      "meta": {
+        "meta_title": "Կապ | HDesign Studio",
+        "meta_description": "Կապ հաստատեք HDesign Studio-ի հետ նոր նախագծերի համար:"
+      },
+      "blocks": [
+        {
+          "id": "block-hero",
+          "type": "hero",
+          "hidden": false,
+          "order": 0,
+          "settings": {
+            "title": "Կապ Հաստատեք Մեզ Հետ",
+            "subtitle": "Պատրա՞ստ եք սկսել Ձեր նոր նախագիծը",
+            "description": "Մենք միշտ բաց ենք նոր առաջարկների, բրենդինգի և թվային նախագծերի համար:",
+            "btn_text": "Գրել Նամակ",
+            "btn_url": "mailto:hrant@hakobian.am"
+          }
+        },
+        {
+          "id": "block-contact",
+          "type": "contact",
+          "hidden": false,
+          "order": 1,
+          "settings": {
+            "title": "Կոնտակտային Տվյալներ",
+            "email": "hrant@hakobian.am",
+            "tel": "+374 98 000 000",
+            "address": "Երևան, Հայաստան"
+          }
+        }
+      ]
+    },
+    "works": {
+      "id": "page-works",
+      "slug": "works",
+      "title": "Քեյսեր (Works)",
+      "is_published": true,
+      "meta": {
+        "meta_title": "Քեյսեր | HDesign Studio",
+        "meta_description": "Ստուդիայի ընտրված պորտֆոլիո նախագծերը"
+      },
+      "blocks": [
+        {
+          "id": "block-hero",
+          "type": "hero",
+          "hidden": false,
+          "order": 0,
+          "settings": {
+            "title": "Մեր Ընտրված Քեյսերը",
+            "subtitle": "Բրենդինգ, թվային պրոդուկտներ և վիզուալ ինքնություն",
+            "padding": "120px 0 60px"
+          }
+        },
+        {
+          "id": "block-works",
+          "type": "works",
+          "hidden": false,
+          "order": 1,
+          "settings": {
+            "title": "Պատկերասրահ",
+            "subtitle": "Ընտրված աշխատանքների ցուցադրություն"
+          }
+        }
+      ]
+    },
+    "apps": {
+      "id": "page-apps",
+      "slug": "apps",
+      "title": "Հավելվածներ (Apps)",
+      "is_published": true,
+      "meta": {
+        "meta_title": "Հավելվածներ | HDesign",
+        "meta_description": "Թվային գործիքներ և հավելվածներ"
+      },
+      "blocks": [
+        {
+          "id": "block-hero",
+          "type": "hero",
+          "hidden": false,
+          "order": 0,
+          "settings": {
+            "title": "Հավելվածներ և Փլագիններ",
+            "subtitle": "Օգտակար թվային գործիքներ դիզայներների և ծրագրավորողների համար"
+          }
+        },
+        {
+          "id": "block-features",
+          "type": "features",
+          "hidden": false,
+          "order": 1,
+          "settings": {
+            "title": "Մեր Գործիքները",
+            "subtitle": "Հեղինակային լուծումներ HDesign-ից",
+            "items": [
+              { "icon": "🔲", "title": "Custom QR Designer", "desc": "Հեղինակային QR կոդերի գեներատոր" },
+              { "icon": "📄", "title": "Armenian OCR Scanner", "desc": "Հայերեն տեքստի ճանաչում նկարներից" },
+              { "icon": "⭐", "title": "HDesign Typeface Arena", "desc": "Տառատեսակների ինտերակտիվ թեստավորում" }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "systemPages": {
+    "404": {
+      "id": "page-system-404",
+      "slug": "404",
+      "title": "404 - Էջը Չի Գտնվել (System Page)",
+      "is_published": true,
+      "meta": {
+        "meta_title": "404 - Էջը Չի Գտնվել | HDesign",
+        "meta_description": "Հայցվող էջը գոյություն չունի կամ տեղափոխվել է:"
+      },
+      "blocks": [
+        {
+          "id": "block-system-status",
+          "type": "system_status",
+          "hidden": false,
+          "order": 0,
+          "settings": {
+            "status_code": "404",
+            "title": "Էջը Գոյություն Չունի",
+            "subtitle": "Ներողություն, բայց Ձեր փնտրած էջը չի գտնվել կամ տեղափոխվել է այլ հասցեով:",
+            "btn_text": "Վերադառնալ Գլխավոր Էջ",
+            "btn_url": "/"
+          }
+        }
+      ]
+    },
+    "500": {
+      "id": "page-system-500",
+      "slug": "500",
+      "title": "500 - Սերվերի Սխալ (System Page)",
+      "is_published": true,
+      "meta": {
+        "meta_title": "500 - Սերվերի Սխալ | HDesign",
+        "meta_description": "Տեղի է ունեցել համակարգային սխալ: Մեր թիմն արդեն տեղյակ է:"
+      },
+      "blocks": [
+        {
+          "id": "block-system-status",
+          "type": "system_status",
+          "hidden": false,
+          "order": 0,
+          "settings": {
+            "status_code": "500",
+            "title": "Սերվերի Սխալ (500)",
+            "subtitle": "Ինչ-որ բան սխալ գնաց համակարգում: Խնդրում ենք փորձել կրկին կամ վերադառնալ գլխավոր էջ:",
+            "btn_text": "Փորձել Կրկին",
+            "btn_url": "/"
+          }
+        }
+      ]
+    }
+  },
+  "templates": {
+    "work": {
+      "id": "template-work",
+      "slug": "templates/work",
+      "routePattern": "works/[id]",
+      "title": "Work Master Template (Քեյսերի Կաղապար)",
+      "type": "master_template",
+      "defaultInstanceId": "pasta",
+      "is_published": true,
+      "meta": {
+        "meta_title": "{{title}} | HDesign Works",
+        "meta_description": "{{tagline}}"
+      },
+      "blocks": [
+        {
+          "id": "block-hero",
+          "type": "hero",
+          "hidden": false,
+          "order": 0,
+          "settings": {
+            "title": "{{title}}",
+            "subtitle": "{{tagline}}",
+            "bg_color": "{{color}}",
+            "btn_text": "Դիտել Կոնցեպտը",
+            "btn_url": "#concept",
+            "padding": "120px 0 60px"
+          }
+        },
+        {
+          "id": "block-about",
+          "type": "about",
+          "hidden": false,
+          "order": 1,
+          "settings": {
+            "title": "Նախագծի Մասին",
+            "bio": "{{description}}",
+            "author_name": "HDesign Studio",
+            "btn_text": "Բոլոր Քեյսերը",
+            "btn_url": "/works"
+          }
+        },
+        {
+          "id": "block-concept",
+          "type": "text",
+          "hidden": false,
+          "order": 2,
+          "settings": {
+            "title": "Դիզայնի Կոնցեպտ",
+            "content": "{{concept}}"
+          }
+        },
+        {
+          "id": "block-typography",
+          "type": "text",
+          "hidden": false,
+          "order": 3,
+          "settings": {
+            "title": "Տիպոգրաֆիկա և Գույներ",
+            "content": "Տառատեսակներ՝ {{typography}} | Ֆիրմային Գույներ՝ {{colors}}"
+          }
+        },
+        {
+          "id": "block-cta",
+          "type": "cta",
+          "hidden": false,
+          "order": 4,
+          "settings": {
+            "title": "Պատվիրե՞լ նմանատիպ դիզայն",
+            "subtitle": "Եկեք միասին ստեղծենք Ձեր բրենդի հաջորդ պատմությունը",
+            "btn_text": "Սկսել Համագործակցությունը",
+            "btn_url": "/contact"
+          }
+        }
+      ]
+    },
+    "blog": {
+      "id": "template-blog",
+      "slug": "templates/blog",
+      "routePattern": "blog/[slug]",
+      "title": "Blog Master Template (Բլոգի Կաղապար)",
+      "type": "master_template",
+      "defaultInstanceId": "first-post",
+      "is_published": true,
+      "meta": {
+        "meta_title": "{{title}} | HDesign Blog",
+        "meta_description": "{{excerpt}}"
+      },
+      "blocks": [
+        {
+          "id": "block-hero",
+          "type": "hero",
+          "hidden": false,
+          "order": 0,
+          "settings": {
+            "title": "{{title}}",
+            "subtitle": "Հեղինակ՝ {{author}} • {{date}}",
+            "description": "{{excerpt}}",
+            "btn_text": "Բոլոր Հոդվածները",
+            "btn_url": "/blog",
+            "padding": "100px 0 40px"
+          }
+        },
+        {
+          "id": "block-content",
+          "type": "text",
+          "hidden": false,
+          "order": 1,
+          "settings": {
+            "title": "Հոդվածի Բովանդակություն",
+            "content": "{{content}}"
+          }
+        },
+        {
+          "id": "block-cta",
+          "type": "cta",
+          "hidden": false,
+          "order": 2,
+          "settings": {
+            "title": "Հետաքրքրե՞ց այս թեման",
+            "subtitle": "Բաժանորդագրվեք մեր տեղեկագրին կամ կապ հաստատեք հեղինակի հետ:",
+            "btn_text": "Կապ Հաստատել",
+            "btn_url": "/contact"
+          }
+        }
+      ]
+    },
+    "product": {
+      "id": "template-product",
+      "slug": "templates/product",
+      "routePattern": "products/[id]",
+      "title": "Product Master Template (Ապրանքների Կաղապար)",
+      "type": "master_template",
+      "defaultInstanceId": "hdesign-pro-font",
+      "is_published": true,
+      "meta": {
+        "meta_title": "{{title}} | HDesign Store",
+        "meta_description": "{{description}}"
+      },
+      "blocks": [
+        {
+          "id": "block-hero",
+          "type": "hero",
+          "hidden": false,
+          "order": 0,
+          "settings": {
+            "title": "{{title}}",
+            "subtitle": "Կատեգորիա՝ {{category}} • Գինը՝ {{price}}",
+            "description": "{{description}}",
+            "btn_text": "Պատվիրել Հիմա",
+            "btn_url": "#order",
+            "padding": "100px 0 40px"
+          }
+        },
+        {
+          "id": "block-product-details",
+          "type": "product_details",
+          "hidden": false,
+          "order": 1,
+          "settings": {
+            "title": "Ապրանքի Մանրամասներ",
+            "price": "{{price}}",
+            "sku": "{{sku}}",
+            "features": "{{features}}",
+            "stock_status": "{{stock_status}}"
+          }
+        },
+        {
+          "id": "block-cta",
+          "type": "cta",
+          "hidden": false,
+          "order": 2,
+          "settings": {
+            "title": "Պատվիրեք {{title}} այսօր",
+            "subtitle": "Անվճար տեխնիկական աջակցություն և թարմացումներ:",
+            "btn_text": "Գնել Հիմա",
+            "btn_url": "#checkout"
+          }
+        }
+      ]
+    }
+  },
+  "instances": {
+    "works": {
+      "pasta": {
+        "id": "pasta",
+        "slug": "pasta",
+        "title": "Pasta",
+        "color": "#d32f2f",
+        "tagline": "Իտալական խոհանոցի ավանդական համի ժամանակակից արտացոլումը",
+        "description": "Pasta-ն իտալական ռեստորանների ցանց է, որի համար մշակվել է ամբողջական տեսողական ինքնություն: Նպատակն էր համատեղել իտալական տնական մակարոնեղենի ավանդույթները և ժամանակակից արագ սննդի դինամիկան:",
+        "concept": "Դիզայնի հիմքում ընկած են մակարոնեղենի պարզ և ճկուն գծային կառուցվածքները, որոնք արտացոլված են ինչպես լոգոյի, այնպես էլ փաթեթավորման վրա: Կարմիր գույնն ընտրվել է որպես ախորժաբեր և էներգետիկ հիմնական շեշտադրում:",
+        "typography": "Outfit, Inter",
+        "colors": "#d32f2f, #f8fafc, #0f172a"
+      },
+      "eleven": {
+        "id": "eleven",
+        "slug": "eleven",
+        "title": "11...",
+        "color": "#e65100",
+        "tagline": "Ժամանակի և տարածության մինիմալիստական երկրաչափություն",
+        "description": "11... բրենդը ներկայացնում է կոնցեպտուալ ժամանակակից արվեստի և ճարտարապետության ստուդիա: Անվանումն ու դիզայնը հղում են կատարում անսահմանությանը և մինիմալիզմին:",
+        "concept": "Լոգոն կառուցված է երկու զուգահեռ գծերից, որոնք ստեղծում են կառուցվածքային կատարելության զգացողություն: Նարնջագույնը խորհրդանշում է ստեղծարար միտքն ու դինամիկ զարգացումը:",
+        "typography": "Outfit, sans-serif",
+        "colors": "#e65100, #1e293b, #ffffff"
+      },
+      "posters": {
+        "id": "posters",
+        "slug": "posters",
+        "title": "Posters",
+        "color": "#880e4f",
+        "tagline": "Պաստառային արվեստի և տառաձևերի փորձարարական սինթեզ",
+        "description": "Experimental Poster Design-ը նախագծերի շարք է, որտեղ ուսումնասիրվում է տառատեսակների ազդեցությունը տեսողական հաղորդակցության մեջ: Յուրաքանչյուր պաստառ ստեղծված է որպես ինքնուրույն արվեստի գործ:",
+        "concept": "Կոմպոզիցիաները հիմնված են հակադրությունների վրա՝ խոշոր տառաձևեր, վառ երանգներ և մաթեմատիկական ցանցերի (grids) օգտագործում: Գույնը խորը մորեգույնն է, որը ստեղծում է դրամատիկ տեսողական շեշտ:",
+        "typography": "Custom Geometric Font, Inter",
+        "colors": "#880e4f, #ffeb3b, #0a0a0a"
+      },
+      "teal-lines": {
+        "id": "teal-lines",
+        "slug": "teal-lines",
+        "title": "Teal Lines",
+        "color": "#004d40",
+        "tagline": "Էկոլոգիապես մաքուր տեխնոլոգիաների գծային ինքնություն",
+        "description": "Teal Lines-ը էներգետիկ արդյունավետության և կայուն զարգացման տեխնոլոգիական ընկերություն է: Տեսողական համակարգը կառուցված է մաքրության և կայունության գաղափարների շուրջ:",
+        "concept": "Լուծումները կառուցված են բարակ զուգահեռ և հատվող գծերի վրա, որոնք խորհրդանշում են տեխնոլոգիական ցանցերն ու հոսանքները: Մուգ զմրուխտե կանաչը ներկայացնում է էկոլոգիան:",
+        "typography": "Outfit, Arial",
+        "colors": "#004d40, #a6d5c7, #ffffff"
+      }
+    },
+    "blog": {
+      "first-post": {
+        "id": "first-post",
+        "slug": "first-post",
+        "title": "Visual Page Builder-ի Ճարտարապետությունը Next.js-ում",
+        "author": "Հրանտ Հակոբյան",
+        "date": "24 Սեպտեմբեր 2026",
+        "category": "Architecture",
+        "excerpt": "Ինչպես կառուցել 0ms live postMessage preview համակարգ React 19-ով և Next.js App Router-ով:",
+        "content": "Next.js App Router-ում Visual Page Builder կառուցելու ամենամեծ մարտահրավերը iframe-ի live reloading-ն է: Երբ ադմինը փոխում է տեքստը կամ գույնը, էջի ամբողջական reload-ը քանդում է Lenis smooth scroll-ը, GSAP ScrollTrigger-ը և վատացնում UX-ը: Լուծումը երկկողմանի postMessage bridge-ն է, որը տվյալների փոփոխությունն արտացոլում է անմիջապես DOM-ում 0ms հապաղմամբ:"
+      },
+      "typography-in-armenia": {
+        "id": "typography-in-armenia",
+        "slug": "typography-in-armenia",
+        "title": "Հայերեն Տիպոգրաֆիկայի Վերածնունդը Թվային Դարաշրջանում",
+        "author": "Հրանտ Հակոբյան",
+        "date": "20 Սեպտեմբեր 2026",
+        "category": "Typography",
+        "excerpt": "Variable font-երի, օպտիկական չափերի և թվային էկրանների ազդեցությունը հայկական տառարվեստի վրա:",
+        "content": "Հայոց գրերի երկրաչափական կատարելությունը հնարավորություն է տալիս ստեղծել ժամանակակից variable տառատեսակներ: HDesign-ում մենք համադրում ենք ավանդական տառարվեստը ժամանակակից վեբ ստանդարտների հետ:"
+      }
+    },
+    "products": {
+      "hdesign-pro-font": {
+        "id": "hdesign-pro-font",
+        "slug": "hdesign-pro-font",
+        "title": "HDesign Variable Font Pro",
+        "price": "49,000 AMD",
+        "sku": "FNT-HD-01",
+        "category": "Typography & Assets",
+        "description": "Բարձրակարգ հայերեն և լատիներեն variable տառատեսակ՝ 9 քաշային աստիճաններով և 120+ հատուկ գլիֆերով:",
+        "features": "Variable Weight (100-900), TTF/WOFF2 ֆորմատներ, Հայերեն + Լատիներեն լրիվ աջակցություն, Commercial License",
+        "stock_status": "Հասանելի է անմիջապես ներբեռնման համար"
+      },
+      "brand-identity-pack": {
+        "id": "brand-identity-pack",
+        "slug": "brand-identity-pack",
+        "title": "Complete Brand Identity UI Kit",
+        "price": "120,000 AMD",
+        "sku": "KIT-BRAND-02",
+        "category": "Design System",
+        "description": "Ամբողջական դիզայն համակարգ՝ Figma կոմպոնենտներով, 70+ հեղինակային վեկտորային իկոնկաներով և Next.js կաղապարով:",
+        "features": "Figma Auto-layout 5.0, 70+ SVG իկոնկաներ, Dark/Light Themes, Production-ready Next.js code",
+        "stock_status": "Հասանելի է"
+      }
+    }
+  }
+}
