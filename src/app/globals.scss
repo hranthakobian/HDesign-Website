@@ -3290,6 +3290,10 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     z-index: 1005 !important;
     transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
 
+    &::before {
+      border-radius: 28px !important;
+    }
+
     &.open,
     &.menu-open {
       top: 20px !important;
@@ -3297,7 +3301,12 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
       right: auto !important;
       transform: translateX(-50%) !important;
       padding: 0 18px !important;
+      border-radius: 28px !important;
       z-index: 1006 !important;
+
+      &::before {
+        border-radius: 28px !important;
+      }
     }
   }
 
@@ -3320,6 +3329,10 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     z-index: 1004 !important;
     transform: none !important;
     
+    &::before {
+      border-radius: 28px !important;
+    }
+
     .logo-text {
       display: none !important; /* show only icon mark to fit */
     }
@@ -3343,6 +3356,10 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     pointer-events: auto !important;
     z-index: 1004 !important;
     display: flex !important;
+
+    &::before {
+      border-radius: 28px !important;
+    }
   }
 
   /* Mobile Drawer settings hide redundant lang select since it's already in the bottom controls capsule */
@@ -3350,7 +3367,7 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     display: none !important;
   }
 
-  /* Normal top-down slide mobile drawer with full pointer interactivity */
+  /* Normal top-down slide mobile drawer with full pointer interactivity and rounded bottom corners */
   .mobile-menu-drawer {
     top: 0 !important;
     left: 0 !important;
@@ -3359,6 +3376,8 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     transform: translateY(-20px) !important;
     padding: 100px 32px 40px !important;
     border-bottom: 1px solid rgba(8, 63, 57, 0.08) !important;
+    border-radius: 0 0 32px 32px !important;
+    overflow: hidden !important;
     pointer-events: auto !important;
     z-index: 1003 !important;
     
@@ -3376,6 +3395,41 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
       pointer-events: auto !important;
       cursor: pointer !important;
     }
+  }
+
+  /* Rounded corners for all mobile panels, drawers, cards, and shells */
+  .panel,
+  .poster-canvas,
+  .poster,
+  .legacy-header-panel,
+  .case-specs-panel,
+  .contact-form-container,
+  .contact-card,
+  .contact-details-col,
+  .about-card,
+  .about-grid > *,
+  .branding-case-card,
+  .card-media-wrapper,
+  .branding-card-img,
+  .branding-card-overlay,
+  .gallery-card,
+  .marquee-card,
+  .app-card,
+  .app-hero-card,
+  .app-details-container,
+  .font-card,
+  .font-card-preview,
+  .font-details-sandbox-canvas,
+  .font-playground-grid,
+  .samples-showcase-grid,
+  .hd-lens-panel,
+  .hd-lens-source-card,
+  .hd-lens-match-card,
+  .hd-lens-interactive-panel,
+  .footer-content-container,
+  .search-modal-container,
+  .search-modal-box {
+    border-radius: 24px !important;
   }
 }
 

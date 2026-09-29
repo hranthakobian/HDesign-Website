@@ -11,9 +11,9 @@ dashboard_nav = Վահանակ
 
 [qr_creator]
 controls_title = Կառավարում
-saved_styles_title = Պահպանված QR ոճեր
+saved_styles_title = Պահված QR ոճեր
 style_name_placeholder = Ոճի անուն
-save_btn = Պահպանել
+save_btn = Պահել
 rename_tooltip = Վերանվանել
 delete_tooltip = Ջնջել
 text_input_label = QR կոդի տեքստ / հղում
@@ -51,7 +51,7 @@ export_png_btn = Արտահանել PNG
 export_jpg_btn = Արտահանել JPG
 layers_title = Շերտեր
 add_layer_btn = Ավելացնել շերտ
-no_presets_msg = Պահպանված պրեսեթներ չկան: Ստեղծեք որևէ ոճ և պահպանեք այն վերևում:
+no_presets_msg = Պահված պրեսեթներ չկան: Ստեղծեք որևէ ոճ և պահեք այն վերևում:
 edit_layer_title = Խմբագրել շերտը:
 lines_count_label = Գծերի քանակ
 angle_label = Անկյուն
@@ -77,7 +77,7 @@ linked_line_label = Կապված է
 [randomizer]
 random_presets_section = Պատահական նախշերի գեներատոր
 preset_name_placeholder = Պրեսեթի անուն
-save_preset_btn = Պահպանել պրեսեթը
+save_preset_btn = Պահել պրեսեթը
 generate_random_btn = Ստեղծել պատահական
 random_filters_btn = Պատահականության զտիչներ
 include_styles_label = Ներառել ոճերը
@@ -347,7 +347,7 @@ year = Տարեթիվ
 color_palette = Բրենդի Գունապնակ
 typography = Տառատեսակներ
 preview_text = Հրանտ Հակոբյան Դիզայն Ստուդիա 2026
-press_focus = Սեղմեք տիլդան՝ մեդիան կենտրոնացնելու համար
+press_focus = Սեղմեք տիլդան՝ դարանը կենտրոնացնելու համար
 other_works = ← Դեպի Այլ Աշխատանքներ
 not_found = Աշխատանքը չի գտնվել
 back = Վերադառնալ
@@ -356,12 +356,12 @@ loading_images = Բեռնվում են պատկերները
 no_details = Այս նախագծի համար մանրամասն նկարագրություն դեռևս ավելացված չէ:
 
 [admin_bar]
-admin_mode = Վարիչի ռեժիմ
+admin_mode = Վարիչի կերպ
 dashboard = Վարիչի վահանակ
 new_case = Նոր աշխատանք
 messages = Նամակներ
 analytics = Անալիտիկա
-settings = Կարգավորումներ
+settings = Կայանքներ
 logout = Դուրս գալ
 collapse = Ծալել
 expand = Բացել

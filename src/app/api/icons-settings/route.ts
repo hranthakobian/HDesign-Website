@@ -49,7 +49,7 @@ export async function GET(request: Request) {
             ],
             "Փականներ և Անվտանգություն": ["Locked", "Unlocked", "Close-Eye", "Eye"],
             "Հաղորդակցություն": ["Call", "Mail", "Chat-Bubble", "Two-Chat-Bubble", "Bell", "Notifications", "Send"],
-            "Մեդիա": ["Image", "Camera", "Play", "Stop", "Pause", "Volume-Mute", "Low-Volume", "Medium-Volume", "High-Volume", "Full-Screen", "Expand"]
+            "Դարան": ["Image", "Camera", "Play", "Stop", "Pause", "Volume-Mute", "Low-Volume", "Medium-Volume", "High-Volume", "Full-Screen", "Expand"]
           };
 
           const getCat = (iconName: string) => {

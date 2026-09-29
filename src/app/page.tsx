@@ -99,8 +99,8 @@ const iconCategories = [
     ]
   },
   {
-    titleHy: "Մեդիա",
-    titleEn: "Media",
+    titleHy: "Դարան",
+    titleEn: "Library",
     icons: [
       "icon-Image", "icon-Camera", "icon-Play", "icon-Stop", "icon-Pause",
       "icon-Volume-Mute", "icon-Low-Volume", "icon-Medium-Volume", "icon-High-Volume", "icon-Full-Screen", "icon-Expand"

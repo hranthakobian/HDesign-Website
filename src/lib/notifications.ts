@@ -344,13 +344,13 @@ export async function sendBugReportEmails({
   const baseUrl = getBaseUrl();
 
   // 1. Media files presentation
-  let mediaListHtml = '<p style="color: #718096; font-style: italic; margin: 6px 0 0 0;">Կցված մեդիա նիշքեր չկան։</p>';
+  let mediaListHtml = '<p style="color: #718096; font-style: italic; margin: 6px 0 0 0;">Կցված դարանի նիշքեր չկան։</p>';
 
   if (report.media_files && report.media_files.length > 0) {
     const fullUrls = report.media_files.map(url => url.startsWith('http') ? url : `${baseUrl}${url}`);
     mediaListHtml = `
       <div style="margin-top: 14px;">
-        <p style="font-weight: bold; margin: 0 0 8px 0; color: #2d3748;">Կցված մեդիա նիշքեր (${report.media_files.length})՝</p>
+        <p style="font-weight: bold; margin: 0 0 8px 0; color: #2d3748;">Կցված դարանի նիշքեր (${report.media_files.length})՝</p>
         <ul style="padding-left: 20px; margin: 0;">
           ${fullUrls.map(u => `
             <li style="margin-bottom: 6px;">

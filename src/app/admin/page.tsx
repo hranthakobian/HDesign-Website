@@ -290,7 +290,7 @@ const NAV_TABS = [
   },
   {
     id: 'media' as const,
-    label: 'Մեդիա',
+    label: 'Դարան',
     icon: (
       <span style={{ fontSize: '1.3rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <FolderIcon size={22} color="currentColor" />
@@ -334,12 +334,17 @@ const NAV_TABS = [
   },
   {
     id: 'settings' as const,
-    label: 'Կարգավորումներ',
-    icon: <span className="icon-Profile" style={{ fontSize: '1.4rem' }} />
+    label: 'Կայանքներ',
+    icon: <span className="hd-icon hd-icon-settings" style={{ fontSize: '1.4rem' }} />
   }
 ];
 
 type TabType = 'analytics' | 'cases' | 'fonts' | 'apps' | 'media' | 'icons' | 'messages' | 'translations' | 'about' | 'apis' | 'personalization' | 'settings' | 'subscribers';
+
+const DEFAULT_TAB_IDS: TabType[] = [
+  'analytics', 'cases', 'apps', 'media', 'icons', 'messages', 
+  'subscribers', 'translations', 'about', 'apis', 'personalization', 'settings'
+];
 
 function parseTabParam(rawTab: string | null): { 
   tab: TabType; 
@@ -500,10 +505,85 @@ function AdminDashboardContent() {
     setNavMounted(true);
   }, []);
 
+  // Tab Customization & Drag-and-Drop state
+  const [visibleTabIds, setVisibleTabIds] = useState<TabType[]>(DEFAULT_TAB_IDS);
+  const [showTabCustomizerModal, setShowTabCustomizerModal] = useState(false);
+  const [draggedTabId, setDraggedTabId] = useState<TabType | null>(null);
+  const [dragOverTabId, setDragOverTabId] = useState<TabType | null>(null);
+
+  // Load saved tab customization from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('hdesign_admin_visible_tabs');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const valid = parsed.filter((id: any) => DEFAULT_TAB_IDS.includes(id));
+            if (valid.length > 0) {
+              setVisibleTabIds(valid);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load tab customization', e);
+      }
+    }
+  }, []);
+
+  const saveVisibleTabIds = (newIds: TabType[]) => {
+    setVisibleTabIds(newIds);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('hdesign_admin_visible_tabs', JSON.stringify(newIds));
+    }
+  };
+
+  const visibleNavTabs = useMemo(() => {
+    return visibleTabIds
+      .map(id => NAV_TABS.find(t => t.id === id))
+      .filter(Boolean) as (typeof NAV_TABS)[number][];
+  }, [visibleTabIds]);
+
+  const hiddenNavTabs = useMemo(() => {
+    return NAV_TABS.filter(t => !visibleTabIds.includes(t.id));
+  }, [visibleTabIds]);
+
+  const handleMoveTab = (fromIdx: number, toIdx: number) => {
+    if (toIdx < 0 || toIdx >= visibleTabIds.length || fromIdx === toIdx) return;
+    const copy = [...visibleTabIds];
+    const [moved] = copy.splice(fromIdx, 1);
+    copy.splice(toIdx, 0, moved);
+    saveVisibleTabIds(copy);
+  };
+
+  const handleToggleTab = (id: TabType) => {
+    if (visibleTabIds.includes(id)) {
+      if (visibleTabIds.length <= 1) return; // Keep at least 1 tab visible
+      saveVisibleTabIds(visibleTabIds.filter(t => t !== id));
+    } else {
+      saveVisibleTabIds([...visibleTabIds, id]);
+    }
+  };
+
+  const handleAddTab = (id: TabType) => {
+    if (!visibleTabIds.includes(id)) {
+      saveVisibleTabIds([...visibleTabIds, id]);
+    }
+  };
+
+  const handleRemoveTab = (id: TabType) => {
+    if (visibleTabIds.length <= 1) return;
+    saveVisibleTabIds(visibleTabIds.filter(t => t !== id));
+  };
+
+  const handleResetTabs = () => {
+    saveVisibleTabIds(DEFAULT_TAB_IDS);
+  };
+
   const activeTabIndex = useMemo(() => {
-    const idx = NAV_TABS.findIndex(t => t.id === activeTab);
-    return idx >= 0 ? idx : 0;
-  }, [activeTab]);
+    const idx = visibleNavTabs.findIndex(t => t.id === activeTab);
+    return idx;
+  }, [visibleNavTabs, activeTab]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     // Only drag on left click
@@ -1176,6 +1256,8 @@ function AdminDashboardContent() {
   const [isUploadingIconSvg, setIsUploadingIconSvg] = useState(false);
 
   const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsCategory, setSettingsCategory] = useState<'all' | 'modes' | 'identity' | 'appearance' | 'media' | 'software' | 'security'>('all');
+  const [settingsSearchQuery, setSettingsSearchQuery] = useState('');
 
   // Software Icons State (Illustrator, Photoshop, etc.)
   const [softwareIcons, setSoftwareIcons] = useState<Record<string, string>>({});
@@ -1184,6 +1266,23 @@ function AdminDashboardContent() {
   const [isUploadingSoftwareIcon, setIsUploadingSoftwareIcon] = useState(false);
   const [activeSoftwareKeyForIcon, setActiveSoftwareKeyForIcon] = useState<string | null>(null);
   const softwareIconFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sessions & Devices Security State
+  const [adminSessions, setAdminSessions] = useState<Array<{
+    id: string;
+    ip: string;
+    os: string;
+    browser: string;
+    device: string;
+    userAgent: string;
+    createdAt: string;
+    lastActive: string;
+    isCurrent?: boolean;
+  }>>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
+  const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
+  const [revokingAllOthers, setRevokingAllOthers] = useState(false);
+  const [sessionsError, setSessionsError] = useState<string | null>(null);
 
   // Password Change Form State
   const [currentPasscode, setCurrentPasscode] = useState('');
@@ -1766,7 +1865,7 @@ function AdminDashboardContent() {
         alert('Սխալ՝ ' + data.error);
       }
     } catch (err) {
-      alert('Չհաջողվեց պահպանել:');
+      alert('Չհաջողվեց պահել:');
     }
   };
 
@@ -1894,7 +1993,7 @@ function AdminDashboardContent() {
         alert('Սխալ՝ ' + data.error);
       }
     } catch (err) {
-      alert('Չհաջողվեց պահպանել:');
+      alert('Չհաջողվեց պահել:');
     }
   };
 
@@ -2223,13 +2322,13 @@ function AdminDashboardContent() {
       });
       if (res.ok) {
         setIsEditingSignature(false);
-        alert('Ստորագրությունը հաջողությամբ պահպանվեց:');
+        alert('Ստորագրությունը հաջողությամբ պահվեց:');
       } else {
         const data = await res.json();
         alert('Սխալ՝ ' + data.error);
       }
     } catch (err) {
-      alert('Չհաջողվեց պահպանել ստորագրությունը:');
+      alert('Չհաջողվեց պահել ստորագրությունը:');
     } finally {
       setSavingSignature(false);
     }
@@ -2548,13 +2647,13 @@ function AdminDashboardContent() {
           delete next[rowKey];
           return next;
         });
-        alert('Թարգմանությունը պահպանվեց։');
+        alert('Թարգմանությունը պահվեց։');
       } else {
         const data = await res.json();
         alert('Սխալ՝ ' + data.error);
       }
     } catch (err) {
-      alert('Չհաջողվեց պահպանել թարգմանությունը։');
+      alert('Չհաջողվեց պահել թարգմանությունը։');
     }
   };
 
@@ -2740,7 +2839,7 @@ function AdminDashboardContent() {
     }
 
     setIsTranslatingBulk(false);
-    alert(`Հաջողությամբ թարգմանվեց ${successCount} / ${targets.length} դաշտ: Մի մոռացեք պահպանել փոփոխությունները:`);
+    alert(`Հաջողությամբ թարգմանվեց ${successCount} / ${targets.length} դաշտ: Մի մոռացեք պահել փոփոխությունները:`);
   };
 
   const handleSaveAllTranslations = async () => {
@@ -2752,7 +2851,7 @@ function AdminDashboardContent() {
       return;
     }
 
-    const confirmMsg = `Ցանկանո՞ւմ եք պահպանել բոլոր ${changedKeys.length} փոփոխությունները միանգամից:`;
+    const confirmMsg = `Ցանկանո՞ւմ եք պահել բոլոր ${changedKeys.length} փոփոխությունները միանգամից:`;
     if (!confirm(confirmMsg)) return;
 
     setIsSavingAllTrans(true);
@@ -2785,13 +2884,13 @@ function AdminDashboardContent() {
       if (res.ok) {
         setDynamicTranslations(updated);
         setEditingTrans({});
-        alert('Բոլոր փոփոխությունները հաջողությամբ պահպանվեցին։');
+        alert('Բոլոր փոփոխությունները հաջողությամբ պահվեցին։');
       } else {
         const data = await res.json();
         alert('Սխալ՝ ' + data.error);
       }
     } catch (err) {
-      alert('Չհաջողվեց պահպանել թարգմանությունները։');
+      alert('Չհաջողվեց պահել թարգմանությունները։');
     } finally {
       setIsSavingAllTrans(false);
     }
@@ -2907,13 +3006,13 @@ function AdminDashboardContent() {
       });
 
       if (res.ok) {
-        alert('API կարգավորումները հաջողությամբ պահպանվեցին։');
+        alert('API կայանքները հաջողությամբ պահվեցին։');
       } else {
         const data = await res.json();
         alert('Սխալ՝ ' + data.error);
       }
     } catch (err) {
-      alert('Չհաջողվեց պահպանել API կարգավորումները։');
+      alert('Չհաջողվեց պահել API կայանքները։');
     }
   };
 
@@ -2996,13 +3095,13 @@ function AdminDashboardContent() {
 
       if (res.ok) {
         setDynamicTranslations(updated);
-        alert('«Մասին» էջի տվյալները հաջողությամբ պահպանվեցին։');
+        alert('«Մասին» էջի տվյալները հաջողությամբ պահվեցին։');
       } else {
         const data = await res.json();
-        alert('Սխալ՝ ' + (data.error || 'Չհաջողվեց պահպանել։'));
+        alert('Սխալ՝ ' + (data.error || 'Չհաջողվեց պահել։'));
       }
     } catch (err) {
-      alert('Չհաջողվեց պահպանել «Մասին» էջի տվյալները։');
+      alert('Չհաջողվեց պահել «Մասին» էջի տվյալները։');
     } finally {
       setIsSavingAbout(false);
     }
@@ -3023,13 +3122,13 @@ function AdminDashboardContent() {
       });
 
       if (res.ok) {
-        alert('Անհատականացման կարգավորումները հաջողությամբ պահպանվեցին։');
+        alert('Անհատականացման կայանքները հաջողությամբ պահվեցին։');
       } else {
         const data = await res.json();
         alert('Սխալ՝ ' + data.error);
       }
     } catch (err) {
-      alert('Չհաջողվեց պահպանել անհատականացման կարգավորումները։');
+      alert('Չհաջողվեց պահել անհատականացման կայանքները։');
     }
   };
 
@@ -3054,7 +3153,7 @@ function AdminDashboardContent() {
         alert('Սխալ՝ ' + data.error);
       }
     } catch (err) {
-      alert('Չհաջողվեց փոխել HDesign Upcoming ռեժիմը։');
+      alert('Չհաջողվեց փոխել HDesign Upcoming կերպը։');
     } finally {
       setTogglingHdesignUpcoming(false);
     }
@@ -3084,7 +3183,7 @@ function AdminDashboardContent() {
         alert('Սխալ՝ ' + data.error);
       }
     } catch (err) {
-      alert('Չհաջողվեց փոխել էջի Upcoming ռեժիմը։');
+      alert('Չհաջողվեց փոխել էջի Upcoming կերպը։');
     } finally {
       setTogglingPageKey(null);
     }
@@ -3116,7 +3215,7 @@ function AdminDashboardContent() {
         alert('Սխալ՝ ' + data.error);
       }
     } catch (err) {
-      alert('Չհաջողվեց փոխել սահուն էջաշարժի (smooth scroll) ռեժիմը։');
+      alert('Չհաջողվեց փոխել սահուն էջաշարժի (smooth scroll) կերպը։');
     } finally {
       setTogglingSmoothScroll(false);
     }
@@ -3173,15 +3272,112 @@ function AdminDashboardContent() {
             detail: { software_icons: softwareIcons }
           }));
         }
-        alert('Կայքի կարգավորումները հաջողությամբ պահպանվեցին։');
+        alert('Կայքի կայանքները հաջողությամբ պահվեցին։');
       } else {
         const data = await res.json();
         alert('Սխալ՝ ' + data.error);
       }
     } catch (err) {
-      alert('Չհաջողվեց պահպանել կարգավորումները։');
+      alert('Չհաջողվեց պահել կայանքները։');
     } finally {
       setSavingSettings(false);
+    }
+  };
+
+  const fetchSessions = useCallback(async () => {
+    if (!token) return;
+    setLoadingSessions(true);
+    setSessionsError(null);
+    try {
+      const cookieMatch = typeof document !== 'undefined' ? document.cookie.match(/hdesign_admin_session_id=([^;]+)/) : null;
+      const currentSessionId = cookieMatch ? decodeURIComponent(cookieMatch[1]) : '';
+
+      const res = await fetch('/api/admin/sessions', {
+        headers: {
+          'Authorization': token || '',
+          'x-admin-passcode': token || '',
+          'x-admin-session-id': currentSessionId
+        }
+      });
+      if (!res.ok) throw new Error('Failed to fetch sessions');
+      const data = await res.json();
+      setAdminSessions(data.sessions || []);
+      if (data.currentSessionId) {
+        try {
+          document.cookie = 'hdesign_admin_session_id=' + encodeURIComponent(data.currentSessionId) + '; path=/; max-age=2592000; SameSite=Lax';
+        } catch (e) {}
+      }
+    } catch (err: any) {
+      setSessionsError(err.message || 'Չհաջողվեց բեռնել նստաշրջանները');
+    } finally {
+      setLoadingSessions(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (activeTab === 'settings' && token) {
+      fetchSessions();
+    }
+  }, [activeTab, token, fetchSessions]);
+
+  const handleRevokeSession = async (sessionId: string) => {
+    const isCurrent = adminSessions.find(s => s.id === sessionId)?.isCurrent;
+    const confirmMsg = isCurrent 
+      ? 'Վստա՞հ եք, որ ցանկանում եք ավարտել ընթացիկ սիանսը և դուրս գալ Վարիչից։'
+      : 'Վստա՞հ եք, որ ցանկանում եք դուրս գրել այս սարքը։';
+    if (!confirm(confirmMsg)) return;
+
+    setRevokingSessionId(sessionId);
+    try {
+      const res = await fetch(`/api/admin/sessions?id=${encodeURIComponent(sessionId)}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': token || '',
+          'x-admin-passcode': token || ''
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to revoke session');
+      
+      if (data.revokedCurrent || isCurrent) {
+        localStorage.removeItem('hdesign_admin_token');
+        try {
+          document.cookie = 'hdesign_admin_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+          document.cookie = 'hdesign_admin_session_id=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+          window.dispatchEvent(new Event('hdesign-admin-auth-change'));
+        } catch (e) {}
+        setToken(null);
+        setIsLoggedIn(false);
+        alert('Դուք հաջողությամբ դուրս եկաք սիանսից:');
+        return;
+      }
+      setAdminSessions(prev => prev.filter(s => s.id !== sessionId));
+    } catch (err: any) {
+      alert('Սխալ՝ ' + (err.message || 'Չհաջողվեց դուրս գալ'));
+    } finally {
+      setRevokingSessionId(null);
+    }
+  };
+
+  const handleRevokeAllOtherSessions = async () => {
+    if (!confirm('Վստա՞հ եք, որ ցանկանում եք դուրս գալ մյուս բոլոր համակարգիչներից և սարքերից։')) return;
+    setRevokingAllOthers(true);
+    try {
+      const res = await fetch('/api/admin/sessions?revokeAllOthers=true', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': token || '',
+          'x-admin-passcode': token || ''
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to revoke other sessions');
+      await fetchSessions();
+      alert('Բոլոր մյուս սարքերից դուրս գալը հաջողությամբ կատարվեց:');
+    } catch (err: any) {
+      alert('Սխալ՝ ' + (err.message || 'Չհաջողվեց դուրս գալ'));
+    } finally {
+      setRevokingAllOthers(false);
     }
   };
 
@@ -3286,10 +3482,10 @@ function AdminDashboardContent() {
         });
         alert('Պատկերակը հաջողությամբ ավելացվեց/թարմացվեց։');
       } else {
-        alert('Սխալ՝ ' + (data.error || 'Չհաջողվեց պահպանել պատկերակը:'));
+        alert('Սխալ՝ ' + (data.error || 'Չհաջողվեց պահել պատկերակը:'));
       }
     } catch (err) {
-      alert('Սխալ պատկերակի պահպանման ընթացքում:');
+      alert('Սխալ պատկերակի պահման ընթացքում:');
     } finally {
       setIsSavingIcons(false);
     }
@@ -3333,7 +3529,7 @@ function AdminDashboardContent() {
       const data = await res.json();
       if (res.ok && data.url) {
         setSiteFontUrl(data.url);
-        alert('Տառատեսակի ֆայլը հաջողությամբ վերբեռնվեց։ Սեղմեք «Պահպանել» կայքի կարգավորումներում։');
+        alert('Տառատեսակի ֆայլը հաջողությամբ վերբեռնվեց։ Սեղմեք «Պահել» կայքի կայանքներում։');
       } else {
         alert('Սխալ՝ ' + (data.error || 'Ֆայլի վերբեռնումը ձախողվեց։'));
       }
@@ -3426,7 +3622,7 @@ function AdminDashboardContent() {
         } else {
           setCustomSoftwareIconUrl(data.url);
         }
-        alert('Ծրագրի պատկերակը հաջողությամբ վերբեռնվեց։ Սեղմեք «Պահպանել» կարգավորումներում։');
+        alert('Ծրագրի պատկերակը հաջողությամբ վերբեռնվեց։ Սեղմեք «Պահել» կայանքներում։');
       } else {
         alert('Սխալ՝ ' + (data.error || 'Պատկերակի վերբեռնումը ձախողվեց։'));
       }
@@ -3652,12 +3848,12 @@ function AdminDashboardContent() {
             detail: { iconFontCssUrl, iconFontWeights, customIconCss: generatedCss || customIconCss, hdIconRules }
           }));
         }
-        alert('Պատկերակների style.css-ը և ցուցակը հաջողությամբ պահպանվեցին։');
+        alert('Պատկերակների style.css-ը և ցուցակը հաջողությամբ պահվեցին։');
       } else {
-        alert('Սխալ՝ ' + (data.error || 'Պահպանումը ձախողվեց։'));
+        alert('Սխալ՝ ' + (data.error || 'Պահելը ձախողվեց։'));
       }
     } catch (err) {
-      alert('Սխալ պահպանման ընթացքում։');
+      alert('Սխալ պահելու ընթացքում։');
     } finally {
       setIsSavingIcons(false);
     }
@@ -4781,13 +4977,13 @@ function AdminDashboardContent() {
                                       cursor: 'pointer'
                                     }}
                                   >
-                                    <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Ընտրել Մեդիայից
+                                    <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Ընտրել Դարանից
                                   </button>
                                 </div>
                                 <hd-input value={drawerCaseImageUrl} onInput={(e: any) => setDrawerCaseImageUrl(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
                               </div>
                               <div style={{ marginTop: '10px' }}>
-                                <hd-button type="submit" data-width="100%" data-height="38px" data-thickness="3px"><span className="hd-icon icon-Check" style={{ marginRight: 6 }} /> Պահպանել</hd-button>
+                                <hd-button type="submit" data-width="100%" data-height="38px" data-thickness="3px"><span className="hd-icon icon-Check" style={{ marginRight: 6 }} /> Պահել</hd-button>
                               </div>
                             </form>
                           )}
@@ -5094,7 +5290,7 @@ function AdminDashboardContent() {
                                       cursor: 'pointer'
                                     }}
                                   >
-                                    <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Ընտրել Մեդիայից
+                                    <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Ընտրել Դարանից
                                   </button>
                                 </div>
                                 <hd-input value={drawerFontFileUrl} onInput={(e: any) => setDrawerFontFileUrl(e.target.value)} data-width="100%" data-height="36px" data-font-size="14pt" />
@@ -5133,7 +5329,7 @@ function AdminDashboardContent() {
                               )}
 
                               <div style={{ marginTop: '10px' }}>
-                                <hd-button type="submit" data-width="100%" data-height="38px" data-thickness="3px"><span className="hd-icon icon-Check" style={{ marginRight: 6 }} /> Պահպանել</hd-button>
+                                <hd-button type="submit" data-width="100%" data-height="38px" data-thickness="3px"><span className="hd-icon icon-Check" style={{ marginRight: 6 }} /> Պահել</hd-button>
                               </div>
                             </form>
                           )}
@@ -5174,7 +5370,7 @@ function AdminDashboardContent() {
                   <div>
                     <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0 }}>Պատկերակների Տեսողական Խմբագրիչ (style.css Visual Editor)</h2>
                     <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: '4px' }}>
-                      Ավելացրեք, խմբագրեք կամ ջնջեք պատկերակները մեկ տողում — ավտոմատ ակնթարթային պահպանմամբ
+                      Ավելացրեք, խմբագրեք կամ ջնջեք պատկերակները մեկ տողում — ավտոմատ ակնթարթային պահմամբ
                     </p>
                   </div>
                   <div>
@@ -5278,7 +5474,7 @@ function AdminDashboardContent() {
                         <option value="Սլաքներ">Սլաքներ</option>
                         <option value="Փականներ և Անվտանգություն">Փականներ և Անվտանգություն</option>
                         <option value="Հաղորդակցություն">Հաղորդակցություն</option>
-                        <option value="Մեդիա">Մեդիա</option>
+                        <option value="Դարան">Դարան</option>
                       </select>
 
                       {/* 3. Icon Name Input */}
@@ -5396,7 +5592,7 @@ function AdminDashboardContent() {
                               <option value="Սլաքներ">Սլաքներ</option>
                               <option value="Փականներ և Անվտանգություն">Փականներ և Անվտանգություն</option>
                               <option value="Հաղորդակցություն">Հաղորդակցություն</option>
-                              <option value="Մեդիա">Մեդիա</option>
+                              <option value="Դարան">Դարան</option>
                             </select>
 
                             {/* 3. Icon Name Input */}
@@ -5684,7 +5880,7 @@ function AdminDashboardContent() {
                                 data-height="30px"
                                 data-thickness="2px"
                               >
-                                {savingSignature ? 'Պահպանվում է...' : 'Պահպանել'}
+                                {savingSignature ? 'Պահվում է...' : 'Պահել'}
                               </hd-button>
                             </div>
                           ) : (
@@ -6572,7 +6768,7 @@ function AdminDashboardContent() {
                   </div>
 
                   <div style={{ minWidth: '120px' }}>
-                    <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Դիտման ռեժիմ</label>
+                    <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Դիտման կերպ</label>
                     <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--panel-border)', borderRadius: '8px', padding: '3px', height: '40px', alignItems: 'center', gap: '4px' }}>
                       <hd-button
                         onClick={() => setTransViewMode('grid')}
@@ -6613,7 +6809,7 @@ function AdminDashboardContent() {
                       <span className="hd-icon icon-Settings" style={{ fontSize: "1.1rem" }} />
                       <span style={{ fontSize: '0.88rem', fontWeight: 500, color: 'var(--muted)' }}>
                         {Object.keys(editingTrans).length > 0 ? (
-                          <>Առկա են <strong style={{ color: '#00C49F' }}>{Object.keys(editingTrans).length}</strong> չպահպանված տեղական խմբագրումներ։</>
+                          <>Առկա են <strong style={{ color: '#00C49F' }}>{Object.keys(editingTrans).length}</strong> չպահված տեղական խմբագրումներ։</>
                         ) : (
                           <>Կան թերի լրացված թարգմանության տողեր։</>
                         )}
@@ -6654,7 +6850,7 @@ function AdminDashboardContent() {
                             data-height="36px"
                             data-font-size="0.82rem"
                           >
-                            {isSavingAllTrans ? 'Պահպանվում է...' : `<span className="hd-icon icon-Check" style={{ marginRight: 6 }} /> Պահպանել բոլորը (${Object.keys(editingTrans).length})`}
+                            {isSavingAllTrans ? 'Պահվում է...' : `<span className="hd-icon icon-Check" style={{ marginRight: 6 }} /> Պահել բոլորը (${Object.keys(editingTrans).length})`}
                           </hd-button>
                         </>
                       )}
@@ -6835,7 +7031,7 @@ function AdminDashboardContent() {
                               data-height="32px"
                               data-font-size="0.78rem"
                             >
-                              Պահպանել
+                              Պահել
                             </hd-button>
                           </div>
                         </div>
@@ -6987,7 +7183,7 @@ function AdminDashboardContent() {
                                       editingTrans[rowKey]?.en ?? item.en
                                     )}
                                     disabled={!hasLocalEdits}
-                                    title="Պահպանել տողը"
+                                    title="Պահել տողը"
                                     data-color={hasLocalEdits ? '#00C49F' : 'rgba(255,255,255,0.03)'}
                                     data-width="36px"
                                     data-height="30px"
@@ -7205,7 +7401,7 @@ function AdminDashboardContent() {
 
                         {/* Import mode */}
                         <div>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Միացման Ռեժիմ</label>
+                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px', fontWeight: 600 }}>Միացման Կերպ</label>
                           <div style={{ display: 'flex', gap: '16px' }}>
                             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: 'var(--text)', cursor: 'pointer' }}>
                               <hd-radio 
@@ -7600,7 +7796,7 @@ function AdminDashboardContent() {
                       data-height="46px"
                       data-thickness="3px"
                     >
-                      Պահպանել API-ները
+                      Պահել API-ները
                     </hd-button>
                   </div>
                 </form>
@@ -8020,7 +8216,7 @@ function AdminDashboardContent() {
                       data-height="46px"
                       data-thickness="3px"
                     >
-                      {isSavingAbout ? 'Պահպանվում է...' : '<span className="hd-icon icon-Check" style={{ marginRight: 6 }} /> Պահպանել «Մասին» տվյալները'}
+                      {isSavingAbout ? 'Պահվում է...' : '<span className="hd-icon icon-Check" style={{ marginRight: 6 }} /> Պահել «Մասին» տվյալները'}
                     </hd-button>
                   </div>
 
@@ -8663,7 +8859,7 @@ function AdminDashboardContent() {
                       data-height="46px"
                       data-thickness="3px"
                     >
-                      Պահպանել Փոփոխությունները
+                      Պահել Փոփոխությունները
                     </hd-button>
                   </div>
                 </form>
@@ -8671,758 +8867,1062 @@ function AdminDashboardContent() {
             )}
 
             {activeTab === 'settings' && (
-              <div className={getTabClass('settings')} style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-                  <div>
-                    <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: 0 }}>Հիմնական Կարգավորումներ</h2>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginTop: '4px' }}>Կառավարեք վարիչի գաղտնաբառը և կայքի աշխատանքային ռեժիմը</p>
+              <div className={getTabClass('settings')} style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+                {/* Header & Overview Stats */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  flexWrap: 'wrap',
+                  gap: '20px',
+                  background: 'var(--panel)',
+                  border: '1px solid var(--panel-border)',
+                  borderRadius: '20px',
+                  padding: '24px 28px',
+                  boxShadow: '0 4px 24px rgba(0,0,0,0.1)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{
+                      width: '52px',
+                      height: '52px',
+                      borderRadius: '16px',
+                      background: 'rgba(74, 137, 124, 0.15)',
+                      border: '1px solid var(--accent)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'var(--accent)',
+                      fontSize: '1.6rem',
+                      flexShrink: 0
+                    }}>
+                      <span className="hd-icon hd-icon-settings" />
+                    </div>
+                    <div>
+                      <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
+                        Հիմնական Կայանքներ
+                      </h2>
+                      <p style={{ fontSize: '0.86rem', color: 'var(--muted)', margin: '4px 0 0 0' }}>
+                        Կառավարեք կայքի աշխատանքային կերպերը, տեսքը, տառատեսակները, մեդիան, ինքնությունն ու անվտանգությունը
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Summary Status Chips */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 14px',
+                      background: upcomingMode ? 'rgba(236, 64, 122, 0.1)' : 'rgba(0, 196, 159, 0.1)',
+                      border: `1px solid ${upcomingMode ? '#ec407a' : '#00C49F'}`,
+                      borderRadius: '12px',
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      color: upcomingMode ? '#ec407a' : '#00C49F'
+                    }}>
+                      <span style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: upcomingMode ? '#ec407a' : '#00C49F'
+                      }} />
+                      <span>Կայքը՝ {upcomingMode ? 'Upcoming (Փակ)' : 'Ակտիվ (Բաց)'}</span>
+                    </div>
+
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 14px',
+                      background: upcomingHdesignMode ? 'rgba(171, 71, 188, 0.1)' : 'rgba(255, 255, 255, 0.04)',
+                      border: `1px solid ${upcomingHdesignMode ? '#ab47bc' : 'var(--panel-border)'}`,
+                      borderRadius: '12px',
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      color: upcomingHdesignMode ? '#ab47bc' : 'var(--text)'
+                    }}>
+                      <span>HDesign՝ {upcomingHdesignMode ? 'Upcoming' : 'Ակտիվ'}</span>
+                    </div>
+
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 14px',
+                      background: 'rgba(255, 255, 255, 0.04)',
+                      border: '1px solid var(--panel-border)',
+                      borderRadius: '12px',
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      color: 'var(--muted)'
+                    }}>
+                      <span className="hd-icon icon-Pencil" style={{ fontSize: '0.9rem' }} />
+                      <span>Տառատեսակ՝ {siteFontName || 'HDesign'}</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="personalization-form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', alignItems: 'start' }}>
-                  {/* Left Column wrapper */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-                    {/* Card 1: Maintenance Mode */}
-                    <div style={{
-                      background: 'var(--panel)',
-                      border: '1px solid var(--panel-border)',
-                      borderRadius: '16px',
-                      padding: '24px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '20px'
-                    }}>
-                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span className="icon-Earth" style={{ color: '#ec407a' }} />
-                        Կայքի Աշխատանքային Ռեժիմ (Maintenance Mode)
-                      </h3>
+                {/* Categories Sub-Navigation & Live Search */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '14px',
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  border: '1px solid var(--panel-border)',
+                  borderRadius: '16px',
+                  padding: '10px 14px'
+                }}>
+                  {/* Category Pills */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', flex: 1, minWidth: '280px' }}>
+                    {[
+                      { id: 'all', label: 'Բոլորը', icon: 'icon-Dashboard' },
+                      { id: 'modes', label: 'Կերպեր և Շուտով', icon: 'icon-Earth' },
+                      { id: 'identity', label: 'Ինքնություն և Կապ', icon: 'icon-Profile' },
+                      { id: 'appearance', label: 'Տեսք և Տառատեսակ', icon: 'icon-Pencil' },
+                      { id: 'media', label: 'Մեդիա և Տեսանյութ', icon: 'icon-Play' },
+                      { id: 'software', label: 'Ծրագրերի Պատկերակներ', icon: 'icon-Image' },
+                      { id: 'security', label: 'Անվտանգություն', icon: 'icon-Locked' },
+                    ].map(cat => {
+                      const isActive = settingsCategory === cat.id;
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => setSettingsCategory(cat.id as any)}
+                          style={{
+                            background: isActive ? 'var(--accent)' : 'transparent',
+                            color: isActive ? '#ffffff' : 'var(--muted)',
+                            border: isActive ? '1px solid var(--accent)' : '1px solid transparent',
+                            borderRadius: '10px',
+                            padding: '8px 14px',
+                            fontSize: '0.82rem',
+                            fontWeight: isActive ? 700 : 500,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            transition: 'all 0.18s ease'
+                          }}
+                        >
+                          <span className={`hd-icon ${cat.icon}`} style={{ fontSize: '0.95rem' }} />
+                          <span>{cat.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
 
-                      <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: 0, lineHeight: 1.5 }}>
-                        Միացնելով «Upcoming» ռեժիմը՝ կայքի հիմնական այցելուներին կցուցադրվի ժամանակավոր սպասման էջ (Coming Soon), իսկ վարիչի համակարգը (/admin) կշարունակի գործել սովորական ռեժիմով։
-                      </p>
+                  {/* Search Filter Box */}
+                  <div style={{ position: 'relative', width: '280px', minWidth: '220px' }}>
+                    <span className="hd-icon icon-Search" style={{
+                      position: 'absolute',
+                      left: '12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      color: 'var(--muted)',
+                      fontSize: '0.95rem',
+                      pointerEvents: 'none'
+                    }} />
+                    <input
+                      type="text"
+                      placeholder="Որոնել կայանքներում..."
+                      value={settingsSearchQuery}
+                      onChange={(e) => setSettingsSearchQuery(e.target.value)}
+                      style={{
+                        width: '100%',
+                        height: '38px',
+                        background: 'var(--panel)',
+                        border: '1px solid var(--panel-border)',
+                        borderRadius: '10px',
+                        padding: '0 32px 0 34px',
+                        color: 'var(--text)',
+                        fontSize: '0.82rem',
+                        outline: 'none'
+                      }}
+                    />
+                    {settingsSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSettingsSearchQuery('')}
+                        style={{
+                          position: 'absolute',
+                          right: '10px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--muted)',
+                          cursor: 'pointer',
+                          fontSize: '0.85rem'
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
 
-                      <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: '16px',
-                          background: 'rgba(255,255,255,0.02)',
-                          borderRadius: '12px',
-                          border: '1px solid var(--panel-border)'
-                        }}>
-                          <div>
-                            <span style={{ fontSize: '0.9rem', fontWeight: 600, display: 'block' }}>Upcoming Mode Ռեժիմ (Ամբողջ Կայքը)</span>
-                            <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
-                              {upcomingMode ? 'Ակտիվացված է (սպասման էջը միացված է)' : 'Անջատված է (կայքը բաց է բոլորի համար)'}
-                            </span>
-                          </div>
-                          
-                          <hd-switch 
-                            checked={upcomingMode} 
-                            data-thickness="4px"
-                            onChange={(e: any) => setUpcomingMode(e.target.checked)} 
-                          />
-                        </div>
+                {/* Main Settings Grid */}
+                {(() => {
+                  const q = settingsSearchQuery.toLowerCase().trim();
+                  const matchSearch = (keywords: string[]) => {
+                    if (!q) return true;
+                    return keywords.some(k => k.toLowerCase().includes(q));
+                  };
 
-                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                          <hd-button 
-                            type="submit" 
-                            data-thickness="3px"
-                            data-width="160px"
-                            data-height="40px"
-                            data-font-size="0.85rem"
-                            disabled={savingSettings}
-                          >
-                            {savingSettings ? 'Պահպանվում է...' : 'Պահպանել Ռեժիմը'}
-                          </hd-button>
-                        </div>
-                      </form>
-                    </div>
+                  const showModes = (settingsCategory === 'all' || settingsCategory === 'modes') && matchSearch(['կերպ', 'upcoming', 'coming soon', 'շուտով', 'maintenance', 'հասանելիություն', 'hdesign', 'էջեր']);
+                  const showIdentity = (settingsCategory === 'all' || settingsCategory === 'identity') && matchSearch(['ինքնություն', 'վերնագիր', 'seo', 'նկարագրություն', 'title', 'description', 'կոնտակտ', 'email', 'հեռախոս', 'հասցե', 'address', 'phone']);
+                  const showAppearance = (settingsCategory === 'all' || settingsCategory === 'appearance') && matchSearch(['տեսք', 'տառատեսակ', 'font', 'smooth scroll', 'էջաշարժ', 'նախադիտում', 'lenis']);
+                  const showMedia = (settingsCategory === 'all' || settingsCategory === 'media') && matchSearch(['մեդիա', 'տեսանյութ', 'video', 'պաստառ', 'poster', 'դիզայնի համակարգ', 'design system', 'mp4']);
+                  const showSoftware = (settingsCategory === 'all' || settingsCategory === 'software') && matchSearch(['պատկերակ', 'ծրագիր', 'software', 'icon', 'illustrator', 'photoshop', 'figma', 'blender', 'unity', 'svg']);
+                  const showSecurity = (settingsCategory === 'all' || settingsCategory === 'security') && matchSearch(['անվտանգություն', 'գաղտնաբառ', 'passcode', 'password', 'մուտք', 'վարիչ']);
 
-                    {/* Card 1.5: HDesign Pages Upcoming Mode */}
-                    <div style={{
-                      background: 'var(--panel)',
-                      border: '1px solid var(--panel-border)',
-                      borderRadius: '16px',
-                      padding: '24px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '20px'
-                    }}>
-                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span className="icon-Layers" style={{ color: '#ab47bc' }} />
-                        HDesign Էջերի Upcoming Ռեժիմ (HDesign Pages Mode)
-                      </h3>
+                  const hasAnyMatch = showModes || showIdentity || showAppearance || showMedia || showSoftware || showSecurity;
 
-                      <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: 0, lineHeight: 1.5 }}>
-                        Առանձին կոճակ HDesign էջերի (/hdesign, /hdesign/docs, /hdesign/samples) համար։ Միացնելով այս ռեժիմը՝ միայն HDesign-ի էջերը կանցնեն Upcoming (Coming Soon) ռեժիմի, իսկ կայքի մյուս էջերը կմնան հանրությանը հասանելի։
-                      </p>
-
+                  if (!hasAnyMatch) {
+                    return (
                       <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '16px',
-                        background: 'rgba(255,255,255,0.02)',
-                        borderRadius: '12px',
-                        border: '1px solid var(--panel-border)'
+                        background: 'var(--panel)',
+                        border: '1px solid var(--panel-border)',
+                        borderRadius: '16px',
+                        padding: '48px 24px',
+                        textAlign: 'center',
+                        color: 'var(--muted)'
                       }}>
-                        <div>
-                          <span style={{ fontSize: '0.9rem', fontWeight: 600, display: 'block' }}>HDesign Էջերի Upcoming Mode</span>
-                          <span style={{ fontSize: '0.78rem', color: upcomingHdesignMode ? '#ab47bc' : 'var(--muted)' }}>
-                            {upcomingHdesignMode ? 'Ակտիվացված է (/hdesign էջերը փակ են)' : 'Անջատված է (/hdesign էջերը բաց են)'}
-                          </span>
-                        </div>
-                        
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <button
-                            type="button"
-                            onClick={() => toggleHdesignUpcomingQuick(!upcomingHdesignMode)}
-                            disabled={togglingHdesignUpcoming}
-                            style={{
-                              background: upcomingHdesignMode ? 'linear-gradient(135deg, #ab47bc 0%, #7b1fa2 100%)' : 'rgba(255, 255, 255, 0.06)',
-                              color: upcomingHdesignMode ? '#ffffff' : 'var(--muted)',
-                              border: '1px solid ' + (upcomingHdesignMode ? '#ab47bc' : 'var(--panel-border)'),
-                              borderRadius: '20px',
-                              padding: '6px 14px',
-                              fontSize: '0.8rem',
-                              fontWeight: 600,
-                              cursor: togglingHdesignUpcoming ? 'wait' : 'pointer',
-                              transition: 'all 0.2s ease',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px'
-                            }}
-                          >
-                            <span style={{
-                              width: '8px',
-                              height: '8px',
-                              borderRadius: '50%',
-                              background: upcomingHdesignMode ? '#ffffff' : '#888888',
-                              display: 'inline-block'
-                            }} />
-                            {togglingHdesignUpcoming 
-                              ? 'Փոխվում է...' 
-                              : (upcomingHdesignMode ? 'HDesign: Upcoming' : 'HDesign: Ակտիվ')}
-                          </button>
-
-                          <hd-switch 
-                            checked={upcomingHdesignMode} 
-                            data-thickness="4px"
-                            onChange={(e: any) => toggleHdesignUpcomingQuick(e.target.checked)} 
-                          />
-                        </div>
+                        <span className="hd-icon icon-Search" style={{ fontSize: '2.5rem', opacity: 0.5, display: 'block', marginBottom: '12px' }} />
+                        <h4 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text)' }}>Կայանքներ չեն գտնվել</h4>
+                        <p style={{ fontSize: '0.85rem', margin: '6px 0 16px 0' }}>«{settingsSearchQuery}» հարցմանը համապատասխանող կայանքներ չկան։</p>
+                        <button
+                          type="button"
+                          onClick={() => { setSettingsSearchQuery(''); setSettingsCategory('all'); }}
+                          style={{
+                            background: 'var(--accent)',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '8px 16px',
+                            fontSize: '0.82rem',
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Մաքրել որոնումը
+                        </button>
                       </div>
-                    </div>
+                    );
+                  }
 
-                    {/* Card 1.6: Per-Page Maintenance Mode */}
-                    <div style={{
-                      background: 'var(--panel)',
-                      border: '1px solid var(--panel-border)',
-                      borderRadius: '16px',
-                      padding: '24px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '20px'
-                    }}>
-                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span className="icon-Grid" style={{ color: '#0088FE' }} />
-                        Էջերի Առանձին Upcoming Ռեժիմներ (Per-Page Upcoming Mode)
-                      </h3>
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                      
+                      {/* SECTION 1: Modes & Maintenance */}
+                      {showModes && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid var(--panel-border)', paddingBottom: '10px' }}>
+                            <span className="hd-icon icon-Earth" style={{ color: '#ec407a', fontSize: '1.2rem' }} />
+                            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>Կայքի Կերպեր և Սպասման Էջեր (Maintenance & Upcoming)</h3>
+                          </div>
 
-                      <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: 0, lineHeight: 1.5 }}>
-                        Կառավարեք յուրաքանչյուր էջի աշխատանքային ռեժիմն առանձին։ Միացնելով կոնկրետ էջի կոճակը՝ տվյալ էջի այցելուներին կցուցադրվի Upcoming (Coming Soon) սպասման էջը։
-                      </p>
+                          <div className="personalization-form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '24px', alignItems: 'start' }}>
+                            
+                            {/* Card: Site & Page Upcoming Switches */}
+                            <div style={{
+                              background: 'var(--panel)',
+                              border: '1px solid var(--panel-border)',
+                              borderRadius: '16px',
+                              padding: '24px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '20px'
+                            }}>
+                              <div>
+                                <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <span className="hd-icon icon-Earth" style={{ color: '#ec407a' }} />
+                                  Ամբողջ Կայքի և HDesign-ի Upcoming Կերպեր
+                                </h4>
+                                <p style={{ fontSize: '0.82rem', color: 'var(--muted)', margin: '6px 0 0 0', lineHeight: 1.45 }}>
+                                  Միացնելով կայքի կամ առանձին բաժինների Upcoming կերպը՝ այցելուներին կցուցադրվի Coming Soon սպասման էջը։
+                                </p>
+                              </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {[
-                          { key: 'home', title: 'Գլխավոր էջ (Home)', path: '/', icon: <span className="hd-icon icon-Dashboard" /> },
-                          { key: 'works', title: 'Աշխատանքներ (Works)', path: '/works', icon: <span className="hd-icon icon-Pattern" /> },
-                          { key: 'about', title: 'Մեր մասին (About)', path: '/about', icon: <span className="hd-icon icon-Info" /> },
-                          { key: 'contact', title: 'Կապ (Contact)', path: '/contact', icon: <span className="hd-icon icon-Call" /> },
-                          { key: 'fonts', title: 'Տառատեսակներ (Fonts)', path: '/fonts', icon: <span className="hd-icon icon-Pencil" /> },
-                          { key: 'hdesign', title: 'HDesign', path: '/hdesign', icon: <span className="hd-icon icon-Pattern" /> }
-                        ].map((page) => {
-                          const isUpcoming = !!upcomingPages[page.key];
-                          const isUpdating = togglingPageKey === page.key;
+                              <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                {/* Full Site Switch */}
+                                <div style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  padding: '14px 16px',
+                                  background: upcomingMode ? 'rgba(236, 64, 122, 0.08)' : 'rgba(255,255,255,0.02)',
+                                  borderRadius: '12px',
+                                  border: `1px solid ${upcomingMode ? 'rgba(236, 64, 122, 0.3)' : 'var(--panel-border)'}`
+                                }}>
+                                  <div>
+                                    <span style={{ fontSize: '0.88rem', fontWeight: 700, display: 'block' }}>Ամբողջ Կայքի Upcoming Կերպ</span>
+                                    <span style={{ fontSize: '0.78rem', color: upcomingMode ? '#ec407a' : 'var(--muted)' }}>
+                                      {upcomingMode ? 'Ակտիվացված է (կայքը փակ է այցելուների համար)' : 'Անջատված է (կայքը բաց է բոլորի համար)'}
+                                    </span>
+                                  </div>
+                                  <hd-switch 
+                                    checked={upcomingMode} 
+                                    data-thickness="4px"
+                                    onChange={(e: any) => setUpcomingMode(e.target.checked)} 
+                                  />
+                                </div>
 
-                          return (
-                            <div 
-                              key={page.key}
-                              style={{
+                                {/* HDesign Pages Switch */}
+                                <div style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  padding: '14px 16px',
+                                  background: upcomingHdesignMode ? 'rgba(171, 71, 188, 0.08)' : 'rgba(255,255,255,0.02)',
+                                  borderRadius: '12px',
+                                  border: `1px solid ${upcomingHdesignMode ? 'rgba(171, 71, 188, 0.3)' : 'var(--panel-border)'}`
+                                }}>
+                                  <div>
+                                    <span style={{ fontSize: '0.88rem', fontWeight: 700, display: 'block' }}>HDesign Էջերի Կերպ (/hdesign)</span>
+                                    <span style={{ fontSize: '0.78rem', color: upcomingHdesignMode ? '#ab47bc' : 'var(--muted)' }}>
+                                      {upcomingHdesignMode ? 'Ակտիվացված է (/hdesign էջերը փակ են)' : 'Անջատված է (/hdesign էջերը բաց են)'}
+                                    </span>
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleHdesignUpcomingQuick(!upcomingHdesignMode)}
+                                      disabled={togglingHdesignUpcoming}
+                                      style={{
+                                        background: upcomingHdesignMode ? 'linear-gradient(135deg, #ab47bc 0%, #7b1fa2 100%)' : 'rgba(255, 255, 255, 0.06)',
+                                        color: upcomingHdesignMode ? '#ffffff' : 'var(--muted)',
+                                        border: '1px solid ' + (upcomingHdesignMode ? '#ab47bc' : 'var(--panel-border)'),
+                                        borderRadius: '20px',
+                                        padding: '5px 12px',
+                                        fontSize: '0.76rem',
+                                        fontWeight: 600,
+                                        cursor: togglingHdesignUpcoming ? 'wait' : 'pointer'
+                                      }}
+                                    >
+                                      {togglingHdesignUpcoming ? 'Փոխվում է...' : (upcomingHdesignMode ? 'Upcoming' : 'Ակտիվ')}
+                                    </button>
+                                    <hd-switch 
+                                      checked={upcomingHdesignMode} 
+                                      data-thickness="4px"
+                                      onChange={(e: any) => toggleHdesignUpcomingQuick(e.target.checked)} 
+                                    />
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                                  <hd-button 
+                                    type="submit" 
+                                    data-thickness="3px"
+                                    data-width="170px"
+                                    data-height="38px"
+                                    data-font-size="0.84rem"
+                                    disabled={savingSettings}
+                                  >
+                                    {savingSettings ? 'Պահվում է...' : 'Պահել Կերպը'}
+                                  </hd-button>
+                                </div>
+                              </form>
+
+                              {/* Per-Page Sub-Controls */}
+                              <div style={{ borderTop: '1px solid var(--panel-border)', paddingTop: '16px' }}>
+                                <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text)', display: 'block', marginBottom: '10px' }}>
+                                  Էջերի Առանձին Կերպեր՝
+                                </span>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                  {[
+                                    { key: 'home', title: 'Գլխավոր էջ (Home)', path: '/', icon: 'icon-Dashboard' },
+                                    { key: 'works', title: 'Աշխատանքներ (Works)', path: '/works', icon: 'icon-Pattern' },
+                                    { key: 'about', title: 'Մեր մասին (About)', path: '/about', icon: 'icon-Info' },
+                                    { key: 'contact', title: 'Կապ (Contact)', path: '/contact', icon: 'icon-Call' },
+                                    { key: 'fonts', title: 'Տառատեսակներ (Fonts)', path: '/fonts', icon: 'icon-Pencil' },
+                                    { key: 'hdesign', title: 'HDesign', path: '/hdesign', icon: 'icon-Pattern' }
+                                  ].map((page) => {
+                                    const isUpcoming = !!upcomingPages[page.key];
+                                    const isUpdating = togglingPageKey === page.key;
+
+                                    return (
+                                      <div 
+                                        key={page.key}
+                                        style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'space-between',
+                                          padding: '10px 14px',
+                                          background: isUpcoming ? 'rgba(0, 136, 254, 0.06)' : 'rgba(255,255,255,0.02)',
+                                          borderRadius: '10px',
+                                          border: '1px solid ' + (isUpcoming ? 'rgba(0, 136, 254, 0.3)' : 'var(--panel-border)')
+                                        }}
+                                      >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                          <span className={`hd-icon ${page.icon}`} style={{ fontSize: '1.1rem', color: isUpcoming ? '#0088FE' : 'var(--muted)' }} />
+                                          <div>
+                                            <span style={{ fontSize: '0.84rem', fontWeight: 600, display: 'block' }}>{page.title}</span>
+                                            <span style={{ fontSize: '0.74rem', color: 'var(--muted)' }}>
+                                              {page.path} • {isUpcoming ? 'Փակ է (Upcoming)' : 'Բաց է (Ակտիվ)'}
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                          <button
+                                            type="button"
+                                            onClick={() => togglePageUpcomingQuick(page.key, !isUpcoming)}
+                                            disabled={isUpdating}
+                                            style={{
+                                              background: isUpcoming ? 'linear-gradient(135deg, #0088FE 0%, #0055b3 100%)' : 'rgba(255, 255, 255, 0.05)',
+                                              color: isUpcoming ? '#ffffff' : 'var(--muted)',
+                                              border: '1px solid ' + (isUpcoming ? '#0088FE' : 'var(--panel-border)'),
+                                              borderRadius: '16px',
+                                              padding: '4px 10px',
+                                              fontSize: '0.75rem',
+                                              fontWeight: 600,
+                                              cursor: isUpdating ? 'wait' : 'pointer'
+                                            }}
+                                          >
+                                            {isUpdating ? '...' : (isUpcoming ? 'Upcoming' : 'Ակտիվ')}
+                                          </button>
+                                          <hd-switch 
+                                            checked={isUpcoming} 
+                                            data-thickness="4px"
+                                            onChange={(e: any) => togglePageUpcomingQuick(page.key, e.target.checked)} 
+                                          />
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Card: Coming Soon Texts & Info */}
+                            <div style={{
+                              background: 'var(--panel)',
+                              border: '1px solid var(--panel-border)',
+                              borderRadius: '16px',
+                              padding: '24px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '20px'
+                            }}>
+                              <div>
+                                <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <span className="hd-icon icon-Chat-Bubble" style={{ color: '#ffbb28' }} />
+                                  Սպասման (Coming Soon) Էջի Տեքստեր
+                                </h4>
+                                <p style={{ fontSize: '0.82rem', color: 'var(--muted)', margin: '6px 0 0 0', lineHeight: 1.45 }}>
+                                  Կարգավորեք սպասման էջի վերնագրերը, նկարագրությունները և ցուցադրվող կապի տվյալները։
+                                </p>
+                              </div>
+
+                              <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                  <div>
+                                    <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Վերնագիր (🇦🇲 Հայերեն)</label>
+                                    <hd-input 
+                                      placeholder="Շուտով..."
+                                      value={upcomingTitleHy}
+                                      onInput={(e: any) => setUpcomingTitleHy(e.target.value)}
+                                      data-width="100%"
+                                      data-height="36px"
+                                      data-font-size="14pt"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Title (🇬🇧 English)</label>
+                                    <hd-input 
+                                      placeholder="Coming Soon..."
+                                      value={upcomingTitleEn}
+                                      onInput={(e: any) => setUpcomingTitleEn(e.target.value)}
+                                      data-width="100%"
+                                      data-height="36px"
+                                      data-font-size="14pt"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Նկարագրություն (🇦🇲 Հայերեն)</label>
+                                  <hd-textarea 
+                                    placeholder="Մանրամասներ..."
+                                    value={upcomingDescHy}
+                                    onInput={(e: any) => setUpcomingDescHy(e.target.value)}
+                                    data-width="100%"
+                                    data-disable-horizontal-resize="true"
+                                    style={{ minHeight: '60px' }}
+                                    data-font-size="14pt"
+                                    data-height="120pt"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Description (🇬🇧 English)</label>
+                                  <hd-textarea 
+                                    placeholder="Description..."
+                                    value={upcomingDescEn}
+                                    onInput={(e: any) => setUpcomingDescEn(e.target.value)}
+                                    data-width="100%"
+                                    data-disable-horizontal-resize="true"
+                                    style={{ minHeight: '60px' }}
+                                    data-font-size="14pt"
+                                    data-height="120pt"
+                                  />
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                  <div>
+                                    <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Սպասման Էլ. հասցե</label>
+                                    <hd-input 
+                                      placeholder="info@hdesign.am"
+                                      value={upcomingEmail}
+                                      onInput={(e: any) => setUpcomingEmail(e.target.value)}
+                                      data-width="100%"
+                                      data-height="36px"
+                                      data-font-size="14pt"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Սպասման Հեռախոս</label>
+                                    <hd-input 
+                                      placeholder="+374 99 00 00 00"
+                                      value={upcomingTel}
+                                      onInput={(e: any) => setUpcomingTel(e.target.value)}
+                                      data-width="100%"
+                                      data-height="36px"
+                                      data-font-size="14pt"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                                  <hd-button 
+                                    type="submit" 
+                                    data-thickness="3px"
+                                    data-width="180px"
+                                    data-height="38px"
+                                    data-font-size="0.84rem"
+                                    disabled={savingSettings}
+                                  >
+                                    {savingSettings ? 'Պահվում է...' : 'Պահել Տեքստերը'}
+                                  </hd-button>
+                                </div>
+                              </form>
+
+                              {/* Per-Page Upcoming Texts */}
+                              <div style={{ borderTop: '1px solid var(--panel-border)', paddingTop: '16px' }}>
+                                <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text)', display: 'block', marginBottom: '10px' }}>
+                                  Էջերի Առանձին Upcoming Տեքստեր՝
+                                </span>
+
+                                <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                    <div>
+                                      <label style={{ fontSize: '0.76rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Էջի Վերնագիր (Հայերեն)</label>
+                                      <hd-input 
+                                        value={pageUpcomingTitleHy}
+                                        onInput={(e: any) => setPageUpcomingTitleHy(e.target.value)}
+                                        data-width="100%"
+                                        data-height="34px"
+                                        data-font-size="14pt"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label style={{ fontSize: '0.76rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Page Title (English)</label>
+                                      <hd-input 
+                                        value={pageUpcomingTitleEn}
+                                        onInput={(e: any) => setPageUpcomingTitleEn(e.target.value)}
+                                        data-width="100%"
+                                        data-height="34px"
+                                        data-font-size="14pt"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                    <div>
+                                      <label style={{ fontSize: '0.76rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Էջի Նկարագրություն (Հայերեն)</label>
+                                      <hd-textarea 
+                                        value={pageUpcomingDescHy}
+                                        onInput={(e: any) => setPageUpcomingDescHy(e.target.value)}
+                                        data-width="100%"
+                                        data-disable-horizontal-resize="true"
+                                        style={{ minHeight: '50px' }}
+                                        data-font-size="14pt"
+                                        data-height="100pt"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label style={{ fontSize: '0.76rem', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Page Desc (English)</label>
+                                      <hd-textarea 
+                                        value={pageUpcomingDescEn}
+                                        onInput={(e: any) => setPageUpcomingDescEn(e.target.value)}
+                                        data-width="100%"
+                                        data-disable-horizontal-resize="true"
+                                        style={{ minHeight: '50px' }}
+                                        data-font-size="14pt"
+                                        data-height="100pt"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                    <hd-button 
+                                      type="submit" 
+                                      data-thickness="3px"
+                                      data-width="210px"
+                                      data-height="36px"
+                                      data-font-size="0.82rem"
+                                      disabled={savingSettings}
+                                    >
+                                      {savingSettings ? 'Պահվում է...' : 'Պահել Էջի Տեքստերը'}
+                                    </hd-button>
+                                  </div>
+                                </form>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* SECTION 2: Identity & Contacts */}
+                      {showIdentity && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid var(--panel-border)', paddingBottom: '10px' }}>
+                            <span className="hd-icon icon-Profile" style={{ color: '#00C49F', fontSize: '1.2rem' }} />
+                            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>Կայքի Ինքնություն և Կոնտակտներ (Identity & Contacts)</h3>
+                          </div>
+
+                          <div className="personalization-form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '24px', alignItems: 'start' }}>
+                            
+                            {/* Card: Website Identity & SEO */}
+                            <div style={{
+                              background: 'var(--panel)',
+                              border: '1px solid var(--panel-border)',
+                              borderRadius: '16px',
+                              padding: '24px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '20px'
+                            }}>
+                              <div>
+                                <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <span className="hd-icon icon-Earth" style={{ color: '#00C49F' }} />
+                                  Կայքի Վերնագիր և SEO
+                                </h4>
+                                <p style={{ fontSize: '0.82rem', color: 'var(--muted)', margin: '6px 0 0 0', lineHeight: 1.45 }}>
+                                  Սահմանեք կայքի գլխավոր անվանումը և որոնողական համակարգերի (SEO) նկարագրությունները։
+                                </p>
+                              </div>
+
+                              <form onSubmit={handleSavePersonalization} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                <div>
+                                  <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Կայքի Անվանում (🇦🇲 Հայերեն)</label>
+                                  <hd-input 
+                                    type="text"
+                                    placeholder="Կայքի հայերեն վերնագիրը..."
+                                    value={personalization.site_title_hy}
+                                    onInput={(e: any) => setPersonalization(prev => ({ ...prev, site_title_hy: e.target.value }))}
+                                    data-width="100%"
+                                    data-height="38px"
+                                    data-font-size="14pt"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Site Title (🇬🇧 English)</label>
+                                  <hd-input 
+                                    type="text"
+                                    placeholder="English site title..."
+                                    value={personalization.site_title_en}
+                                    onInput={(e: any) => setPersonalization(prev => ({ ...prev, site_title_en: e.target.value }))}
+                                    data-width="100%"
+                                    data-height="38px"
+                                    data-font-size="14pt"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Կայքի Նկարագրություն (🇦🇲 Հայերեն)</label>
+                                  <hd-textarea 
+                                    placeholder="Մուտքագրեք կայքի նկարագրությունը..."
+                                    value={personalization.site_desc_hy}
+                                    onInput={(e: any) => setPersonalization(prev => ({ ...prev, site_desc_hy: e.target.value }))}
+                                    data-width="100%"
+                                    data-disable-horizontal-resize="true"
+                                    style={{ minHeight: '70px' }}
+                                    data-font-size="14pt"
+                                    data-height="140pt"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Site Description (🇬🇧 English)</label>
+                                  <hd-textarea 
+                                    placeholder="Enter English site description..."
+                                    value={personalization.site_desc_en}
+                                    onInput={(e: any) => setPersonalization(prev => ({ ...prev, site_desc_en: e.target.value }))}
+                                    data-width="100%"
+                                    data-disable-horizontal-resize="true"
+                                    style={{ minHeight: '70px' }}
+                                    data-font-size="14pt"
+                                    data-height="140pt"
+                                  />
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                                  <hd-button 
+                                    type="submit" 
+                                    data-thickness="3px"
+                                    data-width="180px"
+                                    data-height="38px"
+                                    data-font-size="0.84rem"
+                                  >
+                                    Պահել Վերնագիրը
+                                  </hd-button>
+                                </div>
+                              </form>
+                            </div>
+
+                            {/* Card: Website Contacts */}
+                            <div style={{
+                              background: 'var(--panel)',
+                              border: '1px solid var(--panel-border)',
+                              borderRadius: '16px',
+                              padding: '24px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '20px'
+                            }}>
+                              <div>
+                                <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <span className="hd-icon icon-Call" style={{ color: '#00C49F' }} />
+                                  Կոնտակտային Տվյալներ
+                                </h4>
+                                <p style={{ fontSize: '0.82rem', color: 'var(--muted)', margin: '6px 0 0 0', lineHeight: 1.45 }}>
+                                  Կառավարեք կայքի պաշտոնական էլ․ հասցեն, հեռախոսահամարն ու հասցեն։
+                                </p>
+                              </div>
+
+                              <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                <div>
+                                  <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Էլ. հասցե (Email)</label>
+                                  <hd-input 
+                                    type="text"
+                                    placeholder="hrant@hakobian.am"
+                                    value={contactEmail}
+                                    onInput={(e: any) => setContactEmail(e.target.value)}
+                                    data-width="100%"
+                                    data-height="38px"
+                                    data-font-size="14pt"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Հեռախոսահամար (Phone)</label>
+                                  <hd-input 
+                                    type="text"
+                                    placeholder="+374 00 000000"
+                                    value={contactTel}
+                                    onInput={(e: any) => setContactTel(e.target.value)}
+                                    data-width="100%"
+                                    data-height="38px"
+                                    data-font-size="14pt"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Հասցե (🇦🇲 Հայերեն)</label>
+                                  <hd-input 
+                                    type="text"
+                                    placeholder="Երևան, Հայաստան"
+                                    value={contactAddressHy}
+                                    onInput={(e: any) => setContactAddressHy(e.target.value)}
+                                    data-width="100%"
+                                    data-height="38px"
+                                    data-font-size="14pt"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Address (🇬🇧 English)</label>
+                                  <hd-input 
+                                    type="text"
+                                    placeholder="Yerevan, Armenia"
+                                    value={contactAddressEn}
+                                    onInput={(e: any) => setContactAddressEn(e.target.value)}
+                                    data-width="100%"
+                                    data-height="38px"
+                                    data-font-size="14pt"
+                                  />
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                                  <hd-button 
+                                    type="submit" 
+                                    data-thickness="3px"
+                                    data-width="180px"
+                                    data-height="38px"
+                                    data-font-size="0.84rem"
+                                    disabled={savingSettings}
+                                  >
+                                    {savingSettings ? 'Պահվում է...' : 'Պահել Կոնտակտները'}
+                                  </hd-button>
+                                </div>
+                              </form>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* SECTION 3: Appearance & Font */}
+                      {showAppearance && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid var(--panel-border)', paddingBottom: '10px' }}>
+                            <span className="hd-icon icon-Pencil" style={{ color: '#00C49F', fontSize: '1.2rem' }} />
+                            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>Տեսք, Տառատեսակ և Էջաշարժ (Appearance & Typography)</h3>
+                          </div>
+
+                          <div className="personalization-form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '24px', alignItems: 'start' }}>
+                            
+                            {/* Card: Site Font */}
+                            <div style={{
+                              background: 'var(--panel)',
+                              border: '1px solid var(--panel-border)',
+                              borderRadius: '16px',
+                              padding: '24px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '20px'
+                            }}>
+                              <div>
+                                <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <span className="hd-icon icon-Pencil" style={{ color: '#00C49F' }} />
+                                  Կայքի Ընդհանուր Տառատեսակ (Site Font)
+                                </h4>
+                                <p style={{ fontSize: '0.82rem', color: 'var(--muted)', margin: '6px 0 0 0', lineHeight: 1.45 }}>
+                                  Փոխեք կայքի ընդհանուր տառատեսակը՝ վերբեռնելով նոր ֆայլ (.ttf, .otf, .woff2) կամ նշելով հղում։
+                                </p>
+                              </div>
+
+                              <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                    <label style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Տառատեսակի URL կամ Նիշք</label>
+                                    <button
+                                      type="button"
+                                      onClick={() => setMediaPickerConfig({
+                                        isOpen: true,
+                                        target: 'site_font',
+                                        allowedTypes: ['font'],
+                                        title: 'Ընտրել Կայքի Ընդհանուր Տառատեսակ (Site Font)',
+                                        currentValue: siteFontUrl
+                                      })}
+                                      style={{
+                                        background: 'rgba(74, 137, 124, 0.15)',
+                                        color: 'var(--accent)',
+                                        border: '1px solid var(--accent)',
+                                        borderRadius: '6px',
+                                        padding: '4px 10px',
+                                        fontSize: '0.74rem',
+                                        fontWeight: 600,
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      <FolderIcon size={15} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Ընտրել Դարանից
+                                    </button>
+                                  </div>
+                                  <hd-input 
+                                    placeholder="https://..."
+                                    value={siteFontUrl}
+                                    onInput={(e: any) => setSiteFontUrl(e.target.value)}
+                                    data-width="100%"
+                                    data-height="38px"
+                                  />
+                                  <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <input 
+                                      type="file" 
+                                      accept=".ttf,.otf,.woff,.woff2" 
+                                      onChange={(e) => {
+                                        if (e.target.files && e.target.files[0]) {
+                                          handleUploadSiteFont(e.target.files[0]);
+                                        }
+                                      }}
+                                      style={{ fontSize: '0.8rem', color: 'var(--muted)' }}
+                                    />
+                                    {isUploadingFont && <span style={{ fontSize: '0.78rem', color: 'var(--primary-color)' }}>Վերբեռնվում է...</span>}
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                  <button 
+                                    type="button"
+                                    onClick={() => {
+                                      setSiteFontUrl('https://api.hakobian.am/libs/v1/fonts/hdesign.ttf');
+                                      setSiteFontName('HDesign');
+                                    }}
+                                    style={{
+                                      background: 'rgba(255, 255, 255, 0.04)',
+                                      border: '1px solid var(--panel-border)',
+                                      borderRadius: '8px',
+                                      padding: '7px 12px',
+                                      color: 'var(--muted)',
+                                      fontSize: '0.78rem',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    Վերականգնել Լռելյայն Տառատեսակը
+                                  </button>
+                                </div>
+
+                                {/* Live Font Preview */}
+                                <div style={{
+                                  background: 'rgba(0, 0, 0, 0.25)',
+                                  border: '1px solid var(--panel-border)',
+                                  borderRadius: '12px',
+                                  padding: '16px'
+                                }}>
+                                  <span style={{ fontSize: '0.72rem', color: 'var(--muted)', display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    Ուղիղ Նախադիտում (Live Font Preview)
+                                  </span>
+                                  <style dangerouslySetInnerHTML={{
+                                    __html: `@font-face { font-family: 'AdminFontPreview'; src: url('${siteFontUrl}'); }`
+                                  }} />
+                                  <div style={{ fontFamily: "'AdminFontPreview', sans-serif", fontSize: '1.15rem', color: 'var(--text)', lineHeight: 1.45 }}>
+                                    Հրանտ Հակոբյան Դիզայն Ստուդիա — HDesign Design System & Typography 2026. 0123456789
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                                  <hd-button 
+                                    type="submit" 
+                                    data-thickness="3px"
+                                    data-width="180px"
+                                    data-height="38px"
+                                    data-font-size="0.84rem"
+                                    disabled={savingSettings}
+                                  >
+                                    {savingSettings ? 'Պահվում է...' : 'Պահել Տառատեսակը'}
+                                  </hd-button>
+                                </div>
+                              </form>
+                            </div>
+
+                            {/* Card: Smooth Scroll */}
+                            <div style={{
+                              background: 'var(--panel)',
+                              border: '1px solid var(--panel-border)',
+                              borderRadius: '16px',
+                              padding: '24px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '20px'
+                            }}>
+                              <div>
+                                <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <span className="hd-icon icon-Move" style={{ color: '#00C49F' }} />
+                                  Սահուն Էջաշարժ (Lenis Smooth Scroll)
+                                </h4>
+                                <p style={{ fontSize: '0.82rem', color: 'var(--muted)', margin: '6px 0 0 0', lineHeight: 1.45 }}>
+                                  Կառավարեք կայքի իներցիոն սահուն էջաշարժը (Smooth Scroll)։ Անջատելու դեպքում կգործի բրաուզերի ստանդարտ էջաշարժը։
+                                </p>
+                              </div>
+
+                              <div style={{
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'space-between',
-                                padding: '12px 16px',
-                                background: isUpcoming ? 'rgba(0, 136, 254, 0.05)' : 'rgba(255,255,255,0.02)',
+                                padding: '16px',
+                                background: smoothScrollEnabled ? 'rgba(0, 196, 159, 0.08)' : 'rgba(255,255,255,0.02)',
                                 borderRadius: '12px',
-                                border: '1px solid ' + (isUpcoming ? 'rgba(0, 136, 254, 0.3)' : 'var(--panel-border)'),
-                                transition: 'all 0.2s ease'
-                              }}
-                            >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <span style={{ fontSize: '1.2rem' }}>{page.icon}</span>
+                                border: `1px solid ${smoothScrollEnabled ? 'rgba(0, 196, 159, 0.3)' : 'var(--panel-border)'}`
+                              }}>
                                 <div>
-                                  <span style={{ fontSize: '0.88rem', fontWeight: 600, display: 'block' }}>{page.title}</span>
-                                  <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
-                                    {page.path} • {isUpcoming ? 'Upcoming ռեժիմ (Փակ է)' : 'Ակտիվ (Բաց է)'}
+                                  <span style={{ fontSize: '0.9rem', fontWeight: 700, display: 'block' }}>Իներցիոն Էջաշարժ</span>
+                                  <span style={{ fontSize: '0.78rem', color: smoothScrollEnabled ? '#00C49F' : 'var(--muted)' }}>
+                                    {smoothScrollEnabled ? 'Ակտիվացված է (կայքը սահում է Lenis շարժիչով)' : 'Անջատված է (բրաուզերի ստանդարտ scroll)'}
                                   </span>
                                 </div>
-                              </div>
 
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <button
-                                  type="button"
-                                  onClick={() => togglePageUpcomingQuick(page.key, !isUpcoming)}
-                                  disabled={isUpdating}
-                                  style={{
-                                    background: isUpcoming ? 'linear-gradient(135deg, #0088FE 0%, #0055b3 100%)' : 'rgba(255, 255, 255, 0.05)',
-                                    color: isUpcoming ? '#ffffff' : 'var(--muted)',
-                                    border: '1px solid ' + (isUpcoming ? '#0088FE' : 'var(--panel-border)'),
-                                    borderRadius: '20px',
-                                    padding: '5px 12px',
-                                    fontSize: '0.78rem',
-                                    fontWeight: 600,
-                                    cursor: isUpdating ? 'wait' : 'pointer',
-                                    transition: 'all 0.2s ease',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '6px'
-                                  }}
-                                >
-                                  <span style={{
-                                    width: '7px',
-                                    height: '7px',
-                                    borderRadius: '50%',
-                                    background: isUpcoming ? '#ffffff' : '#888888',
-                                    display: 'inline-block'
-                                  }} />
-                                  {isUpdating ? 'Փոխվում է...' : (isUpcoming ? 'Upcoming' : 'Ակտիվ')}
-                                </button>
-
-                                <hd-switch 
-                                  checked={isUpcoming} 
-                                  data-thickness="4px"
-                                  onChange={(e: any) => togglePageUpcomingQuick(page.key, e.target.checked)} 
-                                />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Card: Smooth Scroll (Lenis) */}
-                    <div style={{
-                      background: 'var(--panel)',
-                      border: '1px solid var(--panel-border)',
-                      borderRadius: '16px',
-                      padding: '24px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '16px'
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-                        <div>
-                          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0 0 6px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span className="icon-Move" style={{ color: '#00C49F' }} />
-                            Սահուն Էջաշարժ (Smooth Scroll)
-                          </h3>
-                          <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: 0, maxWidth: '600px', lineHeight: 1.5 }}>
-                            Միացրեք կամ անջատեք կայքի իներցիոն սահուն էջաշարժը (Lenis Smooth Scroll)։ Անջատված վիճակում (լռելյայն) գործում է բրաուզերի բնական էջաշարժը։
-                          </p>
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <button
-                            type="button"
-                            disabled={togglingSmoothScroll}
-                            onClick={() => toggleSmoothScrollQuick(!smoothScrollEnabled)}
-                            style={{
-                              background: smoothScrollEnabled ? 'rgba(0, 196, 159, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                              color: smoothScrollEnabled ? '#00C49F' : 'var(--muted)',
-                              border: `1px solid ${smoothScrollEnabled ? '#00C49F' : 'var(--panel-border)'}`,
-                              borderRadius: '20px',
-                              padding: '6px 14px',
-                              fontSize: '0.8rem',
-                              fontWeight: 600,
-                              cursor: togglingSmoothScroll ? 'not-allowed' : 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px'
-                            }}
-                          >
-                            <span style={{
-                              width: '8px',
-                              height: '8px',
-                              borderRadius: '50%',
-                              background: smoothScrollEnabled ? '#00C49F' : '#888888',
-                              display: 'inline-block'
-                            }} />
-                            {togglingSmoothScroll ? 'Փոխվում է...' : (smoothScrollEnabled ? 'Միացված է' : 'Անջատված է')}
-                          </button>
-
-                          <hd-switch 
-                            checked={smoothScrollEnabled} 
-                            data-thickness="4px"
-                            onChange={(e: any) => toggleSmoothScrollQuick(e.target.checked)} 
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Card: General Font Management */}
-                    <div style={{
-                      background: 'var(--panel)',
-                      border: '1px solid var(--panel-border)',
-                      borderRadius: '16px',
-                      padding: '24px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '20px'
-                    }}>
-                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span className="icon-Pencil" style={{ color: '#00C49F' }} />
-                        Ընդհանուր Տառատեսակ (General Site Font)
-                      </h3>
-
-                      <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: 0, lineHeight: 1.5 }}>
-                        Փոխեք կայքի ընդհանուր տառատեսակը՝ վերբեռնելով նոր `.ttf`, `.otf`, `.woff`, `.woff2` ֆայլ կամ տեղադրելով արտաքին հղում (URL)։
-                      </p>
-
-                      <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                            <label style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>Տառատեսակի URL կամ Նիշք</label>
-                            <button
-                              type="button"
-                              onClick={() => setMediaPickerConfig({
-                                isOpen: true,
-                                target: 'site_font',
-                                allowedTypes: ['font'],
-                                title: 'Ընտրել Կայքի Ընդհանուր Տառատեսակ (Site Font)',
-                                currentValue: siteFontUrl
-                              })}
-                              style={{
-                                background: 'rgba(74, 137, 124, 0.15)',
-                                color: 'var(--accent)',
-                                border: '1px solid var(--accent)',
-                                borderRadius: '6px',
-                                padding: '4px 10px',
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-                                cursor: 'pointer'
-                              }}
-                            >
-                              <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Ընտրել Մեդիայից
-                            </button>
-                          </div>
-                          <hd-input 
-                            placeholder="https://..."
-                            value={siteFontUrl}
-                            onInput={(e: any) => setSiteFontUrl(e.target.value)}
-                            data-width="100%"
-                            data-height="38px"
-                          />
-                          <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <input 
-                              type="file" 
-                              accept=".ttf,.otf,.woff,.woff2" 
-                              onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                  handleUploadSiteFont(e.target.files[0]);
-                                }
-                              }}
-                              style={{ fontSize: '0.82rem', color: 'var(--muted)' }}
-                            />
-                            {isUploadingFont && <span style={{ fontSize: '0.78rem', color: 'var(--primary-color)' }}>Վերբեռնվում է...</span>}
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                          <button 
-                            type="button"
-                            onClick={() => {
-                              setSiteFontUrl('https://api.hakobian.am/libs/v1/fonts/hdesign.ttf');
-                              setSiteFontName('HDesign');
-                            }}
-                            style={{
-                              background: 'rgba(255, 255, 255, 0.05)',
-                              border: '1px solid var(--panel-border)',
-                              borderRadius: '8px',
-                              padding: '8px 14px',
-                              color: 'var(--muted)',
-                              fontSize: '0.8rem',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            Վերականգնել Լռելյայն Տառատեսակը
-                          </button>
-                        </div>
-
-                        {/* Dynamic Font Preview Box */}
-                        <div style={{
-                          background: 'rgba(0, 0, 0, 0.2)',
-                          border: '1px solid var(--panel-border)',
-                          borderRadius: '12px',
-                          padding: '16px',
-                          marginTop: '8px'
-                        }}>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--muted)', display: 'block', marginBottom: '8px', textTransform: 'uppercase' }}>Նախադիտում (Live Font Preview)</span>
-                          <style dangerouslySetInnerHTML={{
-                            __html: `@font-face { font-family: 'AdminFontPreview'; src: url('${siteFontUrl}'); }`
-                          }} />
-                          <div style={{ fontFamily: "'AdminFontPreview', sans-serif", fontSize: '1.2rem', color: 'var(--text)', lineHeight: 1.4 }}>
-                            Հրանտ Հակոբյան Դիզայն Ստուդիա — HDesign Design System & Studio Font 2026. 1234567890
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
-                          <hd-button 
-                            type="submit" 
-                            data-thickness="3px"
-                            data-width="180px"
-                            data-height="40px"
-                            data-font-size="0.85rem"
-                            disabled={savingSettings}
-                          >
-                            {savingSettings ? 'Պահպանվում է...' : 'Պահպանել Տառատեսակը'}
-                          </hd-button>
-                        </div>
-                      </form>
-                    </div>
-
-                    {/* Card: Design System Video per language */}
-                    <div style={{
-                      background: 'var(--panel)',
-                      border: '1px solid var(--panel-border)',
-                      borderRadius: '16px',
-                      padding: '24px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '20px'
-                    }}>
-                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span className="icon-Play" style={{ color: '#ff4081' }} />
-                        Դիզայնի Համակարգի Տեսանյութ (Design System Video)
-                      </h3>
-
-                      <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: 0, lineHeight: 1.5 }}>
-                        Կարգավորեք «Դիզայնի համակարգ» բաժնի տեսանյութերը և պաստառները ըստ կայքի լեզուների (Հայերեն և Անգլերեն)։
-                      </p>
-
-                      <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        {/* Armenian Video & Poster */}
-                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--panel-border)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                          <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--primary-color)', fontWeight: 700 }}>🇦🇲 Հայերեն (Armenian) Տեսանյութ</h4>
-                          
-                          <div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                              <label style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Տեսանյութի URL (.mp4)</label>
-                              <button
-                                type="button"
-                                onClick={() => setMediaPickerConfig({
-                                  isOpen: true,
-                                  target: 'video_hy',
-                                  allowedTypes: ['video'],
-                                  title: 'Ընտրել Հայերեն Տեսանյութ (Armenian Video)',
-                                  currentValue: designSystemVideoHy
-                                })}
-                                style={{
-                                  background: 'rgba(74, 137, 124, 0.15)',
-                                  color: 'var(--accent)',
-                                  border: '1px solid var(--accent)',
-                                  borderRadius: '6px',
-                                  padding: '2px 8px',
-                                  fontSize: '0.72rem',
-                                  fontWeight: 600,
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Ընտրել Մեդիայից
-                              </button>
-                            </div>
-                            <hd-input 
-                              placeholder="https://... video.mp4"
-                              value={designSystemVideoHy}
-                              onInput={(e: any) => setDesignSystemVideoHy(e.target.value)}
-                              data-width="100%"
-                              data-height="36px"
-                            />
-                            <input 
-                              type="file" 
-                              accept="video/*" 
-                              onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                  handleUploadVideo(e.target.files[0], 'video_hy');
-                                }
-                              }}
-                              style={{ fontSize: '0.8rem', marginTop: '6px', color: 'var(--muted)' }}
-                            />
-                            {isUploadingDsVideoHy && <span style={{ fontSize: '0.75rem', color: 'var(--primary-color)' }}> Վերբեռնվում է...</span>}
-                          </div>
-
-                          <div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                              <label style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Պաստառի Նկարի URL (Poster Image)</label>
-                              <button
-                                type="button"
-                                onClick={() => setMediaPickerConfig({
-                                  isOpen: true,
-                                  target: 'poster_hy',
-                                  allowedTypes: ['image'],
-                                  title: 'Ընտրել Հայերեն Պաստառի Նկար (Armenian Poster)',
-                                  currentValue: designSystemPosterHy
-                                })}
-                                style={{
-                                  background: 'rgba(74, 137, 124, 0.15)',
-                                  color: 'var(--accent)',
-                                  border: '1px solid var(--accent)',
-                                  borderRadius: '6px',
-                                  padding: '2px 8px',
-                                  fontSize: '0.72rem',
-                                  fontWeight: 600,
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Ընտրել Մեդիայից
-                              </button>
-                            </div>
-                            <hd-input 
-                              placeholder="https://... poster.jpg"
-                              value={designSystemPosterHy}
-                              onInput={(e: any) => setDesignSystemPosterHy(e.target.value)}
-                              data-width="100%"
-                              data-height="36px"
-                            />
-                            <input 
-                              type="file" 
-                              accept="image/*" 
-                              onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                  handleUploadVideo(e.target.files[0], 'poster_hy');
-                                }
-                              }}
-                              style={{ fontSize: '0.8rem', marginTop: '6px', color: 'var(--muted)' }}
-                            />
-                            {isUploadingDsPosterHy && <span style={{ fontSize: '0.75rem', color: 'var(--primary-color)' }}> Վերբեռնվում է...</span>}
-                          </div>
-                        </div>
-
-                        {/* English Video & Poster */}
-                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--panel-border)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                          <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--primary-color)', fontWeight: 700 }}>🇬🇧 Անգլերեն (English) Տեսանյութ</h4>
-                          
-                          <div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                              <label style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Video URL (.mp4)</label>
-                              <button
-                                type="button"
-                                onClick={() => setMediaPickerConfig({
-                                  isOpen: true,
-                                  target: 'video_en',
-                                  allowedTypes: ['video'],
-                                  title: 'Ընտրել Անգլերեն Տեսանյութ (English Video)',
-                                  currentValue: designSystemVideoEn
-                                })}
-                                style={{
-                                  background: 'rgba(74, 137, 124, 0.15)',
-                                  color: 'var(--accent)',
-                                  border: '1px solid var(--accent)',
-                                  borderRadius: '6px',
-                                  padding: '2px 8px',
-                                  fontSize: '0.72rem',
-                                  fontWeight: 600,
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Ընտրել Մեդիայից
-                              </button>
-                            </div>
-                            <hd-input 
-                              placeholder="https://... video.mp4"
-                              value={designSystemVideoEn}
-                              onInput={(e: any) => setDesignSystemVideoEn(e.target.value)}
-                              data-width="100%"
-                              data-height="36px"
-                            />
-                            <input 
-                              type="file" 
-                              accept="video/*" 
-                              onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                  handleUploadVideo(e.target.files[0], 'video_en');
-                                }
-                              }}
-                              style={{ fontSize: '0.8rem', marginTop: '6px', color: 'var(--muted)' }}
-                            />
-                            {isUploadingDsVideoEn && <span style={{ fontSize: '0.75rem', color: 'var(--primary-color)' }}> Վերբեռնվում է...</span>}
-                          </div>
-
-                          <div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                              <label style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Poster Image URL</label>
-                              <button
-                                type="button"
-                                onClick={() => setMediaPickerConfig({
-                                  isOpen: true,
-                                  target: 'poster_en',
-                                  allowedTypes: ['image'],
-                                  title: 'Ընտրել Անգլերեն Պաստառի Նկար (English Poster)',
-                                  currentValue: designSystemPosterEn
-                                })}
-                                style={{
-                                  background: 'rgba(74, 137, 124, 0.15)',
-                                  color: 'var(--accent)',
-                                  border: '1px solid var(--accent)',
-                                  borderRadius: '6px',
-                                  padding: '2px 8px',
-                                  fontSize: '0.72rem',
-                                  fontWeight: 600,
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Ընտրել Մեդիայից
-                              </button>
-                            </div>
-                            <hd-input 
-                              placeholder="https://... poster.jpg"
-                              value={designSystemPosterEn}
-                              onInput={(e: any) => setDesignSystemPosterEn(e.target.value)}
-                              data-width="100%"
-                              data-height="36px"
-                            />
-                            <input 
-                              type="file" 
-                              accept="image/*" 
-                              onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                  handleUploadVideo(e.target.files[0], 'poster_en');
-                                }
-                              }}
-                              style={{ fontSize: '0.8rem', marginTop: '6px', color: 'var(--muted)' }}
-                            />
-                            {isUploadingDsPosterEn && <span style={{ fontSize: '0.75rem', color: 'var(--primary-color)' }}> Վերբեռնվում է...</span>}
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                          <hd-button 
-                            type="submit" 
-                            data-thickness="3px"
-                            data-width="200px"
-                            data-height="40px"
-                            data-font-size="0.85rem"
-                            disabled={savingSettings}
-                          >
-                            {savingSettings ? 'Պահպանվում է...' : 'Պահպանել Տեսանյութերը'}
-                          </hd-button>
-                        </div>
-                      </form>
-                    </div>
-
-                    {/* Card: Software Icons Management (Ծրագրերի պատկերակներ) */}
-                    <div style={{
-                      background: 'var(--panel)',
-                      border: '1px solid var(--panel-border)',
-                      borderRadius: '16px',
-                      padding: '24px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '20px'
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                        <div>
-                          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span className="icon-Image" style={{ color: 'var(--accent)' }} />
-                            Ծրագրերի Պատկերակներ (Software Icons)
-                          </h3>
-                          <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: '4px 0 0 0', lineHeight: 1.5 }}>
-                            Կարգավորեք տարբեր ծրագրերի (Adobe Illustrator, Photoshop, Figma, Blender և այլն) գլոբալ պատկերակները։ Այստեղ սահմանված պատկերակները ավտոմատ կերպով կցուցադրվեն կայքի ողջ հավելվածներում և խրվակներում։
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Hidden file input for uploading software icon */}
-                      <input 
-                        ref={softwareIconFileInputRef}
-                        type="file" 
-                        accept="image/*,.svg" 
-                        style={{ display: 'none' }}
-                        onChange={(e) => {
-                          if (e.target.files && e.target.files[0]) {
-                            handleUploadSoftwareIconFile(e.target.files[0]);
-                          }
-                        }}
-                      />
-
-                      <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        {/* Preset programs grid */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                          <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text)' }}>
-                            Հիմնական ծրագրեր և պատկերակներ՝
-                          </span>
-                          
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
-                            {[
-                              { name: 'Adobe Illustrator', defaultIcon: '/icons/illustrator.svg' },
-                              { name: 'Adobe Photoshop', defaultIcon: '/icons/photoshop.svg' },
-                              { name: 'Figma', defaultIcon: '/icons/figma.svg' },
-                              { name: 'Unity', defaultIcon: '/icons/unity.svg' },
-                              { name: 'After Effects', defaultIcon: '/icons/after-effects.svg' },
-                              { name: 'Blender', defaultIcon: '/icons/blender.svg' },
-                              { name: 'Adobe InDesign', defaultIcon: '/icons/indesign.svg' },
-                              { name: 'Adobe Premiere Pro', defaultIcon: '/icons/premiere.svg' },
-                              { name: 'Unreal Engine', defaultIcon: '/icons/unreal.svg' }
-                            ].map((sw) => {
-                              const currentIcon = softwareIcons[sw.name] || '';
-                              return (
-                                <div 
-                                  key={sw.name}
-                                  style={{
-                                    background: 'var(--bg)',
-                                    border: '1px solid var(--panel-border)',
-                                    borderRadius: '12px',
-                                    padding: '12px 14px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '12px'
-                                  }}
-                                >
-                                  <div
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <button
+                                    type="button"
+                                    disabled={togglingSmoothScroll}
+                                    onClick={() => toggleSmoothScrollQuick(!smoothScrollEnabled)}
                                     style={{
-                                      width: '40px',
-                                      height: '40px',
-                                      borderRadius: '10px',
-                                      background: 'var(--panel)',
-                                      border: '1px solid var(--panel-border)',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      flexShrink: 0
+                                      background: smoothScrollEnabled ? 'rgba(0, 196, 159, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                                      color: smoothScrollEnabled ? '#00C49F' : 'var(--muted)',
+                                      border: `1px solid ${smoothScrollEnabled ? '#00C49F' : 'var(--panel-border)'}`,
+                                      borderRadius: '20px',
+                                      padding: '5px 12px',
+                                      fontSize: '0.78rem',
+                                      fontWeight: 600,
+                                      cursor: togglingSmoothScroll ? 'not-allowed' : 'pointer'
                                     }}
                                   >
-                                    <SoftwareIcon name={sw.name} iconUrl={currentIcon || sw.defaultIcon} size={24} />
-                                  </div>
+                                    {togglingSmoothScroll ? 'Փոխվում է...' : (smoothScrollEnabled ? 'Միացված է' : 'Անջատված է')}
+                                  </button>
 
-                                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                    <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                      {sw.name}
-                                    </span>
-                                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                  <hd-switch 
+                                    checked={smoothScrollEnabled} 
+                                    data-thickness="4px"
+                                    onChange={(e: any) => toggleSmoothScrollQuick(e.target.checked)} 
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* SECTION 4: Media & Videos */}
+                      {showMedia && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid var(--panel-border)', paddingBottom: '10px' }}>
+                            <span className="hd-icon icon-Play" style={{ color: '#ff4081', fontSize: '1.2rem' }} />
+                            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>Դիզայնի Համակարգի Մեդիա (Design System Media)</h3>
+                          </div>
+
+                          <div style={{
+                            background: 'var(--panel)',
+                            border: '1px solid var(--panel-border)',
+                            borderRadius: '16px',
+                            padding: '24px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '20px'
+                          }}>
+                            <div>
+                              <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span className="hd-icon icon-Play" style={{ color: '#ff4081' }} />
+                                Պրոմո Տեսանյութեր և Պաստառներ ըստ Լեզուների
+                              </h4>
+                              <p style={{ fontSize: '0.82rem', color: 'var(--muted)', margin: '6px 0 0 0', lineHeight: 1.45 }}>
+                                Կարգավորեք «Դիզայնի համակարգ» բաժնի տեսանյութերը և պաստառները հայերեն և անգլերեն տարբերակներով։
+                              </p>
+                            </div>
+
+                            <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
+                                {/* Armenian Video & Poster */}
+                                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--panel-border)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                  <h4 style={{ margin: 0, fontSize: '0.88rem', color: 'var(--primary-color)', fontWeight: 700 }}>🇦🇲 Հայերեն (Armenian) Տեսանյութ</h4>
+                                  
+                                  <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                      <label style={{ fontSize: '0.76rem', color: 'var(--muted)' }}>Տեսանյութի URL (.mp4)</label>
                                       <button
                                         type="button"
-                                        onClick={() => {
-                                          setActiveSoftwareKeyForIcon(sw.name);
-                                          setMediaPickerConfig({
-                                            isOpen: true,
-                                            target: 'software_icon',
-                                            allowedTypes: ['image'],
-                                            title: `Ընտրել պատկերակ (${sw.name})`,
-                                            currentValue: currentIcon
-                                          });
-                                        }}
+                                        onClick={() => setMediaPickerConfig({
+                                          isOpen: true,
+                                          target: 'video_hy',
+                                          allowedTypes: ['video'],
+                                          title: 'Ընտրել Հայերեն Տեսանյութ (Armenian Video)',
+                                          currentValue: designSystemVideoHy
+                                        })}
                                         style={{
                                           background: 'rgba(74, 137, 124, 0.15)',
                                           color: 'var(--accent)',
@@ -9434,18 +9934,45 @@ function AdminDashboardContent() {
                                           cursor: 'pointer'
                                         }}
                                       >
-                                        <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Մեդիայից
+                                        <FolderIcon size={14} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 4 }} /> Դարանից
                                       </button>
+                                    </div>
+                                    <hd-input 
+                                      placeholder="https://... video.mp4"
+                                      value={designSystemVideoHy}
+                                      onInput={(e: any) => setDesignSystemVideoHy(e.target.value)}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                    <input 
+                                      type="file" 
+                                      accept="video/*" 
+                                      onChange={(e) => {
+                                        if (e.target.files && e.target.files[0]) {
+                                          handleUploadVideo(e.target.files[0], 'video_hy');
+                                        }
+                                      }}
+                                      style={{ fontSize: '0.78rem', marginTop: '6px', color: 'var(--muted)' }}
+                                    />
+                                    {isUploadingDsVideoHy && <span style={{ fontSize: '0.75rem', color: 'var(--primary-color)' }}> Վերբեռնվում է...</span>}
+                                  </div>
+
+                                  <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                      <label style={{ fontSize: '0.76rem', color: 'var(--muted)' }}>Պաստառի Նկարի URL (Poster)</label>
                                       <button
                                         type="button"
-                                        onClick={() => {
-                                          setActiveSoftwareKeyForIcon(sw.name);
-                                          softwareIconFileInputRef.current?.click();
-                                        }}
+                                        onClick={() => setMediaPickerConfig({
+                                          isOpen: true,
+                                          target: 'poster_hy',
+                                          allowedTypes: ['image'],
+                                          title: 'Ընտրել Հայերեն Պաստառի Նկար (Armenian Poster)',
+                                          currentValue: designSystemPosterHy
+                                        })}
                                         style={{
-                                          background: 'var(--panel)',
-                                          color: 'var(--text)',
-                                          border: '1px solid var(--panel-border)',
+                                          background: 'rgba(74, 137, 124, 0.15)',
+                                          color: 'var(--accent)',
+                                          border: '1px solid var(--accent)',
                                           borderRadius: '6px',
                                           padding: '2px 8px',
                                           fontSize: '0.7rem',
@@ -9453,651 +9980,832 @@ function AdminDashboardContent() {
                                           cursor: 'pointer'
                                         }}
                                       >
-                                        ↑ Վերբեռնել
+                                        <FolderIcon size={14} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 4 }} /> Դարանից
                                       </button>
-                                      {currentIcon && (
+                                    </div>
+                                    <hd-input 
+                                      placeholder="https://... poster.jpg"
+                                      value={designSystemPosterHy}
+                                      onInput={(e: any) => setDesignSystemPosterHy(e.target.value)}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                    <input 
+                                      type="file" 
+                                      accept="image/*" 
+                                      onChange={(e) => {
+                                        if (e.target.files && e.target.files[0]) {
+                                          handleUploadVideo(e.target.files[0], 'poster_hy');
+                                        }
+                                      }}
+                                      style={{ fontSize: '0.78rem', marginTop: '6px', color: 'var(--muted)' }}
+                                    />
+                                    {isUploadingDsPosterHy && <span style={{ fontSize: '0.75rem', color: 'var(--primary-color)' }}> Վերբեռնվում է...</span>}
+                                  </div>
+                                </div>
+
+                                {/* English Video & Poster */}
+                                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--panel-border)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                  <h4 style={{ margin: 0, fontSize: '0.88rem', color: 'var(--primary-color)', fontWeight: 700 }}>🇬🇧 Անգլերեն (English) Տեսանյութ</h4>
+                                  
+                                  <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                      <label style={{ fontSize: '0.76rem', color: 'var(--muted)' }}>Video URL (.mp4)</label>
+                                      <button
+                                        type="button"
+                                        onClick={() => setMediaPickerConfig({
+                                          isOpen: true,
+                                          target: 'video_en',
+                                          allowedTypes: ['video'],
+                                          title: 'Ընտրել Անգլերեն Տեսանյութ (English Video)',
+                                          currentValue: designSystemVideoEn
+                                        })}
+                                        style={{
+                                          background: 'rgba(74, 137, 124, 0.15)',
+                                          color: 'var(--accent)',
+                                          border: '1px solid var(--accent)',
+                                          borderRadius: '6px',
+                                          padding: '2px 8px',
+                                          fontSize: '0.7rem',
+                                          fontWeight: 600,
+                                          cursor: 'pointer'
+                                        }}
+                                      >
+                                        <FolderIcon size={14} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 4 }} /> Դարանից
+                                      </button>
+                                    </div>
+                                    <hd-input 
+                                      placeholder="https://... video.mp4"
+                                      value={designSystemVideoEn}
+                                      onInput={(e: any) => setDesignSystemVideoEn(e.target.value)}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                    <input 
+                                      type="file" 
+                                      accept="video/*" 
+                                      onChange={(e) => {
+                                        if (e.target.files && e.target.files[0]) {
+                                          handleUploadVideo(e.target.files[0], 'video_en');
+                                        }
+                                      }}
+                                      style={{ fontSize: '0.78rem', marginTop: '6px', color: 'var(--muted)' }}
+                                    />
+                                    {isUploadingDsVideoEn && <span style={{ fontSize: '0.75rem', color: 'var(--primary-color)' }}> Վերբեռնվում է...</span>}
+                                  </div>
+
+                                  <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                      <label style={{ fontSize: '0.76rem', color: 'var(--muted)' }}>Poster Image URL</label>
+                                      <button
+                                        type="button"
+                                        onClick={() => setMediaPickerConfig({
+                                          isOpen: true,
+                                          target: 'poster_en',
+                                          allowedTypes: ['image'],
+                                          title: 'Ընտրել Անգլերեն Պաստառի Նկար (English Poster)',
+                                          currentValue: designSystemPosterEn
+                                        })}
+                                        style={{
+                                          background: 'rgba(74, 137, 124, 0.15)',
+                                          color: 'var(--accent)',
+                                          border: '1px solid var(--accent)',
+                                          borderRadius: '6px',
+                                          padding: '2px 8px',
+                                          fontSize: '0.7rem',
+                                          fontWeight: 600,
+                                          cursor: 'pointer'
+                                        }}
+                                      >
+                                        <FolderIcon size={14} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 4 }} /> Դարանից
+                                      </button>
+                                    </div>
+                                    <hd-input 
+                                      placeholder="https://... poster.jpg"
+                                      value={designSystemPosterEn}
+                                      onInput={(e: any) => setDesignSystemPosterEn(e.target.value)}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                    <input 
+                                      type="file" 
+                                      accept="image/*" 
+                                      onChange={(e) => {
+                                        if (e.target.files && e.target.files[0]) {
+                                          handleUploadVideo(e.target.files[0], 'poster_en');
+                                        }
+                                      }}
+                                      style={{ fontSize: '0.78rem', marginTop: '6px', color: 'var(--muted)' }}
+                                    />
+                                    {isUploadingDsPosterEn && <span style={{ fontSize: '0.75rem', color: 'var(--primary-color)' }}> Վերբեռնվում է...</span>}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                                <hd-button 
+                                  type="submit" 
+                                  data-thickness="3px"
+                                  data-width="200px"
+                                  data-height="38px"
+                                  data-font-size="0.84rem"
+                                  disabled={savingSettings}
+                                >
+                                  {savingSettings ? 'Պահվում է...' : 'Պահել Տեսանյութերը'}
+                                </hd-button>
+                              </div>
+                            </form>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* SECTION 5: Software Icons */}
+                      {showSoftware && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid var(--panel-border)', paddingBottom: '10px' }}>
+                            <span className="hd-icon icon-Image" style={{ color: 'var(--accent)', fontSize: '1.2rem' }} />
+                            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>Ծրագրերի Պատկերակներ (Software Icons)</h3>
+                          </div>
+
+                          <div style={{
+                            background: 'var(--panel)',
+                            border: '1px solid var(--panel-border)',
+                            borderRadius: '16px',
+                            padding: '24px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '20px'
+                          }}>
+                            <div>
+                              <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span className="hd-icon icon-Image" style={{ color: 'var(--accent)' }} />
+                                Ծրագրերի Գլոբալ Պատկերակների Կառավարիչ
+                              </h4>
+                              <p style={{ fontSize: '0.82rem', color: 'var(--muted)', margin: '6px 0 0 0', lineHeight: 1.45 }}>
+                                Սահմանված պատկերակները ավտոմատ կերպով կցուցադրվեն կայքի ողջ հավելվածներում և բաժիններում։
+                              </p>
+                            </div>
+
+                            <input 
+                              ref={softwareIconFileInputRef}
+                              type="file" 
+                              accept="image/*,.svg" 
+                              style={{ display: 'none' }}
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  handleUploadSoftwareIconFile(e.target.files[0]);
+                                }
+                              }}
+                            />
+
+                            <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                              {/* Preset software grid */}
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+                                {[
+                                  { name: 'Adobe Illustrator', defaultIcon: '/icons/illustrator.svg' },
+                                  { name: 'Adobe Photoshop', defaultIcon: '/icons/photoshop.svg' },
+                                  { name: 'Figma', defaultIcon: '/icons/figma.svg' },
+                                  { name: 'Unity', defaultIcon: '/icons/unity.svg' },
+                                  { name: 'After Effects', defaultIcon: '/icons/after-effects.svg' },
+                                  { name: 'Blender', defaultIcon: '/icons/blender.svg' },
+                                  { name: 'Adobe InDesign', defaultIcon: '/icons/indesign.svg' },
+                                  { name: 'Adobe Premiere Pro', defaultIcon: '/icons/premiere.svg' },
+                                  { name: 'Unreal Engine', defaultIcon: '/icons/unreal.svg' }
+                                ].map((sw) => {
+                                  const currentIcon = softwareIcons[sw.name] || '';
+                                  return (
+                                    <div 
+                                      key={sw.name}
+                                      style={{
+                                        background: 'var(--bg)',
+                                        border: '1px solid var(--panel-border)',
+                                        borderRadius: '12px',
+                                        padding: '12px 14px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px'
+                                      }}
+                                    >
+                                      <div
+                                        style={{
+                                          width: '40px',
+                                          height: '40px',
+                                          borderRadius: '10px',
+                                          background: 'var(--panel)',
+                                          border: '1px solid var(--panel-border)',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          flexShrink: 0
+                                        }}
+                                      >
+                                        <SoftwareIcon name={sw.name} iconUrl={currentIcon || sw.defaultIcon} size={24} />
+                                      </div>
+
+                                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                          {sw.name}
+                                        </span>
+                                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveSoftwareKeyForIcon(sw.name);
+                                              setMediaPickerConfig({
+                                                isOpen: true,
+                                                target: 'software_icon',
+                                                allowedTypes: ['image'],
+                                                title: `Ընտրել պատկերակ (${sw.name})`,
+                                                currentValue: currentIcon
+                                              });
+                                            }}
+                                            style={{
+                                              background: 'rgba(74, 137, 124, 0.15)',
+                                              color: 'var(--accent)',
+                                              border: '1px solid var(--accent)',
+                                              borderRadius: '6px',
+                                              padding: '2px 8px',
+                                              fontSize: '0.7rem',
+                                              fontWeight: 600,
+                                              cursor: 'pointer'
+                                            }}
+                                          >
+                                            <FolderIcon size={14} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 4 }} /> Դարանից
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setActiveSoftwareKeyForIcon(sw.name);
+                                              softwareIconFileInputRef.current?.click();
+                                            }}
+                                            style={{
+                                              background: 'var(--panel)',
+                                              color: 'var(--text)',
+                                              border: '1px solid var(--panel-border)',
+                                              borderRadius: '6px',
+                                              padding: '2px 8px',
+                                              fontSize: '0.7rem',
+                                              fontWeight: 600,
+                                              cursor: 'pointer'
+                                            }}
+                                          >
+                                            ↑ Վերբեռնել
+                                          </button>
+                                          {currentIcon && (
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setSoftwareIcons(prev => {
+                                                  const copy = { ...prev };
+                                                  delete copy[sw.name];
+                                                  return copy;
+                                                });
+                                              }}
+                                              title="Վերականգնել լռելյայնը"
+                                              style={{
+                                                background: 'transparent',
+                                                border: 'none',
+                                                color: '#e53935',
+                                                cursor: 'pointer',
+                                                fontSize: '0.75rem',
+                                                padding: '2px 4px'
+                                              }}
+                                            >
+                                              ✕
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Custom Software Form */}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', borderTop: '1px dashed var(--panel-border)', paddingTop: '16px' }}>
+                                <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text)' }}>
+                                  Ավելացնել այլ ծրագրի պատկերակ՝
+                                </span>
+
+                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                  <div style={{ flex: 1, minWidth: '160px' }}>
+                                    <hd-input
+                                      placeholder="Ծրագրի անվանում (օր․՝ Cinema 4D)..."
+                                      value={customSoftwareName}
+                                      onInput={(e: any) => setCustomSoftwareName(e.target.value)}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                  </div>
+                                  <div style={{ flex: 1.2, minWidth: '200px' }}>
+                                    <hd-input
+                                      placeholder="Պատկերակի URL..."
+                                      value={customSoftwareIconUrl}
+                                      onInput={(e: any) => setCustomSoftwareIconUrl(e.target.value)}
+                                      data-width="100%"
+                                      data-height="36px"
+                                    />
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveSoftwareKeyForIcon(null);
+                                      setMediaPickerConfig({
+                                        isOpen: true,
+                                        target: 'software_icon',
+                                        allowedTypes: ['image'],
+                                        title: 'Ընտրել պատկերակ',
+                                        currentValue: customSoftwareIconUrl
+                                      });
+                                    }}
+                                    style={{
+                                      background: 'rgba(74, 137, 124, 0.15)',
+                                      color: 'var(--accent)',
+                                      border: '1px solid var(--accent)',
+                                      borderRadius: '8px',
+                                      padding: '8px 12px',
+                                      fontSize: '0.74rem',
+                                      fontWeight: 700,
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    <FolderIcon size={14} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 4 }} /> Դարանից
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActiveSoftwareKeyForIcon(null);
+                                      softwareIconFileInputRef.current?.click();
+                                    }}
+                                    style={{
+                                      background: 'var(--panel)',
+                                      color: 'var(--text)',
+                                      border: '1px solid var(--panel-border)',
+                                      borderRadius: '8px',
+                                      padding: '8px 12px',
+                                      fontSize: '0.74rem',
+                                      fontWeight: 700,
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    ↑ Վերբեռնել
+                                  </button>
+                                  <hd-button
+                                    type="button"
+                                    data-height="36px"
+                                    data-thickness="2px"
+                                    data-font-size="0.78rem"
+                                    data-color="var(--accent)"
+                                    data-text-color="#ffffff"
+                                    onClick={() => {
+                                      if (!customSoftwareName.trim()) {
+                                        alert('Խնդրում ենք նշել ծրագրի անվանումը։');
+                                        return;
+                                      }
+                                      if (!customSoftwareIconUrl.trim()) {
+                                        alert('Խնդրում ենք նշել կամ վերբեռնել պատկերակը։');
+                                        return;
+                                      }
+                                      setSoftwareIcons(prev => ({
+                                        ...prev,
+                                        [customSoftwareName.trim()]: customSoftwareIconUrl.trim()
+                                      }));
+                                      setCustomSoftwareName('');
+                                      setCustomSoftwareIconUrl('');
+                                    }}
+                                  >
+                                    <span style={{ padding: '0 10px', fontWeight: 700 }}>+ Ավելացնել</span>
+                                  </hd-button>
+                                </div>
+
+                                {Object.entries(softwareIcons).filter(([k]) => ![
+                                  'Adobe Illustrator', 'Adobe Photoshop', 'Figma', 'Unity', 
+                                  'After Effects', 'Blender', 'Adobe InDesign', 'Adobe Premiere Pro', 'Unreal Engine'
+                                ].includes(k)).length > 0 && (
+                                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
+                                    {Object.entries(softwareIcons).filter(([k]) => ![
+                                      'Adobe Illustrator', 'Adobe Photoshop', 'Figma', 'Unity', 
+                                      'After Effects', 'Blender', 'Adobe InDesign', 'Adobe Premiere Pro', 'Unreal Engine'
+                                    ].includes(k)).map(([swName, swIcon]) => (
+                                      <div
+                                        key={swName}
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '8px',
+                                          background: 'var(--bg)',
+                                          border: '1px solid var(--accent)',
+                                          borderRadius: '8px',
+                                          padding: '4px 10px'
+                                        }}
+                                      >
+                                        <SoftwareIcon name={swName} iconUrl={swIcon} size={18} />
+                                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text)' }}>
+                                          {swName}
+                                        </span>
                                         <button
                                           type="button"
                                           onClick={() => {
                                             setSoftwareIcons(prev => {
                                               const copy = { ...prev };
-                                              delete copy[sw.name];
+                                              delete copy[swName];
                                               return copy;
                                             });
                                           }}
-                                          title="Վերականգնել լռելյայնը"
                                           style={{
                                             background: 'transparent',
                                             border: 'none',
                                             color: '#e53935',
                                             cursor: 'pointer',
-                                            fontSize: '0.75rem',
-                                            padding: '2px 4px'
+                                            fontSize: '12px',
+                                            padding: '0 2px'
                                           }}
                                         >
-                                          ✕
+                                          &times;
                                         </button>
-                                      )}
-                                    </div>
+                                      </div>
+                                    ))}
                                   </div>
-                                </div>
-                              );
-                            })}
+                                )}
+                              </div>
+
+                              {isUploadingSoftwareIcon && (
+                                <span style={{ fontSize: '0.8rem', color: 'var(--accent)' }}>
+                                  Պատկերակը վերբեռնվում է...
+                                </span>
+                              )}
+
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                                <hd-button 
+                                  type="submit" 
+                                  data-thickness="3px"
+                                  data-width="210px"
+                                  data-height="38px"
+                                  data-font-size="0.84rem"
+                                  disabled={savingSettings}
+                                >
+                                  {savingSettings ? 'Պահվում է...' : 'Պահել Պատկերակները'}
+                                </hd-button>
+                              </div>
+                            </form>
                           </div>
                         </div>
+                      )}
 
-                        {/* Custom software icons added by user */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', borderTop: '1px dashed var(--panel-border)', paddingTop: '14px' }}>
-                          <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text)' }}>
-                            Ավելացնել այլ ծրագրի պատկերակ՝
-                          </span>
-
-                          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                            <div style={{ flex: 1, minWidth: '160px' }}>
-                              <hd-input
-                                placeholder="Ծրագրի անվանում (օր․՝ Cinema 4D, CorelDRAW)..."
-                                value={customSoftwareName}
-                                onInput={(e: any) => setCustomSoftwareName(e.target.value)}
-                                data-width="100%"
-                                data-height="36px"
-                              />
-                            </div>
-                            <div style={{ flex: 1.2, minWidth: '200px' }}>
-                              <hd-input
-                                placeholder="Պատկերակի URL կամ վերբեռնեք աջից..."
-                                value={customSoftwareIconUrl}
-                                onInput={(e: any) => setCustomSoftwareIconUrl(e.target.value)}
-                                data-width="100%"
-                                data-height="36px"
-                              />
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActiveSoftwareKeyForIcon(null);
-                                setMediaPickerConfig({
-                                  isOpen: true,
-                                  target: 'software_icon',
-                                  allowedTypes: ['image'],
-                                  title: 'Ընտրել պատկերակ',
-                                  currentValue: customSoftwareIconUrl
-                                });
-                              }}
-                              style={{
-                                background: 'rgba(74, 137, 124, 0.15)',
-                                color: 'var(--accent)',
-                                border: '1px solid var(--accent)',
-                                borderRadius: '8px',
-                                padding: '8px 12px',
-                                fontSize: '0.75rem',
-                                fontWeight: 700,
-                                cursor: 'pointer'
-                              }}
-                            >
-                              <FolderIcon size={16} color="currentColor" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }} /> Մեդիայից
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setActiveSoftwareKeyForIcon(null);
-                                softwareIconFileInputRef.current?.click();
-                              }}
-                              style={{
-                                background: 'var(--panel)',
-                                color: 'var(--text)',
-                                border: '1px solid var(--panel-border)',
-                                borderRadius: '8px',
-                                padding: '8px 12px',
-                                fontSize: '0.75rem',
-                                fontWeight: 700,
-                                cursor: 'pointer'
-                              }}
-                            >
-                              ↑ Վերբեռնել
-                            </button>
-                            <hd-button
-                              type="button"
-                              data-height="36px"
-                              data-thickness="2px"
-                              data-font-size="0.78rem"
-                              data-color="var(--accent)"
-                              data-text-color="#ffffff"
-                              onClick={() => {
-                                if (!customSoftwareName.trim()) {
-                                  alert('Խնդրում ենք նշել ծրագրի անվանումը։');
-                                  return;
-                                }
-                                if (!customSoftwareIconUrl.trim()) {
-                                  alert('Խնդրում ենք նշել կամ վերբեռնել պատկերակը։');
-                                  return;
-                                }
-                                setSoftwareIcons(prev => ({
-                                  ...prev,
-                                  [customSoftwareName.trim()]: customSoftwareIconUrl.trim()
-                                }));
-                                setCustomSoftwareName('');
-                                setCustomSoftwareIconUrl('');
-                              }}
-                            >
-                              <span style={{ padding: '0 12px', fontWeight: 700 }}>+ Ավելացնել</span>
-                            </hd-button>
+                      {/* SECTION 6: Security */}
+                      {showSecurity && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid var(--panel-border)', paddingBottom: '10px' }}>
+                            <span className="hd-icon icon-Locked" style={{ color: '#0088FE', fontSize: '1.2rem' }} />
+                            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>Անվտանգություն և Մուտքեր (Security, Passcode & Sessions)</h3>
                           </div>
 
-                          {/* Render custom non-standard software icons */}
-                          {Object.entries(softwareIcons).filter(([k]) => ![
-                            'Adobe Illustrator', 'Adobe Photoshop', 'Figma', 'Unity', 
-                            'After Effects', 'Blender', 'Adobe InDesign', 'Adobe Premiere Pro', 'Unreal Engine'
-                          ].includes(k)).length > 0 && (
-                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' }}>
-                              {Object.entries(softwareIcons).filter(([k]) => ![
-                                'Adobe Illustrator', 'Adobe Photoshop', 'Figma', 'Unity', 
-                                'After Effects', 'Blender', 'Adobe InDesign', 'Adobe Premiere Pro', 'Unreal Engine'
-                              ].includes(k)).map(([swName, swIcon]) => (
-                                <div
-                                  key={swName}
+                          {/* Sessions & Devices Card */}
+                          <div style={{
+                            background: 'var(--panel)',
+                            border: '1px solid var(--panel-border)',
+                            borderRadius: '16px',
+                            padding: '24px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '20px'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                              <div>
+                                <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  <span className="hd-icon icon-Shield" style={{ color: '#00C49F' }} />
+                                  Ակտիվ Նստաշրջաններ և Սարքեր (Active Sessions)
+                                  <span style={{
+                                    fontSize: '0.75rem',
+                                    background: 'rgba(0, 196, 159, 0.15)',
+                                    color: '#00C49F',
+                                    padding: '2px 8px',
+                                    borderRadius: '12px',
+                                    fontWeight: 700
+                                  }}>
+                                    {adminSessions.length} {adminSessions.length === 1 ? 'սարք' : 'սարքեր'}
+                                  </span>
+                                </h4>
+                                <p style={{ fontSize: '0.82rem', color: 'var(--muted)', margin: '6px 0 0 0', lineHeight: 1.45 }}>
+                                  Տեսեք բոլոր այն համակարգիչները և սարքերը, որոնցից մուտք է գործվել Վարիչի կառավարման վահանակ։ Կարող եք դուրս գալ ցանկացած անհայտ կամ հին սարքից։
+                                </p>
+                              </div>
+
+                              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => fetchSessions()}
+                                  disabled={loadingSessions}
                                   style={{
+                                    background: 'var(--panel-hover, rgba(255,255,255,0.06))',
+                                    border: '1px solid var(--panel-border)',
+                                    color: 'var(--text)',
+                                    borderRadius: '8px',
+                                    padding: '8px 14px',
+                                    fontSize: '0.82rem',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
                                     display: 'inline-flex',
                                     alignItems: 'center',
-                                    gap: '8px',
-                                    background: 'var(--bg)',
-                                    border: '1px solid var(--accent)',
-                                    borderRadius: '8px',
-                                    padding: '4px 10px'
+                                    gap: '6px'
                                   }}
                                 >
-                                  <SoftwareIcon name={swName} iconUrl={swIcon} size={18} />
-                                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text)' }}>
-                                    {swName}
-                                  </span>
+                                  <span className="hd-icon icon-Loop" style={{ fontSize: '0.85rem' }} />
+                                  {loadingSessions ? 'Թարմացվում է...' : 'Թարմացնել ցանկը'}
+                                </button>
+
+                                {adminSessions.filter(s => !s.isCurrent).length > 0 && (
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      setSoftwareIcons(prev => {
-                                        const copy = { ...prev };
-                                        delete copy[swName];
-                                        return copy;
-                                      });
-                                    }}
+                                    onClick={handleRevokeAllOtherSessions}
+                                    disabled={revokingAllOthers}
                                     style={{
-                                      background: 'transparent',
-                                      border: 'none',
-                                      color: '#e53935',
+                                      background: 'rgba(255, 107, 107, 0.12)',
+                                      border: '1px solid rgba(255, 107, 107, 0.3)',
+                                      color: '#ff6b6b',
+                                      borderRadius: '8px',
+                                      padding: '8px 14px',
+                                      fontSize: '0.82rem',
+                                      fontWeight: 600,
                                       cursor: 'pointer',
-                                      fontSize: '12px',
-                                      padding: '0 2px'
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px'
                                     }}
                                   >
-                                    &times;
+                                    <span className="hd-icon icon-Delete" style={{ fontSize: '0.85rem' }} />
+                                    {revokingAllOthers ? 'Դուրս է գրվում...' : 'Դուրս գալ մյուս բոլոր սարքերից'}
                                   </button>
+                                )}
+                              </div>
+                            </div>
+
+                            {sessionsError && (
+                              <div style={{
+                                fontSize: '0.82rem',
+                                color: '#ff6b6b',
+                                background: 'rgba(255, 107, 107, 0.08)',
+                                padding: '10px 14px',
+                                borderRadius: '8px',
+                                border: '1px solid rgba(255, 107, 107, 0.2)'
+                              }}>
+                                {sessionsError}
+                              </div>
+                            )}
+
+                            {loadingSessions && adminSessions.length === 0 ? (
+                              <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--muted)', fontSize: '0.86rem' }}>
+                                <span className="hd-icon icon-Loop" style={{ display: 'inline-block', animation: 'spin 1s linear infinite', fontSize: '1.2rem', marginBottom: '8px' }} />
+                                <div>Բեռնվում են ակտիվ սարքերը...</div>
+                              </div>
+                            ) : adminSessions.length === 0 ? (
+                              <div style={{
+                                padding: '20px',
+                                textAlign: 'center',
+                                color: 'var(--muted)',
+                                background: 'rgba(255,255,255,0.02)',
+                                borderRadius: '10px',
+                                border: '1px dashed var(--panel-border)',
+                                fontSize: '0.84rem'
+                              }}>
+                                Ակտիվ նստաշրջաններ չեն գտնվել
+                              </div>
+                            ) : (
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '14px' }}>
+                                {adminSessions.map(session => {
+                                  const isCurrent = Boolean(session.isCurrent);
+                                  const deviceIcon = session.device === 'mobile' ? '📱' : session.device === 'tablet' ? '📟' : '💻';
+
+                                  return (
+                                    <div
+                                      key={session.id}
+                                      style={{
+                                        background: isCurrent ? 'rgba(0, 196, 159, 0.04)' : 'rgba(255, 255, 255, 0.02)',
+                                        border: isCurrent ? '1.5px solid rgba(0, 196, 159, 0.4)' : '1px solid var(--panel-border)',
+                                        borderRadius: '12px',
+                                        padding: '16px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        justifyContent: 'space-between',
+                                        gap: '12px',
+                                        position: 'relative'
+                                      }}
+                                    >
+                                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                          <div style={{
+                                            fontSize: '1.4rem',
+                                            width: '38px',
+                                            height: '38px',
+                                            borderRadius: '10px',
+                                            background: isCurrent ? 'rgba(0, 196, 159, 0.12)' : 'rgba(255, 255, 255, 0.05)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            flexShrink: 0
+                                          }}>
+                                            {deviceIcon}
+                                          </div>
+                                          <div>
+                                            <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text)' }}>
+                                              {session.browser} • {session.os}
+                                            </div>
+                                            <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                              <span style={{
+                                                display: 'inline-block',
+                                                padding: '1px 6px',
+                                                borderRadius: '4px',
+                                                background: 'rgba(255,255,255,0.06)',
+                                                fontFamily: 'monospace'
+                                              }}>
+                                                IP: {session.ip || 'Local/Hidden'}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {isCurrent && (
+                                          <span style={{
+                                            fontSize: '0.72rem',
+                                            fontWeight: 700,
+                                            background: '#00C49F',
+                                            color: '#000000',
+                                            padding: '3px 8px',
+                                            borderRadius: '6px',
+                                            letterSpacing: '0.02em',
+                                            whiteSpace: 'nowrap'
+                                          }}>
+                                            Ընթացիկ Սարք
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      <div style={{
+                                        fontSize: '0.76rem',
+                                        color: 'var(--muted)',
+                                        borderTop: '1px solid var(--panel-border)',
+                                        paddingTop: '10px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '4px'
+                                      }}>
+                                        <div><strong>Մուտք՝</strong> {new Date(session.createdAt).toLocaleString('hy-AM', { dateStyle: 'medium', timeStyle: 'short' })}</div>
+                                        <div><strong>Վերջին ակտիվություն՝</strong> {new Date(session.lastActive).toLocaleString('hy-AM', { dateStyle: 'medium', timeStyle: 'short' })}</div>
+                                      </div>
+
+                                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                                        {isCurrent ? (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleRevokeSession(session.id)}
+                                            disabled={revokingSessionId === session.id}
+                                            style={{
+                                              background: 'rgba(255, 107, 107, 0.12)',
+                                              border: '1px solid rgba(255, 107, 107, 0.35)',
+                                              color: '#ff6b6b',
+                                              borderRadius: '8px',
+                                              padding: '6px 14px',
+                                              fontSize: '0.8rem',
+                                              fontWeight: 600,
+                                              cursor: 'pointer',
+                                              display: 'inline-flex',
+                                              alignItems: 'center',
+                                              gap: '6px',
+                                              transition: 'all 0.2s'
+                                            }}
+                                          >
+                                            <span className="hd-icon icon-Delete" style={{ fontSize: '0.8rem' }} />
+                                            {revokingSessionId === session.id ? 'Դուրս է գրվում...' : 'Դուրս գալ այս սիանսից (Ելք)'}
+                                          </button>
+                                        ) : (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleRevokeSession(session.id)}
+                                            disabled={revokingSessionId === session.id}
+                                            style={{
+                                              background: 'transparent',
+                                              border: '1px solid rgba(255, 107, 107, 0.3)',
+                                              color: '#ff6b6b',
+                                              borderRadius: '6px',
+                                              padding: '5px 12px',
+                                              fontSize: '0.78rem',
+                                              fontWeight: 600,
+                                              cursor: 'pointer',
+                                              display: 'inline-flex',
+                                              alignItems: 'center',
+                                              gap: '4px'
+                                            }}
+                                          >
+                                            <span className="hd-icon icon-Delete" style={{ fontSize: '0.75rem' }} />
+                                            {revokingSessionId === session.id ? 'Դուրս է գրվում...' : 'Դուրս գրել այս սարքից'}
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+
+                          <div style={{
+                            background: 'var(--panel)',
+                            border: '1px solid var(--panel-border)',
+                            borderRadius: '16px',
+                            padding: '24px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '20px',
+                            maxWidth: '680px'
+                          }}>
+                            <div>
+                              <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span className="hd-icon icon-Locked" style={{ color: '#0088FE' }} />
+                                Փոխել Վարիչի Մուտքի Գաղտնաբառը
+                              </h4>
+                              <p style={{ fontSize: '0.82rem', color: 'var(--muted)', margin: '6px 0 0 0', lineHeight: 1.45 }}>
+                                Մուտքագրեք ընթացիկ գաղտնաբառը և սահմանեք նոր գաղտնաբառ (առնվազն 4 նիշ)։
+                              </p>
+                            </div>
+
+                            <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                              <div>
+                                <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Ընթացիկ գաղտնաբառ</label>
+                                <hd-input 
+                                  type="password"
+                                  placeholder="Մուտքագրեք ընթացիկ գաղտնաբառը..."
+                                  value={currentPasscode}
+                                  onInput={(e: any) => setCurrentPasscode(e.target.value)}
+                                  data-width="100%"
+                                  data-height="38px"
+                                  data-font-size="14pt"
+                                />
+                              </div>
+
+                              <div>
+                                <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Նոր գաղտնաբառ</label>
+                                <hd-input 
+                                  type="password"
+                                  placeholder="Մուտքագրեք նոր գաղտնաբառը..."
+                                  value={newPasscode}
+                                  onInput={(e: any) => setNewPasscode(e.target.value)}
+                                  data-width="100%"
+                                  data-height="38px"
+                                  data-font-size="14pt"
+                                />
+                              </div>
+
+                              <div>
+                                <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Հաստատել նոր գաղտնաբառը</label>
+                                <hd-input 
+                                  type="password"
+                                  placeholder="Կրկնեք նոր գաղտնաբառը..."
+                                  value={confirmPasscode}
+                                  onInput={(e: any) => setConfirmPasscode(e.target.value)}
+                                  data-width="100%"
+                                  data-height="38px"
+                                  data-font-size="14pt"
+                                />
+                              </div>
+
+                              {passwordError && (
+                                <div style={{
+                                  fontSize: '0.82rem', color: '#ff6b6b', background: 'rgba(255, 107, 107, 0.08)',
+                                  padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(255, 107, 107, 0.2)'
+                                }}>
+                                  {passwordError}
                                 </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                              )}
 
-                        {isUploadingSoftwareIcon && (
-                          <span style={{ fontSize: '0.8rem', color: 'var(--accent)' }}>
-                            Պատկերակը վերբեռնվում է...
-                          </span>
-                        )}
+                              {passwordSuccess && (
+                                <div style={{
+                                  fontSize: '0.82rem', color: '#00c49f', background: 'rgba(0, 196, 159, 0.08)',
+                                  padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(0, 196, 159, 0.2)'
+                                }}>
+                                  {passwordSuccess}
+                                </div>
+                              )}
 
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-                          <hd-button 
-                            type="submit" 
-                            data-thickness="3px"
-                            data-width="210px"
-                            data-height="40px"
-                            data-font-size="0.85rem"
-                            disabled={savingSettings}
-                          >
-                            {savingSettings ? 'Պահպանվում է...' : 'Պահպանել Պատկերակները'}
-                          </hd-button>
-                        </div>
-                      </form>
-                    </div>
-
-                    {/* Card 2: Coming Soon Texts Section */}
-                    <div style={{
-                      background: 'var(--panel)',
-                      border: '1px solid var(--panel-border)',
-                      borderRadius: '16px',
-                      padding: '24px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '20px'
-                    }}>
-                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span className="icon-Chat-Bubble" style={{ color: '#ffbb28' }} />
-                        Coming Soon Էջի Տեքստեր
-                      </h3>
-
-                      <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: 0, lineHeight: 1.5 }}>
-                        Կարգավորեք սպասման էջի բոլոր տեքստային տվյալները հայերեն և անգլերեն տարբերակներով, ինչպես նաև կոնտակտային տվյալները։
-                      </p>
-
-                      <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                            <div>
-                              <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Վերնագիր (Armenian)</label>
-                              <hd-input 
-                                placeholder="Շուտով..."
-                                value={upcomingTitleHy}
-                                onInput={(e: any) => setUpcomingTitleHy(e.target.value)}
-                                data-width="100%"
-                                data-height="36px"
-                              data-font-size="14pt" />
-                            </div>
-                            <div>
-                              <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Վերնագիր (English)</label>
-                              <hd-input 
-                                placeholder="Coming Soon..."
-                                value={upcomingTitleEn}
-                                onInput={(e: any) => setUpcomingTitleEn(e.target.value)}
-                                data-width="100%"
-                                data-height="36px"
-                              data-font-size="14pt" />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Նկարագրություն (Armenian)</label>
-                            <hd-textarea 
-                              placeholder="Մանրամասներ..."
-                              value={upcomingDescHy}
-                              onInput={(e: any) => setUpcomingDescHy(e.target.value)}
-                              data-width="100%"
-                              data-disable-horizontal-resize="true"
-                              style={{ minHeight: '60px' }}
-                            data-font-size="14pt" data-height="200pt" />
-                          </div>
-
-                          <div>
-                            <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Նկարագրություն (English)</label>
-                            <hd-textarea 
-                              placeholder="Description..."
-                              value={upcomingDescEn}
-                              onInput={(e: any) => setUpcomingDescEn(e.target.value)}
-                              data-width="100%"
-                              data-disable-horizontal-resize="true"
-                              style={{ minHeight: '60px' }}
-                            data-font-size="14pt" data-height="200pt" />
-                          </div>
-
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                            <div>
-                              <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Էլ. հասցե (Email)</label>
-                              <hd-input 
-                                placeholder="info@hdesign.am"
-                                value={upcomingEmail}
-                                onInput={(e: any) => setUpcomingEmail(e.target.value)}
-                                data-width="100%"
-                                data-height="36px"
-                              data-font-size="14pt" />
-                            </div>
-                            <div>
-                              <label style={{ fontSize: '0.78rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Հեռախոս (Phone)</label>
-                              <hd-input 
-                                placeholder="+374 99 00 00 00"
-                                value={upcomingTel}
-                                onInput={(e: any) => setUpcomingTel(e.target.value)}
-                                data-width="100%"
-                                data-height="36px"
-                              data-font-size="14pt" />
-                            </div>
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                                <hd-button 
+                                  type="submit" 
+                                  data-thickness="3px"
+                                  data-width="190px"
+                                  data-height="38px"
+                                  data-font-size="0.84rem"
+                                  disabled={changingPassword}
+                                >
+                                  {changingPassword ? 'Փոխվում է...' : 'Թարմացնել Գաղտնաբառը'}
+                                </hd-button>
+                              </div>
+                            </form>
                           </div>
                         </div>
+                      )}
 
-                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                          <hd-button 
-                            type="submit" 
-                            data-thickness="3px"
-                            data-width="180px"
-                            data-height="40px"
-                            data-font-size="0.85rem"
-                            disabled={savingSettings}
-                          >
-                            {savingSettings ? 'Պահպանվում է...' : 'Պահպանել Տեքստերը'}
-                          </hd-button>
-                        </div>
-                      </form>
                     </div>
-                  </div>
-
-                  {/* Right Column wrapper */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-                    {/* Card 1: Website Title & SEO */}
-                    <div style={{
-                      background: 'var(--panel)',
-                      border: '1px solid var(--panel-border)',
-                      borderRadius: '16px',
-                      padding: '24px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '20px'
-                    }}>
-                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span className="icon-Earth" style={{ color: '#00C49F' }} />
-                        Կայքի Վերնագիր և SEO (Website Identity)
-                      </h3>
-
-                      <form onSubmit={handleSavePersonalization} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <div>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Կայքի Անվանում (Հայերեն)</label>
-                          <hd-input 
-                            type="text"
-                            placeholder="Կայքի հայերեն վերնագիրը..."
-                            value={personalization.site_title_hy}
-                            onInput={(e: any) => setPersonalization(prev => ({ ...prev, site_title_hy: e.target.value }))}
-                            data-width="100%"
-                            data-height="40px"
-                          data-font-size="14pt" />
-                        </div>
-
-                        <div>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Site Title (English)</label>
-                          <hd-input 
-                            type="text"
-                            placeholder="English site title..."
-                            value={personalization.site_title_en}
-                            onInput={(e: any) => setPersonalization(prev => ({ ...prev, site_title_en: e.target.value }))}
-                            data-width="100%"
-                            data-height="40px"
-                          data-font-size="14pt" />
-                        </div>
-
-                        <div>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Կայքի Նկարագրություն (Հայերեն)</label>
-                          <hd-textarea 
-                            placeholder="Մուտքագրեք կայքի նկարագրությունը..."
-                            value={personalization.site_desc_hy}
-                            onInput={(e: any) => setPersonalization(prev => ({ ...prev, site_desc_hy: e.target.value }))}
-                            data-width="100%"
-                            data-disable-horizontal-resize="true"
-                            style={{ minHeight: '80px' }}
-                            data-font-size="14pt"
-                            data-height="160pt"
-                          />
-                        </div>
-
-                        <div>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Site Description (English)</label>
-                          <hd-textarea 
-                            placeholder="Enter English site description..."
-                            value={personalization.site_desc_en}
-                            onInput={(e: any) => setPersonalization(prev => ({ ...prev, site_desc_en: e.target.value }))}
-                            data-width="100%"
-                            data-disable-horizontal-resize="true"
-                            style={{ minHeight: '80px' }}
-                            data-font-size="14pt"
-                            data-height="160pt"
-                          />
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
-                          <hd-button 
-                            type="submit" 
-                            data-thickness="3px"
-                            data-width="180px"
-                            data-height="40px"
-                            data-font-size="0.85rem"
-                          >
-                            Պահպանել Վերնագիրը
-                          </hd-button>
-                        </div>
-                      </form>
-                    </div>
-
-                    {/* Card 1.4: Page Upcoming Texts Settings */}
-                    <div style={{
-                      background: 'var(--panel)',
-                      border: '1px solid var(--panel-border)',
-                      borderRadius: '16px',
-                      padding: '24px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '20px'
-                    }}>
-                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span className="icon-Document" style={{ color: '#FFBB28' }} />
-                        Էջերի Upcoming Տեքստեր (Page Upcoming Texts)
-                      </h3>
-
-                      <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <div>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Վերնագիր (Հայերեն)</label>
-                          <hd-input 
-                            type="text"
-                            placeholder="Շուտով..."
-                            value={pageUpcomingTitleHy}
-                            onInput={(e: any) => setPageUpcomingTitleHy(e.target.value)}
-                            data-width="100%"
-                            data-height="40px"
-                            data-font-size="14pt" 
-                          />
-                        </div>
-
-                        <div>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Title (English)</label>
-                          <hd-input 
-                            type="text"
-                            placeholder="Coming Soon..."
-                            value={pageUpcomingTitleEn}
-                            onInput={(e: any) => setPageUpcomingTitleEn(e.target.value)}
-                            data-width="100%"
-                            data-height="40px"
-                            data-font-size="14pt" 
-                          />
-                        </div>
-
-                        <div>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Նկարագրություն (Հայերեն)</label>
-                          <hd-textarea 
-                            placeholder="Այս էջը ժամանակավորապես գտնվում է մշակման..."
-                            value={pageUpcomingDescHy}
-                            onInput={(e: any) => setPageUpcomingDescHy(e.target.value)}
-                            data-width="100%"
-                            data-disable-horizontal-resize="true"
-                            style={{ minHeight: '80px' }}
-                            data-font-size="14pt"
-                            data-height="160pt"
-                          />
-                        </div>
-
-                        <div>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Description (English)</label>
-                          <hd-textarea 
-                            placeholder="This page is temporarily under development..."
-                            value={pageUpcomingDescEn}
-                            onInput={(e: any) => setPageUpcomingDescEn(e.target.value)}
-                            data-width="100%"
-                            data-disable-horizontal-resize="true"
-                            style={{ minHeight: '80px' }}
-                            data-font-size="14pt"
-                            data-height="160pt"
-                          />
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
-                          <hd-button 
-                            type="submit" 
-                            data-thickness="3px"
-                            data-width="210px"
-                            data-height="40px"
-                            data-font-size="0.85rem"
-                            disabled={savingSettings}
-                          >
-                            {savingSettings ? 'Պահպանվում է...' : 'Պահպանել Էջի Upcoming Տեքստերը'}
-                          </hd-button>
-                        </div>
-                      </form>
-                    </div>
-
-                    {/* Card 1.5: Website Contact Settings */}
-                    <div style={{
-                      background: 'var(--panel)',
-                      border: '1px solid var(--panel-border)',
-                      borderRadius: '16px',
-                      padding: '24px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '20px'
-                    }}>
-                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span className="icon-Call" style={{ color: '#00C49F' }} />
-                        Կայքի Կոնտակտային Տվյալներ (Contact Details)
-                      </h3>
-
-                      <form onSubmit={handleSaveGeneralSettings} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <div>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Էլ. հասցե (Email)</label>
-                          <hd-input 
-                            type="text"
-                            placeholder="hrant@hakobian.am"
-                            value={contactEmail}
-                            onInput={(e: any) => setContactEmail(e.target.value)}
-                            data-width="100%"
-                            data-height="40px"
-                          data-font-size="14pt" />
-                        </div>
-
-                        <div>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Հեռախոս (Phone)</label>
-                          <hd-input 
-                            type="text"
-                            placeholder="+374 00 000000"
-                            value={contactTel}
-                            onInput={(e: any) => setContactTel(e.target.value)}
-                            data-width="100%"
-                            data-height="40px"
-                          data-font-size="14pt" />
-                        </div>
-
-                        <div>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Հասցե (Armenian Address)</label>
-                          <hd-input 
-                            type="text"
-                            placeholder="Երևան, Հայաստան"
-                            value={contactAddressHy}
-                            onInput={(e: any) => setContactAddressHy(e.target.value)}
-                            data-width="100%"
-                            data-height="40px"
-                          data-font-size="14pt" />
-                        </div>
-
-                        <div>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Address (English)</label>
-                          <hd-input 
-                            type="text"
-                            placeholder="Yerevan, Armenia"
-                            value={contactAddressEn}
-                            onInput={(e: any) => setContactAddressEn(e.target.value)}
-                            data-width="100%"
-                            data-height="40px"
-                          data-font-size="14pt" />
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
-                          <hd-button 
-                            type="submit" 
-                            data-thickness="3px"
-                            data-width="180px"
-                            data-height="40px"
-                            data-font-size="0.85rem"
-                            disabled={savingSettings}
-                          >
-                            {savingSettings ? 'Պահպանվում է...' : 'Պահպանել Կոնտակտները'}
-                          </hd-button>
-                        </div>
-                      </form>
-                    </div>
-
-                    {/* Card 2: Passcode change settings */}
-                    <div style={{
-                      background: 'var(--panel)',
-                      border: '1px solid var(--panel-border)',
-                      borderRadius: '16px',
-                      padding: '24px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '20px'
-                    }}>
-                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span className="icon-Profile" style={{ color: '#0088FE' }} />
-                        Փոխել Վարիչի Գաղտնաբառը
-                      </h3>
-
-                      <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <div>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Ընթացիկ գաղտնաբառ</label>
-                          <hd-input 
-                            type="password"
-                            placeholder="Մուտքագրեք ընթացիկ գաղտնաբառը..."
-                            value={currentPasscode}
-                            onInput={(e: any) => setCurrentPasscode(e.target.value)}
-                            data-width="100%"
-                            data-height="40px"
-                          data-font-size="14pt" />
-                        </div>
-
-                        <div>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Նոր գաղտնաբառ</label>
-                          <hd-input 
-                            type="password"
-                            placeholder="Մուտքագրեք նոր գաղտնաբառը..."
-                            value={newPasscode}
-                            onInput={(e: any) => setNewPasscode(e.target.value)}
-                            data-width="100%"
-                            data-height="40px"
-                          data-font-size="14pt" />
-                        </div>
-
-                        <div>
-                          <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Հաստատել նոր գաղտնաբառը</label>
-                          <hd-input 
-                            type="password"
-                            placeholder="Կրկնեք նոր գաղտնաբառը..."
-                            value={confirmPasscode}
-                            onInput={(e: any) => setConfirmPasscode(e.target.value)}
-                            data-width="100%"
-                            data-height="40px"
-                          data-font-size="14pt" />
-                        </div>
-
-                        {passwordError && (
-                          <div style={{
-                            fontSize: '0.82rem', color: '#ff6b6b', background: 'rgba(255, 107, 107, 0.08)',
-                            padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(255, 107, 107, 0.2)'
-                          }}>
-                            {passwordError}
-                          </div>
-                        )}
-
-                        {passwordSuccess && (
-                          <div style={{
-                            fontSize: '0.82rem', color: '#00c49f', background: 'rgba(0, 196, 159, 0.08)',
-                            padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(0, 196, 159, 0.2)'
-                          }}>
-                            {passwordSuccess}
-                          </div>
-                        )}
-
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
-                          <hd-button 
-                            type="submit" 
-                            data-thickness="3px"
-                            data-width="180px"
-                            data-height="40px"
-                            data-font-size="0.85rem"
-                            disabled={changingPassword}
-                          >
-                            {changingPassword ? 'Փոխվում է...' : 'Թարմացնել Գաղտնաբառը'}
-                          </hd-button>
-                        </div>
-                      </form>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
             )}
 
@@ -10416,15 +11124,16 @@ function AdminDashboardContent() {
             boxShadow: '0 2px 10px rgba(0, 0, 0, 0.16)',
             pointerEvents: 'none',
             zIndex: 1,
+            opacity: activeTabIndex >= 0 ? 1 : 0,
             transform: dockState === 'bottom' 
-              ? `translate3d(calc(var(--active-tab-index) * var(--nav-tab-step, 60px)), 0, 0)`
-              : `translate3d(0, calc(var(--active-tab-index) * var(--nav-tab-step, 60px)), 0)`,
+              ? `translate3d(calc(${Math.max(0, activeTabIndex)} * var(--nav-tab-step, 60px)), 0, 0)`
+              : `translate3d(0, calc(${Math.max(0, activeTabIndex)} * var(--nav-tab-step, 60px)), 0)`,
             transition: navMounted ? 'transform 0.26s cubic-bezier(0.15, 1.05, 0.2, 1)' : 'none',
             willChange: 'transform'
           }}
         />
 
-        {NAV_TABS.map((tab) => {
+        {visibleNavTabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <div 
@@ -10456,6 +11165,39 @@ function AdminDashboardContent() {
             </div>
           );
         })}
+
+        {/* Horizontal Three Dots Button for Tab Customization */}
+        <div 
+          key="tab-customizer-btn"
+          onClick={() => {
+            if (hasDraggedRef.current) return;
+            setShowTabCustomizerModal(true);
+          }}
+          className={`nav-btn nav-btn-more-dots ${showTabCustomizerModal ? 'active' : ''}`}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: showTabCustomizerModal ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
+            color: showTabCustomizerModal ? 'var(--switcher-text-active, #fff)' : 'var(--muted)',
+            borderRadius: '16px',
+            width: '50px',
+            height: '50px',
+            cursor: 'pointer',
+            position: 'relative',
+            zIndex: 2,
+            transition: 'color 0.2s ease, background 0.2s ease'
+          }}
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="5" cy="12" r="2.2" />
+            <circle cx="12" cy="12" r="2.2" />
+            <circle cx="19" cy="12" r="2.2" />
+          </svg>
+          <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
+            Անհատականացնել թաբերը
+          </div>
+        </div>
       </nav>
 
       {/* Dock Snap Preview Indicators */}
@@ -10583,6 +11325,467 @@ function AdminDashboardContent() {
                 </hd-button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          TAB PERSONALIZATION & CUSTOMIZATION MODAL (DRAG & DROP)
+          ══════════════════════════════════════════════════════════════════════ */}
+      {showTabCustomizerModal && (
+        <div 
+          onClick={() => setShowTabCustomizerModal(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 11500,
+            background: 'rgba(0, 0, 0, 0.65)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            animation: 'modalBackdropFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+          }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="admin-modal-container"
+            style={{
+              background: 'var(--panel)',
+              border: '1px solid var(--panel-border)',
+              borderRadius: '28px',
+              width: '100%',
+              maxWidth: '640px',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 24px 70px rgba(0, 0, 0, 0.45)',
+              overflow: 'hidden',
+              animation: 'modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{
+              padding: '24px 28px 18px',
+              borderBottom: '1px solid var(--panel-border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '16px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '14px',
+                  background: 'rgba(0, 196, 159, 0.12)',
+                  color: '#00C49F',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.25rem',
+                  flexShrink: 0
+                }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="5" cy="12" r="2.2" />
+                    <circle cx="12" cy="12" r="2.2" />
+                    <circle cx="19" cy="12" r="2.2" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 800, margin: 0, color: 'var(--text)' }}>
+                    Թաբերի Անհատականացում
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--muted)', margin: '4px 0 0', lineHeight: 1.4 }}>
+                    Քաշեք և գցեք կամ օգտագործեք սլաքները՝ թաբերը դասավորելու կամ հեռացնելու համար:
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowTabCustomizerModal(false)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid var(--panel-border)',
+                  color: 'var(--muted)',
+                  borderRadius: '12px',
+                  width: '36px',
+                  height: '36px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 107, 107, 0.15)';
+                  e.currentTarget.style.color = '#ff6b6b';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                  e.currentTarget.style.color = 'var(--muted)';
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body / Scrollable Content */}
+            <div style={{
+              padding: '24px 28px',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '24px'
+            }}>
+              {/* Section 1: Active Tabs in Dock */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#00C49F' }} />
+                    Ակտիվ Թաբեր Փեղկում ({visibleNavTabs.length})
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
+                    Քաշեք վերև/ներքև՝ հերթականությունը փոխելու համար
+                  </span>
+                </div>
+
+                <div 
+                  onDragOver={(e) => e.preventDefault()}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    background: 'rgba(0, 0, 0, 0.08)',
+                    padding: '12px',
+                    borderRadius: '18px',
+                    border: '1px solid var(--panel-border)',
+                    minHeight: '100px'
+                  }}
+                >
+                  {visibleNavTabs.map((tab, index) => {
+                    const isDragSource = draggedTabId === tab.id;
+                    const isDragOver = dragOverTabId === tab.id;
+                    return (
+                      <div
+                        key={tab.id}
+                        draggable
+                        onDragStart={() => setDraggedTabId(tab.id)}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          if (dragOverTabId !== tab.id) setDragOverTabId(tab.id);
+                        }}
+                        onDragLeave={() => {
+                          if (dragOverTabId === tab.id) setDragOverTabId(null);
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (draggedTabId) {
+                            const fromIdx = visibleTabIds.indexOf(draggedTabId);
+                            const toIdx = visibleTabIds.indexOf(tab.id);
+                            if (fromIdx !== -1 && toIdx !== -1) {
+                              handleMoveTab(fromIdx, toIdx);
+                            } else if (fromIdx === -1 && toIdx !== -1) {
+                              const copy = [...visibleTabIds];
+                              copy.splice(toIdx, 0, draggedTabId);
+                              saveVisibleTabIds(copy);
+                            }
+                          }
+                          setDraggedTabId(null);
+                          setDragOverTabId(null);
+                        }}
+                        onDragEnd={() => {
+                          setDraggedTabId(null);
+                          setDragOverTabId(null);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '10px 14px',
+                          background: isDragOver ? 'rgba(0, 196, 159, 0.15)' : 'var(--panel)',
+                          border: isDragOver ? '1px dashed #00C49F' : '1px solid var(--panel-border)',
+                          borderRadius: '14px',
+                          opacity: isDragSource ? 0.4 : 1,
+                          transform: isDragOver ? 'scale(1.01)' : 'none',
+                          transition: 'all 0.2s ease',
+                          cursor: 'grab',
+                          userSelect: 'none'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          {/* Drag Handle Icon */}
+                          <div style={{ color: 'var(--muted)', cursor: 'grab', display: 'flex', alignItems: 'center' }}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                              <circle cx="8" cy="6" r="2" />
+                              <circle cx="16" cy="6" r="2" />
+                              <circle cx="8" cy="12" r="2" />
+                              <circle cx="16" cy="12" r="2" />
+                              <circle cx="8" cy="18" r="2" />
+                              <circle cx="16" cy="18" r="2" />
+                            </svg>
+                          </div>
+
+                          {/* Tab Icon */}
+                          <div style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '10px',
+                            background: 'rgba(255, 255, 255, 0.06)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: activeTab === tab.id ? '#00C49F' : 'var(--text)'
+                          }}>
+                            {tab.icon}
+                          </div>
+
+                          {/* Tab Label */}
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)' }}>
+                              {tab.label}
+                            </span>
+                            {activeTab === tab.id && (
+                              <span style={{ fontSize: '0.72rem', color: '#00C49F', fontWeight: 600 }}>
+                                Ընթացիկ ընտրված էջ
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Action Controls */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {/* Move Up */}
+                          <button
+                            type="button"
+                            disabled={index === 0}
+                            onClick={() => handleMoveTab(index, index - 1)}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: index === 0 ? 'rgba(255,255,255,0.1)' : 'var(--muted)',
+                              cursor: index === 0 ? 'not-allowed' : 'pointer',
+                              padding: '4px',
+                              borderRadius: '6px',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}
+                            title="Տեղափոխել վերև"
+                          >
+                            ▲
+                          </button>
+
+                          {/* Move Down */}
+                          <button
+                            type="button"
+                            disabled={index === visibleNavTabs.length - 1}
+                            onClick={() => handleMoveTab(index, index + 1)}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: index === visibleNavTabs.length - 1 ? 'rgba(255,255,255,0.1)' : 'var(--muted)',
+                              cursor: index === visibleNavTabs.length - 1 ? 'not-allowed' : 'pointer',
+                              padding: '4px',
+                              borderRadius: '6px',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}
+                            title="Տեղափոխել ներքև"
+                          >
+                            ▼
+                          </button>
+
+                          {/* Remove Tab from Dock */}
+                          <button
+                            type="button"
+                            disabled={visibleNavTabs.length <= 1}
+                            onClick={() => handleRemoveTab(tab.id)}
+                            style={{
+                              background: 'rgba(255, 107, 107, 0.08)',
+                              border: '1px solid rgba(255, 107, 107, 0.2)',
+                              color: visibleNavTabs.length <= 1 ? 'rgba(255,255,255,0.1)' : '#ff6b6b',
+                              cursor: visibleNavTabs.length <= 1 ? 'not-allowed' : 'pointer',
+                              padding: '4px 8px',
+                              borderRadius: '8px',
+                              fontSize: '0.76rem',
+                              fontWeight: 700,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              marginLeft: '4px'
+                            }}
+                            title="Հեռացնել փեղկից"
+                          >
+                            ✕ Հեռացնել
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Section 2: Hidden / Available Tabs */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#FFBB28' }} />
+                  Թաքցված / Հասանելի Թաբեր ({hiddenNavTabs.length})
+                </span>
+
+                {hiddenNavTabs.length > 0 ? (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+                    gap: '10px'
+                  }}>
+                    {hiddenNavTabs.map((tab) => (
+                      <div
+                        key={tab.id}
+                        draggable
+                        onDragStart={() => setDraggedTabId(tab.id)}
+                        onDragEnd={() => setDraggedTabId(null)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '10px 14px',
+                          background: 'rgba(255, 255, 255, 0.03)',
+                          border: '1px dashed var(--panel-border)',
+                          borderRadius: '14px',
+                          transition: 'all 0.2s ease',
+                          cursor: 'grab'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={{
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '8px',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'var(--muted)'
+                          }}>
+                            {tab.icon}
+                          </div>
+                          <span style={{ fontSize: '0.86rem', fontWeight: 600, color: 'var(--text)' }}>
+                            {tab.label}
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              switchTab(tab.id);
+                              setShowTabCustomizerModal(false);
+                            }}
+                            style={{
+                              background: 'transparent',
+                              border: '1px solid var(--panel-border)',
+                              color: 'var(--muted)',
+                              borderRadius: '8px',
+                              padding: '4px 8px',
+                              fontSize: '0.72rem',
+                              cursor: 'pointer'
+                            }}
+                            title="Բացել այս էջը"
+                          >
+                            Բացել
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAddTab(tab.id)}
+                            style={{
+                              background: 'rgba(0, 196, 159, 0.12)',
+                              border: '1px solid rgba(0, 196, 159, 0.25)',
+                              color: '#00C49F',
+                              borderRadius: '8px',
+                              padding: '4px 8px',
+                              fontSize: '0.72rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '2px'
+                            }}
+                            title="Ավելացնել ակտիվ փեղկում"
+                          >
+                            + Ավելացնել
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{
+                    padding: '18px',
+                    textAlign: 'center',
+                    background: 'rgba(0, 196, 159, 0.05)',
+                    border: '1px dashed rgba(0, 196, 159, 0.2)',
+                    borderRadius: '14px',
+                    color: '#00C49F',
+                    fontSize: '0.82rem',
+                    fontWeight: 600
+                  }}>
+                    ✓ Բոլոր թաբերը տեղադրված են փեղկում:
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{
+              padding: '16px 28px',
+              borderTop: '1px solid var(--panel-border)',
+              background: 'rgba(0, 0, 0, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px'
+            }}>
+              <button
+                type="button"
+                onClick={handleResetTabs}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--panel-border)',
+                  color: 'var(--muted)',
+                  borderRadius: '10px',
+                  padding: '8px 16px',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'var(--text)';
+                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'var(--muted)';
+                  e.currentTarget.style.borderColor = 'var(--panel-border)';
+                }}
+              >
+                Վերականգնել Լռելյայն
+              </button>
+
+              <hd-button
+                type="button"
+                onClick={() => setShowTabCustomizerModal(false)}
+                data-thickness="3px"
+                data-width="120px"
+                data-height="38px"
+                data-font-size="0.84rem"
+              >
+                Պատրաստ է
+              </hd-button>
+            </div>
           </div>
         </div>
       )}

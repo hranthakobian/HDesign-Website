@@ -497,7 +497,7 @@ export default function BugReportModal({
               {/* Media Attachments */}
               <div>
                 <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, marginBottom: "6px", color: "var(--text)" }}>
-                  {locale === "hy" ? "Կցել մեդիա նիշքեր (նկար, սքրինշոթ, վիդեո, log)" : "Attach Media Files (Screenshots, Video, Log)"}
+                  {locale === "hy" ? "Կցել դարանի նիշքեր (նկար, սքրինշոթ, վիդեո, log)" : "Attach Library Files (Screenshots, Video, Log)"}
                 </label>
 
                 {/* Upload Trigger Area */}

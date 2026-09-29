@@ -835,6 +835,8 @@ export async function saveSiteSetting(key: string, value: any): Promise<{ succes
   return { success: false, error: supabaseErrorMsg || 'No server/database connection' };
 }
 
+export const setSiteSetting = saveSiteSetting;
+
 // ══════════════════════════════════════════════════════════════════════════════
 // FONTS (Custom fonts)
 // ══════════════════════════════════════════════════════════════════════════════

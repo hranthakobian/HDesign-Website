@@ -53,6 +53,20 @@ export function updateMediaCacheOptimistic(updater: (prev: MediaCacheData) => Me
 }
 
 /**
+ * Resiliently resolves the admin token from passed parameter, localStorage, sessionStorage, or cookies.
+ */
+export function resolveAdminToken(token?: string | null): string {
+  if (token && token.trim()) return token.trim();
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('hdesign_admin_token') || sessionStorage.getItem('hdesign_admin_token');
+    if (stored && stored.trim()) return stored.trim();
+    const match = document.cookie.match(/hdesign_admin_token=([^;]+)/);
+    if (match) return decodeURIComponent(match[1]).trim();
+  }
+  return '';
+}
+
+/**
  * Fetches media library with deduplication and caching.
  * If cached data is available (< 60s old) and forceRefresh is false, returns cached data immediately.
  */
@@ -72,13 +86,14 @@ export async function fetchMediaLibraryCached(
 
   activeFetchPromise = (async () => {
     try {
+      const resolvedToken = resolveAdminToken(token);
       const res = await fetch('/api/admin/media', {
         headers: {
-          Authorization: token || ''
+          Authorization: resolvedToken
         }
       });
       if (!res.ok) {
-        throw new Error(`Չհաջողվեց բեռնել մեդիան: ${res.status}`);
+        throw new Error(`Չհաջողվեց բեռնել դարանը: ${res.status}`);
       }
       const data = await res.json();
       const cacheData: MediaCacheData = {
@@ -100,9 +115,10 @@ export async function fetchMediaLibraryCached(
 /**
  * Non-blocking background prefetch to pre-warm the cache before picker is opened.
  */
-export function prefetchMediaLibrary(token: string | null): void {
-  if (!token) return;
-  fetchMediaLibraryCached(token, false).catch(err => {
+export function prefetchMediaLibrary(token?: string | null): void {
+  const resolved = resolveAdminToken(token);
+  if (!resolved) return;
+  fetchMediaLibraryCached(resolved, false).catch(err => {
     // Non-fatal prefetch failure
     console.warn('Background media prefetch notice:', err);
   });

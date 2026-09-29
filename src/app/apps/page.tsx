@@ -514,7 +514,7 @@ export default function AppsListingPage() {
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <span style={{ fontSize: "1.2rem" }}>🔒</span>
             <span>
-              <strong>{locale === "hy" ? "Վարիչի ռեժիմ․" : "Admin mode:"}</strong>{" "}
+              <strong>{locale === "hy" ? "Վարիչի կերպ․" : "Admin mode:"}</strong>{" "}
               {locale === "hy"
                 ? "Սևագիր հավելվածները նշված են «Սևագիր» պիտակով և տեսանելի են միայն Ձեզ (սովորական այցելուներին դրանք չեն ցուցադրվում)։"
                 : "Draft applications are marked with a 'Draft' badge and visible only to you (hidden from regular visitors)."}

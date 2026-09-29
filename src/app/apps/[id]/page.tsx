@@ -338,7 +338,7 @@ export default function AppDetailPage() {
           <span className="hd-icon icon-Warning" style={{ fontSize: "1.3rem" }} />
           <span>
             {locale === "hy"
-              ? "Այս հավելվածը պահպանված է որպես սևագիր և հասանելի է միայն ադմինիստրատորին:"
+              ? "Այս հավելվածը պահված է որպես սևագիր և հասանելի է միայն ադմինիստրատորին:"
               : "This app is currently saved as a draft and is visible only to administrators."}
           </span>
         </div>

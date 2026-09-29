@@ -151,7 +151,7 @@ export default function AdminTopBar() {
         <div className="admin-top-bar-left">
           <div className="admin-status-badge">
             <span className="admin-status-dot pulse" />
-            <span className="admin-status-label">{t("admin_bar", "admin_mode", "Վարիչի ռեժիմ")}</span>
+            <span className="admin-status-label">{t("admin_bar", "admin_mode", "Վարիչի կերպ")}</span>
           </div>
 
           <Link 
@@ -198,10 +198,10 @@ export default function AdminTopBar() {
             <Link 
               href="/admin?tab=general" 
               className="admin-quick-item"
-              title="Կայքի հիմնական կարգավորումներ"
+              title="Կայքի հիմնական կայանքներ"
             >
-              <span className="hd-icon icon-Settings" />
-              <span>{t("admin_bar", "settings", "Կարգավորումներ")}</span>
+              <span className="hd-icon hd-icon-settings" />
+              <span>{t("admin_bar", "settings", "Կայանքներ")}</span>
             </Link>
           </nav>
         </div>

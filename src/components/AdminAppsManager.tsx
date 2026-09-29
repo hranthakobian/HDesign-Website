@@ -335,7 +335,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
         if (selectedBugReport && selectedBugReport.id === id) {
           setSelectedBugReport(prev => prev ? { ...prev, admin_notes: reportAdminNotes } : null);
         }
-        alert("Նշումները հաջողությամբ պահպանվեցին:");
+        alert("Նշումները հաջողությամբ պահվեցին:");
       }
     } catch (err) {
       console.error("Failed to save admin notes:", err);
@@ -996,11 +996,11 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to save app");
 
-      alert(isDraft ? "Հավելվածը հաջողությամբ պահպանվեց որպես սևագիր:" : "Հավելվածը հաջողությամբ պահպանվեց:");
+      alert(isDraft ? "Հավելվածը հաջողությամբ պահվեց որպես սևագիր:" : "Հավելվածը հաջողությամբ պահվեց:");
       setIsEditing(false);
       loadData();
     } catch (err: any) {
-      alert("Սխալ պահպանելիս: " + err.message);
+      alert("Սխալ պահելիս: " + err.message);
     } finally {
       setSavingApp(false);
     }
@@ -2635,7 +2635,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                                                   })}
                                                 >
                                                   <span style={{ padding: '0 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                                    <span className="hd-icon icon-Image" /> Մեդիայից
+                                                    <span className="hd-icon icon-Image" /> Դարանից
                                                   </span>
                                                 </hd-button>
 
@@ -2930,7 +2930,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                                   <span style={{ padding: '0 10px' }}>
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: "middle", marginRight: 6 }}>
                                       <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                                    </svg> Մեդիայից
+                                    </svg> Դարանից
                                   </span>
                                 </hd-button>
 
@@ -3411,7 +3411,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                           currentValue: editingApp.gallery_images
                         })}
                       >
-                        <span style={{ padding: '0 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><span className="hd-icon icon-Image" /> Ընտրել Մեդիայից</span>
+                        <span style={{ padding: '0 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><span className="hd-icon icon-Image" /> Ընտրել Դարանից</span>
                       </hd-button>
                       <hd-button
                         suppressHydrationWarning
@@ -3444,7 +3444,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                   >
                     {editingApp.gallery_images.length === 0 ? (
                       <span style={{ color: 'var(--muted)', fontSize: '0.85rem', padding: '12px' }}>
-                        Սքրինշոթներ չկան: Սեղմեք «Ընտրել Մեդիայից» կամ «Վերբեռնել»:
+                        Սքրինշոթներ չկան: Սեղմեք «Ընտրել Դարանից» կամ «Վերբեռնել»:
                       </span>
                     ) : (
                       editingApp.gallery_images.map((img, i) => (
@@ -3699,7 +3699,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                       <polyline points="17 21 17 13 7 13 7 21" />
                       <polyline points="7 3 7 8 15 8" />
                     </svg>
-                    <span>{savingApp ? "Պահպանվում է..." : "Պահպանել որպես սևագիր"}</span>
+                    <span>{savingApp ? "Պահվում է..." : "Պահել որպես սևագիր"}</span>
                   </span>
                 </hd-button>
 
@@ -3717,7 +3717,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M5 12h14M12 5l7 7-7 7" />
                     </svg>
-                    <span>{savingApp ? "Պահպանվում է..." : "Հրապարակել Հավելվածը"}</span>
+                    <span>{savingApp ? "Պահվում է..." : "Հրապարակել Հավելվածը"}</span>
                   </span>
                 </hd-button>
               </div>
@@ -4110,7 +4110,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                       opacity: savingReportNotes ? 0.7 : 1
                     }}
                   >
-                    {savingReportNotes ? 'Պահպանվում է...' : 'Պահպանել Նշումները'}
+                    {savingReportNotes ? 'Պահվում է...' : 'Պահել Նշումները'}
                   </button>
                 </div>
               </div>
@@ -4232,7 +4232,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
           >
             <img
               src={selectedMediaUrl}
-              alt="Media Preview"
+              alt="Library Preview"
               style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: '12px', boxShadow: '0 20px 60px rgba(0,0,0,0.8)' }}
             />
             <button

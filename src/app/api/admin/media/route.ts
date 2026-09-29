@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     return NextResponse.json(data);
   } catch (error: any) {
     console.error('Failed to get media library:', error);
-    return NextResponse.json({ error: error.message || 'Սխալ մեդիա գրադարանը բեռնելիս' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Սխալ դարանը բեռնելիս' }, { status: 500 });
   }
 }
 
@@ -39,9 +39,19 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
     const targetFolderId = (formData.get('folderId') || '').toString().trim() || null;
+    const replaceFileId = (formData.get('replaceFileId') || '').toString().trim() || null;
 
     if (!file) {
       return NextResponse.json({ error: 'Նիշքը ընտրված չէ:' }, { status: 400 });
+    }
+
+    if (replaceFileId) {
+      try {
+        const { permanentlyDeleteMediaFile } = await import('@/lib/mediaScanner');
+        await permanentlyDeleteMediaFile(replaceFileId);
+      } catch (delErr) {
+        console.warn('Failed to clean up replaced file:', delErr);
+      }
     }
 
     const bytes = await file.arrayBuffer();
@@ -53,39 +63,62 @@ export async function POST(request: Request) {
 
     // 1. Try Supabase storage upload
     let publicUrl = '';
+    let targetBucket = 'gallery';
     const storageClient = supabaseAdmin || supabase;
     if (storageClient) {
       try {
-        const { data: upData, error: upErr } = await storageClient.storage
-          .from('gallery')
+        let uploadRes = await storageClient.storage
+          .from(targetBucket)
           .upload(filename, buffer, {
             contentType: file.type || 'application/octet-stream',
             upsert: true
           });
-        if (!upErr && upData) {
-          const { data: pubData } = storageClient.storage.from('gallery').getPublicUrl(filename);
+
+        if (uploadRes.error && uploadRes.error.message?.includes('Bucket not found')) {
+          try {
+            await storageClient.storage.createBucket(targetBucket, { public: true });
+            uploadRes = await storageClient.storage
+              .from(targetBucket)
+              .upload(filename, buffer, {
+                contentType: file.type || 'application/octet-stream',
+                upsert: true
+              });
+          } catch (createErr) {
+            targetBucket = 'uploads';
+            uploadRes = await storageClient.storage
+              .from(targetBucket)
+              .upload(filename, buffer, {
+                contentType: file.type || 'application/octet-stream',
+                upsert: true
+              });
+          }
+        }
+
+        if (!uploadRes.error && uploadRes.data) {
+          const { data: pubData } = storageClient.storage.from(targetBucket).getPublicUrl(filename);
           if (pubData?.publicUrl) {
             publicUrl = pubData.publicUrl;
           }
+        } else if (uploadRes.error) {
+          console.warn('Cloud storage upload notice:', uploadRes.error);
         }
       } catch (err) {
         console.warn('Cloud storage upload notice:', err);
       }
     }
 
-    // 2. Local fallback if public folder writable
-    const relPath = `uploads/${filename}`;
+    // 2. Local fallback if cloud upload failed or for local access
+    let relPath = publicUrl ? `supabase/${targetBucket}/${filename}` : `uploads/${filename}`;
     if (!publicUrl) {
       publicUrl = `/uploads/${filename}`;
-    }
-
-    try {
-      const targetDir = path.join(process.cwd(), 'public', 'uploads');
-      await fs.mkdir(targetDir, { recursive: true });
-      const filePath = path.join(targetDir, filename);
-      await fs.writeFile(filePath, buffer);
-    } catch (fsErr) {
-      console.warn('Local fs write skipped or read-only:', fsErr);
+      try {
+        const targetDir = path.join(process.cwd(), 'public', 'uploads');
+        await fs.mkdir(targetDir, { recursive: true });
+        const filePath = path.join(targetDir, filename);
+        await fs.writeFile(filePath, buffer);
+      } catch (fsErr) {
+        console.warn('Local fs write failed:', fsErr);
+      }
     }
 
     // Register into library data
@@ -94,6 +127,9 @@ export async function POST(request: Request) {
     if (publicUrl) {
       libraryData.fileAssignments[publicUrl] = targetFolderId;
     }
+    // Also assign uploads/ variant so lookup always succeeds
+    libraryData.fileAssignments[`uploads/${filename}`] = targetFolderId;
+    libraryData.fileAssignments[`/uploads/${filename}`] = targetFolderId;
     await saveMediaLibraryData(libraryData);
 
     const ext = path.extname(cleanFilename).toLowerCase().replace('.', '');
@@ -126,6 +162,7 @@ export async function DELETE(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const fileId = searchParams.get('fileId') || '';
+    const url = searchParams.get('url') || undefined;
     const isPermanent = searchParams.get('permanent') === 'true' || searchParams.get('deletePhysical') === 'true';
 
     if (!fileId) {
@@ -135,7 +172,7 @@ export async function DELETE(request: Request) {
     if (isPermanent) {
       // Permanently remove from Supabase Cloud Storage and local disk
       const { permanentlyDeleteMediaFile } = await import('@/lib/mediaScanner');
-      await permanentlyDeleteMediaFile(fileId);
+      await permanentlyDeleteMediaFile(fileId, url);
       return NextResponse.json({ success: true, message: 'Նիշքը ընդմիշտ հեռացված է:' });
     } else {
       // Move to Trash

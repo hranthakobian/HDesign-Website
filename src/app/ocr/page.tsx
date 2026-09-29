@@ -939,7 +939,7 @@ export default function OcrPage() {
               {/* Mode Selection */}
               <div>
                 <label style={{ fontSize: "12px", fontWeight: "600", color: "var(--muted)", marginBottom: "8px", display: "block" }}>
-                  {locale === "hy" ? "ՃԱՆԱՉՄԱՆ ՌԵԺԻՄ" : "RECOGNITION MODE"}
+                  {locale === "hy" ? "ՃԱՆԱՉՄԱՆ ԿԵՐՊ" : "RECOGNITION MODE"}
                 </label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                   {[
@@ -1876,7 +1876,7 @@ export default function OcrPage() {
             <input type="password" placeholder="AIzaSy..." defaultValue={customApiKey} id="custom-ocr-api-key-input" style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", background: "var(--input-bg)", border: "1px solid var(--panel-border)", color: "var(--text)", fontSize: "13px", outline: "none" }} />
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
               <button onClick={() => handleSaveApiKey("")} style={{ padding: "8px 16px", borderRadius: "10px", background: "var(--btn-bg)", color: "var(--text)", border: "1px solid var(--panel-border)", fontSize: "13px", cursor: "pointer" }}>Լռելյայն</button>
-              <button onClick={() => { const input = document.getElementById("custom-ocr-api-key-input") as HTMLInputElement; handleSaveApiKey(input ? input.value : ""); }} style={{ padding: "8px 20px", borderRadius: "10px", background: "var(--accent)", color: "#fff", border: "none", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>Պահպանել</button>
+              <button onClick={() => { const input = document.getElementById("custom-ocr-api-key-input") as HTMLInputElement; handleSaveApiKey(input ? input.value : ""); }} style={{ padding: "8px 20px", borderRadius: "10px", background: "var(--accent)", color: "#fff", border: "none", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>Պահել</button>
             </div>
           </div>
         </div>

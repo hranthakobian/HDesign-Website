@@ -678,12 +678,12 @@ export default function CaseEditor() {
       }
 
       if (r.ok) {
-        alert("Պահպանվեց!");
+        alert("Պահվեց!");
         if (isNew || (form.id && form.id !== id)) {
           router.replace(`/admin/editor/case/${form.id}`);
         }
       } else {
-        alert("Սխալ՝ " + (d?.error || "Չհաջողվեց պահպանել"));
+        alert("Սխալ՝ " + (d?.error || "Չհաջողվեց պահել"));
       }
     } catch (err: any) {
       alert("Կապի սխալ: " + (err.message || err));
@@ -849,7 +849,7 @@ export default function CaseEditor() {
             <span className="hd-icon icon-Settings" style={{ fontSize: "0.85rem" }} /> {reorderMode ? (editorLang === "en" ? "Exit Reorder" : "Ավարտել դասավորումը") : (editorLang === "en" ? "Reorder Blocks" : "Վերադասավորել")}
           </button>
           <hd-button onClick={save} disabled={saving} data-width="120px" data-height="34px" data-thickness="3px">
-            {saving ? "Պահպանվում..." : "Պահպանել"}
+            {saving ? "Պահվում է..." : "Պահել"}
           </hd-button>
         </div>
       </div>
@@ -1225,7 +1225,7 @@ export default function CaseEditor() {
                                       isOpen: true,
                                       target: { type: 'block_image', blockIdx: idx },
                                       allowedTypes: ['image'],
-                                      title: 'Ընտրել Նկար Մեդիայից'
+                                      title: 'Ընտրել Նկար Դարանից'
                                     })}
                                     style={{
                                       background: "rgba(74, 137, 124, 0.15)",
@@ -1238,7 +1238,7 @@ export default function CaseEditor() {
                                       cursor: "pointer"
                                     }}
                                   >
-                                    📁 Ընտրել Մեդիայից
+                                    📁 Ընտրել Դարանից
                                   </button>
                                   <label style={{
                                     background: "var(--btn-bg)",
@@ -1502,7 +1502,7 @@ export default function CaseEditor() {
                         cursor: "pointer"
                       }}
                     >
-                      📁 Ընտրել Մեդիայից
+                      📁 Ընտրել Դարանից
                     </button>
                     <label style={{ ...uploadLabelStyle, flex: 1, margin: 0 }}>
                       {uploading ? "Վերբեռնվում..." : "↑ Վերբեռնել"}
@@ -1657,7 +1657,7 @@ export default function CaseEditor() {
                       isOpen: true,
                       target: { type: 'block_image', blockIdx: selected },
                       allowedTypes: ['image'],
-                      title: 'Ընտրել Նկար Մեդիայից',
+                      title: 'Ընտրել Նկար Դարանից',
                       currentValue: block.image_url
                     })}
                     style={{
@@ -1672,7 +1672,7 @@ export default function CaseEditor() {
                       cursor: "pointer"
                     }}
                   >
-                    📁 Ընտրել Մեդիայից
+                    📁 Ընտրել Դարանից
                   </button>
                   <label style={{ ...uploadLabelStyle, flex: 1, margin: 0 }}>
                     {uploading ? (editorLang === "am" ? "Վերբեռնվում..." : "Uploading...") : (editorLang === "am" ? "↑ Վերբեռնել Նկար" : "↑ Upload Image")}
@@ -1705,7 +1705,7 @@ export default function CaseEditor() {
                           isOpen: true,
                           target: { type: 'block_embed', blockIdx: selected },
                           allowedTypes: ['video'],
-                          title: 'Ընտրել Տեսանյութ Մեդիայից',
+                          title: 'Ընտրել Տեսանյութ Դարանից',
                           currentValue: block.embed_url
                         })}
                         style={{
@@ -1720,7 +1720,7 @@ export default function CaseEditor() {
                           cursor: "pointer"
                         }}
                       >
-                        📁 Ընտրել Մեդիայից
+                        📁 Ընտրել Դարանից
                       </button>
                       <label style={{ ...uploadLabelStyle, flex: 1, margin: 0 }}>
                         {uploading ? "Վերբեռնվում է..." : "↑ Վերբեռնել"}

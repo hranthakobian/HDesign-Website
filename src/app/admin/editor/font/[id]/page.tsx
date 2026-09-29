@@ -292,15 +292,15 @@ export default function FontWysiwygEditor() {
 
       const data = await res.json();
       if (res.ok) {
-        alert("Տառատեսակը հաջողությամբ պահպանվեց:");
+        alert("Տառատեսակը հաջողությամբ պահվեց:");
         if (isNew) {
           router.replace(`/admin/editor/font/${fontForm.id}`);
         }
       } else {
-        alert("Սխալ՝ " + (data.error || "Չհաջողվեց պահպանել"));
+        alert("Սխալ՝ " + (data.error || "Չհաջողվեց պահել"));
       }
     } catch (err) {
-      alert("Կապի սխալ: Չհաջողվեց պահպանել տառատեսակը:");
+      alert("Կապի սխալ: Չհաջողվեց պահել տառատեսակը:");
     } finally {
       setSaving(false);
     }
@@ -372,7 +372,7 @@ export default function FontWysiwygEditor() {
             onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
             onMouseLeave={e => e.currentTarget.style.opacity = '1'}
           >
-            {saving ? 'Պահպանվում է...' : 'Պահպանել տառատեսակը'}
+            {saving ? 'Պահվում է...' : 'Պահել տառատեսակը'}
           </button>
         </div>
       </div>
@@ -680,7 +680,7 @@ export default function FontWysiwygEditor() {
                           fontWeight: 600
                         }}
                       >
-                        📁 Ընտրել Մեդիայից
+                        📁 Ընտրել Դարանից
                       </button>
                     </div>
                   </div>

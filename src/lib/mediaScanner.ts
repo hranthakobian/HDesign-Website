@@ -73,7 +73,7 @@ const DEFAULT_FOLDERS: MediaFolder[] = [
   },
   {
     id: 'folder-site-assets',
-    name: 'Կայքի Գլխավոր Մեդիա',
+    name: 'Կայքի Գլխավոր Դարան',
     color: '#F59E0B', // Amber
     parentId: null,
     createdAt: new Date().toISOString()
@@ -240,14 +240,13 @@ export async function permanentlyDeleteMediaFile(fileId: string, url?: string): 
     try {
       if (targetBucket && targetFileName) {
         await storageClient.storage.from(targetBucket).remove([targetFileName]);
-      } else {
-        const baseName = path.basename(fileId);
-        for (const b of cloudBuckets) {
-          try {
-            await storageClient.storage.from(b).remove([baseName, fileId]);
-          } catch (bErr) {
-            // ignore
-          }
+      }
+      const baseName = path.basename(fileId);
+      for (const b of cloudBuckets) {
+        try {
+          await storageClient.storage.from(b).remove([baseName, fileId, `uploads/${baseName}`]);
+        } catch (bErr) {
+          // ignore
         }
       }
     } catch (sErr) {
@@ -258,16 +257,22 @@ export async function permanentlyDeleteMediaFile(fileId: string, url?: string): 
   // 2. Physical local file removal if exists on disk
   try {
     const cleanRelPath = fileId.replace(/^supabase\/[^/]+\//, '').replace(/^\/+/, '');
+    const baseName = path.basename(fileId);
     const localCandidates = [
       path.join(PUBLIC_DIR, fileId),
       path.join(PUBLIC_DIR, cleanRelPath),
-      path.join(PUBLIC_DIR, 'uploads', path.basename(fileId)),
-      path.join(PUBLIC_DIR, 'uploads', cleanRelPath)
+      path.join(PUBLIC_DIR, 'uploads', baseName),
+      path.join(PUBLIC_DIR, 'uploads', cleanRelPath),
+      path.join(PUBLIC_DIR, 'branding', baseName),
+      path.join(PUBLIC_DIR, baseName)
     ];
     for (const candidate of localCandidates) {
       if (fsSync.existsSync(candidate)) {
         try {
-          await fs.unlink(candidate);
+          const stat = await fs.stat(candidate);
+          if (stat.isFile()) {
+            await fs.unlink(candidate);
+          }
         } catch (e) {
           // ignore
         }
@@ -280,19 +285,28 @@ export async function permanentlyDeleteMediaFile(fileId: string, url?: string): 
   // 3. Clean from media library metadata
   try {
     const libraryData = await getMediaLibraryData();
-    delete libraryData.fileAssignments[fileId];
-    delete libraryData.fileAssignments['/' + fileId.replace(/^\/+/, '')];
+    const baseName = path.basename(fileId);
+    const keysToDelete = [
+      fileId,
+      '/' + fileId.replace(/^\/+/, ''),
+      baseName,
+      `uploads/${baseName}`,
+      `/uploads/${baseName}`,
+      `supabase/gallery/${baseName}`,
+      `supabase/uploads/${baseName}`,
+      `supabase/branding/${baseName}`
+    ];
     if (url) {
-      delete libraryData.fileAssignments[url];
+      keysToDelete.push(url, url.toLowerCase());
+      try {
+        const u = new URL(url);
+        keysToDelete.push(u.pathname, decodeURIComponent(u.pathname));
+      } catch (e) {}
     }
-    if (libraryData.customNames) {
-      delete libraryData.customNames[fileId];
-      if (url) delete libraryData.customNames[url];
-    }
-    if (libraryData.trash) {
-      delete libraryData.trash[fileId];
-      if (url) delete libraryData.trash[url];
-      delete libraryData.trash['/' + fileId.replace(/^\/+/, '')];
+    for (const k of keysToDelete) {
+      delete libraryData.fileAssignments[k];
+      if (libraryData.customNames) delete libraryData.customNames[k];
+      if (libraryData.trash) delete libraryData.trash[k];
     }
     await saveMediaLibraryData(libraryData);
   } catch (dataErr) {
@@ -613,6 +627,7 @@ export async function scanAllMediaFiles(forceRefresh = false): Promise<{
 
     const rawFiles: Array<{ fullPath?: string; relPath: string; url: string; size: number; mtime: string }> = [];
     const seenUrls = new Set<string>();
+    const seenBaseNames = new Map<string, number>();
 
     // 1. Scan local public folder if exists
     async function walk(currentDir: string) {
@@ -633,6 +648,8 @@ export async function scanAllMediaFiles(forceRefresh = false): Promise<{
                 const url = '/' + relPath.replace(/^\/+/, '');
                 if (!seenUrls.has(url)) {
                   seenUrls.add(url);
+                  const baseName = path.basename(relPath).toLowerCase();
+                  seenBaseNames.set(baseName, rawFiles.length);
                   rawFiles.push({
                     fullPath,
                     relPath,
@@ -665,7 +682,7 @@ export async function scanAllMediaFiles(forceRefresh = false): Promise<{
       for (const bucket of cloudBuckets) {
         try {
           const { data: cloudList, error: listErr } = await storageClient.storage.from(bucket).list('', {
-            limit: 200,
+            limit: 500,
             offset: 0,
             sortBy: { column: 'created_at', order: 'desc' }
           });
@@ -674,16 +691,27 @@ export async function scanAllMediaFiles(forceRefresh = false): Promise<{
               if (!item.name || item.name === '.emptyFolderPlaceholder') continue;
               const { data: pubData } = storageClient.storage.from(bucket).getPublicUrl(item.name);
               const fileUrl = pubData?.publicUrl;
-              if (fileUrl && !seenUrls.has(fileUrl)) {
+              if (!fileUrl || seenUrls.has(fileUrl)) continue;
+
+              const baseName = path.basename(item.name).toLowerCase();
+              const existingIdx = seenBaseNames.get(baseName);
+              if (existingIdx !== undefined) {
+                // Avoid ghost duplicate if already found in local public folder
                 seenUrls.add(fileUrl);
-                const relPath = `supabase/${bucket}/${item.name}`;
-                rawFiles.push({
-                  relPath,
-                  url: fileUrl,
-                  size: item.metadata?.size || 102400,
-                  mtime: item.updated_at || item.created_at || new Date().toISOString()
-                });
+                // Prefer cloud URL if available
+                rawFiles[existingIdx].url = fileUrl;
+                continue;
               }
+
+              seenUrls.add(fileUrl);
+              seenBaseNames.set(baseName, rawFiles.length);
+              const relPath = `supabase/${bucket}/${item.name}`;
+              rawFiles.push({
+                relPath,
+                url: fileUrl,
+                size: item.metadata?.size || 102400,
+                mtime: item.updated_at || item.created_at || new Date().toISOString()
+              });
             }
           }
         } catch (storageErr) {
@@ -741,7 +769,13 @@ export async function scanAllMediaFiles(forceRefresh = false): Promise<{
       totalSize += size;
 
       // Trash status check
-      const trashMeta = libraryData.trash?.[item.relPath] || libraryData.trash?.[url] || libraryData.trash?.['/' + item.relPath.replace(/^\/+/, '')];
+      const baseName = path.basename(item.relPath);
+      const trashMeta = libraryData.trash?.[item.relPath] ||
+        libraryData.trash?.[url] ||
+        libraryData.trash?.['/' + item.relPath.replace(/^\/+/, '')] ||
+        libraryData.trash?.[baseName] ||
+        libraryData.trash?.[`uploads/${baseName}`] ||
+        libraryData.trash?.[`/uploads/${baseName}`];
       const isTrashed = !!trashMeta;
 
       let daysRemaining: number | undefined = undefined;
@@ -770,7 +804,10 @@ export async function scanAllMediaFiles(forceRefresh = false): Promise<{
       }
 
       // Determine folder ID:
-      let folderId = libraryData.fileAssignments[item.relPath] ?? libraryData.fileAssignments[url];
+      let folderId = libraryData.fileAssignments[item.relPath] ??
+        libraryData.fileAssignments[url] ??
+        libraryData.fileAssignments[baseName] ??
+        libraryData.fileAssignments[`uploads/${baseName}`];
 
       if (folderId === undefined) {
         if (item.relPath.includes('uploads') || url.includes('/uploads/')) {

@@ -116,6 +116,20 @@
 .icon-extrabold, .hd-icon-extrabold   { font-weight: 800; }
 .icon-black, .hd-icon-black           { font-weight: 900; }
 
+/* Chevrolt arrows and small symbols default to 800 weight */
+[class*="icon-Chevrolt-Arrow-"],
+[class*="icon-chevrolt-arrow-"],
+.icon-Chevrolt-Arrow-Bottom,
+.icon-Chevrolt-Arrow-Top,
+.icon-Chevrolt-Arrow-Left,
+.icon-Chevrolt-Arrow-Right,
+.hd-icon-chevrolt-arrow-bottom,
+.hd-icon-chevrolt-arrow-top,
+.hd-icon-chevrolt-arrow-left,
+.hd-icon-chevrolt-arrow-right {
+  font-weight: 800 !important;
+}
+
 /* Icon Glyphs */
 .icon-HD-Logo:before,
 .hd-icon-HD-Logo:before,

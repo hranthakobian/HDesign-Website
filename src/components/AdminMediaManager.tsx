@@ -6,6 +6,9 @@ import JSZip from 'jszip';
 import FolderIcon from '@/components/FolderIcon';
 import { MediaFolder, MediaFile, ViewMode, SortField, SortOrder, SortCriterion, MediaFileType, StorageStats, TrashSettings, FolderStats, formatBytes } from '@/lib/mediaTypes';
 import { getCachedMedia, notifyMediaCache, subscribeToMediaCache } from '@/lib/mediaCache';
+import { uploadFileWithProgress, UploadProgressState } from '@/lib/mediaUpload';
+import UploadProgressOverlay from '@/components/UploadProgressOverlay';
+import { ImageCropModal } from '@/components/ImageCropModal';
 
 const COLOR_PRESETS = [
   { name: 'Կապույտ (Windows Blue)', hex: '#3B82F6' },
@@ -24,7 +27,100 @@ interface AdminMediaManagerProps {
   token: string | null;
 }
 
+// Horizontal marquee scrolling on hover for folder names (վազող տող)
+const FolderMarqueeText: React.FC<{
+  text: string;
+  isSelected?: boolean;
+  color?: string;
+  isParentHovered?: boolean;
+  onClick?: (e: React.MouseEvent) => void;
+}> = ({ text, isSelected, color, isParentHovered, onClick }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [isSelfHovered, setIsSelfHovered] = useState(false);
+  const [overflowDistance, setOverflowDistance] = useState(0);
+
+  const active = (isParentHovered || isSelfHovered) && overflowDistance > 0;
+
+  const measure = useCallback(() => {
+    if (containerRef.current && textRef.current) {
+      const diff = textRef.current.scrollWidth - containerRef.current.clientWidth;
+      setOverflowDistance(diff > 3 ? diff : 0);
+    }
+  }, []);
+
+  const handleMouseEnter = () => {
+    measure();
+    setIsSelfHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsSelfHovered(false);
+  };
+
+  useEffect(() => {
+    if (isParentHovered) {
+      measure();
+    }
+  }, [isParentHovered, measure]);
+
+  const duration = Math.max(3, (overflowDistance / 24) + 1.2);
+
+  return (
+    <div
+      ref={containerRef}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onClick={onClick}
+      className="folder-name-marquee-container"
+      style={{
+        overflow: 'hidden',
+        whiteSpace: 'nowrap',
+        textOverflow: active ? 'clip' : 'ellipsis',
+        flex: 1,
+        minWidth: 0,
+        position: 'relative'
+      }}
+      title={text}
+    >
+      <span
+        ref={textRef}
+        style={{
+          display: 'inline-block',
+          whiteSpace: 'nowrap',
+          color: color || 'inherit',
+          fontWeight: isSelected ? 600 : 400,
+          willChange: overflowDistance > 0 ? 'transform' : 'auto',
+          ...(active
+            ? ({
+                animation: `folderMarqueeScroll ${duration}s ease-in-out infinite alternate`,
+                '--overflow-dist': `${overflowDistance + 6}px`
+              } as React.CSSProperties)
+            : {
+                transform: 'translateX(0)',
+                transition: 'transform 0.2s ease'
+              })
+        }}
+      >
+        {text}
+      </span>
+    </div>
+  );
+};
+
 export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
+  // Resilient token resolver that falls back to localStorage/sessionStorage/cookies
+  const getAuthToken = useCallback(() => {
+    if (token && token.trim()) return token.trim();
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('hdesign_admin_token') || sessionStorage.getItem('hdesign_admin_token');
+      if (stored && stored.trim()) return stored.trim();
+      const match = document.cookie.match(/hdesign_admin_token=([^;]+)/);
+      if (match) return decodeURIComponent(match[1]).trim();
+    }
+    return '';
+  }, [token]);
+
   // Client mount state for portals
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -47,6 +143,16 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     });
     return unsubscribe;
   }, []);
+
+  // Memoized stats for Trash (count & weight always visible next to Trash row as requested)
+  const trashStats = useMemo(() => {
+    const trashFiles = files.filter(f => f.isTrashed);
+    const trashSize = trashFiles.reduce((acc, f) => acc + (f.size || 0), 0);
+    return {
+      count: trashFiles.length,
+      sizeFormatted: formatBytes(trashSize)
+    };
+  }, [files]);
 
   // Trash state
   const [isTrashSettingsModalOpen, setIsTrashSettingsModalOpen] = useState(false);
@@ -71,6 +177,94 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     }
     return 'large-icons';
   });
+
+  // Folder open mode: 'double' (default) or 'single'
+  const [folderOpenMode, setFolderOpenMode] = useState<'double' | 'single'>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('hdesign_media_folder_open_mode');
+        if (saved === 'single' || saved === 'double') return saved;
+      } catch (e) {}
+    }
+    return 'double';
+  });
+
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+
+  const changeFolderOpenMode = (mode: 'double' | 'single') => {
+    setFolderOpenMode(mode);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('hdesign_media_folder_open_mode', mode);
+      } catch (e) {}
+    }
+  };
+
+  // Checkbox visibility: false by default (hidden by default)
+  const [showItemCheckboxes, setShowItemCheckboxes] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('hdesign_media_show_checkboxes');
+        if (saved !== null) return saved === 'true';
+      } catch (e) {}
+    }
+    return false;
+  });
+
+  const toggleShowItemCheckboxes = (val: boolean) => {
+    setShowItemCheckboxes(val);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('hdesign_media_show_checkboxes', String(val));
+      } catch (e) {}
+    }
+  };
+
+  // Supabase Storage pane collapsible state (separated pane / առանձնացված փեղկ)
+  const [isSupabasePaneOpen, setIsSupabasePaneOpen] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('hdesign_supabase_pane_open');
+        if (saved !== null) return saved === 'true';
+      } catch (e) {}
+    }
+    return true;
+  });
+
+  const toggleSupabasePane = () => {
+    setIsSupabasePaneOpen(prev => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('hdesign_supabase_pane_open', String(next));
+        } catch (e) {}
+      }
+      return next;
+    });
+  };
+
+  // Folders sidebar section collapsible state (կոծկելի ցանկ)
+  const [isFoldersTreeOpen, setIsFoldersTreeOpen] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('hdesign_folders_tree_open');
+        if (saved !== null) return saved === 'true';
+      } catch (e) {}
+    }
+    return true;
+  });
+
+  const toggleFoldersTree = () => {
+    setIsFoldersTreeOpen(prev => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('hdesign_folders_tree_open', String(next));
+        } catch (e) {}
+      }
+      return next;
+    });
+  };
 
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | MediaFileType>(() => {
@@ -288,7 +482,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     active: false,
     isEnding: false,
     endTime: 0,
-    endDuration: 280,
+    endDuration: 340,
     startX: 0,
     startY: 0,
     startScale: 1.0
@@ -333,6 +527,19 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
   const [renamingFile, setRenamingFile] = useState<MediaFile | null>(null);
   const [newFileName, setNewFileName] = useState('');
 
+  // Image Crop & Canvas Expand Modal state
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [cropModalFile, setCropModalFile] = useState<MediaFile | null>(null);
+
+  // Direct Inline rename on slow 2nd click
+  const [inlineEditItem, setInlineEditItem] = useState<{
+    id: string;
+    type: 'file' | 'folder';
+    name: string;
+    originalName: string;
+  } | null>(null);
+  const itemClickTrackerRef = useRef<{ [id: string]: number }>({});
+
   // Drag & drop state
   const [isDraggingOverDropzone, setIsDraggingOverDropzone] = useState(false);
   const [draggedFileIds, setDraggedFileIds] = useState<string[]>([]);
@@ -359,6 +566,27 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
   // Uploading state
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgressText, setUploadProgressText] = useState('');
+  const [uploadProgress, setUploadProgress] = useState<UploadProgressState | null>(null);
+
+  // Tooltip state for folder hover count & size (with downward arrow)
+  const [folderTooltip, setFolderTooltip] = useState<{
+    text: string;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const showTooltipFor = (count: number, sizeFormatted: string, e: React.MouseEvent<HTMLElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setFolderTooltip({
+      text: `${count} նիշք • ${sizeFormatted}`,
+      x: rect.left + rect.width / 2,
+      y: rect.top - 6
+    });
+  };
+
+  const hideTooltip = () => {
+    setFolderTooltip(null);
+  };
 
   // Toast message
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -411,7 +639,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     try {
       const res = await fetch('/api/admin/media', {
         headers: {
-          Authorization: token || ''
+          Authorization: getAuthToken()
         }
       });
       if (!res.ok) {
@@ -444,12 +672,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     } catch (err: any) {
       console.error('Error fetching media:', err);
       if (!getCachedMedia()) {
-        setError(err.message || 'Չհաջողվեց բեռնել մեդիա գրադարանը');
+        setError(err.message || 'Չհաջողվեց բեռնել դարանը');
       }
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [getAuthToken]);
 
   useEffect(() => {
     loadMedia();
@@ -819,18 +1047,18 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
   const breadcrumbs = useMemo(() => {
     if (currentFolderId === 'trash') {
       return [
-        { id: null, name: 'Անհատական Կայք (ԱԿ)' },
+        { id: null, name: 'ԱԿ' },
         { id: 'trash', name: 'Աղբարկղ', color: '#EF4444' }
       ];
     }
     if (currentFolderId === 'gallery') {
       return [
-        { id: null, name: 'Անհատական Կայք (ԱԿ)' },
+        { id: null, name: 'ԱԿ' },
         { id: 'gallery', name: 'Պատկերասրահ (Բոլոր նիշքերը)', color: '#8B5CF6' }
       ];
     }
     const crumbs: Array<{ id: string | null; name: string; color?: string }> = [
-      { id: null, name: 'Անհատական Կայք (ԱԿ) (Գլխավոր)' }
+      { id: null, name: 'ԱԿ' }
     ];
     if (!currentFolderId) return crumbs;
 
@@ -1042,7 +1270,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: token || ''
+            Authorization: getAuthToken()
           },
           body: JSON.stringify({
             name: folderFormName.trim(),
@@ -1067,7 +1295,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: token || ''
+            Authorization: getAuthToken()
           },
           body: JSON.stringify({
             id: editingFolderId,
@@ -1086,7 +1314,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         }
       }
     } catch (err: any) {
-      openDialog({ type: 'alert', title: 'Սխալ', message: err.message || 'Սխալ պանակը պահպանելիս', onConfirm: closeDialog });
+      openDialog({ type: 'alert', title: 'Սխալ', message: err.message || 'Սխալ պանակը պահելիս', onConfirm: closeDialog });
     }
   };
 
@@ -1108,7 +1336,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         try {
           const res = await fetch(`/api/admin/media/folders?id=${encodeURIComponent(folder.id)}`, {
             method: 'DELETE',
-            headers: { Authorization: token || '' }
+            headers: { Authorization: getAuthToken() }
           });
           const data = await res.json();
           if (data.success) {
@@ -1140,7 +1368,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     const trashedMovedCount = files.filter(f => fileIdsToMove.includes(f.id) && f.isTrashed).length;
     const isFromTrash = currentFolderId === 'trash' || trashedMovedCount > 0;
 
-    const targetName = targetFolderId ? folderMap.get(targetFolderId)?.name || 'պանակ' : 'Գլխավոր (ԱԿ)';
+    const targetName = targetFolderId ? folderMap.get(targetFolderId)?.name || 'պանակ' : 'ԱԿ';
     if (isFromTrash) {
       showToast(`${fileIdsToMove.length} նիշք վերականգնվեց աղբարկղից և տեղափոխվեց «${targetName}»`);
     } else {
@@ -1182,7 +1410,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: token || ''
+          Authorization: getAuthToken()
         },
         body: JSON.stringify({
           fileIds: fileIdsToMove,
@@ -1230,7 +1458,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
     if (sourceFolder.parentId === targetParentId) return;
 
-    const targetName = targetParentId ? folderMap.get(targetParentId)?.name || 'պանակ' : 'Գլխավոր (ԱԿ)';
+    const targetName = targetParentId ? folderMap.get(targetParentId)?.name || 'պանակ' : 'ԱԿ';
     showToast(`«${sourceFolder.name}» պանակը տեղափոխվեց «${targetName}»`);
 
     // Optimistic UI update
@@ -1246,7 +1474,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: token || ''
+          Authorization: getAuthToken()
         },
         body: JSON.stringify({
           id: folderId,
@@ -1268,14 +1496,15 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
   const openContextMenu = (
     e: React.MouseEvent,
     type: 'file' | 'folder' | 'empty',
-    item?: { file?: MediaFile; folder?: MediaFolder }
+    item?: { file?: MediaFile; folder?: MediaFolder },
+    customPos?: { x: number; y: number }
   ) => {
     e.preventDefault();
     e.stopPropagation();
 
     // Viewport boundaries (menu width ~230px, height ~320px)
-    let x = e.clientX;
-    let y = e.clientY;
+    let x = customPos ? customPos.x : e.clientX;
+    let y = customPos ? customPos.y : e.clientY;
     if (typeof window !== 'undefined') {
       if (x + 240 > window.innerWidth) {
         x = Math.max(10, window.innerWidth - 245);
@@ -1357,7 +1586,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
   };
 
   // File Upload (with automatic ZIP extraction support)
-  const handleUploadFiles = async (fileList: FileList | File[]) => {
+  const handleUploadFiles = async (fileList: FileList | File[], targetFolderOverride?: string | null) => {
     const filesToUpload = Array.from(fileList);
     if (filesToUpload.length === 0) return;
 
@@ -1389,7 +1618,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
             if (validFiles.length > 0) {
               showToast(`Արխիվից առանձնացվեց ${validFiles.length} նիշք: Սկսվում է վերբեռնումը...`);
-              await uploadExtractedFiles(validFiles);
+              await uploadExtractedFiles(validFiles, targetFolderOverride);
               return;
             }
           } catch (err: any) {
@@ -1399,50 +1628,74 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         },
         onCancel: () => {
           closeDialog();
-          uploadExtractedFiles(filesToUpload);
+          uploadExtractedFiles(filesToUpload, targetFolderOverride);
         }
       });
       return;
     }
 
     // Standard upload
-    await uploadExtractedFiles(filesToUpload);
+    await uploadExtractedFiles(filesToUpload, targetFolderOverride);
   };
 
-  const uploadExtractedFiles = async (filesList: File[]) => {
+  const uploadExtractedFiles = async (filesList: File[], targetFolderOverride?: string | null) => {
     setIsUploading(true);
     let successCount = 0;
+    const errors: string[] = [];
+    const authToken = getAuthToken();
+    const effectiveFolder = targetFolderOverride !== undefined ? targetFolderOverride : currentFolderId;
 
-    for (let i = 0; i < filesList.length; i++) {
-      const file = filesList[i];
-      setUploadProgressText(`Վերբեռնվում է (${i + 1}/${filesList.length}): ${file.name}`);
-      const formData = new FormData();
-      formData.append('file', file);
-      if (currentFolderId && currentFolderId !== 'trash' && currentFolderId !== 'gallery') {
-        formData.append('folderId', currentFolderId);
-      }
-
-      try {
-        const res = await fetch('/api/admin/media', {
-          method: 'POST',
-          headers: {
-            Authorization: token || ''
-          },
-          body: formData
+    try {
+      for (let i = 0; i < filesList.length; i++) {
+        const file = filesList[i];
+        setUploadProgress({
+          fileIndex: i,
+          totalFiles: filesList.length,
+          fileName: file.name,
+          fileSize: file.size,
+          percent: 0,
+          loadedBytes: 0,
+          totalBytes: file.size
         });
-        const data = await res.json();
-        if (data.success && data.file) {
-          setFiles(prev => [data.file, ...prev]);
+
+        const res = await uploadFileWithProgress(
+          file,
+          effectiveFolder,
+          authToken,
+          (progress) => setUploadProgress(progress),
+          i,
+          filesList.length
+        );
+
+        if (res.success && res.file) {
+          const uploadedFile = res.file;
+          setFiles(prev => [uploadedFile, ...prev.filter(f => f.id !== uploadedFile.id)]);
           successCount++;
+        } else {
+          const errMsg = res.error || 'Սխալ վերբեռնելիս';
+          errors.push(`${file.name}: ${errMsg}`);
+          console.error('Upload error on file:', file.name, errMsg);
         }
-      } catch (err) {
-        console.error('Upload error on file:', file.name, err);
       }
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(null);
+      setUploadProgressText('');
     }
 
-    setIsUploading(false);
-    setUploadProgressText('');
-    showToast(`${successCount} նոր նիշք հաջողությամբ վերբեռնվեց`);
+    if (successCount > 0) {
+      showToast(`${successCount} նոր նիշք հաջողությամբ վերբեռնվեց`);
+      loadMedia();
+    }
+
+    if (errors.length > 0) {
+      openDialog({
+        type: 'alert',
+        title: 'Վերբեռնման խնդիր',
+        message: `${errors.length} նիշք չհաջողվեց վերբեռնել:\n` + errors.slice(0, 3).join('\n') + (errors.length > 3 ? `\n...ևս ${errors.length - 3}` : ''),
+        onConfirm: closeDialog
+      });
+    }
   };
 
   // Move single file to trash (with smart detection if used in website & skip confirm support)
@@ -1466,7 +1719,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
       fetch('/api/admin/media/trash', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: token || '' },
+        headers: { 'Content-Type': 'application/json', Authorization: getAuthToken() },
         body: JSON.stringify({ action: 'moveToTrash', fileIds: [file.id] })
       }).then(res => res.json()).then(data => {
         if (!data.success) {
@@ -1539,7 +1792,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
       fetch('/api/admin/media/trash', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: token || '' },
+        headers: { 'Content-Type': 'application/json', Authorization: getAuthToken() },
         body: JSON.stringify({ action: 'moveToTrash', fileIds: idsToTrash })
       }).then(res => res.json()).then(data => {
         if (!data.success) {
@@ -1604,7 +1857,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     try {
       const res = await fetch('/api/admin/media/trash', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: token || '' },
+        headers: { 'Content-Type': 'application/json', Authorization: getAuthToken() },
         body: JSON.stringify({ action: 'restore', fileIds: [file.id] })
       });
       const data = await res.json();
@@ -1635,7 +1888,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     try {
       const res = await fetch('/api/admin/media/trash', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: token || '' },
+        headers: { 'Content-Type': 'application/json', Authorization: getAuthToken() },
         body: JSON.stringify({ action: 'restore', fileIds: idsToRestore })
       });
       const data = await res.json();
@@ -1666,7 +1919,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
       fetch('/api/admin/media/trash', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: token || '' },
+        headers: { 'Content-Type': 'application/json', Authorization: getAuthToken() },
         body: JSON.stringify({ action: 'permanentDelete', fileIds: [file.id] })
       }).then(res => res.json()).then(data => {
         if (!data.success) {
@@ -1716,7 +1969,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
       fetch('/api/admin/media/trash', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: token || '' },
+        headers: { 'Content-Type': 'application/json', Authorization: getAuthToken() },
         body: JSON.stringify({ action: 'permanentDelete', fileIds: idsToDelete })
       }).then(res => res.json()).then(data => {
         if (!data.success) {
@@ -1780,7 +2033,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         try {
           const res = await fetch('/api/admin/media/trash', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: token || '' },
+            headers: { 'Content-Type': 'application/json', Authorization: getAuthToken() },
             body: JSON.stringify({ action: 'empty' })
           });
           const data = await res.json();
@@ -1801,19 +2054,19 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     try {
       const res = await fetch('/api/admin/media/trash', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: token || '' },
+        headers: { 'Content-Type': 'application/json', Authorization: getAuthToken() },
         body: JSON.stringify({ action: 'updateSettings', settings: trashSettingsForm })
       });
       const data = await res.json();
       if (data.success) {
         setIsTrashSettingsModalOpen(false);
-        showToast('Աղբարկղի կարգավորումները պահպանվեցին');
+        showToast('Աղբարկղի կայանքները պահվեցին');
         loadMedia();
       } else {
-        openDialog({ type: 'alert', title: 'Սխալ', message: data.error || 'Չհաջողվեց պահպանել կարգավորումները', onConfirm: closeDialog });
+        openDialog({ type: 'alert', title: 'Սխալ', message: data.error || 'Չհաջողվեց պահել կայանքները', onConfirm: closeDialog });
       }
     } catch (err: any) {
-      openDialog({ type: 'alert', title: 'Սխալ', message: err.message || 'Սխալ կարգավորումները պահպանելիս', onConfirm: closeDialog });
+      openDialog({ type: 'alert', title: 'Սխալ', message: err.message || 'Սխալ կայանքները պահելիս', onConfirm: closeDialog });
     }
   };
 
@@ -1849,7 +2102,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: token || ''
+          Authorization: getAuthToken()
         },
         body: JSON.stringify({
           fileId: renamingFile.id,
@@ -1872,6 +2125,118 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     }
   };
 
+  // Image Crop Modal Handlers
+  const handleOpenCropModal = (file: MediaFile) => {
+    setCropModalFile(file);
+    setIsCropModalOpen(true);
+  };
+
+  const handleCropSaveSuccess = (updatedFile: MediaFile, isCopy: boolean) => {
+    if (isCopy) {
+      setFiles(prev => [updatedFile, ...prev]);
+      showToast(`Պատճենը ստեղծվեց՝ «${updatedFile.name}»`);
+    } else {
+      setFiles(prev => prev.map(f => f.id === updatedFile.id ? updatedFile : f));
+      if (previewFile?.id === updatedFile.id) {
+        setPreviewFile(updatedFile);
+      }
+      showToast(`Պատկերը թարմացվեց՝ «${updatedFile.name}»`);
+    }
+  };
+
+  // Helper for initiating inline rename
+  const triggerInlineRename = (id: string, type: 'file' | 'folder', currentName: string) => {
+    setInlineEditItem({
+      id,
+      type,
+      name: currentName,
+      originalName: currentName
+    });
+  };
+
+  // Click on name to check for slow second click / already-selected click
+  const handleNameClickForRename = (
+    e: React.MouseEvent,
+    id: string,
+    type: 'file' | 'folder',
+    currentName: string,
+    isSelectedOrActive: boolean
+  ) => {
+    const now = Date.now();
+    const lastTime = itemClickTrackerRef.current[id] || 0;
+    const elapsed = now - lastTime;
+    itemClickTrackerRef.current[id] = now;
+
+    if (isSelectedOrActive && elapsed > 300 && elapsed < 3500) {
+      e.stopPropagation();
+      e.preventDefault();
+      triggerInlineRename(id, type, currentName);
+    }
+  };
+
+  const handleInlineRenameSubmit = async () => {
+    if (!inlineEditItem) return;
+    const trimmed = inlineEditItem.name.trim();
+    if (!trimmed || trimmed === inlineEditItem.originalName) {
+      setInlineEditItem(null);
+      return;
+    }
+
+    try {
+      if (inlineEditItem.type === 'folder') {
+        const folder = folders.find(f => f.id === inlineEditItem.id);
+        if (folder) {
+          const res = await fetch('/api/admin/media/folders', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: getAuthToken()
+            },
+            body: JSON.stringify({
+              id: inlineEditItem.id,
+              name: trimmed,
+              color: folder.color,
+              parentId: folder.parentId
+            })
+          });
+          const data = await res.json();
+          if (data.success && data.folder) {
+            setFolders(prev => prev.map(f => f.id === inlineEditItem.id ? data.folder : f));
+            showToast(`Պանակը անվանափոխվեց՝ «${trimmed}»`);
+          } else {
+            showToast(data.error || 'Չհաջողվեց անվանափոխել պանակը');
+          }
+        }
+      } else {
+        const res = await fetch('/api/admin/media/rename', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: getAuthToken()
+          },
+          body: JSON.stringify({
+            fileId: inlineEditItem.id,
+            newName: trimmed
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setFiles(prev => prev.map(f => f.id === inlineEditItem.id ? { ...f, name: trimmed } : f));
+          if (previewFile?.id === inlineEditItem.id) {
+            setPreviewFile(prev => prev ? { ...prev, name: trimmed } : null);
+          }
+          showToast(`Նիշքը անվանափոխվեց՝ «${trimmed}»`);
+        } else {
+          showToast(data.error || 'Անվանափոխումը ձախողվեց');
+        }
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Սխալ անվանափոխելիս');
+    } finally {
+      setInlineEditItem(null);
+    }
+  };
+
   // Unlink media file from website usages (single usage or all usages)
   const handleUnlinkUsage = async (file: MediaFile, targetUsage?: string) => {
     openDialog({
@@ -1889,7 +2254,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              Authorization: token || ''
+              Authorization: getAuthToken()
             },
             body: JSON.stringify({
               fileId: file.id,
@@ -2108,7 +2473,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           for (const fId of ids) {
             await fetch(`/api/admin/media/folders?id=${encodeURIComponent(fId)}`, {
               method: 'DELETE',
-              headers: { Authorization: token || '' }
+              headers: { Authorization: getAuthToken() }
             });
           }
           showToast(`${ids.length} պանակ ջնջվեց`);
@@ -2221,6 +2586,8 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           setIsFolderModalOpen(false);
         } else if (isTrashSettingsModalOpen) {
           setIsTrashSettingsModalOpen(false);
+        } else if (isSettingsModalOpen) {
+          setIsSettingsModalOpen(false);
         } else if (renamingFile) {
           setRenamingFile(null);
         } else if (selectedFileIds.size > 0 || selectedFolderIds.size > 0) {
@@ -2242,14 +2609,21 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         return;
       }
 
-      // Enter -> Open preview if single file is selected
-      if (e.key === 'Enter' && selectedFileIds.size === 1 && selectedFolderIds.size === 0) {
-        const selId = Array.from(selectedFileIds)[0];
-        const f = filteredFiles.find(item => item.id === selId);
-        if (f) {
+      // Enter -> Open folder if single folder selected, or preview if single file is selected
+      if (e.key === 'Enter') {
+        if (selectedFolderIds.size === 1 && selectedFileIds.size === 0) {
+          const folderId = Array.from(selectedFolderIds)[0];
           e.preventDefault();
-          openPreview(f);
+          navigateToFolder(folderId);
           return;
+        } else if (selectedFileIds.size === 1 && selectedFolderIds.size === 0) {
+          const selId = Array.from(selectedFileIds)[0];
+          const f = filteredFiles.find(item => item.id === selId);
+          if (f) {
+            e.preventDefault();
+            openPreview(f);
+            return;
+          }
         }
       }
 
@@ -2300,6 +2674,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
     isMoveModalOpen,
     isFolderModalOpen,
     isTrashSettingsModalOpen,
+    isSettingsModalOpen,
     renamingFile,
     currentFolderId,
     contextMenu.isOpen
@@ -2394,12 +2769,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
       if (p.isEnding) {
         const elapsed = now - p.endTime;
         const progress = Math.min(1, Math.max(0, elapsed / p.endDuration));
-        const ease = 1 - Math.pow(1 - progress, 3); // cubic ease out
+        const ease = 1 - Math.pow(1 - progress, 4);
 
         p.currentX = p.startX + (p.targetX - p.startX) * ease;
         p.currentY = p.startY + (p.targetY - p.startY) * ease;
         p.scale = p.startScale + (p.targetScale - p.startScale) * ease;
-        p.opacity = Math.max(0, 1 - progress);
+        p.opacity = progress > 0.75 ? Math.max(0, 1 - (progress - 0.75) / 0.25) : 1;
         p.currentTilt *= 0.85;
 
         if (progress >= 1) {
@@ -2651,7 +3026,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
     // Check if dragging files from computer
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleUploadFiles(e.dataTransfer.files);
+      handleUploadFiles(e.dataTransfer.files, targetFolderId);
       return;
     }
 
@@ -2826,14 +3201,17 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           onDragOver={e => handleFolderDragOver(folder.id, e)}
           onDragLeave={handleFolderDragLeave}
           onDrop={e => handleFolderDrop(folder.id, e)}
+          onMouseEnter={e => showTooltipFor(stat.count, stat.sizeFormatted, e)}
+          onMouseLeave={hideTooltip}
           style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: `6px 8px 6px ${depth * 14 + 10}px`,
-            borderRadius: '8px',
+            justifyContent: 'flex-start',
+            gap: '5px',
+            padding: '5px 22px 5px 4px',
+            borderRadius: '7px',
             cursor: 'grab',
-            fontSize: '0.85rem',
+            fontSize: '0.84rem',
             color: isSelected ? '#ffffff' : 'var(--fg)',
             background: isSelected 
               ? 'var(--accent)' 
@@ -2842,95 +3220,126 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               : 'transparent',
             border: isDragTarget ? '1px dashed #3b82f6' : '1px solid transparent',
             transition: 'all 0.15s ease',
-            userSelect: 'none'
+            userSelect: 'none',
+            position: 'relative'
           }}
-          title={`${folder.name} (${stat.count} նիշք • ${stat.sizeFormatted})`}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
-            {hasChildren ? (
-              <span
-                onClick={e => toggleTreeFolder(folder.id, e)}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '18px',
-                  height: '18px',
-                  cursor: 'pointer',
-                  fontSize: '0.75rem',
-                  color: isSelected ? '#ffffff' : 'var(--muted)',
-                  transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.15s ease'
-                }}
-              >
-                ▶
-              </span>
-            ) : (
-              <span style={{ width: '18px', display: 'inline-block' }} />
-            )}
-
-            {/* Folder Icon tinted with custom color */}
-            <FolderIcon
-              size={18}
-              color={isSelected ? '#ffffff' : folder.color || '#3B82F6'}
-              style={{ flexShrink: 0, filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }}
-            />
-
+          {hasChildren ? (
             <span
-              style={{
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                fontWeight: isSelected ? 600 : 400
+              onClick={e => {
+                e.stopPropagation();
+                toggleTreeFolder(folder.id, e);
               }}
-            >
-              {folder.name}
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-            <span
               style={{
-                fontSize: '0.72rem',
-                padding: '1px 6px',
-                borderRadius: '10px',
-                background: isSelected ? 'rgba(255,255,255,0.25)' : 'var(--panel-border)',
-                color: isSelected ? '#ffffff' : 'var(--muted)',
-                fontWeight: 600,
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '3px'
-              }}
-              title={`${folder.name}՝ ${stat.count} նիշք • ${stat.sizeFormatted}`}
-            >
-              <span>{stat.count}</span>
-              <span style={{ opacity: 0.7, fontSize: '0.66rem' }}>• {stat.sizeFormatted}</span>
-            </span>
-
-            {/* Actions button */}
-            <button
-              type="button"
-              onClick={e => handleOpenEditFolder(folder, e)}
-              title="Կարգավորել գույնը / անունը"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: isSelected ? '#ffffff' : 'var(--muted)',
+                justifyContent: 'center',
+                width: '14px',
+                height: '14px',
                 cursor: 'pointer',
-                padding: '2px 4px',
-                borderRadius: '4px',
-                fontSize: '0.8rem',
-                opacity: 0.8
+                color: isSelected ? '#ffffff' : 'var(--muted)',
+                transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)',
+                transition: 'transform 0.15s ease',
+                flexShrink: 0
               }}
+              title={isExpanded ? 'Ծալել' : 'Բացել'}
             >
-              ⚙
-            </button>
-          </div>
+              <span className="hd-icon icon-Chevrolt-Arrow-Bottom" style={{ fontSize: '0.62rem' }} />
+            </span>
+          ) : (
+            <span style={{ width: depth > 0 ? '2px' : '14px', display: 'inline-block', flexShrink: 0 }} />
+          )}
+
+          {/* Folder Icon tinted with custom color */}
+          <FolderIcon
+            size={18}
+            color={isSelected ? '#ffffff' : folder.color || '#3B82F6'}
+            style={{ flexShrink: 0, filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))' }}
+          />
+
+          {inlineEditItem?.id === folder.id && inlineEditItem?.type === 'folder' ? (
+            <input
+              type="text"
+              autoFocus
+              value={inlineEditItem.name}
+              onClick={e => e.stopPropagation()}
+              onDoubleClick={e => e.stopPropagation()}
+              onChange={e => setInlineEditItem({ ...inlineEditItem, name: e.target.value })}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleInlineRenameSubmit();
+                } else if (e.key === 'Escape') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setInlineEditItem(null);
+                }
+              }}
+              onBlur={handleInlineRenameSubmit}
+              style={{
+                background: 'var(--panel)',
+                border: '1.5px solid #3B82F6',
+                borderRadius: '4px',
+                color: 'var(--fg)',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                padding: '1px 5px',
+                outline: 'none',
+                width: '100%',
+                boxSizing: 'border-box'
+              }}
+            />
+          ) : (
+            <FolderMarqueeText
+              text={folder.name}
+              isSelected={isSelected}
+              color={isSelected ? '#ffffff' : undefined}
+              onClick={e => handleNameClickForRename(e, folder.id, 'folder', folder.name, isSelected)}
+            />
+          )}
+
+          {/* Actions button */}
+          <button
+            type="button"
+            className="folder-settings-btn"
+            onClick={e => {
+              e.stopPropagation();
+              handleOpenEditFolder(folder, e);
+            }}
+            title="Կարգավորել գույնը / անունը"
+            style={{
+              position: 'absolute',
+              right: '4px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: isSelected ? 'rgba(255, 255, 255, 0.2)' : 'var(--bg)',
+              border: 'none',
+              color: isSelected ? '#ffffff' : 'var(--muted)',
+              cursor: 'pointer',
+              padding: '2px 4px',
+              borderRadius: '4px',
+              fontSize: '0.8rem',
+              zIndex: 3
+            }}
+          >
+            ⚙
+          </button>
         </div>
 
-        {/* Child folders */}
+        {/* Child folders with tree hierarchy guide line */}
         {hasChildren && isExpanded && (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '2px',
+              borderLeft: '1.5px solid var(--panel-border)',
+              marginLeft: '31px',
+              paddingLeft: '6px',
+              marginTop: '1px'
+            }}
+          >
             {subfolders.map(sf => renderFolderTreeNode(sf, depth + 1))}
           </div>
         )}
@@ -3043,16 +3452,30 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         }
         .admin-media-grid {
           display: grid;
-          grid-template-columns: 260px 1fr;
+          grid-template-columns: 280px 1fr;
           gap: 16px;
           align-items: start;
         }
-        .admin-media-sidebar-sticky {
+        @keyframes folderMarqueeScroll {
+          0% { transform: translateX(0); }
+          20% { transform: translateX(0); }
+          80% { transform: translateX(calc(-1 * var(--overflow-dist, 0px))); }
+          100% { transform: translateX(calc(-1 * var(--overflow-dist, 0px))); }
+        }
+        .admin-media-sidebar-column {
           position: sticky;
           top: 240px;
           z-index: 30;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .admin-media-sidebar-sticky {
           overflow-y: auto;
           overscroll-behavior: contain;
+        }
+        .admin-media-supabase-pane {
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
         @media (max-width: 900px) {
           .admin-media-header-sticky {
@@ -3060,6 +3483,11 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           }
           .admin-media-grid {
             grid-template-columns: 1fr;
+          }
+          .admin-media-sidebar-column {
+            position: relative;
+            top: 0 !important;
+            max-height: none !important;
           }
           .admin-media-sidebar-sticky {
             position: relative;
@@ -3075,6 +3503,9 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           transform: translateY(-3px);
           border-color: rgba(59, 130, 246, 0.6) !important;
           box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(59, 130, 246, 0.25) !important;
+        }
+        .media-file-checkbox {
+          transition: opacity 0.15s ease, width 0.15s ease;
         }
         .media-file-list-item {
           transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
@@ -3101,9 +3532,6 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           transform: translateY(-2px);
           border-color: rgba(59, 130, 246, 0.6) !important;
           box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12) !important;
-        }
-        .media-folder-card:hover .folder-checkbox {
-          opacity: 1 !important;
         }
         .media-folder-card.is-selected {
           border-color: #3B82F6 !important;
@@ -3175,6 +3603,24 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         .media-sidebar-nav-item.is-trash-selected.is-selected:hover div {
           color: #450a0a !important;
         }
+        .media-sidebar-nav-item .folder-settings-btn {
+          position: absolute;
+          right: 4px;
+          top: 50%;
+          transform: translateY(-50%);
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+        .media-sidebar-nav-item:hover .folder-settings-btn,
+        .media-sidebar-nav-item.is-selected .folder-settings-btn {
+          opacity: 0.9;
+          pointer-events: auto;
+        }
+        .media-sidebar-nav-item .folder-settings-btn:hover {
+          opacity: 1 !important;
+          transform: translateY(-50%) scale(1.15);
+        }
         .media-pill-btn {
           transition: all 0.15s ease;
         }
@@ -3185,6 +3631,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         }
         .media-icon-btn {
           transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+          padding: 0 !important;
+        }
+        .media-icon-btn .hd-icon,
+        .admin-media-container [class*="icon-Chevrolt-Arrow-"],
+        .admin-media-container .hd-icon {
+          font-weight: 800 !important;
         }
         .media-icon-btn:hover {
           transform: scale(1.15);
@@ -3269,6 +3721,16 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
             filter: blur(8px);
           }
         }
+        @keyframes contextMenuPopIn {
+          0% {
+            opacity: 0;
+            transform: scale(0.93) translateY(-4px);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
         @keyframes itemEntry {
           from {
             transform: scale(0.93) translateY(8px);
@@ -3343,6 +3805,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         document.body
       )}
 
+      {/* Upload Progress Overlay */}
+      {mounted && typeof document !== 'undefined' && createPortal(
+        <UploadProgressOverlay isUploading={isUploading} progress={uploadProgress} mode="fixed" />,
+        document.body
+      )}
+
       {/* Invisible file input for Upload */}
       <input
         type="file"
@@ -3350,7 +3818,10 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         multiple
         style={{ display: 'none' }}
         onChange={e => {
-          if (e.target.files) handleUploadFiles(e.target.files);
+          if (e.target.files && e.target.files.length > 0) {
+            handleUploadFiles(e.target.files);
+          }
+          e.target.value = '';
         }}
       />
 
@@ -3555,7 +4026,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               type="text"
               value={searchQuery}
               onChange={e => changeSearchQuery(e.target.value)}
-              placeholder="Որոնել մեդիայում..."
+              placeholder="Որոնել դարանում..."
               style={{
                 width: '100%',
                 height: '38px',
@@ -3571,6 +4042,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               <button
                 type="button"
                 onClick={() => changeSearchQuery('')}
+                title="Մաքրել որոնումը"
                 style={{
                   position: 'absolute',
                   right: '8px',
@@ -3860,6 +4332,38 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 🗔
               </button>
             </div>
+
+            {/* Library Settings Button */}
+            <button
+              type="button"
+              onClick={() => setIsSettingsModalOpen(true)}
+              title="Դարանի կայանքներ (պանակների բացում և կարգավորումներ)"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                border: '1px solid var(--panel-border)',
+                background: 'var(--card-bg, var(--bg))',
+                color: 'var(--foreground)',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = 'var(--accent)';
+                e.currentTarget.style.color = 'var(--accent)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'var(--panel-border)';
+                e.currentTarget.style.color = 'var(--foreground)';
+              }}
+            >
+              <span className="hd-icon icon-Settings" style={{ fontSize: '0.92rem' }} />
+              <span>Կայանքներ</span>
+            </button>
           </div>
         </div>
 
@@ -4248,26 +4752,39 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           MAIN EXPLORER BODY: Left Tree Sidebar + Right File Grid
           ══════════════════════════════════════════════════════════════════════════ */}
       <div className="admin-media-grid">
-        {/* LEFT NAVIGATION PANE (Sticky Explorer Sidebar) */}
+        {/* LEFT COLUMN: Navigation Pane + Separated Supabase Storage Pane */}
         <div
-          className="admin-media-sidebar-sticky"
+          className="admin-media-sidebar-column"
           style={{
-            background: 'var(--panel)',
-            border: '1px solid var(--panel-border)',
-            borderRadius: '16px',
-            padding: '14px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
             position: 'sticky',
             top: `${sidebarStickyTop}px`,
             zIndex: 30,
             maxHeight: sidebarMaxHeight,
-            overflowY: 'auto',
-            overscrollBehavior: 'contain',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
             transition: 'top 0.2s cubic-bezier(0.16, 1, 0.3, 1), max-height 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
           }}
         >
+          {/* PANE 1: NAVIGATION PANE (Folders Tree) */}
+          <div
+            className="admin-media-sidebar-sticky"
+            onScroll={hideTooltip}
+            onMouseLeave={hideTooltip}
+            style={{
+              background: 'var(--panel)',
+              border: '1px solid var(--panel-border)',
+              borderRadius: '16px',
+              padding: '14px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              flex: 1,
+              minHeight: '160px',
+              overflowY: 'auto',
+              overscrollBehavior: 'contain'
+            }}
+          >
           <div
             style={{
               fontSize: '0.75rem',
@@ -4289,36 +4806,31 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
             onDragOver={e => handleFolderDragOver(null, e)}
             onDragLeave={handleFolderDragLeave}
             onDrop={e => handleFolderDrop(null, e)}
+            onMouseEnter={e => {
+              const rootFiles = files.filter(f => !f.isTrashed && f.folderId === null);
+              const rootSize = rootFiles.reduce((acc, f) => acc + (f.size || 0), 0);
+              showTooltipFor(rootFiles.length, formatBytes(rootSize), e);
+            }}
+            onMouseLeave={hideTooltip}
             style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
+              justifyContent: 'flex-start',
+              gap: '8px',
               padding: '8px 10px',
               borderRadius: '8px',
               cursor: 'pointer',
               fontSize: '0.86rem',
               color: currentFolderId === null ? '#ffffff' : 'var(--fg)',
               background: currentFolderId === null ? 'var(--accent)' : 'transparent',
-              transition: 'all 0.15s ease'
+              transition: 'all 0.15s ease',
+              userSelect: 'none'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span className="hd-icon icon-Monitor" style={{ fontSize: '1rem' }} />
-              <span style={{ fontWeight: currentFolderId === null ? 700 : 500 }}>Անհատական Կայք (ԱԿ)</span>
-            </div>
-            {files.filter(f => !f.isTrashed && f.folderId === null).length > 0 && (
-              <span
-                style={{
-                  fontSize: '0.72rem',
-                  padding: '1px 6px',
-                  borderRadius: '10px',
-                  background: currentFolderId === null ? 'rgba(255,255,255,0.25)' : 'var(--panel-border)',
-                  fontWeight: 600
-                }}
-              >
-                {files.filter(f => !f.isTrashed && f.folderId === null).length}
-              </span>
-            )}
+            <span className="hd-icon icon-Monitor" style={{ fontSize: '1rem', flexShrink: 0 }} />
+            <span style={{ fontWeight: currentFolderId === null ? 700 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left', flex: 1 }}>
+              Անհատական Կայք (ԱԿ)
+            </span>
           </div>
 
           {/* Gallery quick link (All files flat view) */}
@@ -4326,33 +4838,30 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
             data-folder-id="gallery"
             className={`media-sidebar-nav-item ${currentFolderId === 'gallery' ? 'is-selected' : ''}`}
             onClick={() => navigateToFolder('gallery')}
+            onMouseEnter={e => {
+              const nonTrashed = files.filter(f => !f.isTrashed);
+              const totalSize = nonTrashed.reduce((acc, f) => acc + (f.size || 0), 0);
+              showTooltipFor(nonTrashed.length, formatBytes(totalSize), e);
+            }}
+            onMouseLeave={hideTooltip}
             style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
+              justifyContent: 'flex-start',
+              gap: '8px',
               padding: '8px 10px',
               borderRadius: '8px',
               cursor: 'pointer',
               fontSize: '0.86rem',
               color: currentFolderId === 'gallery' ? '#ffffff' : 'var(--fg)',
               background: currentFolderId === 'gallery' ? 'var(--accent)' : 'transparent',
-              transition: 'all 0.15s ease'
+              transition: 'all 0.15s ease',
+              userSelect: 'none'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span className="hd-icon icon-Image" />
-              <span style={{ fontWeight: currentFolderId === 'gallery' ? 700 : 500 }}>Պատկերասրահ (Gallery)</span>
-            </div>
-            <span
-              style={{
-                fontSize: '0.72rem',
-                padding: '1px 6px',
-                borderRadius: '10px',
-                background: currentFolderId === 'gallery' ? 'rgba(255,255,255,0.25)' : 'var(--panel-border)',
-                fontWeight: 600
-              }}
-            >
-              {files.filter(f => !f.isTrashed).length}
+            <span className="hd-icon icon-Image" style={{ flexShrink: 0 }} />
+            <span style={{ fontWeight: currentFolderId === 'gallery' ? 700 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left', flex: 1 }}>
+              Պատկերասրահ (Gallery)
             </span>
           </div>
 
@@ -4372,34 +4881,44 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 setDraggedFileIds([]);
               }
             }}
+            onMouseEnter={e => showTooltipFor(trashStats.count, trashStats.sizeFormatted, e)}
+            onMouseLeave={hideTooltip}
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              gap: '8px',
               padding: '8px 10px',
               borderRadius: '8px',
               cursor: 'pointer',
               fontSize: '0.86rem',
               color: currentFolderId === 'trash' ? '#ffffff' : 'var(--fg)',
               background: currentFolderId === 'trash' ? '#EF4444' : 'transparent',
-              transition: 'all 0.15s ease'
+              transition: 'all 0.15s ease',
+              userSelect: 'none'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span className="hd-icon icon-Trash" />
-              <span style={{ fontWeight: currentFolderId === 'trash' ? 700 : 500 }}>Աղբարկղ</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1, overflow: 'hidden' }}>
+              <span className="hd-icon icon-Trash" style={{ flexShrink: 0 }} />
+              <span style={{ fontWeight: currentFolderId === 'trash' ? 700 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' }}>
+                Աղբարկղ
+              </span>
             </div>
             <span
               style={{
                 fontSize: '0.72rem',
-                padding: '1px 6px',
-                borderRadius: '10px',
-                background: currentFolderId === 'trash' ? 'rgba(255,255,255,0.25)' : ((stats?.trashCount || 0) > 0 ? 'rgba(239, 68, 68, 0.15)' : 'var(--panel-border)'),
-                color: currentFolderId === 'trash' ? '#ffffff' : ((stats?.trashCount || 0) > 0 ? '#EF4444' : 'var(--muted)'),
-                fontWeight: 700
+                color: currentFolderId === 'trash' ? '#ffffff' : 'var(--muted)',
+                background: currentFolderId === 'trash' ? 'rgba(255, 255, 255, 0.2)' : 'var(--bg)',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                fontWeight: 600,
+                flexShrink: 0,
+                border: currentFolderId === 'trash' ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid var(--panel-border)',
+                letterSpacing: '0.02em',
+                transition: 'all 0.15s ease'
               }}
             >
-              {stats?.trashCount || 0}
+              {trashStats.count} • {trashStats.sizeFormatted}
             </span>
           </div>
 
@@ -4407,16 +4926,43 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
             <div
+              onClick={toggleFoldersTree}
               style={{
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                color: 'var(--muted)'
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                userSelect: 'none'
               }}
+              title={isFoldersTreeOpen ? 'Ծալել պանակները' : 'Բացել պանակները'}
             >
-              Պանակներ
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '14px',
+                  height: '14px',
+                  color: 'var(--muted)',
+                  transform: isFoldersTreeOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+                  transition: 'transform 0.15s ease'
+                }}
+              >
+                <span className="hd-icon icon-Chevrolt-Arrow-Bottom" style={{ fontSize: '0.62rem' }} />
+              </span>
+              <span
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  color: 'var(--muted)'
+                }}
+              >
+                Պանակներ ({folders.length})
+              </span>
             </div>
+
             <button
               type="button"
               onClick={() => handleOpenCreateFolder(null)}
@@ -4436,30 +4982,49 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           </div>
 
           {/* Root-level folder tree with nested children */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            {folders.filter(f => f.parentId === null).map(rf => renderFolderTreeNode(rf, 0))}
-          </div>
-
-          {folders.length === 0 && (
-            <div style={{ fontSize: '0.8rem', color: 'var(--muted)', textAlign: 'center', padding: '16px 0' }}>
-              Պանակներ չկան:
-              <br />
-              Ստեղծեք առաջին պանակը:
+          {isFoldersTreeOpen && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              {folders.filter(f => f.parentId === null).map(rf => renderFolderTreeNode(rf, 0))}
+              {folders.length === 0 && (
+                <div style={{ fontSize: '0.8rem', color: 'var(--muted)', textAlign: 'center', padding: '16px 0' }}>
+                  Պանակներ չկան:
+                  <br />
+                  Ստեղծեք առաջին պանակը:
+                </div>
+              )}
             </div>
           )}
 
-          {/* SUPABASE STORAGE PROGRESS BAR & USAGE CARD */}
+          </div>
+
+          {/* PANE 2: SEPARATED SUPABASE STORAGE PANE (Առանձնացված Փեղկ) */}
           <div
+            className="admin-media-supabase-pane"
             style={{
-              marginTop: 'auto',
-              paddingTop: '14px',
-              borderTop: '1px solid var(--panel-border)',
+              background: 'var(--panel)',
+              border: '1px solid var(--panel-border)',
+              borderRadius: '16px',
+              padding: '12px 14px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '10px'
+              gap: isSupabasePaneOpen ? '10px' : '0px',
+              flexShrink: 0,
+              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.04)'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            {/* Header with expand/collapse toggle */}
+            <div
+              onClick={toggleSupabasePane}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                userSelect: 'none',
+                gap: '8px'
+              }}
+              title={isSupabasePaneOpen ? 'Ծալել փեղկը' : 'Բացել փեղկը'}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3ECF8E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
@@ -4469,114 +5034,135 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 </span>
               </div>
 
-              <span
-                style={{
-                  fontSize: '0.68rem',
-                  padding: '2px 8px',
-                  borderRadius: '12px',
-                  background: 'rgba(62, 207, 142, 0.15)',
-                  color: '#3ECF8E',
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-              >
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3ECF8E', display: 'inline-block' }} />
-                {stats?.storageLimitFormatted || '1 GB'}
-              </span>
-            </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span
+                  style={{
+                    fontSize: '0.68rem',
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    background: 'rgba(62, 207, 142, 0.15)',
+                    color: '#3ECF8E',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3ECF8E', display: 'inline-block' }} />
+                  {isSupabasePaneOpen ? (stats?.storageLimitFormatted || '1 GB') : `${stats?.storagePercent || 0}% • ${stats?.storageLimitFormatted || '1 GB'}`}
+                </span>
 
-            {/* Glowing Custom Progress Bar Track */}
-            <div
-              style={{
-                width: '100%',
-                height: '10px',
-                background: 'var(--bg)',
-                borderRadius: '8px',
-                overflow: 'hidden',
-                border: '1px solid var(--panel-border)',
-                position: 'relative'
-              }}
-            >
-              <div
-                style={{
-                  width: `${stats?.storagePercent || 0}%`,
-                  height: '100%',
-                  background: (stats?.storagePercent || 0) > 85
-                    ? 'linear-gradient(90deg, #F59E0B 0%, #EF4444 100%)'
-                    : (stats?.storagePercent || 0) > 60
-                    ? 'linear-gradient(90deg, #3ECF8E 0%, #F59E0B 100%)'
-                    : 'linear-gradient(90deg, #3B82F6 0%, #3ECF8E 100%)',
-                  borderRadius: '8px',
-                  transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-                  boxShadow: (stats?.storagePercent || 0) > 85
-                    ? '0 0 12px rgba(239, 68, 68, 0.5)'
-                    : '0 0 12px rgba(62, 207, 142, 0.5)'
-                }}
-              />
-            </div>
-
-            {/* Used / Total & Percent */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.74rem' }}>
-              <span style={{ color: 'var(--muted)', fontWeight: 500 }}>
-                {stats?.totalSizeFormatted || '0 MB'} / {stats?.storageLimitFormatted || '1 GB'}
-              </span>
-              <span
-                style={{
-                  fontWeight: 800,
-                  color: (stats?.storagePercent || 0) > 85 ? '#EF4444' : '#3ECF8E'
-                }}
-              >
-                {stats?.storagePercent || 0}%
-              </span>
-            </div>
-
-            {/* Remaining Space Pill Box */}
-            <div
-              style={{
-                fontSize: '0.74rem',
-                color: 'var(--muted)',
-                background: 'var(--bg)',
-                padding: '8px 10px',
-                borderRadius: '10px',
-                border: '1px solid var(--panel-border)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span>⚡</span>
-                <span>Մնացել է՝</span>
-              </span>
-              <span style={{ fontWeight: 700, color: 'var(--fg)' }}>
-                {stats?.storageRemainingFormatted || '1 GB'} ազատ
-              </span>
-            </div>
-
-            {/* Breakdown Mini Badges */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '4px',
-                marginTop: '2px'
-              }}
-            >
-              <div style={{ background: 'var(--bg)', padding: '4px 6px', borderRadius: '6px', textAlign: 'center', fontSize: '0.65rem' }}>
-                <div style={{ color: 'var(--muted)' }}>Նկարներ</div>
-                <div style={{ fontWeight: 700, color: 'var(--fg)' }}>{stats?.imagesSizeFormatted || '0 MB'}</div>
-              </div>
-              <div style={{ background: 'var(--bg)', padding: '4px 6px', borderRadius: '6px', textAlign: 'center', fontSize: '0.65rem' }}>
-                <div style={{ color: 'var(--muted)' }}>Վիդեո</div>
-                <div style={{ fontWeight: 700, color: 'var(--fg)' }}>{stats?.videosSizeFormatted || '0 MB'}</div>
-              </div>
-              <div style={{ background: 'var(--bg)', padding: '4px 6px', borderRadius: '6px', textAlign: 'center', fontSize: '0.65rem' }}>
-                <div style={{ color: 'var(--muted)' }}>Տառեր</div>
-                <div style={{ fontWeight: 700, color: 'var(--fg)' }}>{stats?.fontsSizeFormatted || '0 MB'}</div>
+                <span
+                  style={{
+                    color: 'var(--muted)',
+                    transform: isSupabasePaneOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+                    transition: 'transform 0.2s ease',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '16px',
+                    height: '16px'
+                  }}
+                >
+                  <span className="hd-icon icon-Chevrolt-Arrow-Bottom" style={{ fontSize: '0.62rem' }} />
+                </span>
               </div>
             </div>
+
+            {isSupabasePaneOpen && (
+              <>
+                {/* Glowing Custom Progress Bar Track */}
+                <div
+                  style={{
+                    width: '100%',
+                    height: '10px',
+                    background: 'var(--bg)',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    border: '1px solid var(--panel-border)',
+                    position: 'relative'
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${stats?.storagePercent || 0}%`,
+                      height: '100%',
+                      background: (stats?.storagePercent || 0) > 85
+                        ? 'linear-gradient(90deg, #F59E0B 0%, #EF4444 100%)'
+                        : (stats?.storagePercent || 0) > 60
+                        ? 'linear-gradient(90deg, #3ECF8E 0%, #F59E0B 100%)'
+                        : 'linear-gradient(90deg, #3B82F6 0%, #3ECF8E 100%)',
+                      borderRadius: '8px',
+                      transition: 'width 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                      boxShadow: (stats?.storagePercent || 0) > 85
+                        ? '0 0 12px rgba(239, 68, 68, 0.5)'
+                        : '0 0 12px rgba(62, 207, 142, 0.5)'
+                    }}
+                  />
+                </div>
+
+                {/* Used / Total & Percent */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.74rem' }}>
+                  <span style={{ color: 'var(--muted)', fontWeight: 500 }}>
+                    {stats?.totalSizeFormatted || '0 MB'} / {stats?.storageLimitFormatted || '1 GB'}
+                  </span>
+                  <span
+                    style={{
+                      fontWeight: 800,
+                      color: (stats?.storagePercent || 0) > 85 ? '#EF4444' : '#3ECF8E'
+                    }}
+                  >
+                    {stats?.storagePercent || 0}%
+                  </span>
+                </div>
+
+                {/* Remaining Space Pill Box */}
+                <div
+                  style={{
+                    fontSize: '0.74rem',
+                    color: 'var(--muted)',
+                    background: 'var(--bg)',
+                    padding: '8px 10px',
+                    borderRadius: '10px',
+                    border: '1px solid var(--panel-border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}
+                >
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span>⚡</span>
+                    <span>Մնացել է՝</span>
+                  </span>
+                  <span style={{ fontWeight: 700, color: 'var(--fg)' }}>
+                    {stats?.storageRemainingFormatted || '1 GB'} ազատ
+                  </span>
+                </div>
+
+                {/* Breakdown Mini Badges */}
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: '4px',
+                    marginTop: '2px'
+                  }}
+                >
+                  <div style={{ background: 'var(--bg)', padding: '4px 6px', borderRadius: '6px', textAlign: 'center', fontSize: '0.65rem' }}>
+                    <div style={{ color: 'var(--muted)' }}>Նկարներ</div>
+                    <div style={{ fontWeight: 700, color: 'var(--fg)' }}>{stats?.imagesSizeFormatted || '0 MB'}</div>
+                  </div>
+                  <div style={{ background: 'var(--bg)', padding: '4px 6px', borderRadius: '6px', textAlign: 'center', fontSize: '0.65rem' }}>
+                    <div style={{ color: 'var(--muted)' }}>Վիդեո</div>
+                    <div style={{ fontWeight: 700, color: 'var(--fg)' }}>{stats?.videosSizeFormatted || '0 MB'}</div>
+                  </div>
+                  <div style={{ background: 'var(--bg)', padding: '4px 6px', borderRadius: '6px', textAlign: 'center', fontSize: '0.65rem' }}>
+                    <div style={{ color: 'var(--muted)' }}>Տառեր</div>
+                    <div style={{ fontWeight: 700, color: 'var(--fg)' }}>{stats?.fontsSizeFormatted || '0 MB'}</div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -4606,7 +5192,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
           {loading ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '400px', gap: '12px', color: 'var(--muted)' }}>
               <div style={{ width: '40px', height: '40px', border: '3px solid var(--panel-border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-              <div>Բեռնվում են մեդիա նիշքերը...</div>
+              <div>Բեռնվում են դարանի նիշքերը...</div>
             </div>
           ) : error ? (
             <div style={{ textAlign: 'center', padding: '40px 20px', color: '#EF4444' }}>
@@ -4770,10 +5356,22 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                           onDragEnd={handleDragEnd}
                           onClick={e => {
                             e.stopPropagation();
-                            if (e.ctrlKey || e.metaKey || selectedFolderIds.size > 0) {
-                              toggleSelectFolder(subf.id, e);
+                            if (folderOpenMode === 'single') {
+                              if (e.ctrlKey || e.metaKey) {
+                                toggleSelectFolder(subf.id, e);
+                              } else {
+                                navigateToFolder(subf.id);
+                              }
                             } else {
-                              navigateToFolder(subf.id);
+                              // 'double' click mode (default)
+                              if (e.ctrlKey || e.metaKey || (selectedFolderIds.size > 0 && selectedFolderIds.has(subf.id))) {
+                                toggleSelectFolder(subf.id, e);
+                              } else if (e.shiftKey) {
+                                toggleSelectFolder(subf.id, e);
+                              } else {
+                                setSelectedFolderIds(new Set([subf.id]));
+                                setSelectedFileIds(new Set());
+                              }
                             }
                           }}
                           onDoubleClick={e => {
@@ -4804,54 +5402,85 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                               : '0 2px 8px rgba(0,0,0,0.04)',
                             position: 'relative'
                           }}
-                          title={`${subf.name} (${stat.count} նիշք • ${stat.sizeFormatted})`}
+                          title={`${subf.name} (${stat.count} նիշք • ${stat.sizeFormatted})${folderOpenMode === 'double' ? ' — Կրկնակի կտտոց՝ բացելու համար' : ''}`}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1, overflow: 'hidden' }}>
                             {/* Selection Checkbox */}
-                            <div
-                              className="folder-checkbox"
-                              onClick={e => toggleSelectFolder(subf.id, e)}
-                              style={{
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                width: '18px',
-                                height: '18px',
-                                borderRadius: '4px',
-                                border: isFolderSelected ? '1px solid #3B82F6' : '1px solid var(--panel-border)',
-                                background: isFolderSelected ? '#3B82F6' : 'var(--panel)',
-                                opacity: isFolderSelected || selectedFolderIds.size > 0 ? 1 : 0,
-                                transition: 'opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease',
-                                flexShrink: 0
-                              }}
-                              title={isFolderSelected ? 'Ապանշել պանակը' : 'Նշել պանակը'}
-                            >
-                              {isFolderSelected && (
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3">
-                                  <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                              )}
-                            </div>
+                            {showItemCheckboxes && (
+                              <div
+                                className="folder-checkbox"
+                                onClick={e => toggleSelectFolder(subf.id, e)}
+                                style={{
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: '18px',
+                                  height: '18px',
+                                  borderRadius: '4px',
+                                  border: isFolderSelected ? '1px solid #3B82F6' : '1px solid var(--panel-border)',
+                                  background: isFolderSelected ? '#3B82F6' : 'var(--panel)',
+                                  overflow: 'hidden',
+                                  transition: 'all 0.15s ease',
+                                  flexShrink: 0
+                                }}
+                                title={isFolderSelected ? 'Ապանշել պանակը' : 'Նշել պանակը'}
+                              >
+                                {isFolderSelected && (
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3">
+                                    <polyline points="20 6 9 17 4 12" />
+                                  </svg>
+                                )}
+                              </div>
+                            )}
 
                             <FolderIcon
                               size={28}
                               color={subf.color || '#3B82F6'}
                               style={{ flexShrink: 0 }}
                             />
-                            <div style={{ minWidth: 0 }}>
-                              <div
-                                style={{
-                                  fontWeight: 600,
-                                  fontSize: '0.85rem',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
-                                  color: isFolderSelected ? '#3B82F6' : 'var(--fg)'
-                                }}
-                              >
-                                {subf.name}
-                              </div>
+                            <div style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
+                              {inlineEditItem?.id === subf.id && inlineEditItem?.type === 'folder' ? (
+                                <input
+                                  type="text"
+                                  autoFocus
+                                  value={inlineEditItem.name}
+                                  onClick={e => e.stopPropagation()}
+                                  onDoubleClick={e => e.stopPropagation()}
+                                  onChange={e => setInlineEditItem({ ...inlineEditItem, name: e.target.value })}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      handleInlineRenameSubmit();
+                                    } else if (e.key === 'Escape') {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setInlineEditItem(null);
+                                    }
+                                  }}
+                                  onBlur={handleInlineRenameSubmit}
+                                  style={{
+                                    background: 'var(--panel)',
+                                    border: '1.5px solid #3B82F6',
+                                    borderRadius: '4px',
+                                    color: 'var(--fg)',
+                                    fontSize: '0.84rem',
+                                    fontWeight: 600,
+                                    padding: '1px 5px',
+                                    outline: 'none',
+                                    width: '100%',
+                                    boxSizing: 'border-box'
+                                  }}
+                                />
+                              ) : (
+                                <FolderMarqueeText
+                                  text={subf.name}
+                                  isSelected={isFolderSelected}
+                                  color={isFolderSelected ? '#3B82F6' : undefined}
+                                  onClick={e => handleNameClickForRename(e, subf.id, 'folder', subf.name, isFolderSelected)}
+                                />
+                              )}
                               <div style={{ fontSize: '0.72rem', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                 <span>{stat.count} նիշք</span>
                                 <span>•</span>
@@ -5016,28 +5645,33 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                           }}
                         >
                           {/* Selection Checkbox */}
-                          <div
-                            onClick={e => toggleSelectFile(file.id, e)}
-                            style={{
-                              position: 'absolute',
-                              top: '8px',
-                              left: '8px',
-                              zIndex: 10,
-                              width: '22px',
-                              height: '22px',
-                              borderRadius: '6px',
-                              background: isSelected ? '#3B82F6' : 'rgba(0,0,0,0.5)',
-                              border: '1.5px solid #ffffff',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: '#ffffff',
-                              fontSize: '0.75rem',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {isSelected ? '✓' : ''}
-                          </div>
+                          {showItemCheckboxes && (
+                            <div
+                              onClick={e => toggleSelectFile(file.id, e)}
+                              className="media-file-checkbox"
+                              style={{
+                                position: 'absolute',
+                                top: '8px',
+                                left: '8px',
+                                zIndex: 10,
+                                width: '22px',
+                                height: '22px',
+                                borderRadius: '6px',
+                                background: isSelected ? '#3B82F6' : 'rgba(0,0,0,0.5)',
+                                border: '1.5px solid #ffffff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#ffffff',
+                                fontSize: '0.75rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                              title={isSelected ? 'Ապանշել նիշքը' : 'Նշել նիշքը'}
+                            >
+                              {isSelected ? '✓' : ''}
+                            </div>
+                          )}
 
                           {/* Pin Badge / Button */}
                           <div
@@ -5107,36 +5741,138 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                               }}
                               title={file.name}
                             >
-                              {isPinned && <span className="hd-icon icon-Pin" style={{ color: '#F59E0B', fontSize: '0.8rem' }} />}
-                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                              {isPinned && <span className="hd-icon icon-Pin" style={{ color: '#F59E0B', fontSize: '0.8rem', flexShrink: 0 }} />}
+                              {inlineEditItem?.id === file.id && inlineEditItem?.type === 'file' ? (
+                                <input
+                                  type="text"
+                                  autoFocus
+                                  value={inlineEditItem.name}
+                                  onClick={e => e.stopPropagation()}
+                                  onDoubleClick={e => e.stopPropagation()}
+                                  onChange={e => setInlineEditItem({ ...inlineEditItem, name: e.target.value })}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); handleInlineRenameSubmit(); }
+                                    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setInlineEditItem(null); }
+                                  }}
+                                  onBlur={handleInlineRenameSubmit}
+                                  style={{
+                                    background: 'var(--panel)',
+                                    border: '1.5px solid #3B82F6',
+                                    borderRadius: '4px',
+                                    color: 'var(--fg)',
+                                    fontSize: 'inherit',
+                                    fontWeight: 'inherit',
+                                    padding: '1px 5px',
+                                    outline: 'none',
+                                    width: '100%',
+                                    boxSizing: 'border-box'
+                                  }}
+                                />
+                              ) : (
+                                <span
+                                  onClick={e => handleNameClickForRename(e, file.id, 'file', file.name, isSelected)}
+                                  style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'text' }}
+                                >
+                                  {file.name}
+                                </span>
+                              )}
                             </div>
 
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--muted)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--muted)', marginTop: '2px' }}>
                               <span>{file.sizeFormatted}</span>
-                              {file.usedIn && file.usedIn.length > 0 && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                {file.usedIn && file.usedIn.length > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      setUsageInspectFile(file);
+                                    }}
+                                    title={`Օգտագործվում է կայքի ${file.usedIn.length} հատվածում (Կտտացրեք՝ տեսնելու ցանկը)`}
+                                    style={{
+                                      background: 'rgba(16, 185, 129, 0.15)',
+                                      color: '#10B981',
+                                      border: '1px solid rgba(16, 185, 129, 0.35)',
+                                      padding: '1px 6px',
+                                      borderRadius: '6px',
+                                      fontWeight: 600,
+                                      fontSize: '0.68rem',
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center'
+                                    }}
+                                  >
+                                    <span>Կայքում ({file.usedIn.length})</span>
+                                  </button>
+                                )}
                                 <button
                                   type="button"
-                                  onClick={e => {
-                                    e.stopPropagation();
-                                    setUsageInspectFile(file);
-                                  }}
-                                  title={`Օգտագործվում է կայքի ${file.usedIn.length} հատվածում (Կտտացրեք՝ տեսնելու ցանկը)`}
+                                  className="media-icon-btn"
+                                  onClick={e => copyUrl(file.url, e)}
+                                  title="Պատճենել հղումը"
                                   style={{
-                                    background: 'rgba(16, 185, 129, 0.15)',
-                                    color: '#10B981',
-                                    border: '1px solid rgba(16, 185, 129, 0.35)',
-                                    padding: '1px 6px',
-                                    borderRadius: '6px',
-                                    fontWeight: 600,
-                                    fontSize: '0.68rem',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: 'var(--muted)',
                                     cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center'
+                                    fontSize: '0.82rem',
+                                    padding: '2px 4px',
+                                    borderRadius: '4px'
                                   }}
-                                >
-                                  <span>Կայքում ({file.usedIn.length})</span>
-                                </button>
-                              )}
+                                ><span className="hd-icon icon-Copy" /></button>
+                                {file.isTrashed ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="media-icon-btn"
+                                      onClick={e => handleRestoreFile(file, e)}
+                                      title="Վերականգնել նիշքը"
+                                      style={{
+                                        background: 'transparent',
+                                        border: 'none',
+                                        color: '#10B981',
+                                        cursor: 'pointer',
+                                        fontSize: '0.82rem',
+                                        padding: '2px 4px',
+                                        borderRadius: '4px'
+                                      }}
+                                    ><span className="hd-icon icon-Undo-Arrow" /></button>
+                                    <button
+                                      type="button"
+                                      className="media-icon-btn"
+                                      onClick={e => handlePermanentDelete(file, e)}
+                                      title="Ընդմիշտ ջնջել"
+                                      style={{
+                                        background: 'transparent',
+                                        border: 'none',
+                                        color: '#EF4444',
+                                        cursor: 'pointer',
+                                        fontSize: '0.82rem',
+                                        padding: '2px 4px',
+                                        borderRadius: '4px'
+                                      }}
+                                    ><span className="hd-icon icon-Trash" /></button>
+                                  </>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className="media-icon-btn"
+                                    onClick={e => handleMoveToTrash(file, e)}
+                                    title="Տեղափոխել աղբարկղ"
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      color: 'var(--muted)',
+                                      cursor: 'pointer',
+                                      fontSize: '0.82rem',
+                                      padding: '2px 4px',
+                                      borderRadius: '4px'
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.color = '#EF4444'}
+                                    onMouseLeave={e => e.currentTarget.style.color = 'var(--muted)'}
+                                  ><span className="hd-icon icon-Trash" /></button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -5185,27 +5921,33 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                               : (isPinned ? '0 2px 8px rgba(245, 158, 11, 0.15)' : 'none')
                           }}
                         >
-                          <div
-                            onClick={e => toggleSelectFile(file.id, e)}
-                            style={{
-                              position: 'absolute',
-                              top: '6px',
-                              left: '6px',
-                              zIndex: 10,
-                              width: '18px',
-                              height: '18px',
-                              borderRadius: '4px',
-                              background: isSelected ? '#3B82F6' : 'rgba(0,0,0,0.5)',
-                              border: '1px solid #ffffff',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: '#ffffff',
-                              fontSize: '0.7rem'
-                            }}
-                          >
-                            {isSelected ? '✓' : ''}
-                          </div>
+                          {showItemCheckboxes && (
+                            <div
+                              onClick={e => toggleSelectFile(file.id, e)}
+                              className="media-file-checkbox"
+                              style={{
+                                position: 'absolute',
+                                top: '6px',
+                                left: '6px',
+                                zIndex: 10,
+                                width: '18px',
+                                height: '18px',
+                                borderRadius: '4px',
+                                background: isSelected ? '#3B82F6' : 'rgba(0,0,0,0.5)',
+                                border: '1px solid #ffffff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#ffffff',
+                                fontSize: '0.7rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                              title={isSelected ? 'Ապանշել նիշքը' : 'Նշել նիշքը'}
+                            >
+                              {isSelected ? '✓' : ''}
+                            </div>
+                          )}
 
                           {/* Pin Badge / Button */}
                           <div
@@ -5253,35 +5995,133 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                               }}
                               title={file.name}
                             >
-                              {isPinned && <span className="hd-icon icon-Pin" style={{ color: '#F59E0B', fontSize: '0.72rem' }} />}
-                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                              {isPinned && <span className="hd-icon icon-Pin" style={{ color: '#F59E0B', fontSize: '0.72rem', flexShrink: 0 }} />}
+                              {inlineEditItem?.id === file.id && inlineEditItem?.type === 'file' ? (
+                                <input
+                                  type="text"
+                                  autoFocus
+                                  value={inlineEditItem.name}
+                                  onClick={e => e.stopPropagation()}
+                                  onDoubleClick={e => e.stopPropagation()}
+                                  onChange={e => setInlineEditItem({ ...inlineEditItem, name: e.target.value })}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); handleInlineRenameSubmit(); }
+                                    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setInlineEditItem(null); }
+                                  }}
+                                  onBlur={handleInlineRenameSubmit}
+                                  style={{
+                                    background: 'var(--panel)',
+                                    border: '1.5px solid #3B82F6',
+                                    borderRadius: '4px',
+                                    color: 'var(--fg)',
+                                    fontSize: 'inherit',
+                                    fontWeight: 'inherit',
+                                    padding: '1px 5px',
+                                    outline: 'none',
+                                    width: '100%',
+                                    boxSizing: 'border-box'
+                                  }}
+                                />
+                              ) : (
+                                <span
+                                  onClick={e => handleNameClickForRename(e, file.id, 'file', file.name, isSelected)}
+                                  style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'text' }}
+                                >
+                                  {file.name}
+                                </span>
+                              )}
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--muted)', marginTop: '2px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--muted)', marginTop: '3px' }}>
                               <span>{file.sizeFormatted}</span>
-                              {file.usedIn && file.usedIn.length > 0 && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                {file.usedIn && file.usedIn.length > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      setUsageInspectFile(file);
+                                    }}
+                                    title={`Օգտագործվում է կայքի ${file.usedIn.length} հատվածում (Կտտացրեք՝ տեսնելու ցանկը)`}
+                                    style={{
+                                      background: 'rgba(16, 185, 129, 0.15)',
+                                      color: '#10B981',
+                                      border: '1px solid rgba(16, 185, 129, 0.35)',
+                                      padding: '1px 5px',
+                                      borderRadius: '4px',
+                                      fontWeight: 600,
+                                      fontSize: '0.64rem',
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center'
+                                    }}
+                                  >
+                                    <span>Կայքում ({file.usedIn.length})</span>
+                                  </button>
+                                )}
                                 <button
                                   type="button"
-                                  onClick={e => {
-                                    e.stopPropagation();
-                                    setUsageInspectFile(file);
-                                  }}
-                                  title={`Օգտագործվում է կայքի ${file.usedIn.length} հատվածում (Կտտացրեք՝ տեսնելու ցանկը)`}
+                                  className="media-icon-btn"
+                                  onClick={e => copyUrl(file.url, e)}
+                                  title="Պատճենել հղումը"
                                   style={{
-                                    background: 'rgba(16, 185, 129, 0.15)',
-                                    color: '#10B981',
-                                    border: '1px solid rgba(16, 185, 129, 0.35)',
-                                    padding: '1px 5px',
-                                    borderRadius: '4px',
-                                    fontWeight: 600,
-                                    fontSize: '0.64rem',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: 'var(--muted)',
                                     cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center'
+                                    fontSize: '0.76rem',
+                                    padding: '1px 3px'
                                   }}
-                                >
-                                  <span>Կայքում ({file.usedIn.length})</span>
-                                </button>
-                              )}
+                                ><span className="hd-icon icon-Copy" /></button>
+                                {file.isTrashed ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="media-icon-btn"
+                                      onClick={e => handleRestoreFile(file, e)}
+                                      title="Վերականգնել նիշքը"
+                                      style={{
+                                        background: 'transparent',
+                                        border: 'none',
+                                        color: '#10B981',
+                                        cursor: 'pointer',
+                                        fontSize: '0.76rem',
+                                        padding: '1px 3px'
+                                      }}
+                                    ><span className="hd-icon icon-Undo-Arrow" /></button>
+                                    <button
+                                      type="button"
+                                      className="media-icon-btn"
+                                      onClick={e => handlePermanentDelete(file, e)}
+                                      title="Ընդմիշտ ջնջել"
+                                      style={{
+                                        background: 'transparent',
+                                        border: 'none',
+                                        color: '#EF4444',
+                                        cursor: 'pointer',
+                                        fontSize: '0.76rem',
+                                        padding: '1px 3px'
+                                      }}
+                                    ><span className="hd-icon icon-Trash" /></button>
+                                  </>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className="media-icon-btn"
+                                    onClick={e => handleMoveToTrash(file, e)}
+                                    title="Տեղափոխել աղբարկղ"
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      color: 'var(--muted)',
+                                      cursor: 'pointer',
+                                      fontSize: '0.76rem',
+                                      padding: '1px 3px'
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.color = '#EF4444'}
+                                    onMouseLeave={e => e.currentTarget.style.color = 'var(--muted)'}
+                                  ><span className="hd-icon icon-Trash" /></button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -5322,23 +6162,31 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                           }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-                            <div
-                              onClick={e => toggleSelectFile(file.id, e)}
-                              style={{
-                                width: '18px',
-                                height: '18px',
-                                borderRadius: '4px',
-                                background: isSelected ? '#3B82F6' : 'var(--panel)',
-                                border: '1px solid var(--panel-border)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: '#ffffff',
-                                fontSize: '0.7rem'
-                              }}
-                            >
-                              {isSelected ? '✓' : ''}
-                            </div>
+                            {showItemCheckboxes && (
+                              <div
+                                className="media-file-checkbox"
+                                onClick={e => toggleSelectFile(file.id, e)}
+                                style={{
+                                  width: '18px',
+                                  height: '18px',
+                                  borderRadius: '4px',
+                                  background: isSelected ? '#3B82F6' : 'var(--panel)',
+                                  border: isSelected ? '1px solid #3B82F6' : '1px solid var(--panel-border)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  color: '#ffffff',
+                                  fontSize: '0.7rem',
+                                  overflow: 'hidden',
+                                  transition: 'all 0.15s ease',
+                                  flexShrink: 0,
+                                  cursor: 'pointer'
+                                }}
+                                title={isSelected ? 'Ապանշել նիշքը' : 'Նշել նիշքը'}
+                              >
+                                {isSelected ? '✓' : ''}
+                              </div>
+                            )}
 
                             <div style={{ width: '36px', height: '36px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0 }}>
                               {renderThumbnail(file, 'small')}
@@ -5357,8 +6205,41 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                   gap: '5px'
                                 }}
                               >
-                                {isPinned && <span className="hd-icon icon-Pin" style={{ color: '#F59E0B', fontSize: '0.8rem' }} />}
-                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                                {isPinned && <span className="hd-icon icon-Pin" style={{ color: '#F59E0B', fontSize: '0.8rem', flexShrink: 0 }} />}
+                                {inlineEditItem?.id === file.id && inlineEditItem?.type === 'file' ? (
+                                  <input
+                                    type="text"
+                                    autoFocus
+                                    value={inlineEditItem.name}
+                                    onClick={e => e.stopPropagation()}
+                                    onDoubleClick={e => e.stopPropagation()}
+                                    onChange={e => setInlineEditItem({ ...inlineEditItem, name: e.target.value })}
+                                    onKeyDown={e => {
+                                      if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); handleInlineRenameSubmit(); }
+                                      else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setInlineEditItem(null); }
+                                    }}
+                                    onBlur={handleInlineRenameSubmit}
+                                    style={{
+                                      background: 'var(--panel)',
+                                      border: '1.5px solid #3B82F6',
+                                      borderRadius: '4px',
+                                      color: 'var(--fg)',
+                                      fontSize: 'inherit',
+                                      fontWeight: 'inherit',
+                                      padding: '1px 5px',
+                                      outline: 'none',
+                                      width: '100%',
+                                      boxSizing: 'border-box'
+                                    }}
+                                  />
+                                ) : (
+                                  <span
+                                    onClick={e => handleNameClickForRename(e, file.id, 'file', file.name, isSelected)}
+                                    style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'text' }}
+                                  >
+                                    {file.name}
+                                  </span>
+                                )}
                               </div>
                               <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>
                                 {file.sizeFormatted} • {file.extension.toUpperCase()}
@@ -5415,11 +6296,59 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                 border: 'none',
                                 color: 'var(--muted)',
                                 cursor: 'pointer',
-                                fontSize: '0.9rem'
+                                fontSize: '0.9rem',
+                                padding: '4px'
                               }}
-                            >
-                              🔗
-                            </button>
+                            ><span className="hd-icon icon-Copy" /></button>
+                            {file.isTrashed ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className="media-icon-btn"
+                                  onClick={e => handleRestoreFile(file, e)}
+                                  title="Վերականգնել նիշքը"
+                                  style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#10B981',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem',
+                                    padding: '4px'
+                                  }}
+                                ><span className="hd-icon icon-Undo-Arrow" /></button>
+                                <button
+                                  type="button"
+                                  className="media-icon-btn"
+                                  onClick={e => handlePermanentDelete(file, e)}
+                                  title="Ընդմիշտ ջնջել"
+                                  style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#EF4444',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem',
+                                    padding: '4px'
+                                  }}
+                                ><span className="hd-icon icon-Trash" /></button>
+                              </>
+                            ) : (
+                              <button
+                                type="button"
+                                className="media-icon-btn"
+                                onClick={e => handleMoveToTrash(file, e)}
+                                title="Տեղափոխել աղբարկղ"
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: 'var(--muted)',
+                                  cursor: 'pointer',
+                                  fontSize: '0.9rem',
+                                  padding: '4px'
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.color = '#EF4444'}
+                                onMouseLeave={e => e.currentTarget.style.color = 'var(--muted)'}
+                              ><span className="hd-icon icon-Trash" /></button>
+                            )}
                           </div>
                         </div>
                       );
@@ -5441,14 +6370,18 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem' }}>
                       <thead>
                         <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--panel-border)', textAlign: 'left' }}>
-                          <th style={{ padding: '10px 12px', width: '40px' }}>
-                            <input
-                              type="checkbox"
-                              checked={selectedFileIds.size === filteredFiles.length && filteredFiles.length > 0}
-                              onChange={handleSelectAll}
-                            />
-                          </th>
-                          <th style={{ padding: '10px 6px', width: '36px', textAlign: 'center' }}><span className="hd-icon icon-Pin" /></th>
+                          {showItemCheckboxes && (
+                            <th style={{ padding: '10px 12px', width: '40px' }}>
+                              <input
+                                type="checkbox"
+                                checked={selectedFileIds.size === filteredFiles.length && filteredFiles.length > 0}
+                                onChange={handleSelectAll}
+                                style={{ cursor: 'pointer' }}
+                                title={selectedFileIds.size === filteredFiles.length ? 'Ապանշել բոլորը' : 'Նշել բոլորը'}
+                              />
+                            </th>
+                          )}
+                          <th style={{ padding: '10px 6px', width: '36px', textAlign: 'center' }}><span className="hd-icon icon-Pin" title="Գամված" /></th>
                           <th
                             className="media-table-header-cell"
                             style={{ padding: '10px 12px', cursor: 'pointer', userSelect: 'none' }}
@@ -5527,13 +6460,18 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                 transition: 'background 0.1s ease'
                               }}
                             >
-                              <td style={{ padding: '10px 12px' }} onClick={e => e.stopPropagation()}>
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={e => toggleSelectFile(file.id, e as any)}
-                                />
-                              </td>
+                              {showItemCheckboxes && (
+                                <td style={{ padding: '10px 12px' }} onClick={e => e.stopPropagation()}>
+                                  <input
+                                    type="checkbox"
+                                    className="table-row-checkbox"
+                                    checked={isSelected}
+                                    onChange={e => toggleSelectFile(file.id, e as any)}
+                                    style={{ cursor: 'pointer' }}
+                                    title={isSelected ? 'Ապանշել նիշքը' : 'Նշել նիշքը'}
+                                  />
+                                </td>
+                              )}
                               <td style={{ padding: '10px 6px', textAlign: 'center' }} onClick={e => e.stopPropagation()}>
                                 <button
                                   type="button"
@@ -5558,8 +6496,41 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                   </div>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flexWrap: 'wrap' }}>
                                     <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '320px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                      {isPinned && <span className="hd-icon icon-Pin" style={{ color: '#F59E0B', fontSize: '0.78rem' }} />}
-                                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                                      {isPinned && <span className="hd-icon icon-Pin" style={{ color: '#F59E0B', fontSize: '0.78rem', flexShrink: 0 }} />}
+                                      {inlineEditItem?.id === file.id && inlineEditItem?.type === 'file' ? (
+                                        <input
+                                          type="text"
+                                          autoFocus
+                                          value={inlineEditItem.name}
+                                          onClick={e => e.stopPropagation()}
+                                          onDoubleClick={e => e.stopPropagation()}
+                                          onChange={e => setInlineEditItem({ ...inlineEditItem, name: e.target.value })}
+                                          onKeyDown={e => {
+                                            if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); handleInlineRenameSubmit(); }
+                                            else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setInlineEditItem(null); }
+                                          }}
+                                          onBlur={handleInlineRenameSubmit}
+                                          style={{
+                                            background: 'var(--panel)',
+                                            border: '1.5px solid #3B82F6',
+                                            borderRadius: '4px',
+                                            color: 'var(--fg)',
+                                            fontSize: 'inherit',
+                                            fontWeight: 'inherit',
+                                            padding: '1px 5px',
+                                            outline: 'none',
+                                            width: '100%',
+                                            boxSizing: 'border-box'
+                                          }}
+                                        />
+                                      ) : (
+                                        <span
+                                          onClick={e => handleNameClickForRename(e, file.id, 'file', file.name, isSelected)}
+                                          style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'text' }}
+                                        >
+                                          {file.name}
+                                        </span>
+                                      )}
                                     </div>
                                   </div>
                                 </div>
@@ -5687,7 +6658,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, max(200px, calc(25% - 12px))), 1fr))',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, max(240px, calc(25% - 12px))), 1fr))',
                       gap: '12px'
                     }}
                   >
@@ -5737,11 +6708,44 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                               }}
                               title={file.name}
                             >
-                              {isPinned && <span className="hd-icon icon-Pin" style={{ color: '#F59E0B', fontSize: '0.78rem' }} />}
-                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</span>
+                              {isPinned && <span className="hd-icon icon-Pin" style={{ color: '#F59E0B', fontSize: '0.78rem', flexShrink: 0 }} title="Գամված է վերեւում" />}
+                              {inlineEditItem?.id === file.id && inlineEditItem?.type === 'file' ? (
+                                <input
+                                  type="text"
+                                  autoFocus
+                                  value={inlineEditItem.name}
+                                  onClick={e => e.stopPropagation()}
+                                  onDoubleClick={e => e.stopPropagation()}
+                                  onChange={e => setInlineEditItem({ ...inlineEditItem, name: e.target.value })}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); handleInlineRenameSubmit(); }
+                                    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setInlineEditItem(null); }
+                                  }}
+                                  onBlur={handleInlineRenameSubmit}
+                                  style={{
+                                    background: 'var(--panel)',
+                                    border: '1.5px solid #3B82F6',
+                                    borderRadius: '4px',
+                                    color: 'var(--fg)',
+                                    fontSize: 'inherit',
+                                    fontWeight: 'inherit',
+                                    padding: '1px 5px',
+                                    outline: 'none',
+                                    width: '100%',
+                                    boxSizing: 'border-box'
+                                  }}
+                                />
+                              ) : (
+                                <span
+                                  onClick={e => handleNameClickForRename(e, file.id, 'file', file.name, isSelected)}
+                                  style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'text' }}
+                                >
+                                  {file.name}
+                                </span>
+                              )}
                             </div>
-                            <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                              <span>{file.extension.toUpperCase()} • {file.sizeFormatted}</span>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, overflow: 'hidden' }}>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 1 }}>{file.extension.toUpperCase()} • {file.sizeFormatted}</span>
                               {isUsed && (
                                 <button
                                   type="button"
@@ -5760,7 +6764,9 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                                     fontSize: '0.65rem',
                                     cursor: 'pointer',
                                     display: 'inline-flex',
-                                    alignItems: 'center'
+                                    alignItems: 'center',
+                                    flexShrink: 0,
+                                    whiteSpace: 'nowrap'
                                   }}
                                 >
                                   <span>Կայքում ({file.usedIn!.length})</span>
@@ -5769,25 +6775,43 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                             </div>
                           </div>
 
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                             <button
                               type="button"
-                              className="media-icon-btn" onClick={e => togglePinFile(file.id, e)}
-                              title={isPinned ? 'Ապագամել վերեւից' : 'Գամել վերեւում (Pin to top)'}
-                              style={{
-                                background: isPinned ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
-                                border: isPinned ? '1px solid rgba(245, 158, 11, 0.5)' : 'none',
-                                color: isPinned ? '#F59E0B' : 'var(--muted)',
-                                borderRadius: '6px',
-                                padding: '3px 5px',
-                                cursor: 'pointer',
-                                fontSize: '0.8rem',
-                                opacity: isPinned ? 1 : 0.4
+                              className="media-icon-btn"
+                              onClick={e => {
+                                e.stopPropagation();
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                openContextMenu(e, 'file', { file }, { x: rect.right - 10, y: rect.bottom + 4 });
                               }}
-                            ><span className="hd-icon icon-Pin" /></button>
-                            <div onClick={e => toggleSelectFile(file.id, e)}>
-                              <input type="checkbox" checked={isSelected} readOnly style={{ cursor: 'pointer' }} />
-                            </div>
+                              title="Գործողություններ"
+                              style={{
+                                width: '26px',
+                                height: '26px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--muted)',
+                                cursor: 'pointer',
+                                fontSize: '1rem',
+                                padding: 0,
+                                flexShrink: 0,
+                                borderRadius: '6px',
+                                transition: 'all 0.15s ease'
+                              }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.background = 'rgba(59, 130, 246, 0.12)';
+                                e.currentTarget.style.color = '#3B82F6';
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.background = 'transparent';
+                                e.currentTarget.style.color = 'var(--muted)';
+                              }}
+                            >
+                              <span className="hd-icon icon-Three-Dots-Vertical" style={{ fontSize: '1.05rem', fontWeight: 800 }} />
+                            </button>
                           </div>
                         </div>
                       );
@@ -5882,6 +6906,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               <button
                 type="button"
                 onClick={() => setIsFolderModalOpen(false)}
+                title="Փակել"
                 style={{
                   background: 'transparent',
                   border: 'none',
@@ -5940,7 +6965,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     cursor: 'pointer'
                   }}
                 >
-                  <option value="">🖥️ Անհատական Կայք (ԱԿ) (Գլխավոր)</option>
+                  <option value="">🖥️ ԱԿ</option>
                   {folders
                     .filter(f => f.id !== editingFolderId)
                     .map(f => (
@@ -6082,7 +7107,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
                   }}
                 >
-                  {folderModalMode === 'create' ? 'Ստեղծել' : 'Պահպանել'}
+                  {folderModalMode === 'create' ? 'Ստեղծել' : 'Պահել'}
                 </button>
               </div>
             </form>
@@ -6159,7 +7184,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   fontSize: '0.85rem'
                 }}
               >
-                <span className="hd-icon icon-Monitor" style={{ marginRight: 6 }} /> Անհատական Կայք (ԱԿ) (Գլխավոր)
+                <span className="hd-icon icon-Monitor" style={{ marginRight: 6 }} /> ԱԿ
               </div>
 
               {folders
@@ -6258,11 +7283,12 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               border: '1px solid var(--panel-border)',
               borderRadius: '20px',
               width: '100%',
-              maxWidth: '900px',
-              maxHeight: '90vh',
+              maxWidth: 'min(96vw, 1500px)',
+              height: '92vh',
+              maxHeight: '94vh',
               overflow: 'hidden',
               display: 'grid',
-              gridTemplateColumns: '1.2fr 0.8fr',
+              gridTemplateColumns: '1.85fr 1fr',
               boxShadow: '0 24px 70px rgba(0,0,0,0.6)',
               animation: 'modalSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards',
               willChange: 'transform, opacity'
@@ -6288,7 +7314,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   alt={previewFile.name}
                   style={{
                     maxWidth: '100%',
-                    maxHeight: '70vh',
+                    maxHeight: '84vh',
                     objectFit: 'contain',
                     borderRadius: '8px',
                     boxShadow: '0 8px 30px rgba(0,0,0,0.5)'
@@ -6301,7 +7327,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   src={previewFile.url}
                   style={{
                     maxWidth: '100%',
-                    maxHeight: '70vh',
+                    maxHeight: '84vh',
                     borderRadius: '8px'
                   }}
                 />
@@ -6388,6 +7414,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 <button
                   type="button"
                   onClick={closePreview}
+                  title="Փակել (Esc)"
                   style={{ background: 'transparent', border: 'none', color: 'var(--muted)', fontSize: '1.2rem', cursor: 'pointer' }}
                 >
                   ✕
@@ -6510,7 +7537,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--panel-border)', paddingBottom: '6px' }}>
                   <span style={{ color: 'var(--muted)' }}>Պանակ</span>
                   <span style={{ fontWeight: 600 }}>
-                    {previewFile.folderId ? folderMap.get(previewFile.folderId)?.name || 'Պանակ' : 'Անհատական Կայք (ԱԿ) (Գլխավոր)'}
+                    {previewFile.folderId ? folderMap.get(previewFile.folderId)?.name || 'Պանակ' : 'ԱԿ'}
                   </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--panel-border)', paddingBottom: '6px' }}>
@@ -6629,6 +7656,33 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   </>
                 ) : (
                   <>
+                    {previewFile.type === 'image' && !previewFile.isTrashed && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCropModalFile(previewFile);
+                          setIsCropModalOpen(true);
+                        }}
+                        style={{
+                          background: 'rgba(59, 130, 246, 0.12)',
+                          color: '#3B82F6',
+                          border: '1px solid rgba(59, 130, 246, 0.3)',
+                          borderRadius: '10px',
+                          padding: '10px',
+                          fontSize: '0.85rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        <span className="hd-icon icon-Cut" style={{ fontSize: "1rem" }} />
+                        <span>Եզրատել / Կտավ (Crop & Expand)</span>
+                      </button>
+                    )}
+
                     <a
                       href={previewFile.url}
                       download={previewFile.name}
@@ -6773,7 +7827,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     cursor: 'pointer'
                   }}
                 >
-                  Պահպանել
+                  Պահել
                 </button>
               </div>
             </form>
@@ -6825,12 +7879,13 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '1.3rem' }}>🗑️</span>
                 <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--fg)' }}>
-                  Աղբարկղի Կարգավորումներ
+                  Աղբարկղի Կայանքներ
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsTrashSettingsModalOpen(false)}
+                title="Փակել"
                 style={{ background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1.2rem' }}
               >
                 ✕
@@ -6871,7 +7926,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               {trashSettingsForm.autoDeleteEnabled && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <label style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--fg)' }}>
-                    Քանի՞ օր հետո ինքնաջնջվի (Պահպանման ժամկետ)․
+                    Քանի՞ օր հետո ինքնաջնջվի (Պահման ժամկետ)․
                   </label>
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                     {[7, 14, 30, 60, 90].map(d => (
@@ -6972,7 +8027,278 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   cursor: 'pointer'
                 }}
               >
-                Պահպանել
+                Պահել
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════════
+          MODAL: LIBRARY SETTINGS (ԴԱՐԱՆԻ ԿԱՅԱՆՔՆԵՐ - FOLDER OPEN MODE & PREFERENCES)
+          ══════════════════════════════════════════════════════════════════════════ */}
+      {mounted && isSettingsModalOpen && typeof document !== 'undefined' && createPortal(
+        <div
+          data-modal-backdrop="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 999999,
+            background: 'rgba(0,0,0,0.72)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            animation: 'modalBackdropFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+          }}
+          onClick={() => setIsSettingsModalOpen(false)}
+        >
+          <div
+            data-modal-container="true"
+            style={{
+              background: 'var(--panel)',
+              border: '1px solid var(--panel-border)',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '460px',
+              padding: '24px',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '18px',
+              animation: 'modalSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              willChange: 'transform, opacity'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '10px',
+                    background: 'rgba(59, 130, 246, 0.15)',
+                    color: '#3B82F6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <span className="hd-icon icon-Settings" style={{ fontSize: '1.25rem' }} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--fg)' }}>
+                    Դարանի Կայանքներ
+                  </h3>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--muted)', marginTop: '2px' }}>
+                    Կառավարեք դարանի և պանակների վարքագիծը
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSettingsModalOpen(false)}
+                title="Փակել"
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--muted)',
+                  cursor: 'pointer',
+                  fontSize: '1.2rem',
+                  padding: '4px'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Section: Folder Open Mode */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--fg)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <FolderIcon size={16} color="#3B82F6" />
+                <span>Պանակներ մտնելու եղանակ</span>
+              </div>
+
+              {/* Option 1: Double-click (Default) */}
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  padding: '12px 14px',
+                  background: folderOpenMode === 'double' ? 'rgba(59, 130, 246, 0.08)' : 'var(--bg)',
+                  borderRadius: '12px',
+                  border: `1.5px solid ${folderOpenMode === 'double' ? '#3B82F6' : 'var(--panel-border)'}`,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+                onClick={() => changeFolderOpenMode('double')}
+              >
+                <input
+                  type="radio"
+                  name="folderOpenMode"
+                  value="double"
+                  checked={folderOpenMode === 'double'}
+                  onChange={() => changeFolderOpenMode('double')}
+                  style={{ marginTop: '3px', cursor: 'pointer', accentColor: '#3B82F6' }}
+                />
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--fg)' }}>
+                      Կրկնակի կտտոցով (Double-click)
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '0.68rem',
+                        fontWeight: 700,
+                        background: 'rgba(59, 130, 246, 0.2)',
+                        color: '#3B82F6',
+                        padding: '1px 6px',
+                        borderRadius: '4px'
+                      }}
+                    >
+                      Լռելյայն
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--muted)', marginTop: '4px', lineHeight: 1.45 }}>
+                    Մեկ կտտոցով պանակը նշվում է (ընտրվում է), իսկ կրկնակի կտտոցով կամ Enter ստեղնով բացվում է (ինչպես Windows / macOS համակարգերում)։
+                  </div>
+                </div>
+              </label>
+
+              {/* Option 2: Single-click */}
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  padding: '12px 14px',
+                  background: folderOpenMode === 'single' ? 'rgba(59, 130, 246, 0.08)' : 'var(--bg)',
+                  borderRadius: '12px',
+                  border: `1.5px solid ${folderOpenMode === 'single' ? '#3B82F6' : 'var(--panel-border)'}`,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+                onClick={() => changeFolderOpenMode('single')}
+              >
+                <input
+                  type="radio"
+                  name="folderOpenMode"
+                  value="single"
+                  checked={folderOpenMode === 'single'}
+                  onChange={() => changeFolderOpenMode('single')}
+                  style={{ marginTop: '3px', cursor: 'pointer', accentColor: '#3B82F6' }}
+                />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--fg)' }}>
+                    Մեկ կտտոցով (Single-click)
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--muted)', marginTop: '4px', lineHeight: 1.45 }}>
+                    Մեկ կտտոցով պանակն անմիջապես բացվում է (արագ նավիգացիա վեբ կերպով)։
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            {/* Section: Checkbox Visibility */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--fg)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span className="hd-icon icon-Check" style={{ fontSize: '0.9rem', color: '#3B82F6' }} />
+                <span>Նշատուփերի ցուցադրում (Checkboxes)</span>
+              </div>
+
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 14px',
+                  background: 'var(--bg)',
+                  borderRadius: '12px',
+                  border: '1.5px solid var(--panel-border)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '0.86rem', color: 'var(--fg)' }}>
+                    Միշտ ցուցադրել նշատուփերը
+                  </div>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--muted)', marginTop: '2px' }}>
+                    Լռելյայն նշատուփերը թաքցված են և երևում են միայն մկնիկը պահելիս (hover) կամ նշելիս
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={showItemCheckboxes}
+                  onChange={e => toggleShowItemCheckboxes(e.target.checked)}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#3B82F6' }}
+                />
+              </label>
+            </div>
+
+            {/* Other Settings Quick Link */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 14px',
+                background: 'var(--bg)',
+                borderRadius: '10px',
+                border: '1px solid var(--panel-border)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '1rem' }}>🗑️</span>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--fg)' }}>
+                  Աղբարկղի կարգավորումներ
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSettingsModalOpen(false);
+                  setIsTrashSettingsModalOpen(true);
+                }}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--panel-border)',
+                  borderRadius: '6px',
+                  padding: '4px 10px',
+                  fontSize: '0.74rem',
+                  fontWeight: 600,
+                  color: 'var(--fg)',
+                  cursor: 'pointer'
+                }}
+              >
+                Կարգավորել ›
+              </button>
+            </div>
+
+            {/* Footer */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+              <button
+                type="button"
+                onClick={() => setIsSettingsModalOpen(false)}
+                style={{
+                  background: 'var(--accent)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '8px 22px',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  fontSize: '0.84rem',
+                  cursor: 'pointer',
+                  transition: 'opacity 0.15s ease'
+                }}
+              >
+                Պատրաստ է
               </button>
             </div>
           </div>
@@ -6995,7 +8321,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
             border: '1px solid var(--panel-border)',
             borderRadius: '12px',
             padding: '6px',
-            boxShadow: '0 12px 36px rgba(0,0,0,0.5)',
+            boxShadow: '0 8px 24px -4px rgba(0, 0, 0, 0.2), 0 2px 8px -2px rgba(0, 0, 0, 0.1)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
             minWidth: '220px',
@@ -7003,7 +8329,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
             flexDirection: 'column',
             gap: '2px',
             fontSize: '0.84rem',
-            animation: 'fadeIn 0.1s ease',
+            animation: 'contextMenuPopIn 0.16s cubic-bezier(0.16, 1, 0.3, 1) forwards',
             color: 'var(--fg)'
           }}
         >
@@ -7203,6 +8529,38 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                       <FolderIcon size={16} />
                       <span style={{ flex: 1 }}>Տեղափոխել պանակ...</span>
                     </button>
+
+                    {/* Եզրատել / Կտավ (Crop & Expand) Context Action */}
+                    {contextMenu.file?.type === 'image' && !contextMenu.file?.isTrashed && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (contextMenu.file) {
+                            setCropModalFile(contextMenu.file);
+                            setIsCropModalOpen(true);
+                          }
+                          setContextMenu(prev => ({ ...prev, isOpen: false }));
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '8px 12px',
+                          border: 'none',
+                          background: 'transparent',
+                          color: 'var(--fg)',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          width: '100%'
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
+                      >
+                        <span className="hd-icon icon-Cut" style={{ fontSize: "1rem" }} />
+                        <span style={{ flex: 1 }}>Եզրատել / Կտավ (Crop)...</span>
+                      </button>
+                    )}
 
                     {/* «Կայքում» գործողություն context menu-ի մեջ (Միայն կապակցված նիշքերի համար, առանց շղթայի պատկերակի) */}
                     {contextMenu.file && isUsed && (
@@ -7596,6 +8954,32 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>Ctrl+A</span>
               </button>
 
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSettingsModalOpen(true);
+                  setContextMenu(prev => ({ ...prev, isOpen: false }));
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '8px 12px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--fg)',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  width: '100%'
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)', e.currentTarget.style.color = '#ffffff')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent', e.currentTarget.style.color = 'var(--fg)')}
+              >
+                <span className="hd-icon icon-Settings" />
+                <span style={{ flex: 1 }}>Դարանի կայանքներ</span>
+              </button>
+
               {currentFolderId === 'trash' && (
                 <>
                   <button
@@ -7694,9 +9078,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     width: '78px',
                     padding: '8px 6px',
                     borderRadius: '10px',
-                    background: 'var(--panel, #0f172a)',
-                    border: `1.2px solid ${dragAvatar.folders[1].color || '#3B82F6'}`,
-                    boxShadow: '0 8px 18px rgba(0,0,0,0.5)',
+                    background: '#ffffff', border: `1.2px solid ${dragAvatar.folders[1].color || '#3B82F6'}`, boxShadow: '0 8px 18px rgba(0,0,0,0.3)',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -7706,7 +9088,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   }}
                 >
                   <FolderIcon size={24} color={dragAvatar.folders[1].color || '#3B82F6'} />
-                  <div style={{ fontSize: '0.6rem', color: '#fff', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.6rem', color: '#000000', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', textAlign: 'center' }}>
                     {dragAvatar.folders[1].name}
                   </div>
                 </div>
@@ -7724,9 +9106,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                     width: '78px',
                     padding: '8px 6px',
                     borderRadius: '10px',
-                    background: 'var(--panel, #0f172a)',
-                    border: `1.5px solid ${dragAvatar.folders[0].color || '#3B82F6'}`,
-                    boxShadow: `0 12px 26px rgba(0,0,0,0.65), 0 0 14px ${dragAvatar.folders[0].color || '#3B82F6'}55`,
+                    background: '#ffffff', border: `1.5px solid ${dragAvatar.folders[0].color || '#3B82F6'}`, boxShadow: `0 12px 26px rgba(0,0,0,0.35), 0 0 14px ${dragAvatar.folders[0].color || '#3B82F6'}33`,
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -7735,7 +9115,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                   }}
                 >
                   <FolderIcon size={26} color={dragAvatar.folders[0].color || '#3B82F6'} />
-                  <div style={{ fontSize: '0.62rem', color: '#fff', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.62rem', color: '#000000', fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', textAlign: 'center' }}>
                     {dragAvatar.folders[0].name}
                   </div>
                 </div>
@@ -7767,9 +9147,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 width: '88px',
                 padding: '10px 8px',
                 borderRadius: '12px',
-                background: 'var(--panel, #0f172a)',
-                border: `1.5px solid ${dragAvatar.folder.color || '#3B82F6'}`,
-                boxShadow: `0 14px 32px rgba(0, 0, 0, 0.7), 0 0 16px ${dragAvatar.folder.color || '#3B82F6'}66`,
+                background: '#ffffff', border: `1.5px solid ${dragAvatar.folder.color || '#3B82F6'}`, boxShadow: `0 14px 32px rgba(0, 0, 0, 0.35), 0 0 16px ${dragAvatar.folder.color || '#3B82F6'}33`,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -7782,9 +9160,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               <FolderIcon size={30} color={dragAvatar.folder.color || '#3B82F6'} />
               <div
                 style={{
-                  fontSize: '0.65rem',
-                  fontWeight: 700,
-                  color: '#ffffff',
+                  fontSize: '0.65rem', fontWeight: 800, color: '#000000',
                   textAlign: 'center',
                   width: '100%',
                   overflow: 'hidden',
@@ -7795,7 +9171,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
                 {dragAvatar.folder.name}
               </div>
               {folderStats.has(dragAvatar.folder.id) && (
-                <div style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.7)', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.55rem', color: 'rgba(0,0,0,0.65)', textAlign: 'center' }}>
                   {folderStats.get(dragAvatar.folder.id)?.sizeFormatted}
                 </div>
               )}
@@ -8466,6 +9842,7 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
               <button
                 type="button"
                 onClick={() => setUsageInspectFile(null)}
+                title="Փակել"
                 style={{ background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '1.2rem' }}
               >
                 ✕
@@ -8680,6 +10057,74 @@ export default function AdminMediaManager({ token }: AdminMediaManagerProps) {
         </div>,
         document.body
       )}
+
+      {/* Floating Tooltip with downward arrow for size and count on hover */}
+      {folderTooltip && typeof document !== 'undefined' && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            left: `${folderTooltip.x}px`,
+            top: `${folderTooltip.y}px`,
+            transform: 'translate(-50%, -100%)',
+            pointerEvents: 'none',
+            zIndex: 999999,
+            background: 'rgba(15, 23, 42, 0.96)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255, 255, 255, 0.16)',
+            boxShadow: '0 6px 18px rgba(0, 0, 0, 0.45), 0 2px 5px rgba(0, 0, 0, 0.25)',
+            borderRadius: '7px',
+            padding: '4px 10px',
+            color: '#ffffff',
+            fontSize: '0.74rem',
+            fontWeight: 600,
+            whiteSpace: 'nowrap',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            letterSpacing: '0.01em'
+          }}
+        >
+          <span>{folderTooltip.text}</span>
+          {/* Downward triangle arrow */}
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '-5px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 0,
+              height: 0,
+              borderLeft: '5px solid transparent',
+              borderRight: '5px solid transparent',
+              borderTop: '5px solid rgba(15, 23, 42, 0.96)'
+            }}
+          />
+        </div>,
+        document.body
+      )}
+
+      {/* Image Crop and Expand Modal */}
+      <ImageCropModal
+        isOpen={isCropModalOpen}
+        file={cropModalFile}
+        token={getAuthToken()}
+        onClose={() => {
+          setIsCropModalOpen(false);
+          setCropModalFile(null);
+        }}
+        onSaveSuccess={(updatedFile, isCopy) => {
+          if (isCopy) {
+            setFiles(prev => [updatedFile, ...prev]);
+            showToast(`Պատկերի նոր պատճենը ստեղծվեց՝ «${updatedFile.name}»`);
+          } else {
+            setFiles(prev => prev.map(f => f.id === updatedFile.id ? updatedFile : f));
+            if (previewFile && previewFile.id === updatedFile.id) {
+              setPreviewFile(updatedFile);
+            }
+            showToast(`Պատկերը հաջողությամբ պահվեց`);
+          }
+        }}
+      />
     </div>
   );
 }

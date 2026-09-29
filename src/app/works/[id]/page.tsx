@@ -541,7 +541,7 @@ export default function BrandingDetailPage() {
             color: "var(--accent)", 
             border: "1px solid var(--input-border)" 
           }}>~</span>
-          <span>{t('works_detail', 'press_focus', 'Սեղմեք տիլդան՝ մեդիան կենտրոնացնելու համար')}</span>
+          <span>{t('works_detail', 'press_focus', 'Սեղմեք տիլդան՝ դարանը կենտրոնացնելու համար')}</span>
         </div>
       </div>
 

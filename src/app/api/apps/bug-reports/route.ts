@@ -97,7 +97,7 @@ export async function POST(request: Request) {
     });
 
     if (!report) {
-      return NextResponse.json({ error: 'Չհաջողվեց պահպանել զեկույցը:' }, { status: 500 });
+      return NextResponse.json({ error: 'Չհաջողվեց պահել զեկույցը:' }, { status: 500 });
     }
 
     // Send emails asynchronously (to admin and confirmation to user)
