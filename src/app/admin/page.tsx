@@ -11189,11 +11189,7 @@ function AdminDashboardContent() {
             transition: 'color 0.2s ease, background 0.2s ease'
           }}
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="5" cy="12" r="2.2" />
-            <circle cx="12" cy="12" r="2.2" />
-            <circle cx="19" cy="12" r="2.2" />
-          </svg>
+          <i className="hd-icon hd-icon-three-dots-horizontal" />
           <div className={dockState === 'left' ? "nav-tooltip tooltip-left" : (dockState === 'right' ? "nav-tooltip tooltip-right" : "nav-tooltip")}>
             Անհատականացնել թաբերը
           </div>
