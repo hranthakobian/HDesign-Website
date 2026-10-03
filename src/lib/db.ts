@@ -764,12 +764,12 @@ export async function getSiteSetting(key: string, defaultValue: any = null): Pro
         .from('site_settings')
         .select('value')
         .eq('key', key)
-        .single();
+        .maybeSingle();
       
       if (!error && data) {
         return data.value;
       }
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.warn(`Supabase getSiteSetting for ${key} failed: ${error.message}. Using local fallback.`);
       }
     } catch (err) {
@@ -1567,6 +1567,7 @@ export async function getApps(): Promise<AppItem[]> {
 
   const deletedSeeds = await getSiteSetting('deleted_seed_apps', []);
   const deletedSeedsSet = new Set(deletedSeeds || []);
+  const extMeta = await getSiteSetting('apps_extended_metadata', {});
 
   // Normalize localApps as well
   const normalizedLocalApps: AppItem[] = localApps.map(x => {
@@ -1582,6 +1583,7 @@ export async function getApps(): Promise<AppItem[]> {
       repository_url: x.repository_url || '',
       repository_type: x.repository_type || 'github',
       downloads: parsedDownloads,
+      supported_os: Array.isArray(x.supported_os) ? x.supported_os : [],
       languages: Array.isArray(x.languages) ? x.languages : ['Հայերեն', 'English'],
       is_draft: isDraft,
       status: isDraft ? 'draft' : 'published'
@@ -1596,11 +1598,19 @@ export async function getApps(): Promise<AppItem[]> {
     const localMap = new Map(normalizedLocalApps.map(l => [l.id, l]));
     const mergedDbApps = dbApps.map(item => {
       const local = localMap.get(item.id);
+      const meta = (extMeta && extMeta[item.id]) ? extMeta[item.id] : {};
       return {
         ...item,
-        repository_url: item.repository_url || local?.repository_url || '',
-        repository_type: item.repository_type || local?.repository_type || 'github',
-        downloads: (item.downloads && item.downloads.length > 0) ? item.downloads : (local?.downloads || [])
+        supported_os: (Array.isArray(item.supported_os) && item.supported_os.length > 0)
+          ? item.supported_os
+          : (Array.isArray(meta.supported_os) && meta.supported_os.length > 0
+              ? meta.supported_os
+              : (local?.supported_os || [])),
+        repository_url: item.repository_url || meta.repository_url || local?.repository_url || '',
+        repository_type: item.repository_type || meta.repository_type || local?.repository_type || 'github',
+        downloads: (item.downloads && item.downloads.length > 0)
+          ? item.downloads
+          : ((meta.downloads && meta.downloads.length > 0) ? meta.downloads : (local?.downloads || []))
       };
     });
     const localFiltered = normalizedLocalApps.filter(x => !new Set(dbApps.map(d => d.id)).has(x.id));
@@ -1626,6 +1636,7 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
         : ['Հայերեն']);
 
   const downloadsList = Array.isArray(app.downloads) ? app.downloads : [];
+  const supportedOsList = Array.isArray(app.supported_os) ? app.supported_os : [];
 
   const newApp: AppItem = {
     ...app,
@@ -1633,6 +1644,7 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
     repository_type: app.repository_type || 'github',
     languages: languagesList.length > 0 ? languagesList : ['Հայերեն'],
     downloads: downloadsList,
+    supported_os: supportedOsList,
     is_draft: isDraft,
     status: isDraft ? 'draft' : 'published',
     gallery_images: Array.isArray(app.gallery_images) ? app.gallery_images : [],
@@ -1640,19 +1652,69 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
     updated_at: now
   };
 
+  // If this app was a deleted seed, remove it from deleted seeds list
+  try {
+    const deletedSeeds = await getSiteSetting('deleted_seed_apps', []);
+    if (Array.isArray(deletedSeeds) && deletedSeeds.includes(newApp.id)) {
+      await saveSiteSetting('deleted_seed_apps', deletedSeeds.filter((s: string) => s !== newApp.id));
+    }
+  } catch (e) { /* ignore */ }
+
+  // Save extended metadata to site_settings (persists on Supabase across sessions)
+  try {
+    const currentMeta = await getSiteSetting('apps_extended_metadata', {});
+    currentMeta[newApp.id] = {
+      downloads: newApp.downloads,
+      supported_os: newApp.supported_os,
+      repository_url: newApp.repository_url,
+      repository_type: newApp.repository_type
+    };
+    await saveSiteSetting('apps_extended_metadata', currentMeta);
+  } catch (err) {
+    console.warn('Failed to save apps_extended_metadata:', err);
+  }
+
   const adminClient = supabaseAdmin || supabase;
   if (adminClient) {
     try {
+      // 1. Try upserting full newApp in case all columns exist on Supabase
       let { data, error } = await adminClient
         .from('apps')
         .upsert(newApp)
         .select()
         .single();
 
-      // If column does not exist yet on Supabase, retry without new columns
-      if (error && error.message && (error.message.includes('downloads') || error.message.includes('languages') || error.message.includes('is_draft') || error.message.includes('status') || error.message.includes('repository_url') || error.message.includes('repository_type'))) {
-        const { downloads, languages, is_draft, status, repository_url, repository_type, ...legacyApp } = newApp as any;
-        const retry = await adminClient.from('apps').upsert(legacyApp).select().single();
+      // 2. If Supabase table lacks extended columns, upsert guaranteed standard columns
+      if (error && error.message) {
+        const standardPayload: Record<string, any> = {
+          id: newApp.id,
+          title_am: newApp.title_am,
+          title_en: newApp.title_en,
+          short_desc_am: newApp.short_desc_am || '',
+          short_desc_en: newApp.short_desc_en || '',
+          description_md_am: newApp.description_md_am || '',
+          description_md_en: newApp.description_md_en || '',
+          host_app: newApp.host_app || '',
+          host_app_icon: newApp.host_app_icon || '',
+          app_type: newApp.app_type,
+          is_paid: !!newApp.is_paid,
+          price: Number(newApp.price) || 0,
+          currency: newApp.currency || 'AMD',
+          download_url: newApp.download_url || '',
+          store_url: newApp.store_url || '',
+          cover_image: newApp.cover_image || '',
+          gallery_images: newApp.gallery_images,
+          languages: newApp.languages,
+          version: newApp.version || 'v1.0.0',
+          release_date: newApp.release_date || now.split('T')[0],
+          downloads_count: Number(newApp.downloads_count) || 0,
+          is_draft: isDraft,
+          status: isDraft ? 'draft' : 'published',
+          created_at: newApp.created_at || now,
+          updated_at: now
+        };
+
+        const retry = await adminClient.from('apps').upsert(standardPayload).select().single();
         data = retry.data;
         error = retry.error;
       }
@@ -1674,8 +1736,10 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
         return {
           ...newApp,
           ...data,
-          repository_url: newApp.repository_url || data?.repository_url || '',
-          repository_type: newApp.repository_type || data?.repository_type || 'github',
+          supported_os: newApp.supported_os,
+          downloads: newApp.downloads,
+          repository_url: newApp.repository_url,
+          repository_type: newApp.repository_type,
           languages: newApp.languages,
           is_draft: newApp.is_draft,
           status: newApp.status,
@@ -1732,6 +1796,15 @@ export async function deleteApp(id: string): Promise<boolean> {
       console.warn('Failed to register deleted seed app in settings:', err);
     }
   }
+
+  // Remove from extended metadata
+  try {
+    const extMeta = await getSiteSetting('apps_extended_metadata', {});
+    if (extMeta && extMeta[id]) {
+      delete extMeta[id];
+      await saveSiteSetting('apps_extended_metadata', extMeta);
+    }
+  } catch (e) { /* ignore */ }
 
   let supabaseErrorMsg = '';
   const adminClient = supabaseAdmin || supabase;

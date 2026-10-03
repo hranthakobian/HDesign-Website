@@ -979,7 +979,9 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
       status: nextStatus,
       supported_os: selectedOSList,
       languages: selectedLanguagesList,
-      download_url: editingApp.download_url || validFirst?.url || ""
+      download_url: editingApp.download_url || validFirst?.url || "",
+      created_at: editingApp.created_at,
+      updated_at: new Date().toISOString()
     };
 
     setSavingApp(true);
@@ -998,7 +1000,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
 
       alert(isDraft ? "Հավելվածը հաջողությամբ պահվեց որպես սևագիր:" : "Հավելվածը հաջողությամբ պահվեց:");
       setIsEditing(false);
-      loadData();
+      await loadData();
     } catch (err: any) {
       alert("Սխալ պահելիս: " + err.message);
     } finally {
@@ -1079,10 +1081,10 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
     const q = search.toLowerCase().trim();
     if (!q) return true;
     return (
-      a.title_am.toLowerCase().includes(q) ||
-      a.title_en.toLowerCase().includes(q) ||
+      (a.title_am || '').toLowerCase().includes(q) ||
+      (a.title_en || '').toLowerCase().includes(q) ||
       (a.host_app && a.host_app.toLowerCase().includes(q)) ||
-      (Array.isArray(a.languages) && a.languages.some(l => l.toLowerCase().includes(q)))
+      (Array.isArray(a.languages) && a.languages.some(l => (l || '').toLowerCase().includes(q)))
     );
   });
 

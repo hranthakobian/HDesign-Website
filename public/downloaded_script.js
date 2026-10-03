@@ -852,7 +852,7 @@ function applySegmentAttributes(wrapper) {
 // Custom Web Components
 class HdInput extends HTMLElement {
   static get observedAttributes() {
-    return ['data-width','data-wrapper-width','data-height','data-wrapper-height',
+    return ['value','data-width','data-wrapper-width','data-height','data-wrapper-height',
             'data-color','data-primary-color','data-text-color','data-thickness',
             'data-line-thickness','data-radius','data-border-radius','data-padding',
             'data-wrapper-padding','data-font-size','data-font-weight',
@@ -863,6 +863,12 @@ class HdInput extends HTMLElement {
             'data-right-height','data-right-cursor-height-unfocused'];
   }
   attributeChangedCallback(name, oldValue, newValue) {
+    if (name === 'value') {
+      const input = this.querySelector('input');
+      if (input && input.value !== newValue) {
+        input.value = newValue || '';
+      }
+    }
     if (this.dataset.initialized && oldValue !== newValue) applyAttributes(this);
   }
   connectedCallback() {
@@ -870,7 +876,8 @@ class HdInput extends HTMLElement {
     this.dataset.initialized = 'true';
 
     const placeholder = this.getAttribute('placeholder') || '';
-    const value = this.getAttribute('value') || '';
+    const initialPropVal = this.value;
+    const value = (initialPropVal !== undefined && initialPropVal !== null) ? initialPropVal : (this.getAttribute('value') || '');
     const id = this.getAttribute('id') || '';
     const name = this.getAttribute('name') || '';
     const autocomplete = this.getAttribute('autocomplete') || 'off';
@@ -902,8 +909,10 @@ class HdInput extends HTMLElement {
     Object.defineProperty(this, 'value', {
       get() { return input.value; },
       set(val) {
-        input.value = val;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
+        if (input.value !== val) {
+          input.value = val || '';
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
       },
       configurable: true
     });
@@ -912,7 +921,7 @@ class HdInput extends HTMLElement {
 
 class HdTextarea extends HTMLElement {
   static get observedAttributes() {
-    return ['data-width','data-wrapper-width','data-height','data-wrapper-height',
+    return ['value','data-width','data-wrapper-width','data-height','data-wrapper-height',
             'data-color','data-primary-color','data-text-color','data-thickness',
             'data-line-thickness','data-radius','data-border-radius','data-padding',
             'data-wrapper-padding','data-font-size','data-font-weight',
@@ -920,6 +929,12 @@ class HdTextarea extends HTMLElement {
             'data-border-top-right-gap','data-bottom-gap','data-border-left-bottom-gap'];
   }
   attributeChangedCallback(name, oldValue, newValue) {
+    if (name === 'value') {
+      const textarea = this.querySelector('textarea');
+      if (textarea && textarea.value !== newValue) {
+        textarea.value = newValue || '';
+      }
+    }
     if (this.dataset.initialized && oldValue !== newValue) applyAttributes(this);
   }
   connectedCallback() {
@@ -927,7 +942,10 @@ class HdTextarea extends HTMLElement {
     this.dataset.initialized = 'true';
 
     const placeholder = this.getAttribute('placeholder') || '';
-    const value = this.textContent || this.getAttribute('value') || '';
+    const initialPropVal = this.value;
+    const value = (initialPropVal !== undefined && initialPropVal !== null)
+      ? initialPropVal
+      : (this.textContent || this.getAttribute('value') || '');
     const id = this.getAttribute('id') || '';
     const name = this.getAttribute('name') || '';
     const autocomplete = this.getAttribute('autocomplete') || 'off';
@@ -957,8 +975,10 @@ class HdTextarea extends HTMLElement {
     Object.defineProperty(this, 'value', {
       get() { return textarea.value; },
       set(val) {
-        textarea.value = val;
-        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        if (textarea.value !== val) {
+          textarea.value = val || '';
+          textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        }
       },
       configurable: true
     });

@@ -114,6 +114,7 @@ export async function POST(request: Request) {
       host_app,
       host_app_icon,
       app_type,
+      supported_os,
       is_paid,
       price,
       currency,
@@ -129,16 +130,26 @@ export async function POST(request: Request) {
       release_date,
       downloads_count,
       is_draft,
-      status
+      status,
+      created_at,
+      updated_at
     } = body;
 
     const draftFlag = status === 'draft' || !!is_draft;
+    const finalAppType = app_type === 'standalone' ? 'standalone' : 'plugin';
+    const finalHostApp = (host_app && host_app.trim()) || (finalAppType === 'standalone' ? 'Standalone' : 'Adobe Illustrator');
 
     // Only enforce mandatory fields if publishing
     if (!draftFlag) {
-      if (!title_am || !title_en || !host_app || !app_type) {
+      if (!title_am?.trim() || !title_en?.trim()) {
         return NextResponse.json(
-          { error: 'title_am, title_en, host_app, and app_type are required for published apps.' },
+          { error: 'title_am and title_en are required for published apps.' },
+          { status: 400 }
+        );
+      }
+      if (finalAppType === 'plugin' && !finalHostApp?.trim()) {
+        return NextResponse.json(
+          { error: 'host_app is required for published plugins.' },
           { status: 400 }
         );
       }
@@ -147,8 +158,6 @@ export async function POST(request: Request) {
     const finalId = (id && id.trim()) || ('app-draft-' + Math.random().toString(36).substring(2, 9));
     const finalTitleAm = (title_am && title_am.trim()) || (title_en && title_en.trim()) || (draftFlag ? 'Անանուն սևագիր' : '');
     const finalTitleEn = (title_en && title_en.trim()) || (title_am && title_am.trim()) || (draftFlag ? 'Untitled Draft' : '');
-    const finalHostApp = (host_app && host_app.trim()) || (app_type === 'standalone' ? 'Standalone' : 'Adobe Illustrator');
-    const finalAppType = app_type === 'standalone' ? 'standalone' : 'plugin';
 
     const languagesList = Array.isArray(languages)
       ? languages
@@ -157,6 +166,8 @@ export async function POST(request: Request) {
           : ['Հայերեն']);
 
     const downloadsList = Array.isArray(downloads) ? downloads : [];
+    const supportedOsList = Array.isArray(supported_os) ? supported_os : [];
+    const now = new Date().toISOString();
 
     const appToSave: AppItem = {
       id: finalId,
@@ -169,6 +180,7 @@ export async function POST(request: Request) {
       host_app: finalHostApp,
       host_app_icon: host_app_icon || '',
       app_type: finalAppType,
+      supported_os: supportedOsList,
       is_paid: !!is_paid,
       price: Number(price) || 0,
       currency: currency || 'AMD',
@@ -181,10 +193,12 @@ export async function POST(request: Request) {
       gallery_images: Array.isArray(gallery_images) ? gallery_images : [],
       languages: languagesList.length > 0 ? languagesList : ['Հայերեն'],
       version: version || 'v1.0.0',
-      release_date: release_date || new Date().toISOString().split('T')[0],
+      release_date: release_date || now.split('T')[0],
       downloads_count: Number(downloads_count) || 0,
       is_draft: draftFlag,
-      status: draftFlag ? 'draft' : 'published'
+      status: draftFlag ? 'draft' : 'published',
+      created_at: created_at || now,
+      updated_at: updated_at || now
     };
 
     const saved = await saveApp(appToSave);
