@@ -5,6 +5,9 @@ import { supabase } from '@/lib/supabase';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { verifyAuth } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+export const maxDuration = 300;
+
 export async function POST(request: Request) {
   try {
     // Auth check
@@ -66,8 +69,7 @@ export async function POST(request: Request) {
           console.warn(`Bucket '${targetBucket}' not found. Attempting to create it...`);
           try {
             const createRes = await storageClient.storage.createBucket(targetBucket, {
-              public: true,
-              fileSizeLimit: 52428800 // 50MB
+              public: true
             });
 
             if (!createRes.error) {

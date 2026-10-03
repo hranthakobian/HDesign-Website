@@ -2,6 +2,11 @@
 const nextConfig = {
   turbopack: {
     rules: {}
+  },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10gb'
+    }
   }
 };
 

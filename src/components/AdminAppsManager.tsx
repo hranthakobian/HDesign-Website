@@ -663,9 +663,11 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
     try {
       const url = await uploadFile(file, "apps");
       const fileSizeStr = file.size
-        ? (file.size > 1024 * 1024
-            ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
-            : `${Math.round(file.size / 1024)} KB`)
+        ? (file.size >= 1024 * 1024 * 1024
+            ? `${(file.size / (1024 * 1024 * 1024)).toFixed(2)} GB`
+            : file.size >= 1024 * 1024
+                ? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+                : `${Math.round(file.size / 1024)} KB`)
         : "";
       setEditingApp(prev => {
         const list = [...(prev.downloads || [])];

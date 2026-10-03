@@ -4,6 +4,9 @@ import fs from 'fs/promises';
 import { supabase } from '@/lib/supabase';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
+export const dynamic = 'force-dynamic';
+export const maxDuration = 300;
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
@@ -11,12 +14,6 @@ export async function POST(request: Request) {
 
     if (!file) {
       return NextResponse.json({ error: 'Ֆայլը բացակայում է:' }, { status: 400 });
-    }
-
-    // Maximum file size: 30MB
-    const MAX_SIZE = 30 * 1024 * 1024;
-    if (file.size > MAX_SIZE) {
-      return NextResponse.json({ error: 'Ֆայլի չափը գերազանցում է թույլատրելի 30MB սահմանը:' }, { status: 400 });
     }
 
     const targetBucket = 'bug-reports';
@@ -45,8 +42,7 @@ export async function POST(request: Request) {
         )) {
           try {
             const createRes = await storageClient.storage.createBucket(targetBucket, {
-              public: true,
-              fileSizeLimit: 31457280 // 30MB
+              public: true
             });
 
             if (!createRes.error) {
