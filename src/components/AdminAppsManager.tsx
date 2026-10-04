@@ -1355,7 +1355,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                   <th style={{ padding: '14px 18px' }}>Տիպ</th>
                   <th style={{ padding: '14px 18px' }}>Կարգավիճակ</th>
                   <th style={{ padding: '14px 18px' }}>Գին</th>
-                  <th style={{ padding: '14px 18px' }}>Վերսիա</th>
+                  <th style={{ padding: '14px 18px' }}>Վարկած</th>
                   <th style={{ padding: '14px 18px', textAlign: 'right' }}>Գործողություններ</th>
                 </tr>
               </thead>
@@ -3646,7 +3646,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
                 <div>
                   <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>
-                    Վերսիայի համար (օր.՝ v1.0.2)
+                    Վարկածի համար (օր.՝ v1.0.2)
                   </label>
                   <hd-input
                     suppressHydrationWarning
