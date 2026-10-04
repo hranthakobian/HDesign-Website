@@ -3492,7 +3492,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                             position: 'relative',
                             borderRadius: '8px',
                             overflow: 'hidden',
-                            aspectRatio: '16/10',
+                            aspectRatio: '1/1.4142',
                             border: editingApp.cover_image === img ? '2px solid var(--accent)' : '1px solid var(--panel-border)',
                             cursor: 'pointer'
                           }}
@@ -4061,7 +4061,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                               position: 'relative',
                               borderRadius: '10px',
                               overflow: 'hidden',
-                              aspectRatio: '16/10',
+                              aspectRatio: '1/1.4142',
                               border: '1px solid var(--panel-border)',
                               background: '#000',
                               cursor: 'pointer',
