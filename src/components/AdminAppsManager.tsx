@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import MarkdownRenderer from "./MarkdownRenderer";
 import { HDesignStars } from "./RatingSystem";
@@ -130,6 +130,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
+  const [notifySubscribers, setNotifySubscribers] = useState(true);
 
   // Modal / Drawer state for Create / Edit App
   const [isEditing, setIsEditing] = useState(false);
@@ -254,19 +255,33 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
     setMediaPickerConfig(null);
   };
 
+  // Resilient Auth Header Helper
+  const getAuthToken = useCallback(() => {
+    return token || (typeof window !== 'undefined' ? localStorage.getItem('hdesign_admin_token') : '') || '';
+  }, [token]);
+
+  const getAuthHeaders = useCallback((extra: Record<string, string> = {}) => {
+    const t = getAuthToken();
+    return {
+      ...(t ? { Authorization: t.startsWith('Bearer ') ? t : `Bearer ${t}` } : {}),
+      ...extra
+    };
+  }, [getAuthToken]);
+
   // Load apps, reviews & bug reports
   const loadData = async () => {
     setLoading(true);
     try {
+      const authHeader = getAuthHeaders();
       const [appsRes, revRes, bugRes] = await Promise.all([
         fetch("/api/apps?include_drafts=true", {
-          headers: { Authorization: token || "" }
+          headers: authHeader
         }),
         fetch("/api/apps/reviews?all=true", {
-          headers: { Authorization: token || "" }
+          headers: authHeader
         }),
         fetch("/api/apps/bug-reports", {
-          headers: { Authorization: token || "" }
+          headers: authHeader
         })
       ]);
 
@@ -292,19 +307,17 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
   };
 
   useEffect(() => {
-    if (token) prefetchMediaLibrary(token);
+    const t = getAuthToken();
+    if (t) prefetchMediaLibrary(t);
     loadData();
-  }, [token]);
+  }, [token, getAuthToken]);
 
   // Update bug report status
   const handleUpdateBugStatus = async (id: string, newStatus: 'new' | 'investigating' | 'resolved' | 'closed') => {
     try {
       const res = await fetch("/api/apps/bug-reports", {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token || ""
-        },
+        headers: getAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ id, status: newStatus })
       });
       if (res.ok) {
@@ -324,10 +337,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
     try {
       const res = await fetch("/api/apps/bug-reports", {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token || ""
-        },
+        headers: getAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ id, admin_notes: reportAdminNotes })
       });
       if (res.ok) {
@@ -350,7 +360,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
     try {
       const res = await fetch(`/api/apps/bug-reports?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
-        headers: { Authorization: token || "" }
+        headers: getAuthHeaders()
       });
       if (res.ok) {
         setBugReports(prev => prev.filter(r => r.id !== id));
@@ -399,6 +409,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
     });
     setCustomLanguageInput("");
     setMdPreviewTab("edit");
+    setNotifySubscribers(true);
     setIsEditing(true);
   };
 
@@ -478,6 +489,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
     });
     setCustomLanguageInput("");
     setMdPreviewTab("edit");
+    setNotifySubscribers(true);
     setIsEditing(true);
   };
 
@@ -855,7 +867,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
 
     const res = await fetch("/api/upload", {
       method: "POST",
-      headers: { Authorization: token || "" },
+      headers: getAuthHeaders(),
       body: formData
     });
 
@@ -990,11 +1002,13 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
     try {
       const res = await fetch("/api/apps", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token || ""
-        },
-        body: JSON.stringify(appToSave)
+        headers: getAuthHeaders({
+          "Content-Type": "application/json"
+        }),
+        body: JSON.stringify({
+          ...appToSave,
+          notify_subscribers: notifySubscribers
+        })
       });
 
       const data = await res.json();
@@ -1012,12 +1026,13 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
 
   // Delete App
   const handleDeleteApp = async (id: string) => {
+    if (!id) return;
     if (!confirm("Վստա՞հ եք, որ ցանկանում եք ջնջել այս հավելվածը:")) return;
 
     try {
       const res = await fetch(`/api/apps?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
-        headers: { Authorization: token || "" }
+        headers: getAuthHeaders()
       });
 
       if (!res.ok) {
@@ -1026,7 +1041,11 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
       }
 
       setApps(prev => prev.filter(a => a.id !== id));
+      if (editingApp.id === id) {
+        setIsEditing(false);
+      }
       alert("Հավելվածը հաջողությամբ ջնջվեց:");
+      await loadData();
     } catch (err: any) {
       alert("Սխալ ջնջելիս: " + err.message);
     }
@@ -1037,10 +1056,9 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
     try {
       const res = await fetch("/api/apps/reviews", {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token || ""
-        },
+        headers: getAuthHeaders({
+          "Content-Type": "application/json"
+        }),
         body: JSON.stringify({ id, status })
       });
 
@@ -1059,7 +1077,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
     try {
       const res = await fetch(`/api/apps/reviews?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
-        headers: { Authorization: token || "" }
+        headers: getAuthHeaders()
       });
 
       if (!res.ok) throw new Error("Failed to delete review");
@@ -1495,9 +1513,14 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                         </span>
                       </td>
 
-                      {/* Version */}
+                      {/* Version & Downloads */}
                       <td style={{ padding: '12px 18px', color: 'var(--muted)', fontSize: '0.82rem' }}>
-                        {app.version}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <span style={{ fontWeight: 600, color: 'var(--text)' }}>{app.version}</span>
+                          <span style={{ fontSize: '0.74rem', color: 'var(--accent)' }}>
+                            {(app.downloads_count || 0).toLocaleString()} ներբեռնում
+                          </span>
+                        </div>
                       </td>
 
                       {/* Actions */}
@@ -1538,9 +1561,20 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                             data-font-size="0.75rem"
                             data-color="rgba(229, 57, 53, 0.15)"
                             data-text-color="#e53935"
-                            onClick={() => handleDeleteApp(app.id)}
+                            onClick={(e: any) => {
+                              e.stopPropagation();
+                              handleDeleteApp(app.id);
+                            }}
                           >
-                            <span style={{ padding: '0 8px' }}>Ջնջել</span>
+                            <span
+                              style={{ padding: '0 8px', cursor: 'pointer' }}
+                              onClick={(e: any) => {
+                                e.stopPropagation();
+                                handleDeleteApp(app.id);
+                              }}
+                            >
+                              Ջնջել
+                            </span>
                           </hd-button>
                         </div>
                       </td>
@@ -3668,62 +3702,120 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                   borderTop: '1px solid var(--panel-border)',
                   background: 'var(--panel)',
                   display: 'flex',
-                  justifyContent: 'flex-end',
+                  justifyContent: 'space-between',
                   alignItems: 'center',
                   gap: '12px',
                   flexShrink: 0,
                   boxShadow: '0 -4px 20px rgba(0,0,0,0.15)'
                 }}
               >
-                <hd-button
-                  suppressHydrationWarning
-                  data-height="38px"
-                  data-thickness="2px"
-                  data-font-size="0.85rem"
-                  data-color="var(--bg)"
-                  data-text-color="var(--text)"
-                  onClick={() => setIsEditing(false)}
-                >
-                  <span style={{ padding: '0 16px' }}>Չեղարկել</span>
-                </hd-button>
+                <div>
+                  {apps.some(a => a.id === editingApp.id) && (
+                    <hd-button
+                      suppressHydrationWarning
+                      data-height="38px"
+                      data-thickness="2px"
+                      data-font-size="0.85rem"
+                      data-color="rgba(229, 57, 53, 0.15)"
+                      data-text-color="#e53935"
+                      onClick={(e: any) => {
+                        e.stopPropagation();
+                        handleDeleteApp(editingApp.id);
+                      }}
+                      disabled={savingApp}
+                    >
+                      <span
+                        style={{ padding: '0 16px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                        onClick={(e: any) => {
+                          e.stopPropagation();
+                          handleDeleteApp(editingApp.id);
+                        }}
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          <line x1="10" y1="11" x2="10" y2="17" />
+                          <line x1="14" y1="11" x2="14" y2="17" />
+                        </svg>
+                        <span>Ջնջել Հավելվածը</span>
+                      </span>
+                    </hd-button>
+                  )}
+                </div>
 
-                <hd-button
-                  suppressHydrationWarning
-                  data-height="38px"
-                  data-thickness="2px"
-                  data-font-size="0.85rem"
-                  data-color="rgba(255, 152, 0, 0.15)"
-                  data-text-color="#ff9800"
-                  onClick={(e: any) => handleSaveApp(e, 'draft')}
-                  disabled={savingApp}
-                >
-                  <span style={{ padding: '0 16px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                      <polyline points="17 21 17 13 7 13 7 21" />
-                      <polyline points="7 3 7 8 15 8" />
-                    </svg>
-                    <span>{savingApp ? "Պահվում է..." : "Պահել որպես սևագիր"}</span>
-                  </span>
-                </hd-button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                  <label
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      cursor: 'pointer',
+                      fontSize: '0.84rem',
+                      color: 'var(--text)',
+                      userSelect: 'none',
+                      marginRight: '8px'
+                    }}
+                    title="Ուղարկել ծանուցում բոլոր բաժանորդներին էլ․ փոստով այս հավելվածի հրապարակման կամ թարմացման մասին"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={notifySubscribers}
+                      onChange={(e) => setNotifySubscribers(e.target.checked)}
+                      style={{ width: '16px', height: '16px', accentColor: 'var(--accent)', cursor: 'pointer' }}
+                    />
+                    <span>Ծանուցել բաժանորդներին</span>
+                  </label>
 
-                <hd-button
-                  suppressHydrationWarning
-                  data-height="38px"
-                  data-thickness="3px"
-                  data-font-size="0.85rem"
-                  data-color="var(--accent)"
-                  data-text-color="#ffffff"
-                  onClick={(e: any) => handleSaveApp(e, 'published')}
-                  disabled={savingApp}
-                >
-                  <span style={{ padding: '0 18px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M5 12h14M12 5l7 7-7 7" />
-                    </svg>
-                    <span>{savingApp ? "Պահվում է..." : "Հրապարակել Հավելվածը"}</span>
-                  </span>
-                </hd-button>
+                  <hd-button
+                    suppressHydrationWarning
+                    data-height="38px"
+                    data-thickness="2px"
+                    data-font-size="0.85rem"
+                    data-color="var(--bg)"
+                    data-text-color="var(--text)"
+                    onClick={() => setIsEditing(false)}
+                  >
+                    <span style={{ padding: '0 16px' }}>Չեղարկել</span>
+                  </hd-button>
+
+                  <hd-button
+                    suppressHydrationWarning
+                    data-height="38px"
+                    data-thickness="2px"
+                    data-font-size="0.85rem"
+                    data-color="rgba(255, 152, 0, 0.15)"
+                    data-text-color="#ff9800"
+                    onClick={(e: any) => handleSaveApp(e, 'draft')}
+                    disabled={savingApp}
+                  >
+                    <span style={{ padding: '0 16px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                        <polyline points="17 21 17 13 7 13 7 21" />
+                        <polyline points="7 3 7 8 15 8" />
+                      </svg>
+                      <span>{savingApp ? "Պահվում է..." : "Պահել որպես սևագիր"}</span>
+                    </span>
+                  </hd-button>
+
+                  <hd-button
+                    suppressHydrationWarning
+                    data-height="38px"
+                    data-thickness="3px"
+                    data-font-size="0.85rem"
+                    data-color="var(--accent)"
+                    data-text-color="#ffffff"
+                    onClick={(e: any) => handleSaveApp(e, 'published')}
+                    disabled={savingApp}
+                  >
+                    <span style={{ padding: '0 18px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                      </svg>
+                      <span>{savingApp ? "Պահվում է..." : "Հրապարակել Հավելվածը"}</span>
+                    </span>
+                  </hd-button>
+                </div>
               </div>
             </div>
           </div>

@@ -154,13 +154,18 @@ export async function sendWelcomeEmail(email: string) {
   await dispatchEmail([email], subject, message);
 }
 
-export async function notifySubscribers(type: 'case' | 'gallery' | 'font', name: string) {
+export async function notifySubscribers(
+  type: 'case' | 'gallery' | 'font' | 'app' | 'app_publish' | 'app_update',
+  name: string,
+  options?: { appId?: string; version?: string }
+) {
   try {
     const subscribers = await getSubscribers();
     const recipientEmails = subscribers.map(s => s.email);
 
     if (recipientEmails.length === 0) return;
 
+    const baseUrl = getBaseUrl();
     let subject = '';
     let message = '';
 
@@ -173,10 +178,20 @@ export async function notifySubscribers(type: 'case' | 'gallery' | 'font', name:
     } else if (type === 'font') {
       subject = 'Նոր տառատեսակ HDesign-ում';
       message = `Ողջույն,\n\nՈւրախ ենք տեղեկացնել, որ HDesign-ում ավելացվել է նոր տառատեսակ՝ «${name}»։`;
+    } else if (type === 'app' || type === 'app_publish') {
+      subject = `Նոր հավելված HDesign-ում | ${name}`;
+      const versionText = options?.version ? ` (${options.version})` : '';
+      const appUrlText = options?.appId ? `\n\nԴիտել հավելվածը՝ ${baseUrl}/apps/${options.appId}` : '';
+      message = `Ողջույն,\n\nՈւրախ ենք տեղեկացնել, որ HDesign-ում հրապարակվել է նոր հավելված՝ «${name}»${versionText}։${appUrlText}`;
+    } else if (type === 'app_update') {
+      subject = `Հավելվածի թարմացում | ${name} | HDesign`;
+      const versionText = options?.version ? ` (նոր տարբերակ՝ ${options.version})` : '';
+      const appUrlText = options?.appId ? `\n\nԴիտել թարմացումը՝ ${baseUrl}/apps/${options.appId}` : '';
+      message = `Ողջույն,\n\nՈւրախ ենք տեղեկացնել, որ HDesign-ում թարմացվել է «${name}» հավելվածը${versionText}։${appUrlText}`;
     }
 
     // Append standard unsubscribe note
-    const campaignMessage = `${message}\n\n---\nԲաժանորդագրությունից դուրս գալու համար սեղմեք այստեղ՝ ${getBaseUrl()}/unsubscribe`;
+    const campaignMessage = `${message}\n\n---\nԲաժանորդագրությունից դուրս գալու համար սեղմեք այստեղ՝ ${baseUrl}/unsubscribe`;
 
     await dispatchEmail(recipientEmails, subject, campaignMessage);
   } catch (err) {

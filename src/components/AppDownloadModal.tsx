@@ -21,8 +21,10 @@ interface AppDownloadModalProps {
   onClose: () => void;
   appTitle: string;
   appVersion?: string;
+  appId?: string;
   downloads: AppDownloadOption[];
   locale: string;
+  onDownloaded?: (newCount?: number) => void;
 }
 
 export default function AppDownloadModal({
@@ -30,11 +32,40 @@ export default function AppDownloadModal({
   onClose,
   appTitle,
   appVersion,
+  appId,
   downloads,
-  locale
+  locale,
+  onDownloaded
 }: AppDownloadModalProps) {
   const [isRendered, setIsRendered] = React.useState(isOpen);
   const [isClosing, setIsClosing] = React.useState(false);
+
+  const handleDownload = async (item: AppDownloadOption) => {
+    if (appId) {
+      try {
+        const res = await fetch('/api/apps/download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            app_id: appId,
+            download_url: item.url,
+            download_id: item.id || ''
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.downloads_count !== undefined && onDownloaded) {
+            onDownloaded(data.downloads_count);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to record download event:', err);
+      }
+    }
+    setTimeout(() => {
+      onClose();
+    }, 500);
+  };
 
   React.useEffect(() => {
     if (isOpen) {
@@ -324,11 +355,7 @@ export default function AppDownloadModal({
                           href={item.url}
                           download
                           style={{ textDecoration: "none", flexShrink: 0 }}
-                          onClick={() => {
-                            setTimeout(() => {
-                              onClose();
-                            }, 500);
-                          }}
+                          onClick={() => handleDownload(item)}
                         >
                           <hd-button
                             suppressHydrationWarning

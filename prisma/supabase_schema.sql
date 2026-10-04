@@ -177,3 +177,21 @@ CREATE TABLE IF NOT EXISTS app_bug_reports (
 ALTER TABLE app_bug_reports DISABLE ROW LEVEL SECURITY;
 CREATE INDEX IF NOT EXISTS idx_bug_reports_app ON app_bug_reports(app_id);
 CREATE INDEX IF NOT EXISTS idx_bug_reports_status ON app_bug_reports(status);
+
+-- 10. App Downloads & Spam Tracking
+CREATE TABLE IF NOT EXISTS app_downloads (
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  app_id TEXT NOT NULL REFERENCES apps(id) ON DELETE CASCADE,
+  download_url TEXT,
+  download_id TEXT,
+  ip_address TEXT,
+  user_agent TEXT,
+  is_spam BOOLEAN DEFAULT false,
+  spam_reason TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE app_downloads DISABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_downloads_app ON app_downloads(app_id);
+CREATE INDEX IF NOT EXISTS idx_downloads_spam ON app_downloads(is_spam);
+

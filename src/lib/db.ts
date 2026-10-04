@@ -25,6 +25,7 @@ const SUBSCRIBERS_FILE = isServer ? path.join(DATA_DIR, 'subscribers.json') : ''
 const APPS_FILE = isServer ? path.join(DATA_DIR, 'apps.json') : '';
 const APP_REVIEWS_FILE = isServer ? path.join(DATA_DIR, 'app_reviews.json') : '';
 const APP_BUG_REPORTS_FILE = isServer ? path.join(DATA_DIR, 'app_bug_reports.json') : '';
+const APP_DOWNLOADS_FILE = isServer ? path.join(DATA_DIR, 'app_downloads.json') : '';
 
 // Ensure database directory and files exist
 async function ensureLocalDbFiles() {
@@ -94,6 +95,13 @@ async function ensureLocalDbFiles() {
       await fs.access(APP_BUG_REPORTS_FILE);
     } catch {
       await fs.writeFile(APP_BUG_REPORTS_FILE, JSON.stringify([], null, 2), 'utf-8');
+    }
+
+    // Check and create app_downloads.json if missing
+    try {
+      await fs.access(APP_DOWNLOADS_FILE);
+    } catch {
+      await fs.writeFile(APP_DOWNLOADS_FILE, JSON.stringify([], null, 2), 'utf-8');
     }
   } catch (err) {
     console.error('Error initializing local JSON database files:', err);
@@ -1320,7 +1328,7 @@ export const defaultSeededApps: AppItem[] = [
     languages: ['Հայերեն', 'English'],
     version: 'v1.2.0',
     release_date: '2026-03-10',
-    downloads_count: 142,
+    downloads_count: 0,
     is_draft: false,
     status: 'published',
     created_at: '2026-03-10T10:00:00.000Z',
@@ -1374,7 +1382,7 @@ export const defaultSeededApps: AppItem[] = [
     languages: ['English', 'Հայերեն'],
     version: 'v2.1.4',
     release_date: '2026-02-15',
-    downloads_count: 89,
+    downloads_count: 0,
     is_draft: false,
     status: 'published',
     created_at: '2026-02-15T12:00:00.000Z',
@@ -1418,7 +1426,7 @@ Parametric facade and pattern generator designed for Blender architectural and p
     languages: ['English'],
     version: 'v1.0.1',
     release_date: '2026-01-20',
-    downloads_count: 54,
+    downloads_count: 0,
     is_draft: false,
     status: 'published',
     created_at: '2026-01-20T08:00:00.000Z',
@@ -1462,7 +1470,7 @@ Parametric facade and pattern generator designed for Blender architectural and p
     languages: ['Հայերեն', 'English', 'Русский'],
     version: 'v1.4.0',
     release_date: '2026-02-28',
-    downloads_count: 210,
+    downloads_count: 0,
     is_draft: false,
     status: 'published',
     created_at: '2026-02-28T14:00:00.000Z',
@@ -1806,17 +1814,26 @@ export async function deleteApp(id: string): Promise<boolean> {
     }
   } catch (e) { /* ignore */ }
 
+  let supabaseDeleted = false;
   let supabaseErrorMsg = '';
   const adminClient = supabaseAdmin || supabase;
   if (adminClient) {
     try {
+      // 1. Delete associated reviews and bug reports first to prevent foreign key constraint violations
+      try {
+        await adminClient.from('app_reviews').delete().eq('app_id', id);
+        await adminClient.from('app_bug_reports').delete().eq('app_id', id);
+      } catch (childErr) {
+        console.warn('Error deleting related app reviews/bug reports in Supabase:', childErr);
+      }
+
       const { error } = await adminClient
         .from('apps')
         .delete()
         .eq('id', id);
 
       if (!error) {
-        if (isSeed) return true;
+        supabaseDeleted = true;
       } else {
         supabaseErrorMsg = error.message;
         console.warn('Supabase deleteApp query error:', error.message);
@@ -1827,7 +1844,8 @@ export async function deleteApp(id: string): Promise<boolean> {
     }
   }
 
-  // Fallback to local JSON database
+  // Fallback / sync to local JSON database
+  let localDeleted = false;
   let localErrorMsg = '';
   if (isServer) {
     const fs = getFs();
@@ -1836,14 +1854,33 @@ export async function deleteApp(id: string): Promise<boolean> {
       const apps = JSON.parse(content) as AppItem[];
       const filtered = apps.filter(x => x.id !== id);
       await fs.writeFile(APPS_FILE, JSON.stringify(filtered, null, 2), 'utf-8');
-      return true;
+      localDeleted = true;
     } catch (err: any) {
       localErrorMsg = err.message || String(err);
       console.error('Error deleting app locally:', err);
     }
+
+    // Also clean up local reviews and bug reports
+    try {
+      const revContent = await fs.readFile(APP_REVIEWS_FILE, 'utf-8');
+      const revs = JSON.parse(revContent) as any[];
+      const filteredRevs = revs.filter(x => x.app_id !== id);
+      await fs.writeFile(APP_REVIEWS_FILE, JSON.stringify(filteredRevs, null, 2), 'utf-8');
+    } catch (e) {}
+
+    try {
+      const bugContent = await fs.readFile(APP_BUG_REPORTS_FILE, 'utf-8');
+      const bugs = JSON.parse(bugContent) as any[];
+      const filteredBugs = bugs.filter(x => x.app_id !== id);
+      await fs.writeFile(APP_BUG_REPORTS_FILE, JSON.stringify(filteredBugs, null, 2), 'utf-8');
+    } catch (e) {}
   }
 
   if (isSeed && seedRegistered) {
+    return true;
+  }
+
+  if (supabaseDeleted || localDeleted) {
     return true;
   }
 
@@ -2279,5 +2316,145 @@ export async function deleteAppBugReport(id: string): Promise<boolean> {
 
   return false;
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// APP DOWNLOADS & SPAM FILTERING
+// ══════════════════════════════════════════════════════════════════════════════
+
+export type AppDownload = {
+  id: string;
+  app_id: string;
+  download_url?: string;
+  download_id?: string;
+  ip_address?: string;
+  user_agent?: string;
+  is_spam?: boolean;
+  spam_reason?: string;
+  created_at?: string;
+};
+
+export async function getAppDownloads(appId?: string): Promise<AppDownload[]> {
+  await ensureLocalDbFiles();
+
+  let downloads: AppDownload[] = [];
+
+  const readClient = supabaseAdmin || supabase;
+  if (readClient) {
+    try {
+      let query = readClient
+        .from('app_downloads')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (appId) {
+        query = query.eq('app_id', appId);
+      }
+
+      const { data, error } = await query;
+      if (!error && data) {
+        downloads = data as AppDownload[];
+      }
+    } catch (err) {
+      console.warn('Supabase getAppDownloads failed, fallback to local:', err);
+    }
+  }
+
+  if (isServer) {
+    try {
+      const fs = getFs();
+      const content = await fs.readFile(APP_DOWNLOADS_FILE, 'utf-8');
+      const localDownloads = JSON.parse(content) as AppDownload[];
+      if (downloads.length === 0) {
+        downloads = appId ? localDownloads.filter(d => d.app_id === appId) : localDownloads;
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  return downloads;
+}
+
+export async function saveAppDownload(download: Omit<AppDownload, 'id' | 'created_at'> & { id?: string; created_at?: string }): Promise<AppDownload | null> {
+  await ensureLocalDbFiles();
+  const now = new Date().toISOString();
+  const newDownload: AppDownload = {
+    id: download.id || ('dl-' + Math.random().toString(36).substring(2, 11)),
+    app_id: download.app_id,
+    download_url: download.download_url || '',
+    download_id: download.download_id || '',
+    ip_address: download.ip_address || '',
+    user_agent: download.user_agent || '',
+    is_spam: !!download.is_spam,
+    spam_reason: download.spam_reason || '',
+    created_at: download.created_at || now
+  };
+
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
+    try {
+      const { data, error } = await adminClient
+        .from('app_downloads')
+        .insert([newDownload])
+        .select()
+        .single();
+
+      if (!error && data) {
+        // Also keep local file in sync
+        if (isServer) {
+          try {
+            const fs = getFs();
+            const content = await fs.readFile(APP_DOWNLOADS_FILE, 'utf-8');
+            const list = JSON.parse(content) as AppDownload[];
+            list.unshift(data);
+            await fs.writeFile(APP_DOWNLOADS_FILE, JSON.stringify(list, null, 2), 'utf-8');
+          } catch (e) { /* ignore */ }
+        }
+        return data as AppDownload;
+      }
+    } catch (err) {
+      console.warn('Supabase saveAppDownload failed, fallback to local:', err);
+    }
+  }
+
+  // Local fallback
+  if (isServer) {
+    try {
+      const fs = getFs();
+      const content = await fs.readFile(APP_DOWNLOADS_FILE, 'utf-8');
+      const list = JSON.parse(content) as AppDownload[];
+      list.unshift(newDownload);
+      await fs.writeFile(APP_DOWNLOADS_FILE, JSON.stringify(list, null, 2), 'utf-8');
+      return newDownload;
+    } catch (err) {
+      console.error('Error saving app download locally:', err);
+    }
+  }
+
+  return null;
+}
+
+export async function getRealDownloadsCount(appId: string): Promise<number> {
+  const downloads = await getAppDownloads(appId);
+  return downloads.filter(d => d.app_id === appId && !d.is_spam).length;
+}
+
+export async function incrementAppDownloadsCount(appId: string): Promise<number> {
+  const realCount = await getRealDownloadsCount(appId);
+  
+  // Persist updated downloads_count in app record
+  try {
+    const app = await getAppById(appId);
+    if (app) {
+      await saveApp({
+        ...app,
+        downloads_count: realCount
+      });
+    }
+  } catch (err) {
+    console.warn('Failed to update app downloads_count:', err);
+  }
+
+  return realCount;
+}
+
 
 

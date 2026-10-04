@@ -773,9 +773,9 @@ export default function AppsListingPage() {
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                      <SingleHDesignStar size={16} active={true} />
+                      <SingleHDesignStar size={16} active={(app.reviews_count || 0) > 0 && (app.avg_rating || 0) > 0} />
                       <span style={{ fontWeight: 700, fontSize: "0.85rem", color: "var(--text)" }}>
-                        {app.avg_rating || 5.0}
+                        {(app.avg_rating && app.avg_rating > 0) ? app.avg_rating.toFixed(1) : "0"}
                       </span>
                       <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>
                         ({app.reviews_count || 0})

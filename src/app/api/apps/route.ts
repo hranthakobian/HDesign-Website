@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getApps, saveApp, deleteApp, getAppReviews, AppItem } from '@/lib/db';
+import { getApps, getAppById, saveApp, deleteApp, getAppReviews, getAppDownloads, AppItem } from '@/lib/db';
 import { verifyAuth } from '@/lib/auth';
+import { notifySubscribers } from '@/lib/notifications';
 
 export async function GET(request: Request) {
   try {
@@ -25,7 +26,18 @@ export async function GET(request: Request) {
       apps = apps.filter(a => (a.status === statusParam) || (statusParam === 'draft' ? !!a.is_draft : !a.is_draft));
     }
 
-    const reviews = await getAppReviews(undefined, true);
+    const [reviews, allDownloads] = await Promise.all([
+      getAppReviews(undefined, true),
+      getAppDownloads()
+    ]);
+
+    // Compute real non-spam downloads count map
+    const realDownloadsMap: Record<string, number> = {};
+    for (const d of allDownloads) {
+      if (!d.is_spam) {
+        realDownloadsMap[d.app_id] = (realDownloadsMap[d.app_id] || 0) + 1;
+      }
+    }
 
     // Compute reviews stats map
     const statsMap: Record<string, { count: number; sum: number }> = {};
@@ -39,12 +51,17 @@ export async function GET(request: Request) {
 
     const appsWithStats = apps.map(a => {
       const stat = statsMap[a.id];
-      const avg = stat && stat.count > 0 ? parseFloat((stat.sum / stat.count).toFixed(1)) : 5.0;
+      const avg = stat && stat.count > 0 ? parseFloat((stat.sum / stat.count).toFixed(1)) : 0;
       const count = stat ? stat.count : 0;
+      const verifiedDownloads = realDownloadsMap[a.id] !== undefined
+        ? realDownloadsMap[a.id]
+        : (Number(a.downloads_count) || 0);
+
       return {
         ...a,
         avg_rating: avg,
-        reviews_count: count
+        reviews_count: count,
+        downloads_count: verifiedDownloads
       };
     });
 
@@ -201,12 +218,26 @@ export async function POST(request: Request) {
       updated_at: updated_at || now
     };
 
+    const existingApp = await getAppById(finalId);
+    const wasDraft = !existingApp || existingApp.is_draft || existingApp.status === 'draft';
+    const notifySubs = body.notify_subscribers !== false;
+
     const saved = await saveApp(appToSave);
     if (!saved) {
       return NextResponse.json(
         { error: 'Failed to save app in database.' },
         { status: 500 }
       );
+    }
+
+    // Trigger subscriber notifications automatically (like cases)
+    if (!draftFlag && notifySubs) {
+      const appName = finalTitleAm || finalTitleEn;
+      if (wasDraft) {
+        await notifySubscribers('app_publish', appName, { appId: finalId, version: appToSave.version });
+      } else {
+        await notifySubscribers('app_update', appName, { appId: finalId, version: appToSave.version });
+      }
     }
 
     return NextResponse.json({ success: true, app: saved });
@@ -226,7 +257,14 @@ export async function DELETE(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+    let id = searchParams.get('id');
+
+    if (!id) {
+      try {
+        const body = await request.json();
+        id = body?.id;
+      } catch (e) { /* ignore */ }
+    }
 
     if (!id) {
       return NextResponse.json({ error: 'App ID is required.' }, { status: 400 });

@@ -319,7 +319,7 @@ interface HDesignStarsProps {
 }
 
 export function HDesignStars({
-  rating = 5,
+  rating = 0,
   size = 20,
   gap = 3,
   interactive = false,

@@ -533,9 +533,9 @@ export default function AppDetailPage() {
 
           {/* Rating Summary Bar */}
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <HDesignStars rating={app.avg_rating || 5.0} size={22} gap={4} />
+            <HDesignStars rating={app.avg_rating ?? 0} size={22} gap={4} />
             <span style={{ fontWeight: 800, fontSize: "1rem", color: "var(--text)" }}>
-              {app.avg_rating || 5.0}
+              {(app.avg_rating && app.avg_rating > 0) ? app.avg_rating.toFixed(1) : "0"}
             </span>
             <span style={{ fontSize: "0.9rem", color: "var(--muted)" }}>
               ({app.reviews_count || reviewsList.length} {locale === "hy" ? "մեկնաբանություն" : "reviews"})
@@ -572,16 +572,14 @@ export default function AppDetailPage() {
               </span>
             </div>
 
-            {app.downloads_count !== undefined && app.downloads_count > 0 && (
-              <div style={{ textAlign: "right" }}>
-                <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", display: "block" }}>
-                  {locale === "hy" ? "Ներբեռնումներ" : "Downloads"}
-                </span>
-                <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--accent)" }}>
-                  {app.downloads_count.toLocaleString()}+
-                </span>
-              </div>
-            )}
+            <div style={{ textAlign: "right" }}>
+              <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", display: "block" }}>
+                {locale === "hy" ? "Ներբեռնումներ" : "Downloads"}
+              </span>
+              <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--accent)" }}>
+                {(app.downloads_count || 0).toLocaleString()}
+              </span>
+            </div>
           </div>
 
           {/* CTA Action Buttons */}
@@ -913,11 +911,11 @@ export default function AppDetailPage() {
                 }}
               >
                 <div style={{ fontSize: "2.4rem", fontWeight: 900, color: "var(--text)", lineHeight: 1 }}>
-                  {app.avg_rating || 5.0}
+                  {(app.avg_rating && app.avg_rating > 0) ? app.avg_rating.toFixed(1) : "0"}
                 </div>
                 <div>
                   <div style={{ marginBottom: "4px" }}>
-                    <HDesignStars rating={app.avg_rating || 5.0} size={18} gap={3} />
+                    <HDesignStars rating={app.avg_rating ?? 0} size={18} gap={3} />
                   </div>
                   <span style={{ fontSize: "0.8rem", color: "var(--muted)" }}>
                     {reviewsList.length} {locale === "hy" ? "կարծիք" : "ratings"}
@@ -1493,10 +1491,17 @@ export default function AppDetailPage() {
         <AppDownloadModal
           isOpen={isDownloadModalOpen}
           onClose={() => setIsDownloadModalOpen(false)}
+          appId={app.id}
           appTitle={title}
           appVersion={app.version}
           downloads={validDownloads}
           locale={locale}
+          onDownloaded={(newCount) => {
+            setApp(prev => prev ? {
+              ...prev,
+              downloads_count: newCount !== undefined ? newCount : ((prev.downloads_count || 0) + 1)
+            } : prev);
+          }}
         />
       )}
     </main>
