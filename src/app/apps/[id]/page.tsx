@@ -1330,9 +1330,9 @@ export default function AppDetailPage() {
                 </span>
               </div>
 
-              {/* Օպերացիոն Համակարգեր (ՕՀ / OS) */}
+              {/* Օպերացիոն Համակարգեր (ԳՀ / OS) */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px dashed var(--panel-border)", paddingBottom: "10px", gap: "8px" }}>
-                <span style={{ color: "var(--muted)" }}>{locale === "hy" ? "ՕՀ (OS)" : "Operating System"}</span>
+                <span style={{ color: "var(--muted)" }}>{locale === "hy" ? "ԳՀ (OS)" : "Operating System"}</span>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "flex-end" }}>
                   {supportedOSList.length > 0 ? (
                     supportedOSList.map((osKey) => {

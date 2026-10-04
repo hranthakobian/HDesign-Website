@@ -14,7 +14,7 @@ export function parseUserAgent(ua: string | null | undefined): ParsedDeviceInfo 
   if (!ua) {
     return {
       browser: 'Անհայտ բրաուզեր',
-      os: 'Անհայտ ՕՀ',
+      os: 'Անհայտ ԳՀ',
       device: 'Անհայտ սարք',
       deviceType: 'unknown',
       icon: 'icon-Monitor'
@@ -24,7 +24,7 @@ export function parseUserAgent(ua: string | null | undefined): ParsedDeviceInfo 
   const uaLower = ua.toLowerCase();
 
   // 1. Detect OS
-  let os = 'Անհայտ ՕՀ';
+  let os = 'Անհայտ ԳՀ';
   if (uaLower.includes('windows nt 10.0') || uaLower.includes('windows 11') || uaLower.includes('windows nt 11.0')) {
     os = 'Windows 10/11';
   } else if (uaLower.includes('windows nt 6.3')) {

@@ -224,7 +224,7 @@ export default function RatingSystem({ id, locale, bgColor, noShadow }: RatingSy
                       <path
                         key={pIdx}
                         d={d}
-                        fill={active ? "#ffcc00" : "rgba(255,255,255,0.15)"}
+                        fill={active ? "#ffcc00" : "#d1d5db"}
                         style={{ transition: "fill 0.15s" }}
                       />
                     ))}
@@ -278,7 +278,7 @@ export function SingleHDesignStar({
   size = 18,
   active = true,
   activeColor = "#ffcc00",
-  inactiveColor = "rgba(255, 255, 255, 0.18)"
+  inactiveColor = "#d1d5db"
 }: {
   size?: number;
   active?: boolean;
@@ -325,7 +325,7 @@ export function HDesignStars({
   interactive = false,
   onRate,
   activeColor = "#ffcc00",
-  inactiveColor = "rgba(255, 255, 255, 0.18)"
+  inactiveColor = "#d1d5db"
 }: HDesignStarsProps) {
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
 

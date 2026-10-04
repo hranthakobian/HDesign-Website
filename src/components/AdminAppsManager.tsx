@@ -2320,12 +2320,12 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                         <span style={{ fontSize: '0.75rem', color: '#e53935', fontWeight: 700 }}>(Պարտադիր)</span>
                       </label>
                       <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
-                        Ընտրեք ՕՀ-ն, բացված ենթացանկում ընտրեք համապատասխան հավելվածը և կցեք ներբեռնվող նյութերը:
+                        Ընտրեք ԳՀ-ն, բացված ենթացանկում ընտրեք համապատասխան հավելվածը և կցեք ներբեռնվող նյութերը:
                       </span>
                     </div>
                     {selectedOSList.length > 0 && (
                       <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', background: 'rgba(74, 137, 124, 0.15)', color: 'var(--accent)' }}>
-                        Ընտրված է {selectedOSList.length} ՕՀ
+                        Ընտրված է {selectedOSList.length} ԳՀ
                       </span>
                     )}
                   </div>
@@ -2366,7 +2366,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
 
                   {selectedOSList.length === 0 ? (
                     <div style={{ fontSize: '0.82rem', color: '#e53935', background: 'rgba(229, 57, 53, 0.08)', padding: '12px 16px', borderRadius: '10px', fontWeight: 600 }}>
-                      <span className="hd-icon icon-Warning" style={{ marginRight: 6 }} /> Խնդրում ենք նախ ընտրել առնվազն մեկ ՕՀ (Windows, macOS կամ Linux)՝ դրա տակ հավելվածների և նյութերի ենթացանկը բացելու համար:
+                      <span className="hd-icon icon-Warning" style={{ marginRight: 6 }} /> Խնդրում ենք նախ ընտրել առնվազն մեկ ԳՀ (Windows, macOS կամ Linux)՝ դրա տակ հավելվածների և նյութերի ենթացանկը բացելու համար:
                     </div>
                   ) : (
                     /* HIERARCHICAL TREE: Render per selected OS */
@@ -2757,7 +2757,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                     </div>
                     {selectedOSList.length > 0 && (
                       <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '3px 10px', borderRadius: '12px', background: 'rgba(74, 137, 124, 0.15)', color: 'var(--accent)' }}>
-                        Ընտրված է {selectedOSList.length} ՕՀ
+                        Ընտրված է {selectedOSList.length} ԳՀ
                       </span>
                     )}
                   </div>
@@ -2798,7 +2798,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
 
                   {selectedOSList.length === 0 ? (
                     <div style={{ fontSize: '0.8rem', color: '#e53935', background: 'rgba(229, 57, 53, 0.08)', padding: '10px 14px', borderRadius: '8px', fontWeight: 600 }}>
-                      <span className="hd-icon icon-Warning" style={{ marginRight: 6 }} /> Ընտրեք առնվազն մեկ ՕՀ (Windows, macOS կամ Linux)՝ տեղադրիչ նիշքերը կցելու համար:
+                      <span className="hd-icon icon-Warning" style={{ marginRight: 6 }} /> Ընտրեք առնվազն մեկ ԳՀ (Windows, macOS կամ Linux)՝ տեղադրիչ նիշքերը կցելու համար:
                     </div>
                   ) : (
                     /* Download slots for Standalone App */

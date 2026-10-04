@@ -4508,7 +4508,7 @@ function AdminDashboardContent() {
                           <tr style={{ borderBottom: '1px solid var(--panel-border)', color: 'var(--muted)' }}>
                             <th style={{ padding: '12px' }}>Ամսաթիվ</th>
                             <th style={{ padding: '12px' }}>Սարք</th>
-                            <th style={{ padding: '12px' }}>ՕՀ / Բրաուզեր</th>
+                            <th style={{ padding: '12px' }}>ԳՀ / Բրաուզեր</th>
                             <th style={{ padding: '12px' }}>Տեղանք</th>
                             <th style={{ padding: '12px' }}>Աղբյուր</th>
                             <th style={{ padding: '12px' }}>Տևողություն</th>
@@ -4585,7 +4585,7 @@ function AdminDashboardContent() {
                           <tr style={{ borderBottom: '1px solid var(--panel-border)', color: 'var(--muted)' }}>
                             <th style={{ padding: '12px' }}>Ամսաթիվ</th>
                             <th style={{ padding: '12px' }}>IP հասցե</th>
-                            <th style={{ padding: '12px' }}>Սարք / ՕՀ</th>
+                            <th style={{ padding: '12px' }}>Սարք / ԳՀ</th>
                             <th style={{ padding: '12px' }}>Թիրախավորված Էջ</th>
                             <th style={{ padding: '12px' }}>Սպամի Բացատրություն</th>
                             <th style={{ padding: '12px' }}>User Agent (Տեղեկություն)</th>
