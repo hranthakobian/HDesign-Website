@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "id": "rev_k4i3g0vblmutqet0p",
+    "app_id": "variable-controller",
+    "user_name": "Այցելու",
+    "user_email": null,
+    "is_anonymous": false,
+    "rating": 5,
+    "comment": "Հիանալի գործիք է:",
+    "status": "approved",
+    "created_at": "2026-10-04T11:22:40.105+00:00"
+  }
+]

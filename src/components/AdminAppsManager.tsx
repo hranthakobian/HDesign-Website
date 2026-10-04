@@ -432,6 +432,8 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
         downloadsList = [];
       }
     }
+    // Purge any legacy placeholder or dummy example.com downloads
+    downloadsList = downloadsList.filter(d => !d.url?.includes('example.com'));
 
     const detectedOS: ('windows' | 'macos' | 'linux')[] = [];
     if (Array.isArray(app.supported_os) && app.supported_os.length > 0) {
@@ -499,7 +501,7 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
       return editingApp.supported_os;
     }
     const detected: ('windows' | 'macos' | 'linux')[] = [];
-    (editingApp.downloads || []).forEach(d => {
+    (editingApp.downloads || []).filter(d => !!d.url?.trim()).forEach(d => {
       if (d.os && ['windows', 'macos', 'linux'].includes(d.os as any) && !detected.includes(d.os as any)) {
         detected.push(d.os as any);
       } else if (d.name) {
@@ -982,7 +984,11 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
     const finalId = editingApp.id?.trim() || ("app-" + Math.random().toString(36).substring(2, 8));
     const finalTitleAm = editingApp.title_am?.trim() || editingApp.title_en?.trim() || (isDraft ? "Անանուն սևագիր" : "");
     const finalTitleEn = editingApp.title_en?.trim() || editingApp.title_am?.trim() || (isDraft ? "Untitled Draft" : "");
-    const validFirst = (editingApp.downloads || []).find(d => !!d.url?.trim());
+    const validDownloadsList = (editingApp.downloads || []).filter(d => !!d.url?.trim() && !d.url.includes('example.com'));
+    const validFirst = validDownloadsList[0];
+    const finalDownloadUrl = (editingApp.download_url && !editingApp.download_url.includes('example.com'))
+      ? editingApp.download_url
+      : (validFirst?.url || "");
 
     const appToSave: AppItem = {
       ...editingApp,
@@ -993,7 +999,8 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
       status: nextStatus,
       supported_os: selectedOSList,
       languages: selectedLanguagesList,
-      download_url: editingApp.download_url || validFirst?.url || "",
+      download_url: finalDownloadUrl,
+      downloads: validDownloadsList,
       created_at: editingApp.created_at,
       updated_at: new Date().toISOString()
     };
@@ -1694,9 +1701,15 @@ export default function AdminAppsManager({ token }: { token: string | null }) {
                       </div>
 
                       {/* Comment text */}
-                      <p style={{ margin: '4px 0 0 0', fontSize: '0.92rem', color: 'var(--text)', lineHeight: '1.5' }}>
-                        {rev.comment}
-                      </p>
+                      {rev.comment && rev.comment.trim() ? (
+                        <p style={{ margin: '4px 0 0 0', fontSize: '0.92rem', color: 'var(--text)', lineHeight: '1.5' }}>
+                          {rev.comment}
+                        </p>
+                      ) : (
+                        <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--muted)', fontStyle: 'italic' }}>
+                          (Միայն գնահատական՝ առանց մեկնաբանության)
+                        </p>
+                      )}
 
                       <span style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '4px' }}>
                         {new Date(rev.created_at).toLocaleString('hy-AM')}

@@ -51,11 +51,9 @@ export async function GET(request: Request) {
 
     const appsWithStats = apps.map(a => {
       const stat = statsMap[a.id];
-      const avg = stat && stat.count > 0 ? parseFloat((stat.sum / stat.count).toFixed(1)) : 0;
-      const count = stat ? stat.count : 0;
-      const verifiedDownloads = realDownloadsMap[a.id] !== undefined
-        ? realDownloadsMap[a.id]
-        : (Number(a.downloads_count) || 0);
+      const avg = stat && stat.count > 0 ? parseFloat((stat.sum / stat.count).toFixed(1)) : (a.avg_rating || 0);
+      const count = stat ? stat.count : (a.reviews_count || 0);
+      const verifiedDownloads = Math.max(Number(a.downloads_count) || 0, realDownloadsMap[a.id] || 0);
 
       return {
         ...a,
@@ -182,9 +180,13 @@ export async function POST(request: Request) {
           ? languages.split(',').map((s: string) => s.trim()).filter(Boolean)
           : ['Հայերեն']);
 
-    const downloadsList = Array.isArray(downloads) ? downloads : [];
+    const downloadsList = (Array.isArray(downloads) ? downloads : [])
+      .filter(d => d && d.url && !d.url.includes('example.com'));
     const supportedOsList = Array.isArray(supported_os) ? supported_os : [];
     const now = new Date().toISOString();
+    const finalDownloadUrl = (download_url && !download_url.includes('example.com'))
+      ? download_url
+      : (downloadsList[0]?.url || '');
 
     const appToSave: AppItem = {
       id: finalId,
@@ -201,7 +203,7 @@ export async function POST(request: Request) {
       is_paid: !!is_paid,
       price: Number(price) || 0,
       currency: currency || 'AMD',
-      download_url: download_url || (downloadsList[0]?.url || ''),
+      download_url: finalDownloadUrl,
       downloads: downloadsList,
       store_url: store_url || '',
       repository_url: repository_url || '',

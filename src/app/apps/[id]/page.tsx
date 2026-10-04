@@ -78,7 +78,7 @@ export default function AppDetailPage() {
       return app.supported_os;
     }
     const detected = new Set<'windows' | 'macos' | 'linux'>();
-    (app.downloads || []).forEach(d => {
+    (app.downloads || []).filter(d => !!d.url?.trim() && !d.url.includes('example.com')).forEach(d => {
       if (d.os && ['windows', 'macos', 'linux'].includes(d.os as any)) {
         detected.add(d.os as any);
       } else if (d.name) {
@@ -88,7 +88,7 @@ export default function AppDetailPage() {
         if (n.includes('linux') || n.includes('deb') || n.includes('appimage')) detected.add('linux');
       }
     });
-    if (detected.size === 0 && (app.download_url || app.downloads?.length)) {
+    if (detected.size === 0 && app.download_url?.trim() && !app.download_url.includes('example.com')) {
       detected.add('windows');
     }
     return Array.from(detected);
@@ -96,9 +96,9 @@ export default function AppDetailPage() {
 
   const validDownloads: import('@/lib/db').AppDownloadOption[] = React.useMemo(() => {
     if (!app) return [];
-    const list = (app.downloads || []).filter(d => !!d.url?.trim());
+    const list = (app.downloads || []).filter(d => !!d.url?.trim() && !d.url.includes('example.com'));
     if (list.length > 0) return list;
-    if (app.download_url?.trim()) {
+    if (app.download_url?.trim() && !app.download_url.includes('example.com')) {
       return [{
         name: app.host_app || (locale === 'hy' ? 'Հիմնական նիշք' : 'Primary File'),
         url: app.download_url,
@@ -108,6 +108,21 @@ export default function AppDetailPage() {
     }
     return [];
   }, [app, locale]);
+
+  const galleryImages = useMemo(() => {
+    const list: string[] = [];
+    if (app?.cover_image?.trim()) {
+      list.push(app.cover_image.trim());
+    }
+    if (Array.isArray(app?.gallery_images)) {
+      app.gallery_images.forEach(img => {
+        if (img?.trim() && !list.includes(img.trim())) {
+          list.push(img.trim());
+        }
+      });
+    }
+    return list;
+  }, [app]);
 
   const hasMultipleDownloads = validDownloads.length > 1;
 
@@ -208,14 +223,6 @@ export default function AppDetailPage() {
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formComment.trim()) {
-      setReviewMessage({
-        type: 'error',
-        text: locale === "hy" ? "Խնդրում ենք լրացնել մեկնաբանության տեքստը:" : "Please write a comment."
-      });
-      return;
-    }
-
     setSubmittingReview(true);
     setReviewMessage(null);
 
@@ -226,7 +233,7 @@ export default function AppDetailPage() {
         body: JSON.stringify({
           app_id: id,
           rating: formRating,
-          user_name: formIsAnonymous ? "Անանուն" : formName.trim(),
+          user_name: formIsAnonymous ? "Անանուն" : (formName.trim() || (locale === "hy" ? "Այցելու" : "Visitor")),
           user_email: formEmail.trim(),
           is_anonymous: formIsAnonymous,
           comment: formComment.trim()
@@ -239,8 +246,8 @@ export default function AppDetailPage() {
       setReviewMessage({
         type: 'success',
         text: locale === "hy"
-          ? "Շնորհակալություն։ Ձեր մեկնաբանությունը և գնահատականը հաջողությամբ ուղարկվել են և կհրապարակվեն մոդերացիայից հետո։"
-          : "Thank you! Your review has been submitted and will appear after moderation."
+          ? "Շնորհակալություն։ Ձեր գնահատականը հաջողությամբ ուղարկվել է և կհրապարակվի մոդերացիայից հետո։"
+          : "Thank you! Your rating and review have been submitted and will appear after moderation."
       });
 
       // Clear form
@@ -299,10 +306,6 @@ export default function AppDetailPage() {
     ? (app.description_md_am || app.description_md_en || "")
     : (app.description_md_en || app.description_md_am || "");
 
-  const galleryImages = app.gallery_images && app.gallery_images.length > 0
-    ? app.gallery_images
-    : (app.cover_image ? [app.cover_image] : []);
-
   const ratingStars = Array.from({ length: 5 }, (_, i) => i + 1);
 
   return (
@@ -360,125 +363,87 @@ export default function AppDetailPage() {
           gridTemplateColumns: "3fr 2fr",
           gap: "40px",
           marginBottom: "40px",
-          alignItems: "start"
+          alignItems: "stretch"
         }}
       >
         {/* Left Side: Media Gallery Slider */}
-        <div style={{ width: "100%" }}>
+        <div style={{ width: "100%", display: "flex", flexDirection: "column" }}>
           <AppGallerySlider images={galleryImages} title={title} />
         </div>
 
         {/* Right Side: Main Information & CTA */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          {/* Header Badges & Host Software */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-            {/* Draft Status Badge */}
-            {(app.is_draft || app.status === 'draft') && (
+        <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: "100%", justifyContent: "space-between" }}>
+          {/* Top Block: Badges, Title, Rating, Description */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {/* Header Badges & Host Software */}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+              {/* Draft Status Badge */}
+              {(app.is_draft || app.status === 'draft') && (
+                <span
+                  style={{
+                    background: "#d97706",
+                    color: "#ffffff",
+                    padding: "6px 14px",
+                    borderRadius: "30px",
+                    fontSize: "0.8rem",
+                    fontWeight: 800,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    boxShadow: "0 2px 8px rgba(217, 119, 6, 0.4)",
+                    letterSpacing: "0.02em"
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                  </svg>
+                  {locale === "hy" ? "Սևագիր" : "Draft"}
+                </span>
+              )}
+
+              {/* Software Tag / Badges (Only for plugin if host_app is present) */}
+              {app.app_type === "plugin" && app.host_app && (
+                <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                  {app.host_app.split(',').map(s => s.trim()).filter(Boolean).map((h, i) => (
+                    <SoftwareTooltip key={i} name={h}>
+                      <div
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: "var(--bg)",
+                          padding: "6px",
+                          borderRadius: "10px",
+                          border: "1px solid var(--panel-border)"
+                        }}
+                      >
+                        <SoftwareIcon name={h} iconUrl={app.host_app_icon} size={20} />
+                      </div>
+                    </SoftwareTooltip>
+                  ))}
+                </div>
+              )}
+
+              {/* Plugin vs Standalone Tag */}
               <span
                 style={{
-                  background: "#d97706",
-                  color: "#ffffff",
-                  padding: "6px 14px",
+                  background: app.app_type === "standalone" ? "rgba(33, 150, 243, 0.15)" : "rgba(156, 39, 176, 0.15)",
+                  color: app.app_type === "standalone" ? "#2196f3" : "#ab47bc",
+                  border: `1px solid ${app.app_type === "standalone" ? "rgba(33, 150, 243, 0.3)" : "rgba(156, 39, 176, 0.3)"}`,
+                  padding: "6px 12px",
                   borderRadius: "30px",
                   fontSize: "0.8rem",
-                  fontWeight: 800,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  boxShadow: "0 2px 8px rgba(217, 119, 6, 0.4)",
-                  letterSpacing: "0.02em"
+                  fontWeight: 700,
+                  textTransform: "uppercase"
                 }}
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M12 20h9"/>
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                </svg>
-                {locale === "hy" ? "Սևագիր" : "Draft"}
+                {app.app_type === "standalone"
+                  ? (locale === "hy" ? "Առանձին Հավելված" : "Standalone App")
+                  : (locale === "hy" ? "Խրվակ / Սկրիպտ" : "Plugin / Script")}
               </span>
-            )}
 
-            {/* Software Tag / Badges (Only for plugin if host_app is present) */}
-            {app.app_type === "plugin" && app.host_app && (
-              <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                {app.host_app.split(',').map(s => s.trim()).filter(Boolean).map((h, i) => (
-                  <SoftwareTooltip key={i} name={h}>
-                    <div
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        background: "var(--bg)",
-                        padding: "6px",
-                        borderRadius: "10px",
-                        border: "1px solid var(--panel-border)"
-                      }}
-                    >
-                      <SoftwareIcon name={h} iconUrl={app.host_app_icon} size={20} />
-                    </div>
-                  </SoftwareTooltip>
-                ))}
-              </div>
-            )}
-
-            {/* Plugin vs Standalone Tag */}
-            <span
-              style={{
-                background: app.app_type === "standalone" ? "rgba(33, 150, 243, 0.15)" : "rgba(156, 39, 176, 0.15)",
-                color: app.app_type === "standalone" ? "#2196f3" : "#ab47bc",
-                border: `1px solid ${app.app_type === "standalone" ? "rgba(33, 150, 243, 0.3)" : "rgba(156, 39, 176, 0.3)"}`,
-                padding: "6px 12px",
-                borderRadius: "30px",
-                fontSize: "0.8rem",
-                fontWeight: 700,
-                textTransform: "uppercase"
-              }}
-            >
-              {app.app_type === "standalone"
-                ? (locale === "hy" ? "Առանձին Հավելված" : "Standalone App")
-                : (locale === "hy" ? "Խրվակ / Սկրիպտ" : "Plugin / Script")}
-            </span>
-
-            {/* Version Pill */}
-            <span
-              style={{
-                background: "var(--bg)",
-                color: "var(--muted)",
-                padding: "6px 14px",
-                borderRadius: "30px",
-                fontSize: "0.8rem",
-                fontWeight: 600,
-                border: "1px solid var(--panel-border)"
-              }}
-            >
-              {app.version}
-            </span>
-
-            {/* Languages Badge */}
-            {app.languages && app.languages.length > 0 && (
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  background: "var(--bg)",
-                  padding: "6px 14px",
-                  borderRadius: "30px",
-                  border: "1px solid var(--panel-border)",
-                  fontSize: "0.8rem",
-                  color: "var(--text)"
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="2" y1="12" x2="22" y2="12" />
-                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                </svg>
-                <span style={{ fontWeight: 600 }}>{app.languages.join(", ")}</span>
-              </div>
-            )}
-
-            {/* Last Updated Date Pill */}
-            {(app.updated_at || app.release_date) && (
+              {/* Version Pill */}
               <span
                 style={{
                   background: "var(--bg)",
@@ -487,262 +452,259 @@ export default function AppDetailPage() {
                   borderRadius: "30px",
                   fontSize: "0.8rem",
                   fontWeight: 600,
-                  border: "1px solid var(--panel-border)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px"
+                  border: "1px solid var(--panel-border)"
                 }}
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <polyline points="12 6 12 12 16 14" />
-                </svg>
-                {locale === "hy" ? "Թարմացվել է՝ " : "Updated: "}
-                {new Date(app.updated_at || app.release_date).toLocaleDateString(locale === "hy" ? "hy-AM" : "en-US", { year: "numeric", month: "short", day: "numeric" })}
+                {app.version}
               </span>
-            )}
-          </div>
 
-          {/* Title */}
-          <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
-            <h1 style={{ fontSize: "2.5rem", fontWeight: 900, color: "var(--text)", margin: 0, lineHeight: 1.2 }}>
-              {title}
-            </h1>
-            {(app.is_draft || app.status === 'draft') && (
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  background: "rgba(245, 158, 11, 0.15)",
-                  border: "1px solid rgba(245, 158, 11, 0.4)",
-                  color: "#d97706",
-                  padding: "4px 12px",
-                  borderRadius: "8px",
-                  fontSize: "0.85rem",
-                  fontWeight: 800,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.04em"
-                }}
-              >
-                <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#d97706" }} />
-                {locale === "hy" ? "Սևագիր" : "Draft"}
-              </span>
-            )}
-          </div>
-
-          {/* Rating Summary Bar */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <HDesignStars rating={app.avg_rating ?? 0} size={22} gap={4} />
-            <span style={{ fontWeight: 800, fontSize: "1rem", color: "var(--text)" }}>
-              {(app.avg_rating && app.avg_rating > 0) ? app.avg_rating.toFixed(1) : "0"}
-            </span>
-            <span style={{ fontSize: "0.9rem", color: "var(--muted)" }}>
-              ({app.reviews_count || reviewsList.length} {locale === "hy" ? "մեկնաբանություն" : "reviews"})
-            </span>
-          </div>
-
-          {/* Short Description */}
-          {shortDesc && (
-            <p style={{ fontSize: "1.05rem", color: "var(--text)", opacity: 0.85, lineHeight: "1.6", margin: 0 }}>
-              {shortDesc}
-            </p>
-          )}
-
-          {/* Pricing Display */}
-          <div
-            style={{
-              padding: "16px 20px",
-              borderRadius: "16px",
-              background: "var(--bg)",
-              border: "1px solid var(--panel-border)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between"
-            }}
-          >
-            <div>
-              <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", display: "block" }}>
-                {locale === "hy" ? "Արժեք" : "Price"}
-              </span>
-              <span style={{ fontSize: "1.6rem", fontWeight: 900, color: "var(--text)" }}>
-                {app.is_paid
-                  ? `${(app.price || 0).toLocaleString()} ${app.currency || 'AMD'}`
-                  : (locale === "hy" ? "Անվճար" : "Free")}
-              </span>
-            </div>
-
-            <div style={{ textAlign: "right" }}>
-              <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", display: "block" }}>
-                {locale === "hy" ? "Ներբեռնումներ" : "Downloads"}
-              </span>
-              <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--accent)" }}>
-                {(app.downloads_count || 0).toLocaleString()}
-              </span>
-            </div>
-          </div>
-
-          {/* CTA Action Buttons */}
-          <div ref={heroCtaRef} style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "4px" }}>
-            <div style={{ display: "flex", alignItems: "stretch", gap: "10px", width: "100%" }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                {app.is_paid ? (
-                  <a
-                    href={app.store_url || "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ textDecoration: "none", width: "100%", display: "block" }}
-                  >
-                    <hd-button
-                      suppressHydrationWarning
-                      data-width="100%"
-                      data-height="52px"
-                      data-thickness="3px"
-                      data-font-size="1.02rem"
-                      data-color="rgba(229, 57, 53, 0.9)"
-                      data-text-color="#ffffff"
-                    >
-                      <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="9" cy="21" r="1" />
-                          <circle cx="20" cy="21" r="1" />
-                          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-                        </svg>
-                        <span>{locale === "hy" ? "Գնել արտաքին խանութում" : "Buy on External Store"}</span>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                          <polyline points="15 3 21 3 21 9" />
-                        </svg>
-                      </span>
-                    </hd-button>
-                  </a>
-                ) : (
-                  <div style={{ width: "100%" }} onClick={() => setIsDownloadModalOpen(true)}>
-                    <hd-button
-                      suppressHydrationWarning
-                      data-width="100%"
-                      data-height="52px"
-                      data-thickness="3px"
-                      data-font-size="1.02rem"
-                      data-color="var(--accent)"
-                      data-text-color="#ffffff"
-                    >
-                      <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                          <polyline points="7 10 12 15 17 10" />
-                          <line x1="12" y1="15" x2="12" y2="3" />
-                        </svg>
-                        <span>
-                          {locale === "hy"
-                            ? (validDownloads.length > 1 ? `Ներբեռնել (${validDownloads.length} տարբերակ)` : "Ներբեռնել")
-                            : (validDownloads.length > 1 ? `Download (${validDownloads.length} options)` : "Download")}
-                        </span>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="6 9 12 15 18 9" />
-                        </svg>
-                      </span>
-                    </hd-button>
-                  </div>
-                )}
-              </div>
-
-              {/* Repository Icon Button (GitHub, GitLab, etc.) */}
-              {app.repository_url && (
-                <a
-                  href={app.repository_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title={
-                    app.repository_type === 'gitlab' || (!app.repository_type && app.repository_url.includes('gitlab'))
-                      ? "GitLab Repository"
-                      : app.repository_type === 'bitbucket' || (!app.repository_type && app.repository_url.includes('bitbucket'))
-                      ? "Bitbucket Repository"
-                      : app.repository_type === 'code'
-                      ? "Source Code"
-                      : "GitHub Repository"
-                  }
-                  style={{ textDecoration: "none", flexShrink: 0 }}
+              {/* Languages Badge */}
+              {app.languages && app.languages.length > 0 && (
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    background: "var(--bg)",
+                    padding: "6px 14px",
+                    borderRadius: "30px",
+                    border: "1px solid var(--panel-border)",
+                    fontSize: "0.8rem",
+                    color: "var(--text)"
+                  }}
                 >
-                  <hd-button
-                    suppressHydrationWarning
-                    data-width="52px"
-                    data-height="52px"
-                    data-thickness="3px"
-                    data-color="var(--bg)"
-                    data-text-color="var(--text)"
-                  >
-                    <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {(app.repository_type === 'gitlab' || (!app.repository_type && app.repository_url.includes('gitlab'))) ? (
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="m23.6 9.59-1.23-3.79a.9.9 0 0 0-.85-.62.9.9 0 0 0-.86.62l-1.23 3.79H4.57L3.34 5.8a.9.9 0 0 0-.86-.62.9.9 0 0 0-.85.62L.4 9.59a.9.9 0 0 0 .33 1l11.27 8.19 11.27-8.19a.9.9 0 0 0 .33-1ZM12 18.78 1.77 11.34h20.46L12 18.78Z"/>
-                        </svg>
-                      ) : (app.repository_type === 'bitbucket' || (!app.repository_type && app.repository_url.includes('bitbucket'))) ? (
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M2.61 3a1.44 1.44 0 0 0-1.44 1.64l2.49 14.86A1.66 1.66 0 0 0 5.3 21h13.4a1.66 1.66 0 0 0 1.64-1.5l2.49-14.86A1.44 1.44 0 0 0 21.39 3H2.61zm10.74 12.35h-2.7L9.38 9.5h5.24l-1.27 5.85z"/>
-                        </svg>
-                      ) : (app.repository_type === 'code') ? (
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="16 18 22 12 16 6" />
-                          <polyline points="8 6 2 12 8 18" />
-                        </svg>
-                      ) : (
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
-                        </svg>
-                      )}
-                    </span>
-                  </hd-button>
-                </a>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="2" y1="12" x2="22" y2="12" />
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                  </svg>
+                  <span style={{ fontWeight: 600 }}>{app.languages.join(", ")}</span>
+                </div>
+              )}
+
+              {/* Last Updated Date Pill */}
+              {(app.updated_at || app.release_date) && (
+                <span
+                  style={{
+                    background: "var(--bg)",
+                    color: "var(--muted)",
+                    padding: "6px 14px",
+                    borderRadius: "30px",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    border: "1px solid var(--panel-border)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px"
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  {locale === "hy" ? "Թարմացվել է՝ " : "Updated: "}
+                  {new Date(app.updated_at || app.release_date).toLocaleDateString(locale === "hy" ? "hy-AM" : "en-US", { year: "numeric", month: "short", day: "numeric" })}
+                </span>
               )}
             </div>
 
-            {/* Report Bug Button */}
-            <button
-              type="button"
-              onClick={() => setIsBugModalOpen(true)}
+            {/* Title */}
+            <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
+              <h1 style={{ fontSize: "22pt", fontWeight: 900, color: "var(--text)", margin: 0, lineHeight: 1.2 }}>
+                {title}
+              </h1>
+              {(app.is_draft || app.status === 'draft') && (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    background: "rgba(245, 158, 11, 0.15)",
+                    border: "1px solid rgba(245, 158, 11, 0.4)",
+                    color: "#d97706",
+                    padding: "4px 12px",
+                    borderRadius: "8px",
+                    fontSize: "0.85rem",
+                    fontWeight: 800,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em"
+                  }}
+                >
+                  <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#d97706" }} />
+                  {locale === "hy" ? "Սևագիր" : "Draft"}
+                </span>
+              )}
+            </div>
+
+            {/* Rating Summary Bar */}
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <HDesignStars rating={app.avg_rating ?? 0} size={22} gap={4} />
+              <span style={{ fontWeight: 800, fontSize: "1rem", color: "var(--text)" }}>
+                {(app.avg_rating && app.avg_rating > 0) ? app.avg_rating.toFixed(1) : "0"}
+              </span>
+              <span style={{ fontSize: "0.9rem", color: "var(--muted)" }}>
+                ({app.reviews_count || reviewsList.length} {locale === "hy" ? "մեկնաբանություն" : "reviews"})
+              </span>
+            </div>
+
+            {/* Short Description */}
+            {shortDesc && (
+              <p style={{ fontSize: "1.05rem", color: "var(--text)", opacity: 0.85, lineHeight: "1.6", margin: 0 }}>
+                {shortDesc}
+              </p>
+            )}
+          </div>
+
+          {/* Bottom Block: Pricing & CTA Buttons (Aligned to bottom of slider) */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "auto", paddingTop: "20px" }}>
+            {/* Pricing Display */}
+            <div
               style={{
-                display: "inline-flex",
+                padding: "16px 20px",
+                borderRadius: "16px",
+                background: "var(--bg)",
+                border: "1px solid var(--panel-border)",
+                display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
-                gap: "8px",
-                width: "100%",
-                padding: "11px 16px",
-                background: "rgba(255, 255, 255, 0.03)",
-                border: "1px dashed var(--panel-border)",
-                borderRadius: "12px",
-                color: "var(--muted)",
-                fontSize: "0.86rem",
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all 0.2s ease"
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.color = "#d97706";
-                e.currentTarget.style.borderColor = "rgba(245, 158, 11, 0.5)";
-                e.currentTarget.style.background = "rgba(245, 158, 11, 0.06)";
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.color = "var(--muted)";
-                e.currentTarget.style.borderColor = "var(--panel-border)";
-                e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)";
+                justifyContent: "space-between"
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m8 2 1.88 1.88" />
-                <path d="M14.12 3.88 16 2" />
-                <path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1" />
-                <path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6" />
-                <path d="M12 20v-9" />
-                <path d="M6.53 9C4.6 8.8 3 7.1 3 5" />
-                <path d="M6 13H2" />
-                <path d="M3 21c0-2.1 1.7-3.9 3.8-4" />
-                <path d="M20.97 5c0 2.1-1.6 3.8-3.5 4" />
-                <path d="M22 13h-4" />
-                <path d="M17.2 17c2.1.1 3.8 1.9 3.8 4" />
-              </svg>
-              <span>{locale === "hy" ? "Զեկուցել վրեպի մասին" : "Report a Bug / Issue"}</span>
-            </button>
+              <div>
+                <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", display: "block" }}>
+                  {locale === "hy" ? "Արժեք" : "Price"}
+                </span>
+                <span style={{ fontSize: "1.6rem", fontWeight: 900, color: "var(--text)" }}>
+                  {app.is_paid
+                    ? `${(app.price || 0).toLocaleString()} ${app.currency || 'AMD'}`
+                    : (locale === "hy" ? "Անվճար" : "Free")}
+                </span>
+              </div>
+
+              <div style={{ textAlign: "right" }}>
+                <span style={{ fontSize: "0.8rem", color: "var(--muted)", textTransform: "uppercase", display: "block" }}>
+                  {locale === "hy" ? "Ներբեռնումներ" : "Downloads"}
+                </span>
+                <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--accent)" }}>
+                  {(app.downloads_count || 0).toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            {/* CTA Action Buttons */}
+            <div ref={heroCtaRef} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div style={{ display: "flex", alignItems: "stretch", gap: "10px", width: "100%" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {app.is_paid ? (
+                    <a
+                      href={app.store_url || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ textDecoration: "none", width: "100%", display: "block" }}
+                    >
+                      <hd-button
+                        suppressHydrationWarning
+                        data-width="100%"
+                        data-height="52px"
+                        data-thickness="3px"
+                        data-font-size="1.02rem"
+                        data-color="rgba(229, 57, 53, 0.9)"
+                        data-text-color="#ffffff"
+                      >
+                        <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="9" cy="21" r="1" />
+                            <circle cx="20" cy="21" r="1" />
+                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                          </svg>
+                          <span>{locale === "hy" ? "Գնել արտաքին խանութում" : "Buy on External Store"}</span>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                            <polyline points="15 3 21 3 21 9" />
+                          </svg>
+                        </span>
+                      </hd-button>
+                    </a>
+                  ) : (
+                    <div style={{ width: "100%" }} onClick={() => setIsDownloadModalOpen(true)}>
+                      <hd-button
+                        suppressHydrationWarning
+                        data-width="100%"
+                        data-height="52px"
+                        data-thickness="3px"
+                        data-font-size="1.02rem"
+                        data-color="var(--accent)"
+                        data-text-color="#ffffff"
+                      >
+                        <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
+                          <i className="hd-icon hd-icon-download" style={{ fontSize: "1.25rem", lineHeight: 1 }} />
+                          <span>
+                            {locale === "hy"
+                              ? (validDownloads.length > 1 ? `Ներբեռնել (${validDownloads.length} տարբերակ)` : "Ներբեռնել")
+                              : (validDownloads.length > 1 ? `Download (${validDownloads.length} options)` : "Download")}
+                          </span>
+                          {validDownloads.length > 1 && (
+                            <span className="hd-icon icon-Chevrolt-Arrow-Bottom" style={{ fontSize: "0.75rem", lineHeight: 1, marginLeft: "2px" }} />
+                          )}
+                        </span>
+                      </hd-button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Repository Icon Button (GitHub, GitLab, etc.) */}
+                {app.repository_url && (
+                  <a
+                    href={app.repository_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="app-repo-link"
+                    title={
+                      app.repository_type === 'gitlab' || (!app.repository_type && app.repository_url.includes('gitlab'))
+                        ? "GitLab Repository"
+                        : app.repository_type === 'bitbucket' || (!app.repository_type && app.repository_url.includes('bitbucket'))
+                        ? "Bitbucket Repository"
+                        : app.repository_type === 'code'
+                        ? "Source Code"
+                        : "GitHub Repository"
+                    }
+                    style={{ textDecoration: "none", flexShrink: 0 }}
+                  >
+                    <hd-button
+                      suppressHydrationWarning
+                      className="app-repo-btn"
+                      data-width="52px"
+                      data-height="52px"
+                      data-thickness="3px"
+                      data-padding="0 20px"
+                      data-wrapper-padding="0 20px"
+                      data-color="var(--bg)"
+                      data-text-color="var(--text)"
+                    >
+                      <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {(app.repository_type === 'gitlab' || (!app.repository_type && app.repository_url.includes('gitlab'))) ? (
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="m23.6 9.59-1.23-3.79a.9.9 0 0 0-.85-.62.9.9 0 0 0-.86.62l-1.23 3.79H4.57L3.34 5.8a.9.9 0 0 0-.86-.62.9.9 0 0 0-.85.62L.4 9.59a.9.9 0 0 0 .33 1l11.27 8.19 11.27-8.19a.9.9 0 0 0 .33-1ZM12 18.78 1.77 11.34h20.46L12 18.78Z"/>
+                          </svg>
+                        ) : (app.repository_type === 'bitbucket' || (!app.repository_type && app.repository_url.includes('bitbucket'))) ? (
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M2.61 3a1.44 1.44 0 0 0-1.44 1.64l2.49 14.86A1.66 1.66 0 0 0 5.3 21h13.4a1.66 1.66 0 0 0 1.64-1.5l2.49-14.86A1.44 1.44 0 0 0 21.39 3H2.61zm10.74 12.35h-2.7L9.38 9.5h5.24l-1.27 5.85z"/>
+                          </svg>
+                        ) : (app.repository_type === 'code') ? (
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="16 18 22 12 16 6" />
+                            <polyline points="8 6 2 12 8 18" />
+                          </svg>
+                        ) : (
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                          </svg>
+                        )}
+                      </span>
+                    </hd-button>
+                  </a>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -984,9 +946,11 @@ export default function AppDetailPage() {
                         <HDesignStars rating={rev.rating} size={15} gap={2} />
                       </div>
 
-                      <p style={{ margin: 0, fontSize: "0.92rem", color: "var(--text)", opacity: 0.9, lineHeight: "1.5" }}>
-                        {rev.comment}
-                      </p>
+                      {rev.comment && rev.comment.trim() ? (
+                        <p style={{ margin: 0, fontSize: "0.92rem", color: "var(--text)", opacity: 0.9, lineHeight: "1.5" }}>
+                          {rev.comment}
+                        </p>
+                      ) : null}
                     </div>
                   ))
                 )}
@@ -1068,7 +1032,7 @@ export default function AppDetailPage() {
                     <>
                       <div>
                         <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: "6px" }}>
-                          {locale === "hy" ? "Անուն *" : "Name *"}
+                          {locale === "hy" ? "Անուն (ըստ ցանկության)" : "Name (optional)"}
                         </label>
                         <hd-input
                           suppressHydrationWarning
@@ -1102,12 +1066,12 @@ export default function AppDetailPage() {
                   {/* Comment Text Area */}
                   <div>
                     <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--muted)", display: "block", marginBottom: "6px" }}>
-                      {locale === "hy" ? "Մեկնաբանություն *" : "Comment *"}
+                      {locale === "hy" ? "Մեկնաբանություն (ըստ ցանկության)" : "Comment (optional)"}
                     </label>
                     {mounted ? (
                       <hd-textarea
                         suppressHydrationWarning
-                        placeholder={locale === "hy" ? "Գրեք ձեր տպավորությունների մասին..." : "Write your feedback..."}
+                        placeholder={locale === "hy" ? "Գրեք ձեր տպավորությունների մասին (ըստ ցանկության)..." : "Write your feedback (optional)..."}
                         value={formComment}
                         onInput={(e: any) => setFormComment(e.target.value)}
                         data-width="100%"
@@ -1116,7 +1080,7 @@ export default function AppDetailPage() {
                       />
                     ) : (
                       <textarea
-                        placeholder={locale === "hy" ? "Գրեք ձեր տպավորությունների մասին..." : "Write your feedback..."}
+                        placeholder={locale === "hy" ? "Գրեք ձեր տպավորությունների մասին (ըստ ցանկության)..." : "Write your feedback (optional)..."}
                         value={formComment}
                         onChange={(e: any) => setFormComment(e.target.value)}
                         style={{ width: "100%", height: "110px", background: "var(--bg)", border: "1px solid var(--panel-border)", borderRadius: "8px", padding: "10px", color: "var(--text)" }}
@@ -1241,11 +1205,7 @@ export default function AppDetailPage() {
                             data-text-color="#ffffff"
                           >
                             <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px", fontWeight: 800, letterSpacing: "0.5px" }}>
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                <polyline points="7 10 12 15 17 10" />
-                                <line x1="12" y1="15" x2="12" y2="3" />
-                              </svg>
+                              <i className="hd-icon hd-icon-download" style={{ fontSize: "1.1rem", lineHeight: 1 }} />
                               <span>
                                 {locale === "hy"
                                   ? (validDownloads.length > 1 ? `ՆԵՐԲԵՌՆԵԼ (${validDownloads.length})` : "ՆԵՐԲԵՌՆԵԼ")
@@ -1263,6 +1223,7 @@ export default function AppDetailPage() {
                         href={app.repository_url}
                         target="_blank"
                         rel="noopener noreferrer"
+                        className="app-repo-link"
                         title={
                           app.repository_type === 'gitlab' || (!app.repository_type && app.repository_url.includes('gitlab'))
                             ? "GitLab Repository"
@@ -1276,9 +1237,12 @@ export default function AppDetailPage() {
                       >
                         <hd-button
                           suppressHydrationWarning
+                          className="app-repo-btn"
                           data-width="46px"
                           data-height="46px"
                           data-thickness="2.5px"
+                          data-padding="0 20px"
+                          data-wrapper-padding="0 20px"
                           data-color="var(--bg)"
                           data-text-color="var(--text)"
                         >

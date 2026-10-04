@@ -31,9 +31,9 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { app_id, user_name, user_email, is_anonymous, rating, comment } = body;
 
-    if (!app_id || !comment) {
+    if (!app_id) {
       return NextResponse.json(
-        { error: 'app_id and comment are required.' },
+        { error: 'app_id is required.' },
         { status: 400 }
       );
     }
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
       user_email: user_email ? String(user_email).trim() : undefined,
       is_anonymous: !!is_anonymous,
       rating: numericRating,
-      comment: String(comment).trim(),
+      comment: comment ? String(comment).trim() : '',
       status: 'pending' // requires admin moderation
     });
 

@@ -30,13 +30,17 @@ export async function GET(
     ]);
 
     const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
-    const avg = reviews.length > 0 ? parseFloat((sum / reviews.length).toFixed(1)) : 0;
+    const avg = reviews.length > 0
+      ? parseFloat((sum / reviews.length).toFixed(1))
+      : (app.avg_rating || 0);
+    const reviewsCount = reviews.length > 0 ? reviews.length : (app.reviews_count || 0);
+    const effectiveDownloads = Math.max(Number(app.downloads_count) || 0, realDownloads || 0);
 
     return NextResponse.json({
       ...app,
       avg_rating: avg,
-      reviews_count: reviews.length,
-      downloads_count: realDownloads,
+      reviews_count: reviewsCount,
+      downloads_count: effectiveDownloads,
       reviews: reviews
     });
   } catch (error: any) {

@@ -49,44 +49,150 @@ export default function AppGallerySlider({ images, title }: AppGallerySliderProp
       <div 
         className="gallery-main-frame" 
         onClick={() => setIsLightboxOpen(true)}
-        style={{ cursor: "pointer" }}
+        style={{ cursor: "pointer", position: "relative", overflow: "hidden" }}
         title="Դիտել պատկերասրահը / View Gallery"
       >
-        <img
-          src={displayImages[activeIndex]}
-          alt={`${title} - screenshot ${activeIndex + 1}`}
-          className="gallery-main-img"
-        />
+        <div
+          className="gallery-slides-track"
+          style={{
+            display: 'flex',
+            width: '100%',
+            height: '100%',
+            transform: `translateX(-${activeIndex * 100}%)`,
+            transition: 'transform 0.45s cubic-bezier(0.22, 1, 0.36, 1)',
+            willChange: 'transform'
+          }}
+        >
+          {displayImages.map((img, idx) => (
+            <div
+              key={idx}
+              style={{
+                width: '100%',
+                height: '100%',
+                flexShrink: 0,
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#0d1117'
+              }}
+            >
+              <img
+                src={img}
+                alt={`${title} - screenshot ${idx + 1}`}
+                className="gallery-main-img"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  display: 'block'
+                }}
+              />
+            </div>
+          ))}
+        </div>
 
         {displayImages.length > 1 && (
           <>
-            <button
-              type="button"
+            <div
+              role="button"
+              tabIndex={0}
               className="gallery-nav-btn prev-btn"
               onClick={(e) => {
                 e.stopPropagation();
                 handlePrev();
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.stopPropagation();
+                  handlePrev();
+                }
+              }}
               aria-label="Նախորդ նկարը"
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '16px',
+                transform: 'translateY(-50%)',
+                width: '44px',
+                height: '44px',
+                minWidth: '44px',
+                minHeight: '44px',
+                maxWidth: '44px',
+                maxHeight: '44px',
+                borderRadius: '50%',
+                background: 'rgba(0, 0, 0, 0.75)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255, 255, 255, 0.35)',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                zIndex: 20,
+                padding: 0,
+                margin: 0,
+                boxSizing: 'border-box',
+                flexShrink: 0,
+                aspectRatio: '1 / 1',
+                lineHeight: 1,
+                overflow: 'hidden',
+                userSelect: 'none'
+              }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </button>
+              <i className="hd-icon hd-icon-chevrolt-arrow-left" style={{ fontSize: '1.2rem', color: '#ffffff', lineHeight: 1, display: 'inline-block' }} />
+            </div>
 
-            <button
-              type="button"
+            <div
+              role="button"
+              tabIndex={0}
               className="gallery-nav-btn next-btn"
               onClick={(e) => {
                 e.stopPropagation();
                 handleNext();
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.stopPropagation();
+                  handleNext();
+                }
+              }}
               aria-label="Հաջորդ նկարը"
+              style={{
+                position: 'absolute',
+                top: '50%',
+                right: '16px',
+                transform: 'translateY(-50%)',
+                width: '44px',
+                height: '44px',
+                minWidth: '44px',
+                minHeight: '44px',
+                maxWidth: '44px',
+                maxHeight: '44px',
+                borderRadius: '50%',
+                background: 'rgba(0, 0, 0, 0.75)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                border: '1px solid rgba(255, 255, 255, 0.35)',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                zIndex: 20,
+                padding: 0,
+                margin: 0,
+                boxSizing: 'border-box',
+                flexShrink: 0,
+                aspectRatio: '1 / 1',
+                lineHeight: 1,
+                overflow: 'hidden',
+                userSelect: 'none'
+              }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </button>
+              <i className="hd-icon hd-icon-chevrolt-arrow-right" style={{ fontSize: '1.2rem', color: '#ffffff', lineHeight: 1, display: 'inline-block' }} />
+            </div>
           </>
         )}
 
@@ -94,29 +200,101 @@ export default function AppGallerySlider({ images, title }: AppGallerySliderProp
           {activeIndex + 1} / {displayImages.length}
         </div>
 
-        <div className="gallery-zoom-hint" title="Մեծացնել">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 3 21 3 21 9" />
-            <polyline points="9 21 3 21 3 15" />
-            <line x1="21" y1="3" x2="14" y2="10" />
-            <line x1="3" y1="21" x2="10" y2="14" />
-          </svg>
+        <div 
+          className="gallery-zoom-hint" 
+          title="Մեծացնել"
+          style={{
+            position: 'absolute',
+            top: '14px',
+            right: '14px',
+            width: '36px',
+            height: '36px',
+            minWidth: '36px',
+            minHeight: '36px',
+            maxWidth: '36px',
+            maxHeight: '36px',
+            borderRadius: '50%',
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+            color: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            zIndex: 20,
+            padding: 0,
+            boxSizing: 'border-box'
+          }}
+        >
+          <i className="hd-icon hd-icon-expand" style={{ fontSize: '1rem', color: '#ffffff', lineHeight: 1 }} />
         </div>
       </div>
 
       {/* Thumbnails strip */}
-      {displayImages.length > 1 && (
-        <div className="gallery-thumbnails-strip">
+      {displayImages.length > 0 && (
+        <div 
+          className="gallery-thumbnails-strip"
+          style={{
+            display: 'flex',
+            gap: '12px',
+            marginTop: '16px',
+            overflowX: 'auto',
+            padding: '4px 2px',
+            scrollbarWidth: 'thin',
+            width: '100%',
+            alignItems: 'center'
+          }}
+        >
           {displayImages.map((img, idx) => (
-            <button
+            <div
               key={idx}
-              type="button"
+              role="button"
+              tabIndex={0}
               className={`gallery-thumb-btn ${idx === activeIndex ? 'active' : ''}`}
               onClick={() => setActiveIndex(idx)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  setActiveIndex(idx);
+                }
+              }}
               aria-label={`Անցնել նկար ${idx + 1}-ին`}
+              style={{
+                width: '84px',
+                height: '56px',
+                minWidth: '84px',
+                minHeight: '56px',
+                maxWidth: '84px',
+                maxHeight: '56px',
+                flexShrink: 0,
+                borderRadius: '12px',
+                overflow: 'hidden',
+                border: idx === activeIndex ? '2px solid var(--accent, #4a897c)' : '1.5px solid var(--panel-border, rgba(255, 255, 255, 0.15))',
+                padding: 0,
+                backgroundColor: '#0d1117',
+                cursor: 'pointer',
+                opacity: idx === activeIndex ? 1 : 0.7,
+                transition: 'all 0.2s ease',
+                outline: 'none',
+                boxShadow: idx === activeIndex ? '0 4px 14px rgba(74, 137, 124, 0.35)' : 'none',
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
             >
-              <img src={img} alt={`Thumbnail ${idx + 1}`} />
-            </button>
+              <img 
+                src={img} 
+                alt={`Thumbnail ${idx + 1}`} 
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  display: 'block'
+                }} 
+              />
+            </div>
           ))}
         </div>
       )}

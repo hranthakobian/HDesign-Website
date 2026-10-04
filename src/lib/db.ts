@@ -1241,6 +1241,8 @@ export type AppItem = {
   version: string;
   release_date: string;
   downloads_count?: number;
+  avg_rating?: number;
+  reviews_count?: number;
   is_draft?: boolean;
   status?: 'published' | 'draft';
   created_at?: string;
@@ -1543,9 +1545,13 @@ export async function getApps(): Promise<AppItem[]> {
           const isDraft = x.status === 'draft' || !!x.is_draft;
           let parsedDownloads = [];
           if (Array.isArray(x.downloads)) {
-            parsedDownloads = x.downloads;
+            parsedDownloads = x.downloads.filter((d: any) => d && d.url && !d.url.includes('example.com'));
           } else if (typeof x.downloads === 'string' && x.downloads.trim()) {
-            try { parsedDownloads = JSON.parse(x.downloads); } catch (e) { parsedDownloads = []; }
+            try {
+              parsedDownloads = (JSON.parse(x.downloads) || []).filter((d: any) => d && d.url && !d.url.includes('example.com'));
+            } catch (e) {
+              parsedDownloads = [];
+            }
           }
           return {
             ...x,
@@ -1582,9 +1588,13 @@ export async function getApps(): Promise<AppItem[]> {
     const isDraft = x.status === 'draft' || !!x.is_draft;
     let parsedDownloads = [];
     if (Array.isArray(x.downloads)) {
-      parsedDownloads = x.downloads;
+      parsedDownloads = x.downloads.filter((d: any) => d && d.url && !d.url.includes('example.com'));
     } else if (typeof x.downloads === 'string' && (x.downloads as string).trim()) {
-      try { parsedDownloads = JSON.parse(x.downloads as string); } catch (e) { parsedDownloads = []; }
+      try {
+        parsedDownloads = (JSON.parse(x.downloads as string) || []).filter((d: any) => d && d.url && !d.url.includes('example.com'));
+      } catch (e) {
+        parsedDownloads = [];
+      }
     }
     return {
       ...x,
@@ -1607,6 +1617,11 @@ export async function getApps(): Promise<AppItem[]> {
     const mergedDbApps = dbApps.map(item => {
       const local = localMap.get(item.id);
       const meta = (extMeta && extMeta[item.id]) ? extMeta[item.id] : {};
+      const rawDownloads = (item.downloads && item.downloads.length > 0)
+        ? item.downloads
+        : ((meta.downloads && meta.downloads.length > 0) ? meta.downloads : (local?.downloads || []));
+      const cleanDownloads = (rawDownloads || []).filter((d: any) => d && d.url && !d.url.includes('example.com'));
+
       return {
         ...item,
         supported_os: (Array.isArray(item.supported_os) && item.supported_os.length > 0)
@@ -1616,9 +1631,7 @@ export async function getApps(): Promise<AppItem[]> {
               : (local?.supported_os || [])),
         repository_url: item.repository_url || meta.repository_url || local?.repository_url || '',
         repository_type: item.repository_type || meta.repository_type || local?.repository_type || 'github',
-        downloads: (item.downloads && item.downloads.length > 0)
-          ? item.downloads
-          : ((meta.downloads && meta.downloads.length > 0) ? meta.downloads : (local?.downloads || []))
+        downloads: cleanDownloads
       };
     });
     const localFiltered = normalizedLocalApps.filter(x => !new Set(dbApps.map(d => d.id)).has(x.id));
@@ -1643,7 +1656,8 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
         ? (app.languages as string).split(',').map(s => s.trim()).filter(Boolean)
         : ['Հայերեն']);
 
-  const downloadsList = Array.isArray(app.downloads) ? app.downloads : [];
+  const downloadsList = (Array.isArray(app.downloads) ? app.downloads : [])
+    .filter(d => d && d.url && !d.url.includes('example.com'));
   const supportedOsList = Array.isArray(app.supported_os) ? app.supported_os : [];
 
   const newApp: AppItem = {
