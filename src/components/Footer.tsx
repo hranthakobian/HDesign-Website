@@ -1,26 +1,45 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
 import SectionBackground from "@/components/SectionBackground";
+import SocialLinks, { SocialLinksData } from "@/components/SocialLinks";
 
 export default function Footer({ 
   siteTitle,
   contactEmail = "hrant@hakobian.am",
   contactTel = "+374 00 000000",
   contactAddressHy = "Երևան, Հայաստան",
-  contactAddressEn = "Yerevan, Armenia"
+  contactAddressEn = "Yerevan, Armenia",
+  socialLinks
 }: { 
   siteTitle?: { hy: string; en: string };
   contactEmail?: string;
   contactTel?: string;
   contactAddressHy?: string;
   contactAddressEn?: string;
+  socialLinks?: SocialLinksData;
 }) {
   const pathname = usePathname();
   const { t, locale } = useI18n();
+  const [currentSocialLinks, setCurrentSocialLinks] = useState<SocialLinksData>(socialLinks || {});
+
+  useEffect(() => {
+    if (socialLinks) {
+      setCurrentSocialLinks(socialLinks);
+    } else {
+      fetch("/api/general-settings")
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.social_links) {
+            setCurrentSocialLinks(data.social_links);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [socialLinks]);
 
   // Subscription form states
   const [subscribeEmail, setSubscribeEmail] = useState("");
@@ -129,6 +148,13 @@ export default function Footer({
                     {locale === 'en' ? contactAddressEn : contactAddressHy}
                   </div>
                 </div>
+              </div>
+
+              <div>
+                <h4 style={{ fontSize: "0.95rem", fontWeight: "bold", color: "#ffffff", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 12px" }}>
+                  {t('contact', 'social_title', 'Սոցիալական Էջեր')}
+                </h4>
+                <SocialLinks links={currentSocialLinks} variant="footer" size={38} />
               </div>
             </div>
           </hd-reveal>

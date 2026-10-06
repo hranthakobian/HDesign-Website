@@ -58,7 +58,14 @@
     "upcoming_email": "info@hdesign.am",
     "upcoming_tel": "+374 99 00 00 00",
     "design_system_video_hy": "https://api.hakobian.am/libs/v1/promo/promo.mp4",
-    "design_system_video_en": "https://api.hakobian.am/libs/v1/promo/promo.mp4"
+    "design_system_video_en": "https://api.hakobian.am/libs/v1/promo/promo.mp4",
+    "social_links": {
+      "linkedin": "https://linkedin.com",
+      "instagram": "https://instagram.com",
+      "gitlab": "https://gitlab.com",
+      "behance": "https://behance.net",
+      "github": "https://github.com"
+    }
   },
   "ratings": {
     "seed-1": {

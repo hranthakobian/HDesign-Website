@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
+import SocialLinks, { SocialLinksData } from "@/components/SocialLinks";
  
 export default function ContactPage() {
   const { t, locale } = useI18n();
@@ -18,6 +19,7 @@ export default function ContactPage() {
   const [contactTel, setContactTel] = useState("+374 00 000000");
   const [contactAddressHy, setContactAddressHy] = useState("Երևան, Հայաստան");
   const [contactAddressEn, setContactAddressEn] = useState("Yerevan, Armenia");
+  const [socialLinks, setSocialLinks] = useState<SocialLinksData>({});
 
   useEffect(() => {
     fetch("/api/general-settings")
@@ -27,6 +29,7 @@ export default function ContactPage() {
         if (data.contact_tel) setContactTel(data.contact_tel);
         if (data.contact_address_hy) setContactAddressHy(data.contact_address_hy);
         if (data.contact_address_en) setContactAddressEn(data.contact_address_en);
+        if (data.social_links) setSocialLinks(data.social_links);
       })
       .catch(err => console.error("Failed to load contact settings:", err));
   }, []);
@@ -259,27 +262,8 @@ export default function ContactPage() {
             </div>
 
             {/* Social Icons / Links */}
-            <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
-              {["icon-Earth", "icon-Cursor", "icon-Notifications"].map((icon, idx) => (
-                <a 
-                  key={idx} 
-                  href="#" 
-                  style={{ 
-                    width: "40px", 
-                    height: "40px", 
-                    borderRadius: "10px", 
-                    background: "var(--btn-bg)", 
-                    display: "flex", 
-                    alignItems: "center", 
-                    justifyContent: "center",
-                    color: "var(--text)",
-                    transition: "all 0.3s ease"
-                  }}
-                  className="social-btn-hover"
-                >
-                  <span className={icon} style={{ fontSize: "1rem" }} />
-                </a>
-              ))}
+            <div style={{ marginTop: "16px" }}>
+              <SocialLinks links={socialLinks} variant="contact" size={44} />
             </div>
           </div>
 

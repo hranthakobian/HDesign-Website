@@ -12,6 +12,7 @@ import SoftwareIcon from '@/components/SoftwareIcon';
 import FolderIcon from '@/components/FolderIcon';
 import { MediaFileType } from '@/lib/mediaTypes';
 import { prefetchMediaLibrary } from '@/lib/mediaCache';
+import { normalizeSocialLinks, PRESET_PLATFORMS, renderPlatformIcon, SocialLinkItem } from '@/components/SocialLinks';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, BarChart, Bar 
@@ -1211,6 +1212,42 @@ function AdminDashboardContent() {
   const [contactTel, setContactTel] = useState('+374 00 000000');
   const [contactAddressHy, setContactAddressHy] = useState('Երևան, Հայաստան');
   const [contactAddressEn, setContactAddressEn] = useState('Yerevan, Armenia');
+  const [socialLinks, setSocialLinks] = useState<SocialLinkItem[]>(() => normalizeSocialLinks(undefined));
+  const [draggedSocialId, setDraggedSocialId] = useState<string | null>(null);
+  const [dragOverSocialId, setDragOverSocialId] = useState<string | null>(null);
+  const [selectedPresetToAdd, setSelectedPresetToAdd] = useState<string>('website');
+
+  const handleAddSocialLink = (presetKey: string = 'website') => {
+    const preset = PRESET_PLATFORMS.find(p => p.key === presetKey) || PRESET_PLATFORMS[0];
+    const newItem: SocialLinkItem = {
+      id: `soc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      platform: preset.key,
+      label: preset.label,
+      url: preset.defaultUrl,
+      brandColor: preset.brandColor,
+      enabled: true
+    };
+    setSocialLinks(prev => [...prev, newItem]);
+  };
+
+  const handleRemoveSocialLink = (id: string) => {
+    setSocialLinks(prev => prev.filter(item => item.id !== id));
+  };
+
+  const handleUpdateSocialLink = (id: string, updates: Partial<SocialLinkItem>) => {
+    setSocialLinks(prev => prev.map(item => item.id === id ? { ...item, ...updates } : item));
+  };
+
+  const handleMoveSocialLink = (fromIdx: number, toIdx: number) => {
+    if (fromIdx === toIdx || fromIdx < 0 || toIdx < 0) return;
+    setSocialLinks(prev => {
+      const copy = [...prev];
+      const [moved] = copy.splice(fromIdx, 1);
+      copy.splice(toIdx, 0, moved);
+      return copy;
+    });
+  };
+
   const [smoothScrollEnabled, setSmoothScrollEnabled] = useState(false);
   const [togglingSmoothScroll, setTogglingSmoothScroll] = useState(false);
   
@@ -1679,6 +1716,9 @@ function AdminDashboardContent() {
         setContactTel(generalSettingsData.contact_tel || '+374 00 000000');
         setContactAddressHy(generalSettingsData.contact_address_hy || 'Երևան, Հայաստան');
         setContactAddressEn(generalSettingsData.contact_address_en || 'Yerevan, Armenia');
+        if (generalSettingsData.social_links) {
+          setSocialLinks(normalizeSocialLinks(generalSettingsData.social_links));
+        }
         setSmoothScrollEnabled(generalSettingsData.smooth_scroll_enabled || false);
 
         if (generalSettingsData.site_font_url) setSiteFontUrl(generalSettingsData.site_font_url);
@@ -3252,6 +3292,7 @@ function AdminDashboardContent() {
           contact_tel: contactTel,
           contact_address_hy: contactAddressHy,
           contact_address_en: contactAddressEn,
+          social_links: socialLinks,
           site_font_url: siteFontUrl,
           site_font_name: siteFontName,
           site_font_weights: siteFontWeights,
@@ -9673,6 +9714,380 @@ function AdminDashboardContent() {
                                   </hd-button>
                                 </div>
                               </form>
+                            </div>
+
+                            {/* Card: Social Links */}
+                            {/* Card: Social Links Manager */}
+                            <div style={{
+                              background: 'var(--panel)',
+                              border: '1px solid var(--panel-border)',
+                              borderRadius: '16px',
+                              padding: '24px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '20px'
+                            }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '14px' }}>
+                                <div>
+                                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <span className="hd-icon icon-Earth" style={{ color: '#00C49F' }} />
+                                    Սոցիալական Էջեր և Հղումներ (Social Links)
+                                  </h4>
+                                  <p style={{ fontSize: '0.82rem', color: 'var(--muted)', margin: '6px 0 0 0', lineHeight: 1.45 }}>
+                                    Ավելացրեք նոր սոցցանցեր, խմբագրեք հղումներն ու գույները և փոխեք դրանց հերթականությունը՝ քաշելով (Drag & Drop) ցանկալի տեղ։
+                                  </p>
+                                </div>
+
+                                {/* Add preset toolbar */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                                  <select
+                                    value={selectedPresetToAdd}
+                                    onChange={(e) => setSelectedPresetToAdd(e.target.value)}
+                                    style={{
+                                      background: 'var(--btn-bg)',
+                                      color: 'var(--text)',
+                                      border: '1px solid var(--panel-border)',
+                                      borderRadius: '6px',
+                                      padding: '5px 10px',
+                                      fontSize: '0.8rem',
+                                      outline: 'none',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    {PRESET_PLATFORMS.map(p => (
+                                      <option key={p.key} value={p.key} style={{ background: 'var(--panel)', color: 'var(--text)' }}>
+                                        {p.label}
+                                      </option>
+                                    ))}
+                                  </select>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAddSocialLink(selectedPresetToAdd)}
+                                    style={{
+                                      background: 'var(--accent)',
+                                      color: '#ffffff',
+                                      border: 'none',
+                                      borderRadius: '6px',
+                                      padding: '5px 12px',
+                                      fontSize: '0.8rem',
+                                      fontWeight: 600,
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      transition: 'opacity 0.2s ease'
+                                    }}
+                                  >
+                                    <span>+</span> Ավելացնել
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Draggable Social Links List */}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {socialLinks.length === 0 ? (
+                                  <div style={{
+                                    padding: '24px',
+                                    textAlign: 'center',
+                                    background: 'rgba(255, 255, 255, 0.02)',
+                                    borderRadius: '10px',
+                                    border: '1px dashed var(--panel-border)',
+                                    color: 'var(--muted)',
+                                    fontSize: '0.84rem'
+                                  }}>
+                                    Սոցիալական էջեր ավելացված չեն։
+                                    <div style={{ marginTop: '8px' }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => setSocialLinks(normalizeSocialLinks(undefined))}
+                                        style={{
+                                          background: 'transparent',
+                                          color: 'var(--accent)',
+                                          border: '1px solid var(--accent)',
+                                          borderRadius: '6px',
+                                          padding: '4px 12px',
+                                          fontSize: '0.78rem',
+                                          cursor: 'pointer'
+                                        }}
+                                      >
+                                        Վերականգնել լռելյայն 5 սոցցանցերը
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  socialLinks.map((item, index) => {
+                                    const isDragging = draggedSocialId === item.id;
+                                    const isDragOver = dragOverSocialId === item.id;
+
+                                    return (
+                                      <div
+                                        key={item.id}
+                                        draggable
+                                        onDragStart={() => setDraggedSocialId(item.id)}
+                                        onDragOver={(e) => {
+                                          e.preventDefault();
+                                          if (dragOverSocialId !== item.id) setDragOverSocialId(item.id);
+                                        }}
+                                        onDragLeave={() => {
+                                          if (dragOverSocialId === item.id) setDragOverSocialId(null);
+                                        }}
+                                        onDrop={(e) => {
+                                          e.preventDefault();
+                                          if (draggedSocialId && draggedSocialId !== item.id) {
+                                            const fromIdx = socialLinks.findIndex(s => s.id === draggedSocialId);
+                                            const toIdx = socialLinks.findIndex(s => s.id === item.id);
+                                            if (fromIdx !== -1 && toIdx !== -1) {
+                                              handleMoveSocialLink(fromIdx, toIdx);
+                                            }
+                                          }
+                                          setDraggedSocialId(null);
+                                          setDragOverSocialId(null);
+                                        }}
+                                        style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '8px',
+                                          padding: '6px 10px',
+                                          background: isDragOver ? 'rgba(0, 196, 159, 0.08)' : 'var(--btn-bg)',
+                                          border: isDragOver
+                                            ? '1.5px dashed var(--accent)'
+                                            : isDragging
+                                            ? '1px dashed var(--muted)'
+                                            : '1px solid var(--panel-border)',
+                                          borderRadius: '8px',
+                                          opacity: isDragging ? 0.4 : 1,
+                                          transition: 'all 0.15s ease',
+                                          flexWrap: 'nowrap',
+                                          overflowX: 'auto'
+                                        }}
+                                      >
+                                        {/* Drag Handle & Reorder controls */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                                          <div
+                                            title="Քաշեք՝ հերթականությունը փոխելու համար"
+                                            style={{
+                                              cursor: 'grab',
+                                              color: 'var(--muted)',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'center',
+                                              padding: '2px 4px',
+                                              borderRadius: '4px',
+                                              userSelect: 'none'
+                                            }}
+                                          >
+                                            <span style={{ fontSize: '1rem', letterSpacing: '-1px' }}>⠿</span>
+                                          </div>
+
+                                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                                            <button
+                                              type="button"
+                                              disabled={index === 0}
+                                              onClick={() => handleMoveSocialLink(index, index - 1)}
+                                              title="Բարձրացնել վերև"
+                                              style={{
+                                                background: 'transparent',
+                                                border: 'none',
+                                                color: index === 0 ? 'rgba(255,255,255,0.15)' : 'var(--muted)',
+                                                cursor: index === 0 ? 'not-allowed' : 'pointer',
+                                                fontSize: '0.55rem',
+                                                padding: '0 2px',
+                                                lineHeight: 1
+                                              }}
+                                            >
+                                              ▲
+                                            </button>
+                                            <button
+                                              type="button"
+                                              disabled={index === socialLinks.length - 1}
+                                              onClick={() => handleMoveSocialLink(index, index + 1)}
+                                              title="Իջեցնել ներքև"
+                                              style={{
+                                                background: 'transparent',
+                                                border: 'none',
+                                                color: index === socialLinks.length - 1 ? 'rgba(255,255,255,0.15)' : 'var(--muted)',
+                                                cursor: index === socialLinks.length - 1 ? 'not-allowed' : 'pointer',
+                                                fontSize: '0.55rem',
+                                                padding: '0 2px',
+                                                lineHeight: 1
+                                              }}
+                                            >
+                                              ▼
+                                            </button>
+                                          </div>
+                                        </div>
+
+                                        {/* Icon preview */}
+                                        <div
+                                          title={`Գույն՝ ${item.brandColor || '#00C49F'}`}
+                                          style={{
+                                            width: '28px',
+                                            height: '28px',
+                                            borderRadius: '6px',
+                                            background: item.brandColor ? `${item.brandColor}22` : 'rgba(255,255,255,0.06)',
+                                            color: item.brandColor || 'var(--text)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            flexShrink: 0
+                                          }}
+                                        >
+                                          <div style={{ width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            {renderPlatformIcon(item)}
+                                          </div>
+                                        </div>
+
+                                        {/* Platform Preset Selector */}
+                                        <div style={{ width: '130px', flexShrink: 0 }}>
+                                          <select
+                                            value={item.platform || 'custom'}
+                                            onChange={(e) => {
+                                              const newKey = e.target.value;
+                                              const preset = PRESET_PLATFORMS.find(p => p.key === newKey);
+                                              handleUpdateSocialLink(item.id, {
+                                                platform: newKey,
+                                                label: preset ? preset.label : item.label,
+                                                brandColor: preset ? preset.brandColor : item.brandColor,
+                                                url: item.url === '' && preset ? preset.defaultUrl : item.url
+                                              });
+                                            }}
+                                            style={{
+                                              width: '100%',
+                                              background: 'var(--panel)',
+                                              color: 'var(--text)',
+                                              border: '1px solid var(--panel-border)',
+                                              borderRadius: '6px',
+                                              padding: '4px 6px',
+                                              fontSize: '0.78rem',
+                                              outline: 'none'
+                                            }}
+                                          >
+                                            {PRESET_PLATFORMS.map(p => (
+                                              <option key={p.key} value={p.key} style={{ background: 'var(--panel)', color: 'var(--text)' }}>
+                                                {p.label}
+                                              </option>
+                                            ))}
+                                          </select>
+                                        </div>
+
+                                        {/* URL input */}
+                                        <div style={{ flex: '1 1 180px', minWidth: '140px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                          <input
+                                            type="text"
+                                            value={item.url || ''}
+                                            placeholder="https://..."
+                                            onChange={(e) => handleUpdateSocialLink(item.id, { url: e.target.value })}
+                                            style={{
+                                              width: '100%',
+                                              boxSizing: 'border-box',
+                                              background: 'var(--panel)',
+                                              color: 'var(--text)',
+                                              border: '1px solid var(--panel-border)',
+                                              borderRadius: '6px',
+                                              padding: '4px 8px',
+                                              fontSize: '0.78rem',
+                                              outline: 'none'
+                                            }}
+                                          />
+                                          {item.url && item.url !== '#' && (
+                                            <a
+                                              href={item.url}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              title="Ստուգել հղումը"
+                                              style={{
+                                                color: 'var(--muted)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                textDecoration: 'none',
+                                                padding: '2px',
+                                                fontSize: '0.75rem',
+                                                flexShrink: 0
+                                              }}
+                                            >
+                                              ↗
+                                            </a>
+                                          )}
+                                        </div>
+
+                                        {/* Color picker */}
+                                        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                                          <input
+                                            type="color"
+                                            value={item.brandColor && item.brandColor.startsWith('#') ? item.brandColor : '#00C49F'}
+                                            onChange={(e) => handleUpdateSocialLink(item.id, { brandColor: e.target.value })}
+                                            title="Ընտրեք hover գույնը"
+                                            style={{
+                                              width: '24px',
+                                              height: '24px',
+                                              padding: 0,
+                                              border: '1px solid var(--panel-border)',
+                                              borderRadius: '4px',
+                                              cursor: 'pointer',
+                                              background: 'transparent'
+                                            }}
+                                          />
+                                        </div>
+
+                                        {/* Enabled toggle */}
+                                        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                                          <label
+                                            title={item.enabled !== false ? 'Ակտիվ է' : 'Անջատված է'}
+                                            style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem', color: item.enabled !== false ? 'var(--text)' : 'var(--muted)', cursor: 'pointer', userSelect: 'none' }}
+                                          >
+                                            <input
+                                              type="checkbox"
+                                              checked={item.enabled !== false}
+                                              onChange={(e) => handleUpdateSocialLink(item.id, { enabled: e.target.checked })}
+                                              style={{ cursor: 'pointer', margin: 0 }}
+                                            />
+                                            <span>{item.enabled !== false ? 'Ակտիվ' : 'Անջ․'}</span>
+                                          </label>
+                                        </div>
+
+                                        {/* Remove button */}
+                                        <div style={{ flexShrink: 0 }}>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleRemoveSocialLink(item.id)}
+                                            title="Հեռացնել"
+                                            style={{
+                                              background: 'transparent',
+                                              border: 'none',
+                                              color: '#ff6b6b',
+                                              cursor: 'pointer',
+                                              padding: '4px 6px',
+                                              borderRadius: '4px',
+                                              fontSize: '0.82rem',
+                                              transition: 'background 0.2s ease',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'center'
+                                            }}
+                                          >
+                                            ✕
+                                          </button>
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+
+                              {/* Form submit button */}
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                                <hd-button 
+                                  onClick={handleSaveGeneralSettings}
+                                  data-thickness="3px"
+                                  data-width="220px"
+                                  data-height="38px"
+                                  data-font-size="0.84rem"
+                                  disabled={savingSettings}
+                                >
+                                  {savingSettings ? 'Պահվում է...' : 'Պահել Սոց․ Էջերը'}
+                                </hd-button>
+                              </div>
                             </div>
                           </div>
                         </div>

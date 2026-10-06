@@ -26,7 +26,14 @@ export async function GET() {
       contact_email: 'hrant@hakobian.am',
       contact_tel: '+374 00 000000',
       contact_address_hy: 'Երևան, Հայաստան',
-      contact_address_en: 'Yerevan, Armenia'
+      contact_address_en: 'Yerevan, Armenia',
+      social_links: {
+        linkedin: 'https://linkedin.com',
+        instagram: 'https://instagram.com',
+        gitlab: 'https://gitlab.com',
+        behance: 'https://behance.net',
+        github: 'https://github.com'
+      }
     });
     
     const sanitizeVideoUrl = (url?: string) => {
@@ -63,6 +70,13 @@ export async function GET() {
         contact_tel: generalSettings?.contact_tel || '+374 00 000000',
         contact_address_hy: generalSettings?.contact_address_hy || 'Երևան, Հայաստան',
         contact_address_en: generalSettings?.contact_address_en || 'Yerevan, Armenia',
+        social_links: generalSettings?.social_links || {
+          linkedin: 'https://linkedin.com',
+          instagram: 'https://instagram.com',
+          gitlab: 'https://gitlab.com',
+          behance: 'https://behance.net',
+          github: 'https://github.com'
+        },
         site_font_url: generalSettings?.site_font_url || 'https://api.hakobian.am/libs/v1/fonts/hdesign.ttf',
         site_font_name: generalSettings?.site_font_name || 'HDesign',
         site_font_weights: generalSettings?.site_font_weights || {},
@@ -187,6 +201,9 @@ export async function POST(request: Request) {
     if (body.contact_address_en !== undefined) {
       updatedSettings.contact_address_en = body.contact_address_en;
     }
+    if (body.social_links !== undefined) {
+      updatedSettings.social_links = body.social_links;
+    }
     if (body.site_font_url !== undefined) {
       updatedSettings.site_font_url = body.site_font_url;
     }
@@ -244,6 +261,7 @@ export async function POST(request: Request) {
       contact_tel: updatedSettings.contact_tel,
       contact_address_hy: updatedSettings.contact_address_hy,
       contact_address_en: updatedSettings.contact_address_en,
+      social_links: updatedSettings.social_links,
       site_font_url: updatedSettings.site_font_url,
       site_font_name: updatedSettings.site_font_name,
       design_system_video_hy: updatedSettings.design_system_video_hy,

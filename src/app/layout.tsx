@@ -164,6 +164,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
             contactTel={generalSettings?.contact_tel}
             contactAddressHy={generalSettings?.contact_address_hy}
             contactAddressEn={generalSettings?.contact_address_en}
+            socialLinks={generalSettings?.social_links}
           />
         </I18nProvider>
         <Script src="https://api.hakobian.am/libs/v1/components/script.js" strategy="afterInteractive" />
