@@ -138,6 +138,7 @@ export async function POST(request: Request) {
       store_url,
       repository_url,
       repository_type,
+      repositories,
       cover_image,
       gallery_images,
       languages,
@@ -183,6 +184,13 @@ export async function POST(request: Request) {
     const downloadsList = (Array.isArray(downloads) ? downloads : [])
       .filter(d => d && d.url && !d.url.includes('example.com'));
     const supportedOsList = Array.isArray(supported_os) ? supported_os : [];
+    const repositoriesList = (Array.isArray(repositories) ? repositories : [])
+      .filter(r => r && r.url && r.url.trim());
+
+    const primaryRepo = repositoriesList[0];
+    const finalRepoUrl = (repository_url && repository_url.trim()) || primaryRepo?.url || '';
+    const finalRepoType = (repository_type && repository_type.trim()) || primaryRepo?.type || 'github';
+
     const now = new Date().toISOString();
     const finalDownloadUrl = (download_url && !download_url.includes('example.com'))
       ? download_url
@@ -206,8 +214,9 @@ export async function POST(request: Request) {
       download_url: finalDownloadUrl,
       downloads: downloadsList,
       store_url: store_url || '',
-      repository_url: repository_url || '',
-      repository_type: repository_type || 'github',
+      repository_url: finalRepoUrl,
+      repository_type: finalRepoType,
+      repositories: repositoriesList.length > 0 ? repositoriesList : (finalRepoUrl ? [{ type: finalRepoType, url: finalRepoUrl }] : []),
       cover_image: cover_image || (Array.isArray(gallery_images) && gallery_images[0] ? gallery_images[0] : ''),
       gallery_images: Array.isArray(gallery_images) ? gallery_images : [],
       languages: languagesList.length > 0 ? languagesList : ['Հայերեն'],

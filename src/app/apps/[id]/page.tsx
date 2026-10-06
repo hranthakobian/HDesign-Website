@@ -45,6 +45,7 @@ type AppDetail = {
   store_url?: string;
   repository_url?: string;
   repository_type?: string;
+  repositories?: { id?: string; type: string; url: string; label?: string }[];
   cover_image?: string;
   gallery_images: string[];
   languages?: string[];
@@ -125,6 +126,54 @@ export default function AppDetailPage() {
   }, [app]);
 
   const hasMultipleDownloads = validDownloads.length > 1;
+
+  const appRepositories = useMemo(() => {
+    if (!app) return [];
+    if (Array.isArray(app.repositories) && app.repositories.length > 0) {
+      return app.repositories.filter(r => !!r.url?.trim());
+    }
+    if (app.repository_url?.trim()) {
+      return [{
+        type: app.repository_type || 'github',
+        url: app.repository_url.trim(),
+        label: app.repository_type === 'gitlab' ? 'GitLab' : (app.repository_type === 'bitbucket' ? 'Bitbucket' : (app.repository_type === 'code' ? 'Code' : 'GitHub'))
+      }];
+    }
+    return [];
+  }, [app]);
+
+  const renderRepoSvgIcon = (type: string, url: string, size = 22) => {
+    const isGitLab = type === 'gitlab' || (!type && url.includes('gitlab'));
+    const isBitbucket = type === 'bitbucket' || (!type && url.includes('bitbucket'));
+    const isCode = type === 'code';
+    if (isGitLab) {
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+          <path d="M22.65 14.39L12 22.13 1.35 14.39a.84.84 0 0 1-.3-.94l1.22-3.78 2.44-7.51A.42.42 0 0 1 5.48 2a.44.44 0 0 1 .4.28l2.22 6.86h7.8l2.22-6.86a.44.44 0 0 1 .4-.28.42.42 0 0 1 .77.16l2.44 7.51 1.22 3.78a.84.84 0 0 1-.3.94z" />
+        </svg>
+      );
+    }
+    if (isBitbucket) {
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+          <path d="M2.61 3a1.44 1.44 0 0 0-1.44 1.64l2.49 14.86A1.66 1.66 0 0 0 5.3 21h13.4a1.66 1.66 0 0 0 1.64-1.5l2.49-14.86A1.44 1.44 0 0 0 21.39 3H2.61zm10.74 12.35h-2.7L9.38 9.5h5.24l-1.27 5.85z"/>
+        </svg>
+      );
+    }
+    if (isCode) {
+      return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="16 18 22 12 16 6" />
+          <polyline points="8 6 2 12 8 18" />
+        </svg>
+      );
+    }
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+      </svg>
+    );
+  };
 
   // Sticky CTA and Description Collapsible States
   const heroCtaRef = useRef<HTMLDivElement>(null);
@@ -651,58 +700,41 @@ export default function AppDetailPage() {
                   )}
                 </div>
 
-                {/* Repository Icon Button (GitHub, GitLab, etc.) */}
-                {app.repository_url && (
-                  <a
-                    href={app.repository_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="app-repo-link"
-                    title={
-                      app.repository_type === 'gitlab' || (!app.repository_type && app.repository_url.includes('gitlab'))
-                        ? "GitLab Repository"
-                        : app.repository_type === 'bitbucket' || (!app.repository_type && app.repository_url.includes('bitbucket'))
-                        ? "Bitbucket Repository"
-                        : app.repository_type === 'code'
-                        ? "Source Code"
-                        : "GitHub Repository"
-                    }
-                    style={{ textDecoration: "none", flexShrink: 0 }}
-                  >
-                    <hd-button
-                      suppressHydrationWarning
-                      className="app-repo-btn"
-                      data-width="52px"
-                      data-height="52px"
-                      data-thickness="3px"
-                      data-padding="0 20px"
-                      data-wrapper-padding="0 20px"
-                      data-color="var(--bg)"
-                      data-text-color="var(--text)"
+                {/* Repository Icon Buttons (GitHub, GitLab, Bitbucket, etc.) */}
+                {appRepositories.map((repo, rIdx) => {
+                  const titleLabel = repo.label || (
+                    repo.type === 'gitlab' ? 'GitLab' :
+                    repo.type === 'bitbucket' ? 'Bitbucket' :
+                    repo.type === 'code' ? (locale === 'hy' ? 'Կոդ' : 'Source Code') : 'GitHub'
+                  );
+                  return (
+                    <a
+                      key={repo.id || repo.url || rIdx}
+                      href={repo.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="app-repo-link"
+                      title={titleLabel}
+                      style={{ textDecoration: "none", flexShrink: 0 }}
                     >
-                      <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        {(app.repository_type === 'gitlab' || (!app.repository_type && app.repository_url.includes('gitlab'))) ? (
-                          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="m23.6 9.59-1.23-3.79a.9.9 0 0 0-.85-.62.9.9 0 0 0-.86.62l-1.23 3.79H4.57L3.34 5.8a.9.9 0 0 0-.86-.62.9.9 0 0 0-.85.62L.4 9.59a.9.9 0 0 0 .33 1l11.27 8.19 11.27-8.19a.9.9 0 0 0 .33-1ZM12 18.78 1.77 11.34h20.46L12 18.78Z"/>
-                          </svg>
-                        ) : (app.repository_type === 'bitbucket' || (!app.repository_type && app.repository_url.includes('bitbucket'))) ? (
-                          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M2.61 3a1.44 1.44 0 0 0-1.44 1.64l2.49 14.86A1.66 1.66 0 0 0 5.3 21h13.4a1.66 1.66 0 0 0 1.64-1.5l2.49-14.86A1.44 1.44 0 0 0 21.39 3H2.61zm10.74 12.35h-2.7L9.38 9.5h5.24l-1.27 5.85z"/>
-                          </svg>
-                        ) : (app.repository_type === 'code') ? (
-                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="16 18 22 12 16 6" />
-                            <polyline points="8 6 2 12 8 18" />
-                          </svg>
-                        ) : (
-                          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
-                          </svg>
-                        )}
-                      </span>
-                    </hd-button>
-                  </a>
-                )}
+                      <hd-button
+                        suppressHydrationWarning
+                        className="app-repo-btn"
+                        data-width="52px"
+                        data-height="52px"
+                        data-thickness="3px"
+                        data-padding="0 20px"
+                        data-wrapper-padding="0 20px"
+                        data-color="var(--bg)"
+                        data-text-color="var(--text)"
+                      >
+                        <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {renderRepoSvgIcon(repo.type, repo.url, 22)}
+                        </span>
+                      </hd-button>
+                    </a>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -1217,58 +1249,41 @@ export default function AppDetailPage() {
                       )}
                     </div>
 
-                    {/* Sticky Repository Icon Button */}
-                    {app.repository_url && (
-                      <a
-                        href={app.repository_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="app-repo-link"
-                        title={
-                          app.repository_type === 'gitlab' || (!app.repository_type && app.repository_url.includes('gitlab'))
-                            ? "GitLab Repository"
-                            : app.repository_type === 'bitbucket' || (!app.repository_type && app.repository_url.includes('bitbucket'))
-                            ? "Bitbucket Repository"
-                            : app.repository_type === 'code'
-                            ? "Source Code"
-                            : "GitHub Repository"
-                        }
-                        style={{ textDecoration: "none", flexShrink: 0 }}
-                      >
-                        <hd-button
-                          suppressHydrationWarning
-                          className="app-repo-btn"
-                          data-width="46px"
-                          data-height="46px"
-                          data-thickness="2.5px"
-                          data-padding="0 20px"
-                          data-wrapper-padding="0 20px"
-                          data-color="var(--bg)"
-                          data-text-color="var(--text)"
+                    {/* Sticky Repository Icon Buttons */}
+                    {appRepositories.map((repo, rIdx) => {
+                      const titleLabel = repo.label || (
+                        repo.type === 'gitlab' ? 'GitLab' :
+                        repo.type === 'bitbucket' ? 'Bitbucket' :
+                        repo.type === 'code' ? (locale === 'hy' ? 'Կոդ' : 'Source Code') : 'GitHub'
+                      );
+                      return (
+                        <a
+                          key={repo.id || repo.url || rIdx}
+                          href={repo.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="app-repo-link"
+                          title={titleLabel}
+                          style={{ textDecoration: "none", flexShrink: 0 }}
                         >
-                          <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            {(app.repository_type === 'gitlab' || (!app.repository_type && app.repository_url.includes('gitlab'))) ? (
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="m23.6 9.59-1.23-3.79a.9.9 0 0 0-.85-.62.9.9 0 0 0-.86.62l-1.23 3.79H4.57L3.34 5.8a.9.9 0 0 0-.86-.62.9.9 0 0 0-.85.62L.4 9.59a.9.9 0 0 0 .33 1l11.27 8.19 11.27-8.19a.9.9 0 0 0 .33-1ZM12 18.78 1.77 11.34h20.46L12 18.78Z"/>
-                              </svg>
-                            ) : (app.repository_type === 'bitbucket' || (!app.repository_type && app.repository_url.includes('bitbucket'))) ? (
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M2.61 3a1.44 1.44 0 0 0-1.44 1.64l2.49 14.86A1.66 1.66 0 0 0 5.3 21h13.4a1.66 1.66 0 0 0 1.64-1.5l2.49-14.86A1.44 1.44 0 0 0 21.39 3H2.61zm10.74 12.35h-2.7L9.38 9.5h5.24l-1.27 5.85z"/>
-                              </svg>
-                            ) : (app.repository_type === 'code') ? (
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="16 18 22 12 16 6" />
-                                <polyline points="8 6 2 12 8 18" />
-                              </svg>
-                            ) : (
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
-                              </svg>
-                            )}
-                          </span>
-                        </hd-button>
-                      </a>
-                    )}
+                          <hd-button
+                            suppressHydrationWarning
+                            className="app-repo-btn"
+                            data-width="46px"
+                            data-height="46px"
+                            data-thickness="2.5px"
+                            data-padding="0 20px"
+                            data-wrapper-padding="0 20px"
+                            data-color="var(--bg)"
+                            data-text-color="var(--text)"
+                          >
+                            <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              {renderRepoSvgIcon(repo.type, repo.url, 18)}
+                            </span>
+                          </hd-button>
+                        </a>
+                      );
+                    })}
                   </div>
                 </div>
               )}

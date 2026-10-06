@@ -455,8 +455,6 @@ export default function HDesignSamplesPage() {
           display: grid;
           grid-template-columns: 280px 1fr 340px;
           gap: 24px;
-          max-width: 1500px;
-          margin: 0 auto;
           width: 100%;
           align-items: start;
           background: transparent;

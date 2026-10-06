@@ -256,6 +256,7 @@ export default function BugReportModal({
 
           <button
             type="button"
+            className="no-default-btn-style"
             onClick={onClose}
             style={{
               background: "transparent",

@@ -15,6 +15,7 @@
     ],
     "is_paid": false,
     "price": 0,
+    "currency": "AMD",
     "download_url": "https://jveaaytpcviwuvpgdvxl.supabase.co/storage/v1/object/public/gallery/1791095513533_Variable-Plugin-v2.3.0.zip",
     "downloads": [
       {
@@ -30,6 +31,19 @@
     "store_url": "",
     "repository_url": "https://github.com/hranthakobian/variable-plugin",
     "repository_type": "github",
+    "repositories": [
+      {
+        "type": "github",
+        "url": "https://github.com/hranthakobian/variable-plugin",
+        "label": "GitHub"
+      },
+      {
+        "id": "repo-1791291863446",
+        "type": "gitlab",
+        "url": "https://gitlab.com/hranthakobian/Variable-Plugin",
+        "label": "GitLab"
+      }
+    ],
     "cover_image": "https://jveaaytpcviwuvpgdvxl.supabase.co/storage/v1/object/public/gallery/1791115111393_Untitled-2.png",
     "gallery_images": [
       "https://jveaaytpcviwuvpgdvxl.supabase.co/storage/v1/object/public/gallery/1791115111393_Untitled-2.png",
@@ -46,7 +60,7 @@
     "downloads_count": 5,
     "is_draft": false,
     "status": "published",
-    "created_at": "2026-10-04T12:00:28.798Z",
-    "updated_at": "2026-10-04T12:00:30.293Z"
+    "created_at": "2026-10-04T12:00:28.798+00:00",
+    "updated_at": "2026-10-06T13:08:15.680Z"
   }
 ]

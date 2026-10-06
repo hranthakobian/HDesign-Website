@@ -130,6 +130,8 @@ ALTER TABLE apps ADD COLUMN IF NOT EXISTS downloads JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS supported_os JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS repository_url TEXT DEFAULT '';
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS repository_type TEXT DEFAULT 'github';
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS host_apps JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS repositories JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE apps ALTER COLUMN title_am DROP NOT NULL;
 ALTER TABLE apps ALTER COLUMN title_en DROP NOT NULL;
 ALTER TABLE apps ALTER COLUMN host_app DROP NOT NULL;
@@ -186,12 +188,15 @@ CREATE TABLE IF NOT EXISTS app_downloads (
   download_id TEXT,
   ip_address TEXT,
   user_agent TEXT,
+  os TEXT,
   is_spam BOOLEAN DEFAULT false,
   spam_reason TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 ALTER TABLE app_downloads DISABLE ROW LEVEL SECURITY;
+ALTER TABLE app_downloads ADD COLUMN IF NOT EXISTS os TEXT;
 CREATE INDEX IF NOT EXISTS idx_downloads_app ON app_downloads(app_id);
 CREATE INDEX IF NOT EXISTS idx_downloads_spam ON app_downloads(is_spam);
+
 

@@ -251,6 +251,7 @@ export default function AppDownloadModal({
 
           <button
             type="button"
+            className="no-default-btn-style"
             onClick={onClose}
             style={{
               background: "var(--panel)",
@@ -258,6 +259,7 @@ export default function AppDownloadModal({
               borderRadius: "50%",
               width: "34px",
               height: "34px",
+              padding: 0,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",

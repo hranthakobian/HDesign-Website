@@ -1215,6 +1215,13 @@ export type AppDownloadOption = {
   host_app?: string;
 };
 
+export type AppRepository = {
+  id?: string;
+  type: 'github' | 'gitlab' | 'bitbucket' | 'gitea' | 'code' | string;
+  url: string;
+  label?: string;
+};
+
 export type AppItem = {
   id: string;
   title_am: string;
@@ -1224,6 +1231,7 @@ export type AppItem = {
   description_md_am?: string;
   description_md_en?: string;
   host_app: string;
+  host_apps?: string[];
   host_app_icon?: string;
   app_type: 'plugin' | 'standalone';
   supported_os?: ('windows' | 'macos' | 'linux')[];
@@ -1235,6 +1243,7 @@ export type AppItem = {
   store_url?: string;
   repository_url?: string;
   repository_type?: string;
+  repositories?: AppRepository[];
   cover_image?: string;
   gallery_images: string[];
   languages?: string[];
@@ -1553,10 +1562,29 @@ export async function getApps(): Promise<AppItem[]> {
               parsedDownloads = [];
             }
           }
+          let parsedRepositories = [];
+          if (Array.isArray(x.repositories)) {
+            parsedRepositories = x.repositories.filter((r: any) => r && r.url && r.url.trim());
+          } else if (typeof x.repositories === 'string' && x.repositories.trim()) {
+            try {
+              parsedRepositories = (JSON.parse(x.repositories) || []).filter((r: any) => r && r.url && r.url.trim());
+            } catch (e) {
+              parsedRepositories = [];
+            }
+          }
+          if (parsedRepositories.length === 0 && x.repository_url && x.repository_url.trim()) {
+            parsedRepositories = [{
+              type: x.repository_type || 'github',
+              url: x.repository_url.trim(),
+              label: x.repository_type === 'gitlab' ? 'GitLab' : (x.repository_type === 'bitbucket' ? 'Bitbucket' : (x.repository_type === 'code' ? 'Code' : 'GitHub'))
+            }];
+          }
+
           return {
             ...x,
-            repository_url: x.repository_url || '',
-            repository_type: x.repository_type || 'github',
+            repository_url: x.repository_url || (parsedRepositories[0]?.url || ''),
+            repository_type: x.repository_type || (parsedRepositories[0]?.type || 'github'),
+            repositories: parsedRepositories,
             downloads: parsedDownloads,
             gallery_images: Array.isArray(x.gallery_images)
               ? x.gallery_images
@@ -1596,10 +1624,30 @@ export async function getApps(): Promise<AppItem[]> {
         parsedDownloads = [];
       }
     }
+
+    let parsedRepositories = [];
+    if (Array.isArray(x.repositories)) {
+      parsedRepositories = x.repositories.filter((r: any) => r && r.url && r.url.trim());
+    } else if (typeof x.repositories === 'string' && (x.repositories as string).trim()) {
+      try {
+        parsedRepositories = (JSON.parse(x.repositories as string) || []).filter((r: any) => r && r.url && r.url.trim());
+      } catch (e) {
+        parsedRepositories = [];
+      }
+    }
+    if (parsedRepositories.length === 0 && x.repository_url && x.repository_url.trim()) {
+      parsedRepositories = [{
+        type: x.repository_type || 'github',
+        url: x.repository_url.trim(),
+        label: x.repository_type === 'gitlab' ? 'GitLab' : (x.repository_type === 'bitbucket' ? 'Bitbucket' : (x.repository_type === 'code' ? 'Code' : 'GitHub'))
+      }];
+    }
+
     return {
       ...x,
-      repository_url: x.repository_url || '',
-      repository_type: x.repository_type || 'github',
+      repository_url: x.repository_url || (parsedRepositories[0]?.url || ''),
+      repository_type: x.repository_type || (parsedRepositories[0]?.type || 'github'),
+      repositories: parsedRepositories,
       downloads: parsedDownloads,
       supported_os: Array.isArray(x.supported_os) ? x.supported_os : [],
       languages: Array.isArray(x.languages) ? x.languages : ['Հայերեն', 'English'],
@@ -1622,6 +1670,11 @@ export async function getApps(): Promise<AppItem[]> {
         : ((meta.downloads && meta.downloads.length > 0) ? meta.downloads : (local?.downloads || []));
       const cleanDownloads = (rawDownloads || []).filter((d: any) => d && d.url && !d.url.includes('example.com'));
 
+      const rawRepositories = (item.repositories && item.repositories.length > 0)
+        ? item.repositories
+        : ((meta.repositories && meta.repositories.length > 0) ? meta.repositories : (local?.repositories || []));
+      const cleanRepositories = (rawRepositories || []).filter((r: any) => r && r.url && r.url.trim());
+
       return {
         ...item,
         supported_os: (Array.isArray(item.supported_os) && item.supported_os.length > 0)
@@ -1629,8 +1682,9 @@ export async function getApps(): Promise<AppItem[]> {
           : (Array.isArray(meta.supported_os) && meta.supported_os.length > 0
               ? meta.supported_os
               : (local?.supported_os || [])),
-        repository_url: item.repository_url || meta.repository_url || local?.repository_url || '',
-        repository_type: item.repository_type || meta.repository_type || local?.repository_type || 'github',
+        repository_url: item.repository_url || meta.repository_url || local?.repository_url || cleanRepositories[0]?.url || '',
+        repository_type: item.repository_type || meta.repository_type || local?.repository_type || cleanRepositories[0]?.type || 'github',
+        repositories: cleanRepositories,
         downloads: cleanDownloads
       };
     });
@@ -1659,11 +1713,18 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
   const downloadsList = (Array.isArray(app.downloads) ? app.downloads : [])
     .filter(d => d && d.url && !d.url.includes('example.com'));
   const supportedOsList = Array.isArray(app.supported_os) ? app.supported_os : [];
+  const repositoriesList = (Array.isArray(app.repositories) ? app.repositories : [])
+    .filter(r => r && r.url && r.url.trim());
+
+  const primaryRepo = repositoriesList[0];
+  const finalRepoUrl = (app.repository_url && app.repository_url.trim()) || primaryRepo?.url || '';
+  const finalRepoType = (app.repository_type && app.repository_type.trim()) || primaryRepo?.type || 'github';
 
   const newApp: AppItem = {
     ...app,
-    repository_url: app.repository_url || '',
-    repository_type: app.repository_type || 'github',
+    repository_url: finalRepoUrl,
+    repository_type: finalRepoType,
+    repositories: repositoriesList.length > 0 ? repositoriesList : (finalRepoUrl ? [{ type: finalRepoType, url: finalRepoUrl }] : []),
     languages: languagesList.length > 0 ? languagesList : ['Հայերեն'],
     downloads: downloadsList,
     supported_os: supportedOsList,
@@ -1689,7 +1750,8 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
       downloads: newApp.downloads,
       supported_os: newApp.supported_os,
       repository_url: newApp.repository_url,
-      repository_type: newApp.repository_type
+      repository_type: newApp.repository_type,
+      repositories: newApp.repositories
     };
     await saveSiteSetting('apps_extended_metadata', currentMeta);
   } catch (err) {

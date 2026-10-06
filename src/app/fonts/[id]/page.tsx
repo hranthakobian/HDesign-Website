@@ -337,9 +337,8 @@ export default function FontDetailPage() {
       {/* Main Grid: Sandbox Playground (Left) vs Controls Sidebar (Right) */}
       <div 
         style={{ 
-          maxWidth: "1500px", 
           width: "100%", 
-          margin: "0 auto", 
+          margin: "0", 
           display: "grid", 
           gridTemplateColumns: "3fr 1fr", 
           gap: "40px" 
@@ -1240,7 +1239,7 @@ export default function FontDetailPage() {
 
       {/* Behance-Style Font Specimen Presentation Blocks */}
       {specimenBlocks.length > 0 && (
-        <div style={{ maxWidth: "1500px", margin: "60px auto 0 auto", display: "flex", flexDirection: "column", gap: "50px", borderTop: "1px solid var(--panel-border)", paddingTop: "60px" }}>
+        <div style={{ width: "100%", margin: "60px 0 0 0", display: "flex", flexDirection: "column", gap: "50px", borderTop: "1px solid var(--panel-border)", paddingTop: "60px" }}>
           <h3 style={{ fontSize: "1.6rem", fontWeight: "900", color: "var(--text)", margin: 0 }}>
             {t("fonts", "specimen_showcase", "Տառատեսակի Շնորհանդես (Font Specimen Showcase)")}
           </h3>
