@@ -1216,6 +1216,33 @@ function AdminDashboardContent() {
   const [draggedSocialId, setDraggedSocialId] = useState<string | null>(null);
   const [dragOverSocialId, setDragOverSocialId] = useState<string | null>(null);
   const [selectedPresetToAdd, setSelectedPresetToAdd] = useState<string>('website');
+  const [socialContextMenu, setSocialContextMenu] = useState<{
+    isOpen: boolean;
+    x: number;
+    y: number;
+    item: SocialLinkItem | null;
+    index: number;
+  }>({
+    isOpen: false,
+    x: 0,
+    y: 0,
+    item: null,
+    index: -1
+  });
+
+  useEffect(() => {
+    if (!socialContextMenu.isOpen) return;
+    const handleClose = () => setSocialContextMenu(prev => ({ ...prev, isOpen: false }));
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    window.addEventListener('click', handleClose);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('click', handleClose);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [socialContextMenu.isOpen]);
 
   const handleAddSocialLink = (presetKey: string = 'website') => {
     const preset = PRESET_PLATFORMS.find(p => p.key === presetKey) || PRESET_PLATFORMS[0];
@@ -9819,6 +9846,7 @@ function AdminDashboardContent() {
                                   socialLinks.map((item, index) => {
                                     const isDragging = draggedSocialId === item.id;
                                     const isDragOver = dragOverSocialId === item.id;
+                                    const isDisabled = item.enabled === false;
 
                                     return (
                                       <div
@@ -9844,6 +9872,23 @@ function AdminDashboardContent() {
                                           setDraggedSocialId(null);
                                           setDragOverSocialId(null);
                                         }}
+                                        onContextMenu={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          let x = e.clientX;
+                                          let y = e.clientY;
+                                          if (typeof window !== 'undefined') {
+                                            if (x + 210 > window.innerWidth) x = Math.max(10, window.innerWidth - 220);
+                                            if (y + 190 > window.innerHeight) y = Math.max(10, window.innerHeight - 200);
+                                          }
+                                          setSocialContextMenu({
+                                            isOpen: true,
+                                            x,
+                                            y,
+                                            item,
+                                            index
+                                          });
+                                        }}
                                         style={{
                                           display: 'flex',
                                           alignItems: 'center',
@@ -9856,66 +9901,28 @@ function AdminDashboardContent() {
                                             ? '1px dashed var(--muted)'
                                             : '1px solid var(--panel-border)',
                                           borderRadius: '8px',
-                                          opacity: isDragging ? 0.4 : 1,
+                                          opacity: isDragging ? 0.35 : isDisabled ? 0.55 : 1,
                                           transition: 'all 0.15s ease',
                                           flexWrap: 'nowrap',
                                           overflowX: 'auto'
                                         }}
                                       >
-                                        {/* Drag Handle & Reorder controls */}
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                                          <div
-                                            title="Քաշեք՝ հերթականությունը փոխելու համար"
-                                            style={{
-                                              cursor: 'grab',
-                                              color: 'var(--muted)',
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              justifyContent: 'center',
-                                              padding: '2px 4px',
-                                              borderRadius: '4px',
-                                              userSelect: 'none'
-                                            }}
-                                          >
-                                            <span style={{ fontSize: '1rem', letterSpacing: '-1px' }}>⠿</span>
-                                          </div>
-
-                                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                                            <button
-                                              type="button"
-                                              disabled={index === 0}
-                                              onClick={() => handleMoveSocialLink(index, index - 1)}
-                                              title="Բարձրացնել վերև"
-                                              style={{
-                                                background: 'transparent',
-                                                border: 'none',
-                                                color: index === 0 ? 'rgba(255,255,255,0.15)' : 'var(--muted)',
-                                                cursor: index === 0 ? 'not-allowed' : 'pointer',
-                                                fontSize: '0.55rem',
-                                                padding: '0 2px',
-                                                lineHeight: 1
-                                              }}
-                                            >
-                                              ▲
-                                            </button>
-                                            <button
-                                              type="button"
-                                              disabled={index === socialLinks.length - 1}
-                                              onClick={() => handleMoveSocialLink(index, index + 1)}
-                                              title="Իջեցնել ներքև"
-                                              style={{
-                                                background: 'transparent',
-                                                border: 'none',
-                                                color: index === socialLinks.length - 1 ? 'rgba(255,255,255,0.15)' : 'var(--muted)',
-                                                cursor: index === socialLinks.length - 1 ? 'not-allowed' : 'pointer',
-                                                fontSize: '0.55rem',
-                                                padding: '0 2px',
-                                                lineHeight: 1
-                                              }}
-                                            >
-                                              ▼
-                                            </button>
-                                          </div>
+                                        {/* Drag Handle */}
+                                        <div
+                                          title="Քաշեք՝ հերթականությունը փոխելու համար"
+                                          style={{
+                                            cursor: 'grab',
+                                            color: 'var(--muted)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            padding: '2px 4px',
+                                            borderRadius: '4px',
+                                            userSelect: 'none',
+                                            flexShrink: 0
+                                          }}
+                                        >
+                                          <span style={{ fontSize: '1rem', letterSpacing: '-1px' }}>⠿</span>
                                         </div>
 
                                         {/* Icon preview */}
@@ -10029,51 +10036,194 @@ function AdminDashboardContent() {
                                             }}
                                           />
                                         </div>
-
-                                        {/* Enabled toggle */}
-                                        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                                          <label
-                                            title={item.enabled !== false ? 'Ակտիվ է' : 'Անջատված է'}
-                                            style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.76rem', color: item.enabled !== false ? 'var(--text)' : 'var(--muted)', cursor: 'pointer', userSelect: 'none' }}
-                                          >
-                                            <input
-                                              type="checkbox"
-                                              checked={item.enabled !== false}
-                                              onChange={(e) => handleUpdateSocialLink(item.id, { enabled: e.target.checked })}
-                                              style={{ cursor: 'pointer', margin: 0 }}
-                                            />
-                                            <span>{item.enabled !== false ? 'Ակտիվ' : 'Անջ․'}</span>
-                                          </label>
-                                        </div>
-
-                                        {/* Remove button */}
-                                        <div style={{ flexShrink: 0 }}>
-                                          <button
-                                            type="button"
-                                            onClick={() => handleRemoveSocialLink(item.id)}
-                                            title="Հեռացնել"
-                                            style={{
-                                              background: 'transparent',
-                                              border: 'none',
-                                              color: '#ff6b6b',
-                                              cursor: 'pointer',
-                                              padding: '4px 6px',
-                                              borderRadius: '4px',
-                                              fontSize: '0.82rem',
-                                              transition: 'background 0.2s ease',
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              justifyContent: 'center'
-                                            }}
-                                          >
-                                            ✕
-                                          </button>
-                                        </div>
                                       </div>
                                     );
                                   })
                                 )}
                               </div>
+
+                              {/* Floating Right-Click / 3-Dots Context Menu */}
+                              {socialContextMenu.isOpen && socialContextMenu.item && (
+                                <div
+                                  onClick={(e) => e.stopPropagation()}
+                                  onContextMenu={(e) => e.preventDefault()}
+                                  style={{
+                                    position: 'fixed',
+                                    top: socialContextMenu.y,
+                                    left: socialContextMenu.x,
+                                    zIndex: 999999,
+                                    background: 'var(--panel)',
+                                    border: '1px solid var(--panel-border)',
+                                    borderRadius: '10px',
+                                    padding: '5px',
+                                    boxShadow: '0 10px 28px rgba(0, 0, 0, 0.4)',
+                                    backdropFilter: 'blur(16px)',
+                                    WebkitBackdropFilter: 'blur(16px)',
+                                    minWidth: '190px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '2px',
+                                    fontSize: '0.82rem',
+                                    color: 'var(--text)'
+                                  }}
+                                >
+                                  {/* Header info */}
+                                  <div style={{ padding: '4px 8px 6px 8px', borderBottom: '1px solid var(--panel-border)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.76rem', color: 'var(--muted)' }}>
+                                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: socialContextMenu.item.brandColor || 'var(--accent)' }} />
+                                    <span style={{ fontWeight: 600, color: 'var(--text)' }}>{socialContextMenu.item.label || socialContextMenu.item.platform}</span>
+                                  </div>
+
+                                  {/* Toggle Active / Disabled */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (socialContextMenu.item) {
+                                        handleUpdateSocialLink(socialContextMenu.item.id, {
+                                          enabled: socialContextMenu.item.enabled === false
+                                        });
+                                      }
+                                      setSocialContextMenu(prev => ({ ...prev, isOpen: false }));
+                                    }}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'space-between',
+                                      gap: '8px',
+                                      padding: '6px 10px',
+                                      background: 'transparent',
+                                      border: 'none',
+                                      borderRadius: '6px',
+                                      color: 'var(--text)',
+                                      cursor: 'pointer',
+                                      fontSize: '0.82rem',
+                                      textAlign: 'left'
+                                    }}
+                                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)')}
+                                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                  >
+                                    <span>{socialContextMenu.item.enabled !== false ? 'Ապաակտիվացնել' : 'Ակտիվացնել'}</span>
+                                    <span style={{ fontSize: '0.76rem', color: socialContextMenu.item.enabled !== false ? '#00C49F' : 'var(--muted)' }}>
+                                      {socialContextMenu.item.enabled !== false ? '✓ Ակտիվ' : '○ Անջատված'}
+                                    </span>
+                                  </button>
+
+                                  {/* Move Up */}
+                                  {socialContextMenu.index > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        handleMoveSocialLink(socialContextMenu.index, socialContextMenu.index - 1);
+                                        setSocialContextMenu(prev => ({ ...prev, isOpen: false }));
+                                      }}
+                                      style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        padding: '6px 10px',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        color: 'var(--text)',
+                                        cursor: 'pointer',
+                                        fontSize: '0.82rem',
+                                        textAlign: 'left'
+                                      }}
+                                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)')}
+                                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                    >
+                                      <span>▲</span>
+                                      <span>Բարձրացնել վերև</span>
+                                    </button>
+                                  )}
+
+                                  {/* Move Down */}
+                                  {socialContextMenu.index < socialLinks.length - 1 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        handleMoveSocialLink(socialContextMenu.index, socialContextMenu.index + 1);
+                                        setSocialContextMenu(prev => ({ ...prev, isOpen: false }));
+                                      }}
+                                      style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        padding: '6px 10px',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        color: 'var(--text)',
+                                        cursor: 'pointer',
+                                        fontSize: '0.82rem',
+                                        textAlign: 'left'
+                                      }}
+                                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)')}
+                                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                    >
+                                      <span>▼</span>
+                                      <span>Իջեցնել ներքև</span>
+                                    </button>
+                                  )}
+
+                                  {/* Open External Link */}
+                                  {socialContextMenu.item.url && socialContextMenu.item.url !== '#' && (
+                                    <a
+                                      href={socialContextMenu.item.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={() => setSocialContextMenu(prev => ({ ...prev, isOpen: false }))}
+                                      style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        padding: '6px 10px',
+                                        background: 'transparent',
+                                        borderRadius: '6px',
+                                        color: 'var(--text)',
+                                        textDecoration: 'none',
+                                        cursor: 'pointer',
+                                        fontSize: '0.82rem'
+                                      }}
+                                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)')}
+                                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                    >
+                                      <span>↗</span>
+                                      <span>Բացել հղումը</span>
+                                    </a>
+                                  )}
+
+                                  <div style={{ height: '1px', background: 'var(--panel-border)', margin: '2px 0' }} />
+
+                                  {/* Delete */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (socialContextMenu.item) {
+                                        handleRemoveSocialLink(socialContextMenu.item.id);
+                                      }
+                                      setSocialContextMenu(prev => ({ ...prev, isOpen: false }));
+                                    }}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '8px',
+                                      padding: '6px 10px',
+                                      background: 'transparent',
+                                      border: 'none',
+                                      borderRadius: '6px',
+                                      color: '#ff6b6b',
+                                      cursor: 'pointer',
+                                      fontSize: '0.82rem',
+                                      textAlign: 'left'
+                                    }}
+                                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 107, 107, 0.12)')}
+                                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                  >
+                                    <span>✕</span>
+                                    <span>Հեռացնել</span>
+                                  </button>
+                                </div>
+                              )}
 
                               {/* Form submit button */}
                               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
