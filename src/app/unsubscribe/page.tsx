@@ -49,7 +49,7 @@ function UnsubscribeContent() {
   };
 
   return (
-    <main className="shell" style={{ marginTop: "140px", minHeight: "60vh", display: "flex", justifyContent: "center", alignItems: "center", position: "relative" }}>
+    <main className="shell" style={{ paddingTop: "200px", minHeight: "60vh", display: "flex", justifyContent: "center", alignItems: "center", position: "relative" }}>
       <div className="unsubscribe-card" style={{
         background: "rgba(255, 255, 255, 0.05)",
         backdropFilter: "blur(20px)",
@@ -140,7 +140,7 @@ function UnsubscribeContent() {
 export default function UnsubscribePage() {
   return (
     <Suspense fallback={
-      <main className="shell" style={{ marginTop: "140px", minHeight: "60vh", display: "flex", justifyContent: "center", alignItems: "center" }}>
+      <main className="shell" style={{ paddingTop: "200px", minHeight: "60vh", display: "flex", justifyContent: "center", alignItems: "center" }}>
         <div>Բեռնվում է...</div>
       </main>
     }>

@@ -717,7 +717,7 @@ export default function OcrPage() {
   };
 
   return (
-    <main className="shell" style={{ marginTop: "120px", marginBottom: "80px", minHeight: "85vh", position: "relative" }}>
+    <main className="shell" style={{ paddingTop: "200px", marginBottom: "80px", minHeight: "85vh", position: "relative" }}>
       {/* Background Glow */}
       <div
         style={{

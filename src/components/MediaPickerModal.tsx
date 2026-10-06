@@ -782,6 +782,17 @@ export default function MediaPickerModal({
           80% { transform: translateX(calc(-1 * var(--overflow-dist, 0px))); }
           100% { transform: translateX(calc(-1 * var(--overflow-dist, 0px))); }
         }
+        .media-picker-btn,
+        .media-picker-confirm-btn,
+        .hd-modal-container button.media-picker-confirm-btn,
+        .hd-modal-container button.media-picker-btn,
+        [data-modal-container] button.media-picker-confirm-btn,
+        [data-modal-container] button.media-picker-btn,
+        .hd-modal-container .media-picker-footer button,
+        [data-modal-container] .media-picker-footer button {
+          padding-left: 15px !important;
+          padding-right: 15px !important;
+        }
       `}</style>
       <div
         className={`hd-modal-container ${isClosing ? "closing" : ""}`}
@@ -913,13 +924,14 @@ export default function MediaPickerModal({
             >
               <button
                 type="button"
+                className="media-picker-btn"
                 onClick={() => setActiveTab('library')}
                 style={{
                   background: activeTab === 'library' ? 'var(--accent)' : 'transparent',
                   color: activeTab === 'library' ? '#ffffff' : 'var(--muted)',
                   border: 'none',
                   borderRadius: '8px',
-                  padding: '6px 12px',
+                  padding: '6px 15px',
                   fontSize: '0.8rem',
                   fontWeight: 600,
                   cursor: 'pointer'
@@ -929,13 +941,14 @@ export default function MediaPickerModal({
               </button>
               <button
                 type="button"
+                className="media-picker-btn"
                 onClick={() => uploadInputRef.current?.click()}
                 style={{
                   background: 'transparent',
                   color: 'var(--fg)',
                   border: 'none',
                   borderRadius: '8px',
-                  padding: '6px 12px',
+                  padding: '6px 15px',
                   fontSize: '0.8rem',
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -949,13 +962,14 @@ export default function MediaPickerModal({
               </button>
               <button
                 type="button"
+                className="media-picker-btn"
                 onClick={() => setActiveTab('url')}
                 style={{
                   background: activeTab === 'url' ? 'var(--accent)' : 'transparent',
                   color: activeTab === 'url' ? '#ffffff' : 'var(--muted)',
                   border: 'none',
                   borderRadius: '8px',
-                  padding: '6px 12px',
+                  padding: '6px 15px',
                   fontSize: '0.8rem',
                   fontWeight: 600,
                   cursor: 'pointer'
@@ -968,13 +982,14 @@ export default function MediaPickerModal({
             {/* Fullscreen Toggle */}
             <button
               type="button"
+              className="media-picker-btn"
               onClick={() => setIsFullscreen(p => !p)}
               title={isFullscreen ? "Կրճատել չափսը" : "Ամբողջ էկրանով"}
               style={{
                 background: 'var(--panel)',
                 border: '1px solid var(--panel-border)',
                 borderRadius: '8px',
-                padding: '6px 12px',
+                padding: '6px 15px',
                 color: 'var(--fg)',
                 fontSize: '0.8rem',
                 fontWeight: 600,
@@ -1136,6 +1151,7 @@ export default function MediaPickerModal({
                 </span>
                 <button
                   type="button"
+                  className="media-picker-btn"
                   onClick={() => setIsNewFolderModalOpen(true)}
                   title="Ստեղծել նոր պանակ"
                   style={{
@@ -1143,7 +1159,7 @@ export default function MediaPickerModal({
                     color: '#3B82F6',
                     border: '1px solid rgba(59, 130, 246, 0.35)',
                     borderRadius: '6px',
-                    padding: '2px 7px',
+                    padding: '3px 10px',
                     fontSize: '0.72rem',
                     fontWeight: 700,
                     cursor: 'pointer',
@@ -1211,6 +1227,7 @@ export default function MediaPickerModal({
 
                   <button
                     type="button"
+                    className="media-picker-btn"
                     onClick={() => setIsNewFolderModalOpen(true)}
                     title="Ստեղծել նոր պանակ այստեղ"
                     style={{
@@ -1218,7 +1235,7 @@ export default function MediaPickerModal({
                       color: '#3B82F6',
                       border: '1px solid rgba(59, 130, 246, 0.3)',
                       borderRadius: '6px',
-                      padding: '3px 8px',
+                      padding: '4px 15px',
                       fontSize: '0.74rem',
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -1249,13 +1266,14 @@ export default function MediaPickerModal({
                         <button
                           key={tab.id}
                           type="button"
+                          className="media-picker-btn"
                           onClick={() => setActiveTypeTab(tab.id)}
                           style={{
                             background: isActive ? 'var(--accent)' : 'transparent',
                             color: isActive ? '#ffffff' : 'var(--muted)',
                             border: `1px solid ${isActive ? 'transparent' : 'var(--panel-border)'}`,
                             borderRadius: '6px',
-                            padding: '3px 8px',
+                            padding: '4px 15px',
                             fontSize: '0.72rem',
                             fontWeight: isActive ? 700 : 500,
                             cursor: 'pointer',
@@ -1328,6 +1346,7 @@ export default function MediaPickerModal({
                   {/* Folder Open Mode Toggle */}
                   <button
                     type="button"
+                    className="media-picker-btn"
                     onClick={toggleFolderOpenMode}
                     title={folderOpenMode === 'double' ? 'Պանակներ՝ կրկնակի կտտոցով (Լռելյայն)։ Կտտացրեք՝ մեկ կտտոցի փոխելու համար' : 'Պանակներ՝ մեկ կտտոցով։ Կտտացրեք՝ կրկնակի կտտոցի փոխելու համար'}
                     style={{
@@ -1335,7 +1354,7 @@ export default function MediaPickerModal({
                       color: 'var(--fg)',
                       border: '1px solid var(--panel-border)',
                       borderRadius: '6px',
-                      padding: '4px 8px',
+                      padding: '4px 15px',
                       fontSize: '0.72rem',
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -1370,13 +1389,14 @@ export default function MediaPickerModal({
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginTop: '16px' }}>
                       <button
                         type="button"
+                        className="media-picker-btn"
                         onClick={() => uploadInputRef.current?.click()}
                         style={{
                           background: 'var(--accent)',
                           color: '#ffffff',
                           border: 'none',
                           borderRadius: '8px',
-                          padding: '8px 18px',
+                          padding: '8px 15px',
                           fontSize: '0.82rem',
                           fontWeight: 600,
                           cursor: 'pointer',
@@ -1390,13 +1410,14 @@ export default function MediaPickerModal({
                       </button>
                       <button
                         type="button"
+                        className="media-picker-btn"
                         onClick={() => setIsNewFolderModalOpen(true)}
                         style={{
                           background: 'var(--panel)',
                           color: 'var(--fg)',
                           border: '1px solid var(--panel-border)',
                           borderRadius: '8px',
-                          padding: '8px 18px',
+                          padding: '8px 15px',
                           fontSize: '0.82rem',
                           fontWeight: 600,
                           cursor: 'pointer',
@@ -1623,16 +1644,17 @@ export default function MediaPickerModal({
             )}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div className="media-picker-footer" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <button
               type="button"
+              className="media-picker-btn"
               onClick={onClose}
               style={{
                 background: 'var(--panel)',
                 color: 'var(--fg)',
                 border: '1px solid var(--panel-border)',
                 borderRadius: '8px',
-                padding: '8px 16px',
+                padding: '8px 15px',
                 fontSize: '0.85rem',
                 cursor: 'pointer'
               }}
@@ -1642,6 +1664,7 @@ export default function MediaPickerModal({
 
             <button
               type="button"
+              className="media-picker-confirm-btn"
               disabled={activeTab === 'url' ? !customUrlInput.trim() : selectedUrls.length === 0}
               onClick={handleConfirmSelect}
               style={{
@@ -1649,7 +1672,7 @@ export default function MediaPickerModal({
                 color: '#ffffff',
                 border: 'none',
                 borderRadius: '8px',
-                padding: '8px 22px',
+                padding: '8px 15px',
                 fontSize: '0.85rem',
                 fontWeight: 600,
                 cursor: (activeTab === 'url' ? !customUrlInput.trim() : selectedUrls.length === 0) ? 'default' : 'pointer',
@@ -1657,7 +1680,7 @@ export default function MediaPickerModal({
                 boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
               }}
             >
-              Ընտրել Նիշքը
+              Ընտրել
             </button>
           </div>
         </div>
@@ -1764,15 +1787,16 @@ export default function MediaPickerModal({
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+              <div className="media-picker-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
                 <button
                   type="button"
+                  className="media-picker-btn"
                   onClick={() => setIsNewFolderModalOpen(false)}
                   style={{
                     background: 'var(--bg)',
                     border: '1px solid var(--panel-border)',
                     borderRadius: '8px',
-                    padding: '8px 16px',
+                    padding: '8px 15px',
                     fontSize: '0.85rem',
                     color: 'var(--fg)',
                     cursor: 'pointer'
@@ -1782,13 +1806,14 @@ export default function MediaPickerModal({
                 </button>
                 <button
                   type="button"
+                  className="media-picker-btn"
                   onClick={handleCreateFolder}
                   disabled={!newFolderName.trim() || isCreatingFolder}
                   style={{
                     background: 'var(--accent)',
                     border: 'none',
                     borderRadius: '8px',
-                    padding: '8px 18px',
+                    padding: '8px 15px',
                     fontSize: '0.85rem',
                     fontWeight: 700,
                     color: '#ffffff',

@@ -284,7 +284,7 @@ export default function FontDetailPage() {
   // Loading indicator
   if (loading) {
     return (
-      <main className="shell" style={{ marginTop: "160px", minHeight: "75vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <main className="shell" style={{ paddingTop: "200px", minHeight: "75vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <LoadingAnimation fullPage={false} message={t("fonts", "loading_details", "Տվյալները բեռնվում են...")} />
       </main>
     );
@@ -293,7 +293,7 @@ export default function FontDetailPage() {
   // Error indicator
   if (error || !font) {
     return (
-      <main className="shell" style={{ marginTop: "160px", minHeight: "70vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "20px" }}>
+      <main className="shell" style={{ paddingTop: "200px", minHeight: "70vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "20px" }}>
         <h2 style={{ fontSize: "2rem", fontWeight: "800", color: "var(--text)" }}>
           {t("fonts", "font_not_found", "Տառատեսակը չի գտնվել")}
         </h2>
@@ -307,7 +307,7 @@ export default function FontDetailPage() {
   }
 
   return (
-    <main className="shell" style={{ marginTop: "140px", minHeight: "85vh", paddingBottom: "100px" }}>
+    <main className="shell" style={{ paddingTop: "200px", minHeight: "85vh", paddingBottom: "100px" }}>
       {/* Load dynamically active Font Face */}
       <style
         key={`font-style-${font.id}`}

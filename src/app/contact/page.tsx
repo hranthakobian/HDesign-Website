@@ -72,7 +72,7 @@ export default function ContactPage() {
   };
  
   return (
-    <main className="shell" style={{ marginTop: "140px", minHeight: "80vh", position: "relative" }}>
+    <main className="shell" style={{ paddingTop: "200px", minHeight: "80vh", position: "relative" }}>
       {/* Dynamic Background Pattern */}
       <div 
         className="about-section-shell-width" 

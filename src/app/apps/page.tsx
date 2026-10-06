@@ -190,7 +190,7 @@ export default function AppsListingPage() {
   const getAppDesc = (app: AppData) => (locale === "hy" ? app.short_desc_am : app.short_desc_en);
 
   return (
-    <main className="shell apps-page-container" style={{ marginTop: "140px", minHeight: "85vh", paddingBottom: "80px" }}>
+    <main className="shell apps-page-container" style={{ paddingTop: "200px", minHeight: "85vh", paddingBottom: "80px" }}>
       {/* Header Banner */}
       <div
         className="apps-header-banner"
@@ -534,6 +534,13 @@ export default function AppsListingPage() {
               {apps.filter(a => a.is_draft || a.status === 'draft').length} {locale === "hy" ? "սևագիր" : "draft(s)"}
             </span>
           )}
+        </div>
+      )}
+
+      {/* Loading Animation */}
+      {loading && (
+        <div style={{ padding: "80px 20px", display: "flex", justifyContent: "center" }}>
+          <LoadingAnimation message={locale === "hy" ? "Հավելվածները բեռնվում են..." : "Loading applications..."} />
         </div>
       )}
 

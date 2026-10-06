@@ -435,7 +435,7 @@ export default function HDesignSamplesPage() {
   }
 
   return (
-    <main className="shell" style={{ marginTop: "140px", minHeight: "80vh", paddingBottom: "80px" }}>
+    <main className="shell" style={{ paddingTop: "200px", minHeight: "80vh", paddingBottom: "80px" }}>
       {/* Title */}
       <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "48px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>

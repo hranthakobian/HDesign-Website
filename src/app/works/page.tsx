@@ -351,7 +351,7 @@ function WorksContent() {
   }, []);
 
   return (
-    <main className="shell" style={{ marginTop: "140px", minHeight: "80vh" }}>
+    <main className="shell" style={{ paddingTop: "200px", minHeight: "80vh" }}>
       <div style={{ textAlign: "center", marginBottom: "48px" }}>
         <h1 style={{ fontSize: "2.8rem", fontWeight: "900", color: "var(--text)", margin: "0" }}>
           {activeCategory?.toLowerCase() === 'design' || activeCategory?.toLowerCase() === 'gallery'
@@ -858,7 +858,7 @@ function WorksContent() {
 export default function WorksPage() {
   return (
     <Suspense fallback={
-      <main className="shell" style={{ marginTop: "140px", minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <main className="shell" style={{ paddingTop: "200px", minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <LoadingAnimation fullPage={false} />
       </main>
     }>

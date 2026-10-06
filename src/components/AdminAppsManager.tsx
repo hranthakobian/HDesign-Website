@@ -5,6 +5,7 @@ import Link from "next/link";
 import MarkdownRenderer from "./MarkdownRenderer";
 import { HDesignStars } from "./RatingSystem";
 import MediaPickerModal from "./MediaPickerModal";
+import LoadingAnimation from "./LoadingAnimation";
 import { MediaFileType } from "@/lib/mediaTypes";
 import { prefetchMediaLibrary } from "@/lib/mediaCache";
 import {
@@ -221,6 +222,20 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
     title?: string;
     currentValue?: string | string[];
   } | null>(null);
+
+  // Gallery Drag and Drop state
+  const [draggedGalleryIndex, setDraggedGalleryIndex] = useState<number | null>(null);
+  const [dragOverGalleryIndex, setDragOverGalleryIndex] = useState<number | null>(null);
+
+  const moveGalleryImage = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    setForm(prev => {
+      const list = [...(prev.gallery_images || [])];
+      const [moved] = list.splice(fromIndex, 1);
+      list.splice(toIndex, 0, moved);
+      return { ...prev, gallery_images: list };
+    });
+  };
 
   // Markdown editor tabs
   const [mdLangTab, setMdLangTab] = useState<"am" | "en">("am");
@@ -736,12 +751,27 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
       color: "var(--text, #0f172a)",
       fontFamily: "'Outfit', 'HDesign', -apple-system, BlinkMacSystemFont, sans-serif"
     }}>
+      <style>{`
+        @keyframes adminFadeInSlide {
+          from {
+            opacity: 0;
+            transform: translateY(6px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .admin-tab-transition {
+          animation: adminFadeInSlide 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}</style>
 
       {/* ══════════════════════════════════════════════════════════════════════════
           VIEW 1: APPS LIST & OVERVIEW (WHITE / LIGHT THEME)
           ══════════════════════════════════════════════════════════════════════════ */}
       {viewMode === "list" && (
-        <>
+        <div className="admin-tab-transition" style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           {/* Header Card */}
           <div style={{
             display: "flex",
@@ -867,8 +897,8 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
 
           {/* Cards Grid */}
           {loading ? (
-            <div style={{ padding: "48px", textAlign: "center", color: "#64748b" }}>
-              Բեռնվում են հավելվածները...
+            <div style={{ padding: "64px 20px", display: "flex", justifyContent: "center" }}>
+              <LoadingAnimation message="Բեռնվում են հավելվածները..." />
             </div>
           ) : filteredApps.length === 0 ? (
             <div style={{
@@ -1081,23 +1111,6 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                         >
                           {isPublished ? "Ակտիվ" : "Թաքցված"}
                         </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteApp(app.id, app.title_am || app.title_en)}
-                          style={{
-                            padding: "6px 10px",
-                            background: "#fef2f2",
-                            border: "1px solid #fecaca",
-                            borderRadius: "6px",
-                            color: "#dc2626",
-                            fontSize: "0.78rem",
-                            cursor: "pointer",
-                          }}
-                          title="Ջնջել"
-                        >
-                          <span className="hd-icon icon-Trash" />
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -1105,14 +1118,14 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
               })}
             </div>
           )}
-        </>
+        </div>
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════════
           VIEW 2: 4-STEP CREATION WIZARD (COMPATIBILITY MERGED INTO BASIC DATA)
           ══════════════════════════════════════════════════════════════════════════ */}
       {viewMode === "wizard" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div className="admin-tab-transition" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           
           <div style={{
             display: "flex",
@@ -1127,7 +1140,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
             <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
               <div onClick={() => setViewMode("list")}>
                 <hd-button data-height="36px" data-thickness="3px">
-                  ← Հետ դեպի Հավելվածներ
+                  ← Հետ
                 </hd-button>
               </div>
               <div>
@@ -1160,7 +1173,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
             boxShadow: "0 1px 2px rgba(0,0,0,0.03)"
           }}>
             {[
-              { step: 1, title: "1. Հիմնական Տվյալներ", desc: "Անուն, Տիպ, ՕՀ և Ֆայլեր" },
+              { step: 1, title: "1. Հիմնական Տվյալներ", desc: "Անուն, Տիպ, ԳՀ և Ֆայլեր" },
               { step: 2, title: "2. Պատկերներ", desc: "Կազմ և Պատկերասրահ" },
               { step: 3, title: "3. Շտեմարաններ և Գին", desc: "Git և Գին" },
               { step: 4, title: "4. Ամփոփում", desc: "Նկարագրություն" },
@@ -1220,13 +1233,13 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
 
             {/* STEP 1: Basic Info + Type + Host Apps + OS Compatibility + Packages Matrix */}
             {wizardStep === 1 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div className="admin-tab-transition" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                 <div style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "12px" }}>
                   <h3 style={{ fontSize: "1.15rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>
                     Քայլ 1: Հիմնական Տվյալներ և Համատեղելիություն
                   </h3>
                   <p style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "4px" }}>
-                    Մուտքագրեք անվանումները, ընտրեք տեսակը, ծրագրերը, Օպերացիոն Համակարգերը և կցեք նիշքերը:
+                    Մուտքագրեք անվանումները, ընտրեք տեսակը, ծրագրերը, Գործավար Համակարգերը և կցեք նիշքերը:
                   </p>
                 </div>
 
@@ -1348,7 +1361,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                 <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", padding: "20px", borderRadius: "12px", display: "flex", flexDirection: "column", gap: "16px" }}>
                   <div>
                     <label style={{ display: "block", fontSize: "0.88rem", fontWeight: 700, color: "#0f172a", marginBottom: "8px" }}>
-                      Աջակցվող Օպերացիոն Համակարգեր (OS Compatibility)
+                      Աջակցվող Գործավար Համակարգեր (ԳՀ / OS Compatibility)
                     </label>
                     <div style={{ display: "flex", gap: "12px" }}>
                       {[
@@ -1397,7 +1410,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                   {(form.supported_os || []).length > 0 && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "6px" }}>
                       <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "#0f172a" }}>
-                        Ներբեռնման նիշքերի կցում ըստ ընտրված ՕՀ-ների և ծրագրերի
+                        Ներբեռնման նիշքերի կցում ըստ ընտրված ԳՀ-ների և ծրագրերի
                       </div>
 
                       {(form.supported_os || []).map(osKey => {
@@ -1406,7 +1419,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                         return (
                           <div key={osKey} style={{ background: "#f8fafc", padding: "16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
                             <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#0f172a", marginBottom: "12px", borderBottom: "1px solid #cbd5e1", paddingBottom: "4px" }}>
-                              {osTitle} Օպերացիոն Համակարգ
+                              {osTitle} Գործավար Համակարգ
                             </div>
 
                             {form.app_type === 'plugin' ? (
@@ -1473,17 +1486,17 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                                   >
                                     Ընտրել Ֆայլ
                                   </button>
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
                   <div>
                     <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
                       Տարբերակ (Version)
@@ -1538,7 +1551,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
 
             {/* STEP 2: Media */}
             {wizardStep === 2 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div className="admin-tab-transition" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                 <div style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "12px" }}>
                   <h3 style={{ fontSize: "1.15rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>
                     Քայլ 2: Պատկերներ
@@ -1579,10 +1592,12 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                 </div>
 
                 <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                    <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155" }}>
-                      Պատկերասրահի Սքրինշոթեր ({form.gallery_images?.length || 0})
-                    </label>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                    <div>
+                      <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155" }}>
+                        Պատկերասրահի Սքրինշոթեր ({form.gallery_images?.length || 0})
+                      </label>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setMediaPickerConfig({
@@ -1599,19 +1614,82 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                     </button>
                   </div>
 
+                  {(form.gallery_images || []).length > 0 && (
+                    <div style={{ fontSize: "0.76rem", color: "#64748b", marginBottom: "10px" }}>
+                      💡 Քաշեք և գցեք (Drag & Drop) պատկերները՝ տեղերը փոխելու համար։
+                    </div>
+                  )}
+
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "12px" }}>
-                    {(form.gallery_images || []).map((imgUrl, i) => (
-                      <div key={i} style={{ position: "relative", height: "90px", borderRadius: "8px", overflow: "hidden", border: "1px solid #cbd5e1" }}>
-                        <img src={imgUrl} alt={`Screenshot ${i+1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        <button
-                          type="button"
-                          onClick={() => setForm(prev => ({ ...prev, gallery_images: prev.gallery_images.filter((_, idx) => idx !== i) }))}
-                          style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.6)", border: "none", color: "#fff", borderRadius: "4px", padding: "2px 6px", cursor: "pointer", fontSize: "0.7rem" }}
+                    {(form.gallery_images || []).map((imgUrl, i) => {
+                      const isDragging = draggedGalleryIndex === i;
+                      const isOver = dragOverGalleryIndex === i && draggedGalleryIndex !== i;
+                      return (
+                        <div
+                          key={i}
+                          draggable
+                          onDragStart={(e) => {
+                            setDraggedGalleryIndex(i);
+                            e.dataTransfer.effectAllowed = "move";
+                            e.dataTransfer.setData("text/plain", `${i}`);
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = "move";
+                            if (dragOverGalleryIndex !== i) {
+                              setDragOverGalleryIndex(i);
+                            }
+                          }}
+                          onDragLeave={() => {
+                            if (dragOverGalleryIndex === i) {
+                              setDragOverGalleryIndex(null);
+                            }
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            if (draggedGalleryIndex !== null) {
+                              moveGalleryImage(draggedGalleryIndex, i);
+                            }
+                            setDraggedGalleryIndex(null);
+                            setDragOverGalleryIndex(null);
+                          }}
+                          onDragEnd={() => {
+                            setDraggedGalleryIndex(null);
+                            setDragOverGalleryIndex(null);
+                          }}
+                          style={{
+                            position: "relative",
+                            height: "95px",
+                            borderRadius: "8px",
+                            overflow: "hidden",
+                            border: isOver ? "2px dashed #0f172a" : "1px solid #cbd5e1",
+                            boxShadow: isOver ? "0 0 0 3px rgba(15,23,42,0.15)" : "none",
+                            transform: isDragging ? "scale(0.95)" : isOver ? "scale(1.03)" : "none",
+                            opacity: isDragging ? 0.4 : 1,
+                            transition: "all 0.15s ease",
+                            cursor: "grab",
+                            background: "#f1f5f9"
+                          }}
+                          title="Քաշեք տեղափոխելու համար"
                         >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
+                          <img src={imgUrl} alt={`Screenshot ${i+1}`} style={{ width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }} />
+                          <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(15,23,42,0.75)", color: "#ffffff", borderRadius: "4px", padding: "1px 6px", fontSize: "0.68rem", fontWeight: 700, pointerEvents: "none" }}>
+                            #{i + 1}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setForm(prev => ({ ...prev, gallery_images: prev.gallery_images.filter((_, idx) => idx !== i) }));
+                            }}
+                            style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.65)", border: "none", color: "#fff", borderRadius: "4px", padding: "2px 6px", cursor: "pointer", fontSize: "0.7rem", zIndex: 10 }}
+                            title="Հեռացնել"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -1619,7 +1697,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
 
             {/* STEP 3: Pricing & Multi Repos */}
             {wizardStep === 3 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div className="admin-tab-transition" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                 <div style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "12px" }}>
                   <h3 style={{ fontSize: "1.15rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>
                     Քայլ 3: Շտեմարաններ և Գին
@@ -1711,7 +1789,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
 
             {/* STEP 4: Overview & Markdown */}
             {wizardStep === 4 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div className="admin-tab-transition" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                 <div style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "12px" }}>
                   <h3 style={{ fontSize: "1.15rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>
                     Քայլ 4: Ամփոփում և Նկարագրություն
@@ -1828,7 +1906,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
           VIEW 3: 5-TAB APP MANAGEMENT HUB
           ══════════════════════════════════════════════════════════════════════════ */}
       {viewMode === "hub" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div className="admin-tab-transition" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           
           <div style={{
             display: "flex",
@@ -1845,7 +1923,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
             <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
               <div onClick={() => setViewMode("list")}>
                 <hd-button data-height="36px" data-thickness="3px">
-                  ← Հետ դեպի Հավելվածներ
+                  ← Հետ
                 </hd-button>
               </div>
 
@@ -2007,7 +2085,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
 
           {/* TAB 1: EDIT (SUB-TABS: GENERAL, MEDIA, REPOS/PRICING, MARKDOWN) */}
           {hubTab === "edit" && (
-            <div style={{
+            <div className="admin-tab-transition" style={{
               background: "#ffffff",
               border: "1px solid #e2e8f0",
               borderRadius: "16px",
@@ -2035,484 +2113,546 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                     type="button"
                     onClick={() => setEditorSubTab(st.id as any)}
                     style={{
-                      padding: "8px 14px",
-                      background: editorSubTab === st.id ? "#ffffff" : "transparent",
-                      color: editorSubTab === st.id ? "#0f172a" : "#64748b",
-                      border: "none",
-                      borderRadius: "6px",
-                      fontWeight: 700,
-                      fontSize: "0.82rem",
-                      cursor: "pointer",
-                      boxShadow: editorSubTab === st.id ? "0 1px 2px rgba(0,0,0,0.06)" : "none"
-                    }}
-                  >
-                    {st.label}
-                  </button>
-                ))}
-              </div>
+                    padding: "8px 14px",
+                    background: editorSubTab === st.id ? "#ffffff" : "transparent",
+                    color: editorSubTab === st.id ? "#0f172a" : "#64748b",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontWeight: 700,
+                    fontSize: "0.82rem",
+                    cursor: "pointer",
+                    boxShadow: editorSubTab === st.id ? "0 1px 2px rgba(0,0,0,0.06)" : "none"
+                  }}
+                >
+                  {st.label}
+                </button>
+              ))}
+            </div>
 
-              {/* Sub-tab 1: General (Contains Basic info, Host Apps if Plugin, OS Compatibility, and File Package Matrix) */}
-              {editorSubTab === "general" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
-                        Անվանում (Հայերեն) *
-                      </label>
-                      <input
-                        type="text"
-                        value={form.title_am}
-                        onChange={e => setForm(prev => ({ ...prev, title_am: e.target.value }))}
-                        style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.88rem" }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
-                        Անվանում (English) *
-                      </label>
-                      <input
-                        type="text"
-                        value={form.title_en}
-                        onChange={e => setForm(prev => ({ ...prev, title_en: e.target.value }))}
-                        style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.88rem" }}
-                      />
-                    </div>
-                  </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
-                        Տեսակ *
-                      </label>
-                      <select
-                        value={form.app_type}
-                        onChange={e => setForm(prev => ({ ...prev, app_type: e.target.value as any }))}
-                        style={{ width: "100%", padding: "10px 12px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.85rem", fontWeight: 600 }}
-                      >
-                        <option value="plugin">Խրվակ (Plugin)</option>
-                        <option value="standalone">Հավելված (Standalone Application)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
-                        Կարգավիճակ
-                      </label>
-                      <select
-                        value={form.status}
-                        onChange={e => setForm(prev => ({ ...prev, status: e.target.value as any }))}
-                        style={{ width: "100%", padding: "10px 12px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.85rem" }}
-                      >
-                        <option value="published">Հրապարակված</option>
-                        <option value="draft">Սևագիր</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* If Plugin: Host Apps Selection */}
-                  {form.app_type === 'plugin' && (
-                    <div style={{ background: "#f8fafc", padding: "18px", borderRadius: "12px", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: "12px" }}>
-                      <div>
-                        <label style={{ display: "block", fontSize: "0.88rem", fontWeight: 700, color: "#0f172a" }}>
-                          Ծրագրեր (Host Applications), որոնց համար նախատեսված է Խրվակը *
-                        </label>
-                        <span style={{ fontSize: "0.78rem", color: "#64748b" }}>
-                          Ընտրեք մի քանի ծրագիր միաժամանակ:
-                        </span>
-                      </div>
-
-                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                        {SOFTWARE_PRESETS.map(sw => {
-                          const isSelected = (form.host_apps || []).includes(sw);
-                          return (
-                            <button
-                              key={sw}
-                              type="button"
-                              onClick={() => toggleHostApp(sw)}
-                              style={{
-                                padding: "6px 14px",
-                                background: isSelected ? "#0f172a" : "#ffffff",
-                                color: isSelected ? "#ffffff" : "#334155",
-                                border: `1px solid ${isSelected ? "#0f172a" : "#cbd5e1"}`,
-                                borderRadius: "20px",
-                                fontSize: "0.82rem",
-                                fontWeight: 600,
-                                cursor: "pointer"
-                              }}
-                            >
-                              {isSelected ? `✓ ${sw}` : `+ ${sw}`}
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
-                        <input
-                          type="text"
-                          value={customSoftwareInput}
-                          onChange={e => setCustomSoftwareInput(e.target.value)}
-                          placeholder="Այլ ծրագրի անվանում..."
-                          style={{ flex: 1, padding: "8px 12px", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.82rem" }}
-                        />
-                        <button
-                          type="button"
-                          onClick={addCustomSoftware}
-                          style={{ padding: "8px 14px", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer" }}
-                        >
-                          Ավելացնել
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* OS Compatibility & Package Attachment Matrix */}
-                  <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", padding: "20px", borderRadius: "12px", display: "flex", flexDirection: "column", gap: "16px" }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.88rem", fontWeight: 700, color: "#0f172a", marginBottom: "8px" }}>
-                        Աջակցվող Օպերացիոն Համակարգեր (OS Compatibility)
-                      </label>
-                      <div style={{ display: "flex", gap: "12px" }}>
-                        {[
-                          { id: 'windows', label: 'Windows' },
-                          { id: 'macos', label: 'macOS' },
-                          { id: 'linux', label: 'Linux' },
-                        ].map(osItem => {
-                          const isChecked = (form.supported_os || []).includes(osItem.id as any);
-                          return (
-                            <label
-                              key={osItem.id}
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "8px",
-                                padding: "9px 16px",
-                                background: isChecked ? "#f1f5f9" : "#ffffff",
-                                border: `1px solid ${isChecked ? "#0f172a" : "#cbd5e1"}`,
-                                borderRadius: "8px",
-                                cursor: "pointer",
-                                color: "#0f172a",
-                                fontWeight: 600,
-                                fontSize: "0.85rem"
-                              }}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={e => {
-                                  const curr = form.supported_os || [];
-                                  setForm(prev => ({
-                                    ...prev,
-                                    supported_os: e.target.checked ? [...curr, osItem.id as any] : curr.filter(x => x !== osItem.id)
-                                  }));
-                                }}
-                                style={{ accentColor: "#0f172a" }}
-                              />
-                              {osItem.label}
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Matrix per selected OS */}
-                    {(form.supported_os || []).length > 0 && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "6px" }}>
-                        <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "#0f172a" }}>
-                          Ներբեռնման նիշքերի կցում ըստ ընտրված ՕՀ-ների և ծրագրերի
-                        </div>
-
-                        {(form.supported_os || []).map(osKey => {
-                          const osTitle = osKey === 'windows' ? 'Windows' : osKey === 'macos' ? 'macOS' : 'Linux';
-
-                          return (
-                            <div key={osKey} style={{ background: "#f8fafc", padding: "16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-                              <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#0f172a", marginBottom: "12px", borderBottom: "1px solid #cbd5e1", paddingBottom: "4px" }}>
-                                {osTitle} Օպերացիոն Համակարգ
-                              </div>
-
-                              {form.app_type === 'plugin' ? (
-                                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                                  {(form.host_apps || ['FontLab']).map(sw => {
-                                    const currentUrl = getDownloadUrlFor(osKey, sw);
-                                    return (
-                                      <div key={sw} style={{ display: "flex", flexDirection: "column", gap: "6px", background: "#ffffff", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
-                                        <div style={{ fontWeight: 700, fontSize: "0.82rem", color: "#334155" }}>
-                                          {sw} — Խրվակ {osTitle}-ի համար
-                                        </div>
-                                        <div style={{ display: "flex", gap: "10px" }}>
-                                          <input
-                                            type="text"
-                                            value={currentUrl}
-                                            onChange={e => setDownloadUrlFor(osKey, e.target.value, sw)}
-                                            placeholder={`https://... (${sw} plugin for ${osTitle})`}
-                                            style={{ flex: 1, padding: "8px 12px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.85rem" }}
-                                          />
-                                          <button
-                                            type="button"
-                                            onClick={() => setMediaPickerConfig({
-                                              isOpen: true,
-                                              target: "download_file",
-                                              targetOS: osKey,
-                                              targetHostApp: sw,
-                                              multiple: false,
-                                              title: `Ընտրել ${sw} (${osTitle}) Խրվակի Ֆայլը`,
-                                              currentValue: currentUrl
-                                            })}
-                                            style={{ padding: "8px 14px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}
-                                          >
-                                            Ընտրել Ֆայլ
-                                          </button>
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              ) : (
-                                <div style={{ display: "flex", flexDirection: "column", gap: "6px", background: "#ffffff", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
-                                  <div style={{ fontWeight: 700, fontSize: "0.82rem", color: "#334155" }}>
-                                    Հավելվածի տեղադրման ֆայլ {osTitle}-ի համար
-                                  </div>
-                                  <div style={{ display: "flex", gap: "10px" }}>
-                                    <input
-                                      type="text"
-                                      value={getDownloadUrlFor(osKey)}
-                                      onChange={e => setDownloadUrlFor(osKey, e.target.value)}
-                                      placeholder={`https://... (Installer package for ${osTitle})`}
-                                      style={{ flex: 1, padding: "8px 12px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.85rem" }}
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => setMediaPickerConfig({
-                                        isOpen: true,
-                                        target: "download_file",
-                                        targetOS: osKey,
-                                        multiple: false,
-                                        title: `Ընտրել ${osTitle} Տեղադրման Ֆայլը`,
-                                        currentValue: getDownloadUrlFor(osKey)
-                                      })}
-                                      style={{ padding: "8px 14px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}
-                                    >
-                                      Ընտրել Ֆայլ
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>Տարբերակ (Version)</label>
-                      <input type="text" value={form.version} onChange={e => setForm(prev => ({ ...prev, version: e.target.value }))} style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.88rem" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>Թողարկման Ամսաթիվ</label>
-                      <input type="date" value={form.release_date || ""} onChange={e => setForm(prev => ({ ...prev, release_date: e.target.value }))} style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.88rem" }} />
-                    </div>
-                  </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>Կարճ Նկարագրություն (Հայերեն)</label>
-                      <textarea rows={3} value={form.short_desc_am || ""} onChange={e => setForm(prev => ({ ...prev, short_desc_am: e.target.value }))} style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.88rem", resize: "vertical" }} />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>Short Description (English)</label>
-                      <textarea rows={3} value={form.short_desc_en || ""} onChange={e => setForm(prev => ({ ...prev, short_desc_en: e.target.value }))} style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.88rem", resize: "vertical" }} />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Sub-tab 2: Media */}
-              {editorSubTab === "media" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            {/* Sub-tab 1: General (Contains Basic info, Host Apps if Plugin, OS Compatibility, and File Package Matrix) */}
+            {editorSubTab === "general" && (
+              <div className="admin-tab-transition" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
                   <div>
                     <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
-                      Գլխավոր Պատկեր (Cover)
+                      Անվանում (Հայերեն) *
                     </label>
-                    <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-                      {form.cover_image && (
-                        <div style={{ position: "relative", width: "140px", height: "90px", borderRadius: "8px", overflow: "hidden", border: "1px solid #cbd5e1" }}>
-                          <img src={form.cover_image} alt="Cover Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <input
+                      type="text"
+                      value={form.title_am}
+                      onChange={e => setForm(prev => ({ ...prev, title_am: e.target.value }))}
+                      style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.88rem" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
+                      Անվանում (English) *
+                    </label>
+                    <input
+                      type="text"
+                      value={form.title_en}
+                      onChange={e => setForm(prev => ({ ...prev, title_en: e.target.value }))}
+                      style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.88rem" }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
+                      Տեսակ *
+                    </label>
+                    <select
+                      value={form.app_type}
+                      onChange={e => setForm(prev => ({ ...prev, app_type: e.target.value as any }))}
+                      style={{ width: "100%", padding: "10px 12px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.85rem", fontWeight: 600 }}
+                    >
+                      <option value="plugin">Խրվակ (Plugin)</option>
+                      <option value="standalone">Հավելված (Standalone Application)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
+                      Կարգավիճակ
+                    </label>
+                    <select
+                      value={form.status}
+                      onChange={e => setForm(prev => ({ ...prev, status: e.target.value as any }))}
+                      style={{ width: "100%", padding: "10px 12px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.85rem" }}
+                    >
+                      <option value="published">Հրապարակված</option>
+                      <option value="draft">Սևագիր</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* If Plugin: Host Apps Selection */}
+                {form.app_type === 'plugin' && (
+                  <div style={{ background: "#f8fafc", padding: "18px", borderRadius: "12px", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.88rem", fontWeight: 700, color: "#0f172a" }}>
+                        Ծրագրեր (Host Applications), որոնց համար նախատեսված է Խրվակը *
+                      </label>
+                      <span style={{ fontSize: "0.78rem", color: "#64748b" }}>
+                        Ընտրեք մի քանի ծրագիր միաժամանակ:
+                      </span>
+                    </div>
+
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                      {SOFTWARE_PRESETS.map(sw => {
+                        const isSelected = (form.host_apps || []).includes(sw);
+                        return (
                           <button
+                            key={sw}
                             type="button"
-                            onClick={() => setForm(prev => ({ ...prev, cover_image: "" }))}
-                            style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.6)", border: "none", color: "#fff", borderRadius: "4px", padding: "2px 6px", cursor: "pointer", fontSize: "0.75rem" }}
+                            onClick={() => toggleHostApp(sw)}
+                            style={{
+                              padding: "6px 14px",
+                              background: isSelected ? "#0f172a" : "#ffffff",
+                              color: isSelected ? "#ffffff" : "#334155",
+                              border: `1px solid ${isSelected ? "#0f172a" : "#cbd5e1"}`,
+                              borderRadius: "20px",
+                              fontSize: "0.82rem",
+                              fontWeight: 600,
+                              cursor: "pointer"
+                            }}
                           >
-                            ✕
+                            {isSelected ? `✓ ${sw}` : `+ ${sw}`}
                           </button>
-                        </div>
-                      )}
+                        );
+                      })}
+                    </div>
+
+                    <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
+                      <input
+                        type="text"
+                        value={customSoftwareInput}
+                        onChange={e => setCustomSoftwareInput(e.target.value)}
+                        placeholder="Այլ ծրագրի անվանում..."
+                        style={{ flex: 1, padding: "8px 12px", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.82rem" }}
+                      />
                       <button
                         type="button"
-                        onClick={() => setMediaPickerConfig({
-                          isOpen: true,
-                          target: "cover",
-                          multiple: false,
-                          allowedTypes: ["image"],
-                          title: "Ընտրել Կազմը",
-                          currentValue: form.cover_image
-                        })}
-                        style={{ padding: "10px 18px", background: "#f8fafc", border: "1px dashed #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer" }}
+                        onClick={addCustomSoftware}
+                        style={{ padding: "8px 14px", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.82rem", fontWeight: 700, cursor: "pointer" }}
                       >
-                        {form.cover_image ? "Փոխել Կազմը" : "Ընտրել Մեդիա Գրադարանից"}
+                        Ավելացնել
                       </button>
                     </div>
                   </div>
+                )}
 
+                {/* OS Compatibility & Package Attachment Matrix */}
+                <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", padding: "20px", borderRadius: "12px", display: "flex", flexDirection: "column", gap: "16px" }}>
                   <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                    <label style={{ display: "block", fontSize: "0.88rem", fontWeight: 700, color: "#0f172a", marginBottom: "8px" }}>
+                      Աջակցվող Գործավար Համակարգեր (ԳՀ / OS Compatibility)
+                    </label>
+                    <div style={{ display: "flex", gap: "12px" }}>
+                      {[
+                        { id: 'windows', label: 'Windows' },
+                        { id: 'macos', label: 'macOS' },
+                        { id: 'linux', label: 'Linux' },
+                      ].map(osItem => {
+                        const isChecked = (form.supported_os || []).includes(osItem.id as any);
+                        return (
+                          <label
+                            key={osItem.id}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              padding: "9px 16px",
+                              background: isChecked ? "#f1f5f9" : "#ffffff",
+                              border: `1px solid ${isChecked ? "#0f172a" : "#cbd5e1"}`,
+                              borderRadius: "8px",
+                              cursor: "pointer",
+                              color: "#0f172a",
+                              fontWeight: 600,
+                              fontSize: "0.85rem"
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={e => {
+                                const curr = form.supported_os || [];
+                                setForm(prev => ({
+                                  ...prev,
+                                  supported_os: e.target.checked ? [...curr, osItem.id as any] : curr.filter(x => x !== osItem.id)
+                                }));
+                              }}
+                              style={{ accentColor: "#0f172a" }}
+                            />
+                            {osItem.label}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Matrix per selected OS */}
+                  {(form.supported_os || []).length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "6px" }}>
+                      <div style={{ fontWeight: 700, fontSize: "0.88rem", color: "#0f172a" }}>
+                        Ներբեռնման նիշքերի կցում ըստ ընտրված ԳՀ-ների և ծրագրերի
+                      </div>
+
+                      {(form.supported_os || []).map(osKey => {
+                        const osTitle = osKey === 'windows' ? 'Windows' : osKey === 'macos' ? 'macOS' : 'Linux';
+
+                        return (
+                          <div key={osKey} style={{ background: "#f8fafc", padding: "16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                            <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#0f172a", marginBottom: "12px", borderBottom: "1px solid #cbd5e1", paddingBottom: "4px" }}>
+                              {osTitle} Գործավար Համակարգ
+                            </div>
+
+                            {form.app_type === 'plugin' ? (
+                              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                                {(form.host_apps || ['FontLab']).map(sw => {
+                                  const currentUrl = getDownloadUrlFor(osKey, sw);
+                                  return (
+                                    <div key={sw} style={{ display: "flex", flexDirection: "column", gap: "6px", background: "#ffffff", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+                                      <div style={{ fontWeight: 700, fontSize: "0.82rem", color: "#334155" }}>
+                                        {sw} — Խրվակ {osTitle}-ի համար
+                                      </div>
+                                      <div style={{ display: "flex", gap: "10px" }}>
+                                        <input
+                                          type="text"
+                                          value={currentUrl}
+                                          onChange={e => setDownloadUrlFor(osKey, e.target.value, sw)}
+                                          placeholder={`https://... (${sw} plugin for ${osTitle})`}
+                                          style={{ flex: 1, padding: "8px 12px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.85rem" }}
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => setMediaPickerConfig({
+                                            isOpen: true,
+                                            target: "download_file",
+                                            targetOS: osKey,
+                                            targetHostApp: sw,
+                                            multiple: false,
+                                            title: `Ընտրել ${sw} (${osTitle}) Խրվակի Ֆայլը`,
+                                            currentValue: currentUrl
+                                          })}
+                                          style={{ padding: "8px 14px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}
+                                        >
+                                          Ընտրել Ֆայլ
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div style={{ display: "flex", flexDirection: "column", gap: "6px", background: "#ffffff", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+                                <div style={{ fontWeight: 700, fontSize: "0.82rem", color: "#334155" }}>
+                                  Հավելվածի տեղադրման ֆայլ {osTitle}-ի համար
+                                </div>
+                                <div style={{ display: "flex", gap: "10px" }}>
+                                  <input
+                                    type="text"
+                                    value={getDownloadUrlFor(osKey)}
+                                    onChange={e => setDownloadUrlFor(osKey, e.target.value)}
+                                    placeholder={`https://... (Installer package for ${osTitle})`}
+                                    style={{ flex: 1, padding: "8px 12px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.85rem" }}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setMediaPickerConfig({
+                                      isOpen: true,
+                                      target: "download_file",
+                                      targetOS: osKey,
+                                      multiple: false,
+                                      title: `Ընտրել ${osTitle} Տեղադրման Ֆայլը`,
+                                      currentValue: getDownloadUrlFor(osKey)
+                                    })}
+                                    style={{ padding: "8px 14px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}
+                                  >
+                                    Ընտրել Ֆայլ
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>Տարբերակ (Version)</label>
+                    <input type="text" value={form.version} onChange={e => setForm(prev => ({ ...prev, version: e.target.value }))} style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.88rem" }} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>Թողարկման Ամսաթիվ</label>
+                    <input type="date" value={form.release_date || ""} onChange={e => setForm(prev => ({ ...prev, release_date: e.target.value }))} style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.88rem" }} />
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>Կարճ Նկարագրություն (Հայերեն)</label>
+                    <textarea rows={3} value={form.short_desc_am || ""} onChange={e => setForm(prev => ({ ...prev, short_desc_am: e.target.value }))} style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.88rem", resize: "vertical" }} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>Short Description (English)</label>
+                    <textarea rows={3} value={form.short_desc_en || ""} onChange={e => setForm(prev => ({ ...prev, short_desc_en: e.target.value }))} style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.88rem", resize: "vertical" }} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Sub-tab 2: Media */}
+            {editorSubTab === "media" && (
+              <div className="admin-tab-transition" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
+                    Գլխավոր Պատկեր (Cover)
+                  </label>
+                  <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                    {form.cover_image && (
+                      <div style={{ position: "relative", width: "140px", height: "90px", borderRadius: "8px", overflow: "hidden", border: "1px solid #cbd5e1" }}>
+                        <img src={form.cover_image} alt="Cover Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        <button
+                          type="button"
+                          onClick={() => setForm(prev => ({ ...prev, cover_image: "" }))}
+                          style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.6)", border: "none", color: "#fff", borderRadius: "4px", padding: "2px 6px", cursor: "pointer", fontSize: "0.75rem" }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setMediaPickerConfig({
+                        isOpen: true,
+                        target: "cover",
+                        multiple: false,
+                        allowedTypes: ["image"],
+                        title: "Ընտրել Կազմը",
+                        currentValue: form.cover_image
+                      })}
+                      style={{ padding: "10px 18px", background: "#f8fafc", border: "1px dashed #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer" }}
+                    >
+                      {form.cover_image ? "Փոխել Կազմը" : "Ընտրել Մեդիա Գրադարանից"}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                    <div>
                       <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155" }}>
                         Պատկերասրահի Սքրինշոթեր ({form.gallery_images?.length || 0})
                       </label>
-                      <button
-                        type="button"
-                        onClick={() => setMediaPickerConfig({
-                          isOpen: true,
-                          target: "gallery",
-                          multiple: true,
-                          allowedTypes: ["image"],
-                          title: "Ավելացնել Պատկերներ",
-                          currentValue: form.gallery_images
-                        })}
-                        style={{ padding: "6px 14px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.8rem", fontWeight: 600, cursor: "pointer" }}
-                      >
-                        + Ավելացնել Պատկերներ
-                      </button>
+                      <span style={{ display: "block", fontSize: "0.74rem", color: "#64748b" }}>
+                        Կարող եք տեղափոխել դասավորությունը՝ քաշելով և գցելով պատկերները:
+                      </span>
                     </div>
-
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "12px" }}>
-                      {(form.gallery_images || []).map((imgUrl, i) => (
-                        <div key={i} style={{ position: "relative", height: "100px", borderRadius: "8px", overflow: "hidden", border: "1px solid #cbd5e1" }}>
-                          <img src={imgUrl} alt={`Screenshot ${i+1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                          <button
-                            type="button"
-                            onClick={() => setForm(prev => ({ ...prev, gallery_images: prev.gallery_images.filter((_, idx) => idx !== i) }))}
-                            style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.6)", border: "none", color: "#fff", borderRadius: "4px", padding: "2px 6px", cursor: "pointer", fontSize: "0.7rem" }}
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setMediaPickerConfig({
+                        isOpen: true,
+                        target: "gallery",
+                        multiple: true,
+                        allowedTypes: ["image"],
+                        title: "Ավելացնել Պատկերներ",
+                        currentValue: form.gallery_images
+                      })}
+                      style={{ padding: "6px 14px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.8rem", fontWeight: 600, cursor: "pointer" }}
+                    >
+                      + Ավելացնել Պատկերներ
+                    </button>
                   </div>
-                </div>
-              )}
 
-              {/* Sub-tab 3: Pricing & Repos */}
-              {editorSubTab === "downloads_repos" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", background: "#f8fafc", padding: "16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-                    <div>
-                      <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "0.88rem", fontWeight: 600, color: "#0f172a" }}>
-                        <input
-                          type="checkbox"
-                          checked={form.is_paid}
-                          onChange={e => setForm(prev => ({ ...prev, is_paid: e.target.checked }))}
-                          style={{ accentColor: "#0f172a" }}
-                        />
-                        Վճարովի Հավելված
-                      </label>
-                    </div>
-                    {form.is_paid && (
-                      <div style={{ display: "flex", gap: "10px" }}>
-                        <input
-                          type="number"
-                          value={form.price || ""}
-                          onChange={e => setForm(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
-                          placeholder="Գին"
-                          style={{ flex: 1, padding: "8px 12px", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.85rem" }}
-                        />
-                        <select
-                          value={form.currency || "USD"}
-                          onChange={e => setForm(prev => ({ ...prev, currency: e.target.value }))}
-                          style={{ width: "100px", padding: "8px", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.85rem" }}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "12px" }}>
+                    {(form.gallery_images || []).map((imgUrl, i) => {
+                      const isDragging = draggedGalleryIndex === i;
+                      const isOver = dragOverGalleryIndex === i && draggedGalleryIndex !== i;
+                      return (
+                        <div
+                          key={i}
+                          draggable
+                          onDragStart={(e) => {
+                            setDraggedGalleryIndex(i);
+                            e.dataTransfer.effectAllowed = "move";
+                            e.dataTransfer.setData("text/plain", `${i}`);
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = "move";
+                            if (dragOverGalleryIndex !== i) {
+                              setDragOverGalleryIndex(i);
+                            }
+                          }}
+                          onDragLeave={() => {
+                            if (dragOverGalleryIndex === i) {
+                              setDragOverGalleryIndex(null);
+                            }
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            if (draggedGalleryIndex !== null) {
+                              moveGalleryImage(draggedGalleryIndex, i);
+                            }
+                            setDraggedGalleryIndex(null);
+                            setDragOverGalleryIndex(null);
+                          }}
+                          onDragEnd={() => {
+                            setDraggedGalleryIndex(null);
+                            setDragOverGalleryIndex(null);
+                          }}
+                          style={{
+                            position: "relative",
+                            height: "100px",
+                            borderRadius: "8px",
+                            overflow: "hidden",
+                            border: isOver ? "2px dashed #0f172a" : "1px solid #cbd5e1",
+                            boxShadow: isOver ? "0 0 0 3px rgba(15,23,42,0.15)" : "none",
+                            transform: isDragging ? "scale(0.95)" : isOver ? "scale(1.03)" : "none",
+                            opacity: isDragging ? 0.4 : 1,
+                            transition: "all 0.15s ease",
+                            cursor: "grab",
+                            background: "#f1f5f9"
+                          }}
+                          title="Քաշեք տեղափոխելու համար"
                         >
-                          <option value="USD">USD</option>
-                          <option value="EUR">EUR</option>
-                          <option value="AMD">AMD</option>
-                        </select>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Multi-Repositories */}
-                  <div style={{ background: "#f8fafc", padding: "20px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: "0.92rem", color: "#0f172a" }}>
-                          Կոդային Շտեմարաններ (Repositories)
-                        </div>
-                        <div style={{ fontSize: "0.78rem", color: "#64748b" }}>
-                          Նշեք GitHub, GitLab, Bitbucket, Gitea հղումները:
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={addRepository}
-                        style={{ padding: "6px 14px", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.8rem", fontWeight: 700, cursor: "pointer" }}
-                      >
-                        + Ավելացնել Շտեմարան
-                      </button>
-                    </div>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                      {(form.repositories || []).map((repo, idx) => (
-                        <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                          <select
-                            value={repo.type}
-                            onChange={e => updateRepository(idx, "type", e.target.value)}
-                            style={{ width: "140px", padding: "9px 12px", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.85rem", fontWeight: 600 }}
-                          >
-                            <option value="github">GitHub</option>
-                            <option value="gitlab">GitLab</option>
-                            <option value="bitbucket">Bitbucket</option>
-                            <option value="gitea">Gitea</option>
-                            <option value="code">Git (Custom)</option>
-                          </select>
-                          <input
-                            type="text"
-                            value={repo.url}
-                            onChange={e => updateRepository(idx, "url", e.target.value)}
-                            placeholder="https://..."
-                            style={{ flex: 1, padding: "9px 12px", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.85rem" }}
-                          />
+                          <img src={imgUrl} alt={`Screenshot ${i+1}`} style={{ width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }} />
+                          <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(15,23,42,0.75)", color: "#ffffff", borderRadius: "4px", padding: "1px 6px", fontSize: "0.68rem", fontWeight: 700, pointerEvents: "none" }}>
+                            #{i + 1}
+                          </div>
                           <button
                             type="button"
-                            onClick={() => removeRepository(idx)}
-                            style={{ padding: "8px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "6px", color: "#dc2626", cursor: "pointer", fontSize: "0.85rem", fontWeight: 700 }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setForm(prev => ({ ...prev, gallery_images: prev.gallery_images.filter((_, idx) => idx !== i) }));
+                            }}
+                            style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.65)", border: "none", color: "#fff", borderRadius: "4px", padding: "2px 6px", cursor: "pointer", fontSize: "0.7rem", zIndex: 10 }}
+                            title="Հեռացնել"
                           >
                             ✕
                           </button>
                         </div>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Sub-tab 4: Markdown */}
-              {editorSubTab === "markdown" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-                    <textarea rows={14} value={form.description_md_am || ""} onChange={e => setForm(prev => ({ ...prev, description_md_am: e.target.value }))} placeholder="## Հայերեն Markdown..." style={{ width: "100%", padding: "14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontFamily: "monospace", fontSize: "0.88rem" }} />
-                    <div style={{ background: "#f8fafc", padding: "18px", borderRadius: "8px", border: "1px solid #e2e8f0", overflowY: "auto", maxHeight: "380px" }}>
-                      <MarkdownRenderer content={form.description_md_am || "*Դատարկ է*"} />
+            {/* Sub-tab 3: Pricing & Repos */}
+            {editorSubTab === "downloads_repos" && (
+              <div className="admin-tab-transition" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", background: "#f8fafc", padding: "16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                  <div>
+                    <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "0.88rem", fontWeight: 600, color: "#0f172a" }}>
+                      <input
+                        type="checkbox"
+                        checked={form.is_paid}
+                        onChange={e => setForm(prev => ({ ...prev, is_paid: e.target.checked }))}
+                        style={{ accentColor: "#0f172a" }}
+                      />
+                      Վճարովի Հավելված
+                    </label>
+                  </div>
+                  {form.is_paid && (
+                    <div style={{ display: "flex", gap: "10px" }}>
+                      <input
+                        type="number"
+                        value={form.price || ""}
+                        onChange={e => setForm(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                        placeholder="Գին"
+                        style={{ flex: 1, padding: "8px 12px", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.85rem" }}
+                      />
+                      <select
+                        value={form.currency || "USD"}
+                        onChange={e => setForm(prev => ({ ...prev, currency: e.target.value }))}
+                        style={{ width: "100px", padding: "8px", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.85rem" }}
+                      >
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="AMD">AMD</option>
+                      </select>
                     </div>
+                  )}
+                </div>
+
+                {/* Multi-Repositories */}
+                <div style={{ background: "#f8fafc", padding: "20px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: "0.92rem", color: "#0f172a" }}>
+                        Կոդային Շտեմարաններ (Repositories)
+                      </div>
+                      <div style={{ fontSize: "0.78rem", color: "#64748b" }}>
+                        Նշեք GitHub, GitLab, Bitbucket, Gitea հղումները:
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addRepository}
+                      style={{ padding: "6px 14px", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.8rem", fontWeight: 700, cursor: "pointer" }}
+                    >
+                      + Ավելացնել Շտեմարան
+                    </button>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    {(form.repositories || []).map((repo, idx) => (
+                      <div key={idx} style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                        <select
+                          value={repo.type}
+                          onChange={e => updateRepository(idx, "type", e.target.value)}
+                          style={{ width: "140px", padding: "9px 12px", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.85rem", fontWeight: 600 }}
+                        >
+                          <option value="github">GitHub</option>
+                          <option value="gitlab">GitLab</option>
+                          <option value="bitbucket">Bitbucket</option>
+                          <option value="gitea">Gitea</option>
+                          <option value="code">Git (Custom)</option>
+                        </select>
+                        <input
+                          type="text"
+                          value={repo.url}
+                          onChange={e => updateRepository(idx, "url", e.target.value)}
+                          placeholder="https://..."
+                          style={{ flex: 1, padding: "9px 12px", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.85rem" }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeRepository(idx)}
+                          style={{ padding: "8px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "6px", color: "#dc2626", cursor: "pointer", fontSize: "0.85rem", fontWeight: 700 }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+
+            {/* Sub-tab 4: Markdown */}
+            {editorSubTab === "markdown" && (
+              <div className="admin-tab-transition" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                  <textarea rows={14} value={form.description_md_am || ""} onChange={e => setForm(prev => ({ ...prev, description_md_am: e.target.value }))} placeholder="## Հայերեն Markdown..." style={{ width: "100%", padding: "14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontFamily: "monospace", fontSize: "0.88rem" }} />
+                  <div style={{ background: "#f8fafc", padding: "18px", borderRadius: "8px", border: "1px solid #e2e8f0", overflowY: "auto", maxHeight: "380px" }}>
+                    <MarkdownRenderer content={form.description_md_am || "*Դատարկ է*"} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
           {/* TAB 2: REAL ANALYTICS & METRICS */}
           {hubTab === "analytics" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <div className="admin-tab-transition" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               {/* KPI Cards based on REAL DATA */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
                 {[
@@ -2570,7 +2710,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                   boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
                 }}>
                   <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#0f172a", marginBottom: "16px" }}>
-                    ՕՀ Բաշխվածություն (Իրական Տվյալներ)
+                    ԳՀ Բաշխվածություն (Իրական Տվյալներ)
                   </div>
                   <div style={{ height: "180px" }}>
                     <ResponsiveContainer width="100%" height="100%">
@@ -2627,7 +2767,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
 
           {/* TAB 3: BUG REPORTS */}
           {hubTab === "reports" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div className="admin-tab-transition" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div style={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -2701,7 +2841,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                             </span>
                           </div>
                           <div style={{ fontSize: "0.78rem", color: "#64748b", marginTop: "2px" }}>
-                            Ուղարկող՝ {report.user_name} ({report.user_email}) • ՕՀ: {report.os || "Անհայտ"} • v{report.version || form.version}
+                            Ուղարկող՝ {report.user_name} ({report.user_email}) • ԳՀ: {report.os || "Անհայտ"} • v{report.version || form.version}
                           </div>
                         </div>
 
@@ -2808,7 +2948,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
 
           {/* TAB 4: REVIEWS */}
           {hubTab === "reviews" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div className="admin-tab-transition" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div style={{
                 background: "#ffffff",
                 padding: "16px 20px",
@@ -2928,7 +3068,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
 
           {/* TAB 5: REAL DOWNLOAD LOGS */}
           {hubTab === "logs" && (
-            <div style={{
+            <div className="admin-tab-transition" style={{
               background: "#ffffff",
               border: "1px solid #e2e8f0",
               borderRadius: "14px",
@@ -2956,7 +3096,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                     <tr style={{ background: "#f8fafc", borderBottom: "1px solid #e2e8f0", color: "#64748b" }}>
                       <th style={{ padding: "10px 14px" }}>Ամսաթիվ / Ժամ</th>
                       <th style={{ padding: "10px 14px" }}>IP Հասցե</th>
-                      <th style={{ padding: "10px 14px" }}>Օպերացիոն Համակարգ</th>
+                      <th style={{ padding: "10px 14px" }}>Գործավար Համակարգ</th>
                       <th style={{ padding: "10px 14px" }}>Ֆայլ</th>
                       <th style={{ padding: "10px 14px" }}>Կարգավիճակ</th>
                     </tr>

@@ -64,7 +64,7 @@ function CodeExample({ title, code, description }: CodeExampleProps) {
 
 export default function HDesignDocsPage() {
   return (
-    <main className="shell" style={{ marginTop: "140px", minHeight: "80vh" }}>
+    <main className="shell" style={{ paddingTop: "200px", minHeight: "80vh" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "48px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <Link href="/hdesign" style={{ color: "var(--text)", textDecoration: "none", opacity: 0.7 }}>HDesign</Link>

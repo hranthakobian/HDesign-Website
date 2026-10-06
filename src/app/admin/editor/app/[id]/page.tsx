@@ -288,7 +288,7 @@ export default function AppDedicatedEditorPage() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #e2e8f0", paddingBottom: "16px" }}>
           <div>
             <Link href="/admin?tab=apps" style={{ textDecoration: "none" }}>
-              <hd-button data-height="34px" data-thickness="3px">← Հետ դեպի Վարիչ</hd-button>
+              <hd-button data-height="34px" data-thickness="3px">← Հետ</hd-button>
             </Link>
             <h2 style={{ fontSize: "1.25rem", fontWeight: 800, marginTop: "12px", margin: 0 }}>
               {isNew ? "Նոր Հավելվածի Ստեղծման Գործիք" : `Խմբագրել՝ ${form.title_am || form.title_en}`}
@@ -353,7 +353,7 @@ export default function AppDedicatedEditorPage() {
         {/* OS & Package Matrix */}
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           <label style={{ display: "block", fontSize: "0.88rem", fontWeight: 700, color: "#0f172a" }}>
-            Աջակցվող Օպերացիոն Համակարգեր (OS Compatibility)
+            Աջակցվող Գործավար Համակարգեր (ԳՀ / OS Compatibility)
           </label>
           <div style={{ display: "flex", gap: "12px" }}>
             {['windows', 'macos', 'linux'].map(osKey => {
@@ -374,7 +374,7 @@ export default function AppDedicatedEditorPage() {
             const osTitle = osKey === 'windows' ? 'Windows' : osKey === 'macos' ? 'macOS' : 'Linux';
             return (
               <div key={osKey} style={{ background: "#f8fafc", padding: "18px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-                <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#0f172a", marginBottom: "12px" }}>{osTitle} Օպերացիոն Համակարգ</div>
+                <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#0f172a", marginBottom: "12px" }}>{osTitle} Գործավար Համակարգ</div>
                 {form.app_type === 'plugin' ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                     {(form.host_apps || ['FontLab']).map(sw => {

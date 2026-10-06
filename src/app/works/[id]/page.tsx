@@ -316,7 +316,7 @@ export default function BrandingDetailPage() {
 
   if (loading) {
     return (
-      <main className="shell" style={{ marginTop: "160px", minHeight: "75vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <main className="shell" style={{ paddingTop: "200px", minHeight: "75vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <LoadingAnimation fullPage={false} message={loadingMessage || (locale === "en" ? "Loading details..." : "Բեռնվում է...")} />
       </main>
     );
@@ -324,7 +324,7 @@ export default function BrandingDetailPage() {
 
   if (!work) {
     return (
-      <main className="shell" style={{ marginTop: "160px", minHeight: "70vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "20px" }}>
+      <main className="shell" style={{ paddingTop: "200px", minHeight: "70vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "20px" }}>
         <h2 style={{ fontSize: "2rem", fontWeight: "800", color: "var(--text)" }}>
           {t('works_detail', 'not_found', 'Աշխատանքը չի գտնվել')}
         </h2>

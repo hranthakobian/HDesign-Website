@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function HDesignGeneralPage() {
   return (
-    <main className="shell" style={{ marginTop: "140px", minHeight: "80vh" }}>
+    <main className="shell" style={{ paddingTop: "200px", minHeight: "80vh" }}>
       {/* Hero header */}
       <div 
         className="about-section-shell-width" 

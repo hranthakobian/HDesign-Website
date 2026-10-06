@@ -317,7 +317,7 @@ export default function AppDetailPage() {
 
   if (loading) {
     return (
-      <main className="shell" style={{ marginTop: "160px", minHeight: "80vh" }}>
+      <main className="shell" style={{ paddingTop: "200px", minHeight: "80vh" }}>
         <LoadingAnimation message={locale === "hy" ? "Բեռնվում է..." : "Loading..."} fullPage={false} />
       </main>
     );
@@ -325,7 +325,7 @@ export default function AppDetailPage() {
 
   if (error || !app) {
     return (
-      <main className="shell" style={{ marginTop: "160px", minHeight: "70vh", textAlign: "center" }}>
+      <main className="shell" style={{ paddingTop: "200px", minHeight: "70vh", textAlign: "center" }}>
         <div style={{ padding: "60px 20px", background: "var(--panel)", borderRadius: "20px", border: "1px solid var(--panel-border)" }}>
           <h2 style={{ color: "var(--text)", marginBottom: "12px" }}>
             {locale === "hy" ? "Հավելվածը չի գտնվել" : "App Not Found"}
@@ -358,7 +358,7 @@ export default function AppDetailPage() {
   const ratingStars = Array.from({ length: 5 }, (_, i) => i + 1);
 
   return (
-    <main className="shell apps-page-container" style={{ marginTop: "130px", minHeight: "85vh", paddingBottom: "100px" }}>
+    <main className="shell apps-page-container" style={{ paddingTop: "200px", minHeight: "85vh", paddingBottom: "100px" }}>
       {/* Breadcrumb Navigation */}
       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "28px", fontSize: "0.85rem", color: "var(--muted)" }}>
         <Link href="/" style={{ color: "inherit", textDecoration: "none" }}>HDesign</Link>

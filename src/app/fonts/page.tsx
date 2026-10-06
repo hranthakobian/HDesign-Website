@@ -126,7 +126,7 @@ export default function FontsListingPage() {
   const activePreviewText = customText || t("fonts", "preview_text_default", "Հրանտ Հակոբյան Դիզայն 2026");
 
   return (
-    <main className="shell" style={{ marginTop: "140px", minHeight: "85vh", paddingBottom: "80px" }}>
+    <main className="shell" style={{ paddingTop: "200px", minHeight: "85vh", paddingBottom: "80px" }}>
       {/* Dynamic Font Face Loading for listing previews */}
       {fonts.map((f) => (
         <style

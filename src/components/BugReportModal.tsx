@@ -416,7 +416,7 @@ export default function BugReportModal({
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
                 <div>
                   <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, marginBottom: "6px", color: "var(--text)" }}>
-                    {locale === "hy" ? "Օպերացիոն Համակարգ" : "Operating System"}
+                    {locale === "hy" ? "Գործավար Համակարգ" : "Operating System"}
                   </label>
                   <select
                     value={os}
