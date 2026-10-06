@@ -367,7 +367,7 @@ export default function AppDownloadModal({
                             data-color="var(--accent)"
                             data-text-color="#ffffff"
                           >
-                            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "0 12px", fontWeight: 700 }}>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "0 20px", fontWeight: 700 }}>
                               <i className="hd-icon hd-icon-download" style={{ fontSize: "0.95rem" }} />
                               <span>{locale === "hy" ? "Ներբեռնել" : "Download"}</span>
                             </span>
