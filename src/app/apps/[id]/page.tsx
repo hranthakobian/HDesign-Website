@@ -10,6 +10,7 @@ import LoadingAnimation from "@/components/LoadingAnimation";
 import { HDesignStars } from "@/components/RatingSystem";
 import BugReportModal from "@/components/BugReportModal";
 import AppDownloadModal, { AppDownloadOption } from "@/components/AppDownloadModal";
+import KofiModal from "@/components/KofiModal";
 import SoftwareIcon from "@/components/SoftwareIcon";
 import SoftwareTooltip from "@/components/SoftwareTooltip";
 
@@ -72,6 +73,7 @@ export default function AppDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isBugModalOpen, setIsBugModalOpen] = useState(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [isKofiModalOpen, setIsKofiModalOpen] = useState(false);
 
   const supportedOSList = useMemo(() => {
     if (!app) return [];
@@ -1181,6 +1183,24 @@ export default function AppDetailPage() {
               boxShadow: "var(--shadow)"
             }}
           >
+            {/* Ko-fi Support Button (Above Specifications Title) */}
+            <div style={{ marginBottom: "16px" }} onClick={() => setIsKofiModalOpen(true)}>
+              <hd-button
+                suppressHydrationWarning
+                data-width="100%"
+                data-height="44px"
+                data-thickness="2.5px"
+                data-font-size="0.92rem"
+                data-color="#F4EFE7"
+                data-text-color="#192025"
+                style={{ cursor: "pointer", width: "100%", display: "block" }}
+              >
+                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", lineHeight: 1, textAlign: "center", fontWeight: 800 }}>
+                  <span>{locale === "hy" ? "Տուր մի բաժակ սուրճ" : "Buy me a coffee"}</span>
+                </span>
+              </hd-button>
+            </div>
+
             {/* Header with Title and Sticky CTA Button */}
             <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "20px" }}>
               <h3 style={{ fontSize: "1.15rem", fontWeight: 800, color: "var(--text)", margin: 0 }}>
@@ -1483,6 +1503,12 @@ export default function AppDetailPage() {
           }}
         />
       )}
+
+      {/* Ko-fi Support Modal */}
+      <KofiModal
+        isOpen={isKofiModalOpen}
+        onClose={() => setIsKofiModalOpen(false)}
+      />
     </main>
   );
 }

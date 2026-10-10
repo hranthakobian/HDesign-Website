@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import { fetchSettingsFromSupabase, saveSettingsToSupabase } from './settingsSync';
 
 const hyIniContent = `[common]
@@ -851,14 +852,75 @@ function applyColorToElement(element: HTMLElement, colorStr: string | null) {
   }
 }
 
+export function updateUrlLocale(targetLocale: Locale) {
+  if (typeof window === 'undefined') return;
+  try {
+    const url = new URL(window.location.href);
+    const currentLang = url.searchParams.get('lang');
+    if (targetLocale === 'en') {
+      if (currentLang !== 'en') {
+        url.searchParams.set('lang', 'en');
+        const newSearch = url.searchParams.toString();
+        const newUrl = url.pathname + (newSearch ? `?${newSearch}` : '') + url.hash;
+        window.history.replaceState(window.history.state, '', newUrl);
+      }
+    } else {
+      if (url.searchParams.has('lang')) {
+        url.searchParams.delete('lang');
+        const newSearch = url.searchParams.toString();
+        const newUrl = url.pathname + (newSearch ? `?${newSearch}` : '') + url.hash;
+        window.history.replaceState(window.history.state, '', newUrl);
+      }
+    }
+  } catch (e) {
+    console.error('Failed to update URL locale:', e);
+  }
+}
+
 export function I18nProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const [locale, setLocaleState] = useState<Locale>('hy'); // Default to Armenian
   const [mounted, setMounted] = useState(false);
 
+  // Sync language with URL query string and browser history on popstate
   useEffect(() => {
-    const saved = localStorage.getItem('hdesign_locale') as Locale;
-    if (saved === 'en' || saved === 'hy') {
-      setLocaleState(saved);
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlLang = params.get('lang')?.toLowerCase();
+      if (urlLang === 'en') {
+        setLocaleState('en');
+        localStorage.setItem('hdesign_locale', 'en');
+      } else {
+        setLocaleState('hy');
+        localStorage.setItem('hdesign_locale', 'hy');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
+    let initialLang: Locale = 'hy';
+    const params = new URLSearchParams(window.location.search);
+    const urlLang = params.get('lang')?.toLowerCase();
+
+    if (urlLang === 'en') {
+      initialLang = 'en';
+      setLocaleState('en');
+      localStorage.setItem('hdesign_locale', 'en');
+    } else if (urlLang === 'hy' || urlLang === 'am') {
+      initialLang = 'hy';
+      setLocaleState('hy');
+      localStorage.setItem('hdesign_locale', 'hy');
+      updateUrlLocale('hy');
+    } else {
+      const saved = localStorage.getItem('hdesign_locale') as Locale;
+      if (saved === 'en' || saved === 'hy') {
+        initialLang = saved;
+        setLocaleState(saved);
+        updateUrlLocale(saved);
+      }
     }
 
     const syncTranslations = async () => {
@@ -889,7 +951,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
     const syncFromSupabase = async () => {
       let theme = 'light';
-      let language: Locale = saved || 'hy';
+      let language: Locale = initialLang;
       
       try {
         const remoteSettings = await fetchSettingsFromSupabase();
@@ -902,7 +964,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
           theme = localStorage.getItem('hdesign-theme') || 'light';
           const localLang = localStorage.getItem('hdesign_locale');
           if (localLang === 'en' || localLang === 'hy') {
-            language = localLang;
+            language = localLang as Locale;
           }
         }
       } catch (err) {
@@ -910,15 +972,21 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         theme = localStorage.getItem('hdesign-theme') || 'light';
         const localLang = localStorage.getItem('hdesign_locale');
         if (localLang === 'en' || localLang === 'hy') {
-          language = localLang;
+          language = localLang as Locale;
         }
       }
 
+      // If URL explicitly had lang parameter, preserve the URL's preference
+      if (urlLang === 'en') {
+        language = 'en';
+      } else if (urlLang === 'hy' || urlLang === 'am') {
+        language = 'hy';
+      }
+
       if (language === 'en' || language === 'hy') {
-        if (language !== saved) {
-          setLocaleState(language as Locale);
-          localStorage.setItem('hdesign_locale', language);
-        }
+        setLocaleState(language);
+        localStorage.setItem('hdesign_locale', language);
+        updateUrlLocale(language);
       }
 
       if (theme === 'light' || theme === 'dark' || theme === 'green') {
@@ -1007,10 +1075,18 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     return () => observer.disconnect();
   }, []);
 
+  // Whenever pathname or locale changes, ensure URL query reflects locale state
+  useEffect(() => {
+    if (mounted) {
+      updateUrlLocale(locale);
+    }
+  }, [pathname, locale, mounted]);
+
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale);
     if (typeof window !== 'undefined') {
       localStorage.setItem('hdesign_locale', newLocale);
+      updateUrlLocale(newLocale);
       const currentTheme = localStorage.getItem('hdesign-theme') || 'light';
       saveSettingsToSupabase(currentTheme, newLocale);
     }

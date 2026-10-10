@@ -345,6 +345,10 @@ hd-button,
   --wrapper-padding: 0 70px !important;
   padding-left: 70px !important;
   padding-right: 70px !important;
+
+  > span {
+    height: 100%;
+  }
 }
 
 button:not(.no-default-btn-style) {
