@@ -13,6 +13,7 @@ import AppDownloadModal, { AppDownloadOption } from "@/components/AppDownloadMod
 import KofiModal from "@/components/KofiModal";
 import SoftwareIcon from "@/components/SoftwareIcon";
 import SoftwareTooltip from "@/components/SoftwareTooltip";
+import { formatLanguageName } from "@/lib/languages";
 
 type Review = {
   id: string;
@@ -50,6 +51,7 @@ type AppDetail = {
   cover_image?: string;
   gallery_images: string[];
   languages?: string[];
+  design_system?: string;
   version: string;
   release_date: string;
   downloads_count?: number;
@@ -529,7 +531,38 @@ export default function AppDetailPage() {
                     <line x1="2" y1="12" x2="22" y2="12" />
                     <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
                   </svg>
-                  <span style={{ fontWeight: 600 }}>{app.languages.join(", ")}</span>
+                  <span style={{ fontWeight: 600 }}>
+                    {app.languages.length > 1
+                      ? (locale === "hy" ? "Բազմալեզու" : "Multilingual")
+                      : formatLanguageName(app.languages[0], locale)}
+                  </span>
+                </div>
+              )}
+
+              {/* Design System Badge */}
+              {app.design_system && (
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    background: "var(--bg)",
+                    padding: "6px 14px",
+                    borderRadius: "30px",
+                    border: "1px solid var(--panel-border)",
+                    fontSize: "0.8rem",
+                    color: "var(--text)"
+                  }}
+                  title={locale === "hy" ? "Դիզայնի համակարգ" : "Design System"}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+                    <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+                    <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+                    <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+                    <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z" />
+                  </svg>
+                  <span style={{ fontWeight: 600 }}>{app.design_system}</span>
                 </div>
               )}
 
@@ -1397,9 +1430,9 @@ export default function AppDetailPage() {
               </div>
 
               {app.languages && app.languages.length > 0 && (
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px dashed var(--panel-border)", paddingBottom: "10px" }}>
-                  <span style={{ color: "var(--muted)" }}>{locale === "hy" ? "Լեզուներ" : "Languages"}</span>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "flex-end" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px dashed var(--panel-border)", paddingBottom: "10px", gap: "10px" }}>
+                  <span style={{ color: "var(--muted)", flexShrink: 0, marginTop: "2px" }}>{locale === "hy" ? "Լեզուներ" : "Languages"}</span>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "flex-end", maxWidth: "70%" }}>
                     {app.languages.map((lang, idx) => (
                       <span
                         key={idx}
@@ -1413,10 +1446,17 @@ export default function AppDetailPage() {
                           color: "var(--text)"
                         }}
                       >
-                        {lang}
+                        {formatLanguageName(lang, locale)}
                       </span>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {app.design_system && (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px dashed var(--panel-border)", paddingBottom: "10px" }}>
+                  <span style={{ color: "var(--muted)" }}>{locale === "hy" ? "Դիզայնի համակարգ" : "Design System"}</span>
+                  <span style={{ fontWeight: 700, color: "var(--text)" }}>{app.design_system}</span>
                 </div>
               )}
 

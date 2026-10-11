@@ -7,6 +7,8 @@ import LoadingAnimation from "@/components/LoadingAnimation";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import MediaPickerModal from "@/components/MediaPickerModal";
 import SoftwareIcon from "@/components/SoftwareIcon";
+import AppLanguagesPicker from "@/components/AppLanguagesPicker";
+import AppDesignSystemPicker from "@/components/AppDesignSystemPicker";
 import { MediaFileType } from "@/lib/mediaTypes";
 import { prefetchMediaLibrary } from "@/lib/mediaCache";
 
@@ -53,6 +55,7 @@ type AppItem = {
   cover_image?: string;
   gallery_images: string[];
   languages?: string[];
+  design_system?: string;
   version: string;
   release_date: string;
   downloads_count?: number;
@@ -132,6 +135,7 @@ export default function AppDedicatedEditorPage() {
     cover_image: "",
     gallery_images: [],
     languages: ["am", "en"],
+    design_system: "",
     version: "1.0.0",
     release_date: new Date().toISOString().split("T")[0],
     downloads_count: 0,
@@ -381,63 +385,37 @@ export default function AppDedicatedEditorPage() {
             </span>
           </div>
 
-          <div>
-            <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
-              Աջակցվող Լեզուներ
-            </label>
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", paddingTop: "4px" }}>
-              {[
-                { id: "am", label: "Հայերեն" },
-                { id: "en", label: "English" },
-                { id: "ru", label: "Русский" },
-                { id: "fr", label: "Français" },
-                { id: "de", label: "Deutsch" },
-              ].map(l => {
-                const isSelected = (form.languages || []).includes(l.id) || (form.languages || []).includes(l.label);
-                return (
-                  <button
-                    key={l.id}
-                    type="button"
-                    onClick={() => {
-                      const current = form.languages || [];
-                      const exists = current.includes(l.id) || current.includes(l.label);
-                      const next = exists ? current.filter(x => x !== l.id && x !== l.label) : [...current, l.id];
-                      setForm(prev => ({ ...prev, languages: next }));
-                    }}
-                    style={{
-                      padding: "6px 14px",
-                      background: isSelected ? "#0f172a" : "#ffffff",
-                      color: isSelected ? "#ffffff" : "#334155",
-                      border: `1px solid ${isSelected ? "#0f172a" : "#cbd5e1"}`,
-                      borderRadius: "20px",
-                      fontSize: "0.8rem",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      transition: "all 0.15s ease"
-                    }}
-                  >
-                    {isSelected ? `✓ ${l.label}` : `+ ${l.label}`}
-                  </button>
-                );
-              })}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>Տեսակ *</label>
+              <select value={form.app_type} onChange={e => setForm(prev => ({ ...prev, app_type: e.target.value as any }))} style={{ width: "100%", padding: "10px 12px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontWeight: 600 }}>
+                <option value="plugin">Խրվակ (Plugin)</option>
+                <option value="standalone">Հավելված (Standalone Application)</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>Կարգավիճակ</label>
+              <select value={form.status} onChange={e => setForm(prev => ({ ...prev, status: e.target.value as any }))} style={{ width: "100%", padding: "10px 12px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a" }}>
+                <option value="published">Հրապարակված</option>
+                <option value="draft">Սևագիր</option>
+              </select>
             </div>
           </div>
         </div>
 
+        {/* Languages and Design System */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
           <div>
-            <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>Տեսակ *</label>
-            <select value={form.app_type} onChange={e => setForm(prev => ({ ...prev, app_type: e.target.value as any }))} style={{ width: "100%", padding: "10px 12px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontWeight: 600 }}>
-              <option value="plugin">Խրվակ (Plugin)</option>
-              <option value="standalone">Հավելված (Standalone Application)</option>
-            </select>
+            <AppLanguagesPicker
+              languages={form.languages || []}
+              onChange={(langs) => setForm(prev => ({ ...prev, languages: langs }))}
+            />
           </div>
           <div>
-            <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>Կարգավիճակ</label>
-            <select value={form.status} onChange={e => setForm(prev => ({ ...prev, status: e.target.value as any }))} style={{ width: "100%", padding: "10px 12px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a" }}>
-              <option value="published">Հրապարակված</option>
-              <option value="draft">Սևագիր</option>
-            </select>
+            <AppDesignSystemPicker
+              value={form.design_system || ""}
+              onChange={(val) => setForm(prev => ({ ...prev, design_system: val }))}
+            />
           </div>
         </div>
 

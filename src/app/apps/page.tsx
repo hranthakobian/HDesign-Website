@@ -7,6 +7,7 @@ import LoadingAnimation from "@/components/LoadingAnimation";
 import { SingleHDesignStar } from "@/components/RatingSystem";
 import SoftwareIcon from "@/components/SoftwareIcon";
 import SoftwareTooltip from "@/components/SoftwareTooltip";
+import { formatLanguageName } from "@/lib/languages";
 
 export type AppData = {
   id: string;
@@ -35,6 +36,7 @@ export type AppData = {
   cover_image?: string;
   gallery_images: string[];
   languages?: string[];
+  design_system?: string;
   version: string;
   release_date: string;
   downloads_count?: number;
@@ -749,22 +751,53 @@ export default function AppsListingPage() {
                   {/* Languages Tags */}
                   {app.languages && app.languages.length > 0 && (
                     <div style={{ display: "flex", gap: "5px", flexWrap: "wrap", marginBottom: "14px" }}>
-                      {app.languages.map((lang, idx) => (
-                        <span
-                          key={idx}
-                          style={{
-                            fontSize: "0.72rem",
-                            fontWeight: 600,
-                            padding: "2px 7px",
-                            borderRadius: "5px",
-                            background: "var(--bg)",
-                            border: "1px solid var(--panel-border)",
-                            color: "var(--muted)"
-                          }}
-                        >
-                          {lang}
-                        </span>
-                      ))}
+                      {app.languages.length > 2 ? (
+                        <>
+                          <span
+                            style={{
+                              fontSize: "0.72rem",
+                              fontWeight: 700,
+                              padding: "2px 7px",
+                              borderRadius: "5px",
+                              background: "rgba(74, 137, 124, 0.12)",
+                              border: "1px solid rgba(74, 137, 124, 0.3)",
+                              color: "var(--accent)"
+                            }}
+                          >
+                            {locale === "hy" ? "Բազմալեզու" : "Multilingual"}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "0.72rem",
+                              fontWeight: 600,
+                              padding: "2px 7px",
+                              borderRadius: "5px",
+                              background: "var(--bg)",
+                              border: "1px solid var(--panel-border)",
+                              color: "var(--muted)"
+                            }}
+                          >
+                            +{app.languages.length}
+                          </span>
+                        </>
+                      ) : (
+                        app.languages.map((lang, idx) => (
+                          <span
+                            key={idx}
+                            style={{
+                              fontSize: "0.72rem",
+                              fontWeight: 600,
+                              padding: "2px 7px",
+                              borderRadius: "5px",
+                              background: "var(--bg)",
+                              border: "1px solid var(--panel-border)",
+                              color: "var(--muted)"
+                            }}
+                          >
+                            {formatLanguageName(lang, locale)}
+                          </span>
+                        ))
+                      )}
                     </div>
                   )}
 
