@@ -540,7 +540,7 @@ export default function AppDetailPage() {
               )}
 
               {/* Design System Badge */}
-              {app.design_system && (
+              {(app.design_system || "HDesign") && (
                 <div
                   style={{
                     display: "inline-flex",
@@ -562,7 +562,7 @@ export default function AppDetailPage() {
                     <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
                     <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C22 6.5 17.5 2 12 2z" />
                   </svg>
-                  <span style={{ fontWeight: 600 }}>{app.design_system}</span>
+                  <span style={{ fontWeight: 600 }}>{app.design_system || "HDesign"}</span>
                 </div>
               )}
 
@@ -1229,7 +1229,7 @@ export default function AppDetailPage() {
                 style={{ cursor: "pointer", width: "100%", height: "44px", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
               >
                 <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "100%", height: "44px", lineHeight: 1, textAlign: "center", fontWeight: 800 }}>
-                  <span>{locale === "hy" ? "Տուր մի բաժակ սուրճ" : "Buy me a coffee"}</span>
+                  <span>{locale === "hy" ? "Պատիվ տուր ինձ սուրճ" : "Buy me a coffee"}</span>
                 </span>
               </hd-button>
             </div>
@@ -1344,7 +1344,7 @@ export default function AppDetailPage() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: "16px", fontSize: "0.9rem" }}>
               <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px dashed var(--panel-border)", paddingBottom: "10px" }}>
-                <span style={{ color: "var(--muted)" }}>{locale === "hy" ? "Տարբերակ (Version)" : "Version"}</span>
+                <span style={{ color: "var(--muted)" }}>{locale === "hy" ? "Վարկած" : "Version"}</span>
                 <span style={{ fontWeight: 700, color: "var(--text)" }}>{app.version}</span>
               </div>
 
@@ -1453,12 +1453,10 @@ export default function AppDetailPage() {
                 </div>
               )}
 
-              {app.design_system && (
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px dashed var(--panel-border)", paddingBottom: "10px" }}>
-                  <span style={{ color: "var(--muted)" }}>{locale === "hy" ? "Դիզայնի համակարգ" : "Design System"}</span>
-                  <span style={{ fontWeight: 700, color: "var(--text)" }}>{app.design_system}</span>
-                </div>
-              )}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px dashed var(--panel-border)", paddingBottom: "10px" }}>
+                <span style={{ color: "var(--muted)" }}>{locale === "hy" ? "Դիզայնի համակարգ" : "Design System"}</span>
+                <span style={{ fontWeight: 700, color: "var(--text)" }}>{app.design_system || "HDesign"}</span>
+              </div>
 
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "var(--muted)" }}>{locale === "hy" ? "Լիցենզիա" : "License"}</span>

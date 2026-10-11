@@ -798,6 +798,27 @@ export default function AppsListingPage() {
                           </span>
                         ))
                       )}
+
+                      {/* Design System Tag */}
+                      {(app.design_system || "HDesign") && (
+                        <span
+                          style={{
+                            fontSize: "0.72rem",
+                            fontWeight: 600,
+                            padding: "2px 7px",
+                            borderRadius: "5px",
+                            background: "var(--bg)",
+                            border: "1px solid var(--panel-border)",
+                            color: "var(--muted)",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "4px"
+                          }}
+                          title={locale === "hy" ? "Դիզայնի համակարգ" : "Design System"}
+                        >
+                          🎨 {app.design_system || "HDesign"}
+                        </span>
+                      )}
                     </div>
                   )}
 

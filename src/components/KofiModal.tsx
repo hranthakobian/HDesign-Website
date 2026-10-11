@@ -104,7 +104,7 @@ export default function KofiModal({ isOpen, onClose }: KofiModalProps) {
         >
           <div style={{ display: "flex", flexDirection: "column" }}>
             <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "var(--text)", lineHeight: 1.2 }}>
-              {locale === "hy" ? "Տուր մի բաժակ սուրճ" : "Buy me a coffee"}
+              {locale === "hy" ? "Պատիվ տուր ինձ սուրճ" : "Buy me a coffee"}
             </h3>
             <p style={{ margin: "3px 0 0 0", fontSize: "0.82rem", color: "var(--muted)" }}>
               {locale === "hy" ? "Հրանտ Հակոբյան" : "Hrant Hakobyan"}

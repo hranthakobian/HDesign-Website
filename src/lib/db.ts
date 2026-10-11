@@ -1595,7 +1595,7 @@ export async function getApps(): Promise<AppItem[]> {
               : (typeof x.languages === 'string'
                   ? (x.languages.startsWith('[') ? JSON.parse(x.languages || '[]') : x.languages.split(',').map((s: string) => s.trim()).filter(Boolean))
                   : ['Հայերեն', 'English']),
-            design_system: x.design_system || '',
+            design_system: x.design_system || 'HDesign',
             is_draft: isDraft,
             status: isDraft ? 'draft' : 'published'
           };
@@ -1653,7 +1653,7 @@ export async function getApps(): Promise<AppItem[]> {
       downloads: parsedDownloads,
       supported_os: Array.isArray(x.supported_os) ? x.supported_os : [],
       languages: Array.isArray(x.languages) ? x.languages : ['Հայերեն', 'English'],
-      design_system: x.design_system || '',
+      design_system: x.design_system || 'HDesign',
       is_draft: isDraft,
       status: isDraft ? 'draft' : 'published'
     };
@@ -1729,7 +1729,7 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
     repository_type: finalRepoType,
     repositories: repositoriesList.length > 0 ? repositoriesList : (finalRepoUrl ? [{ type: finalRepoType, url: finalRepoUrl }] : []),
     languages: languagesList.length > 0 ? languagesList : ['Հայերեն'],
-    design_system: (app.design_system && typeof app.design_system === 'string') ? app.design_system.trim() : '',
+    design_system: (app.design_system && typeof app.design_system === 'string' && app.design_system.trim()) ? app.design_system.trim() : 'HDesign',
     downloads: downloadsList,
     supported_os: supportedOsList,
     is_draft: isDraft,
