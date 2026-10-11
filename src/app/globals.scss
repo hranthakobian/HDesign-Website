@@ -345,10 +345,6 @@ hd-button,
   --wrapper-padding: 0 70px !important;
   padding-left: 70px !important;
   padding-right: 70px !important;
-
-  > span {
-    height: 100%;
-  }
 }
 
 button:not(.no-default-btn-style) {
@@ -356,6 +352,12 @@ button:not(.no-default-btn-style) {
   padding-right: 105px;
   font-size: 12pt;
   font-weight: 600;
+}
+
+/* Apps Page Shell Padding Top (150px for all shells) */
+.shell.apps-page-container,
+.apps-page-container {
+  padding-top: 150px !important;
 }
 
 /* Apps Page Specific Button Padding (40px) */

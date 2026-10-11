@@ -319,7 +319,7 @@ export default function AppDetailPage() {
 
   if (loading) {
     return (
-      <main className="shell" style={{ paddingTop: "200px", minHeight: "80vh" }}>
+      <main className="shell" style={{ paddingTop: "150px", minHeight: "80vh" }}>
         <LoadingAnimation message={locale === "hy" ? "Բեռնվում է..." : "Loading..."} fullPage={false} />
       </main>
     );
@@ -327,7 +327,7 @@ export default function AppDetailPage() {
 
   if (error || !app) {
     return (
-      <main className="shell" style={{ paddingTop: "200px", minHeight: "70vh", textAlign: "center" }}>
+      <main className="shell" style={{ paddingTop: "150px", minHeight: "70vh", textAlign: "center" }}>
         <div style={{ padding: "60px 20px", background: "var(--panel)", borderRadius: "20px", border: "1px solid var(--panel-border)" }}>
           <h2 style={{ color: "var(--text)", marginBottom: "12px" }}>
             {locale === "hy" ? "Հավելվածը չի գտնվել" : "App Not Found"}
@@ -360,7 +360,7 @@ export default function AppDetailPage() {
   const ratingStars = Array.from({ length: 5 }, (_, i) => i + 1);
 
   return (
-    <main className="shell apps-page-container" style={{ paddingTop: "200px", minHeight: "85vh", paddingBottom: "100px" }}>
+    <main className="shell apps-page-container" style={{ paddingTop: "150px", minHeight: "85vh", paddingBottom: "100px" }}>
       {/* Breadcrumb Navigation */}
       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "28px", fontSize: "0.85rem", color: "var(--muted)" }}>
         <Link href="/" style={{ color: "inherit", textDecoration: "none" }}>HDesign</Link>
@@ -1193,9 +1193,9 @@ export default function AppDetailPage() {
                 data-font-size="0.92rem"
                 data-color="#F4EFE7"
                 data-text-color="#192025"
-                style={{ cursor: "pointer", width: "100%", display: "block" }}
+                style={{ cursor: "pointer", width: "100%", height: "44px", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
               >
-                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", lineHeight: 1, textAlign: "center", fontWeight: 800 }}>
+                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "100%", height: "44px", lineHeight: 1, textAlign: "center", fontWeight: 800 }}>
                   <span>{locale === "hy" ? "Տուր մի բաժակ սուրճ" : "Buy me a coffee"}</span>
                 </span>
               </hd-button>
@@ -1493,6 +1493,7 @@ export default function AppDetailPage() {
           appId={app.id}
           appTitle={title}
           appVersion={app.version}
+          appType={app.app_type}
           downloads={validDownloads}
           locale={locale}
           onDownloaded={(newCount) => {

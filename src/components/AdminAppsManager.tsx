@@ -7,6 +7,7 @@ import { HDesignStars } from "./RatingSystem";
 import MediaPickerModal from "./MediaPickerModal";
 import LoadingAnimation from "./LoadingAnimation";
 import { MediaFileType } from "@/lib/mediaTypes";
+import SoftwareIcon from "./SoftwareIcon";
 import { prefetchMediaLibrary } from "@/lib/mediaCache";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -240,6 +241,28 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
   // Markdown editor tabs
   const [mdLangTab, setMdLangTab] = useState<"am" | "en">("am");
   const [mdViewMode, setMdViewMode] = useState<"edit" | "split" | "preview">("split");
+
+  // Notifications control: option to disable notifications to users
+  const [notifySubscribers, setNotifySubscribers] = useState<boolean>(true);
+
+  // Markdown file upload helper
+  const handleUploadMarkdownFile = (e: React.ChangeEvent<HTMLInputElement>, lang: "am" | "en") => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result;
+      if (typeof text === "string") {
+        if (lang === "am") {
+          setForm(prev => ({ ...prev, description_md_am: text }));
+        } else {
+          setForm(prev => ({ ...prev, description_md_en: text }));
+        }
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
 
   // Initialize
   useEffect(() => {
@@ -484,6 +507,8 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
 
       const payload = {
         ...form,
+        original_id: selectedAppId,
+        notify_subscribers: notifySubscribers,
         host_app: (form.host_apps && form.host_apps.length > 0) ? form.host_apps.join(', ') : form.host_app,
         repository_url: primaryRepo ? primaryRepo.url : (form.repository_url || ""),
         repository_type: primaryRepo ? primaryRepo.type : (form.repository_type || "github"),
@@ -502,6 +527,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
       const resData = await res.json();
       if (res.ok) {
         alert("Հավելվածը հաջողությամբ պահպանվեց:");
+        setSelectedAppId(form.id);
         await loadApps(token);
         if (viewMode === "wizard") {
           setViewMode("list");
@@ -1273,6 +1299,72 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
                   <div>
                     <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
+                      Հավելվածի ID (URL հասցե / Slug) *
+                    </label>
+                    <div style={{ display: "flex", alignItems: "center", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "0 12px" }}>
+                      <span style={{ fontSize: "0.85rem", color: "#64748b", fontWeight: 600 }}>/apps/</span>
+                      <input
+                        type="text"
+                        value={form.id}
+                        onChange={e => {
+                          const val = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "-").replace(/-+/g, "-");
+                          setForm(prev => ({ ...prev, id: val }));
+                        }}
+                        placeholder="glyph-exporter"
+                        style={{ flex: 1, padding: "10px 6px", background: "transparent", border: "none", outline: "none", color: "#0f172a", fontSize: "0.88rem", fontWeight: 600 }}
+                      />
+                    </div>
+                    <span style={{ fontSize: "0.74rem", color: "#64748b", marginTop: "4px", display: "block" }}>
+                      Էջի հասցեն կլինի՝ <strong>/apps/{form.id}</strong>
+                    </span>
+                  </div>
+
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
+                      Աջակցվող Լեզուներ
+                    </label>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", paddingTop: "4px" }}>
+                      {[
+                        { id: "am", label: "Հայերեն" },
+                        { id: "en", label: "English" },
+                        { id: "ru", label: "Русский" },
+                        { id: "fr", label: "Français" },
+                        { id: "de", label: "Deutsch" },
+                      ].map(l => {
+                        const isSelected = (form.languages || []).includes(l.id) || (form.languages || []).includes(l.label);
+                        return (
+                          <button
+                            key={l.id}
+                            type="button"
+                            onClick={() => {
+                              const current = form.languages || [];
+                              const exists = current.includes(l.id) || current.includes(l.label);
+                              const next = exists ? current.filter(x => x !== l.id && x !== l.label) : [...current, l.id];
+                              setForm(prev => ({ ...prev, languages: next }));
+                            }}
+                            style={{
+                              padding: "6px 14px",
+                              background: isSelected ? "#0f172a" : "#ffffff",
+                              color: isSelected ? "#ffffff" : "#334155",
+                              border: `1px solid ${isSelected ? "#0f172a" : "#cbd5e1"}`,
+                              borderRadius: "20px",
+                              fontSize: "0.8rem",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              transition: "all 0.15s ease"
+                            }}
+                          >
+                            {isSelected ? `✓ ${l.label}` : `+ ${l.label}`}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
                       Տեսակ *
                     </label>
                     <select
@@ -1418,8 +1510,9 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
 
                         return (
                           <div key={osKey} style={{ background: "#f8fafc", padding: "16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-                            <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#0f172a", marginBottom: "12px", borderBottom: "1px solid #cbd5e1", paddingBottom: "4px" }}>
-                              {osTitle} Գործավար Համակարգ
+                            <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#0f172a", marginBottom: "12px", borderBottom: "1px solid #cbd5e1", paddingBottom: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
+                              <SoftwareIcon name={osKey} size={18} />
+                              <span>{form.app_type === 'standalone' ? osTitle : `${osTitle} Գործավար Համակարգ`}</span>
                             </div>
 
                             {form.app_type === 'plugin' ? (
@@ -1461,8 +1554,9 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                               </div>
                             ) : (
                               <div style={{ display: "flex", flexDirection: "column", gap: "6px", background: "#ffffff", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
-                                <div style={{ fontWeight: 700, fontSize: "0.82rem", color: "#334155" }}>
-                                  Հավելվածի տեղադրման ֆայլ {osTitle}-ի համար
+                                <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "#0f172a", display: "flex", alignItems: "center", gap: "8px" }}>
+                                  <SoftwareIcon name={osKey} size={18} />
+                                  <span>{osTitle}</span>
                                 </div>
                                 <div style={{ display: "flex", gap: "10px" }}>
                                   <input
@@ -1834,9 +1928,15 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                 {wizardMarkdownTab === "edit" ? (
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
                     <div>
-                      <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
-                        Նկարագրություն (Հայերեն)
-                      </label>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                        <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155" }}>
+                          Նկարագրություն (Հայերեն)
+                        </label>
+                        <label style={{ cursor: "pointer", fontSize: "0.76rem", color: "#0284c7", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "4px", background: "#f0f9ff", border: "1px dashed #bae6fd", padding: "2px 8px", borderRadius: "6px" }}>
+                          <span>📄 Վերբեռնել .md</span>
+                          <input type="file" accept=".md,.markdown,text/markdown,text/plain" style={{ display: "none" }} onChange={e => handleUploadMarkdownFile(e, "am")} />
+                        </label>
+                      </div>
                       <textarea
                         rows={10}
                         value={form.description_md_am || ""}
@@ -1845,9 +1945,15 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                       />
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
-                        Description (English)
-                      </label>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                        <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155" }}>
+                          Description (English)
+                        </label>
+                        <label style={{ cursor: "pointer", fontSize: "0.76rem", color: "#0284c7", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "4px", background: "#f0f9ff", border: "1px dashed #bae6fd", padding: "2px 8px", borderRadius: "6px" }}>
+                          <span>📄 Upload .md</span>
+                          <input type="file" accept=".md,.markdown,text/markdown,text/plain" style={{ display: "none" }} onChange={e => handleUploadMarkdownFile(e, "en")} />
+                        </label>
+                      </div>
                       <textarea
                         rows={10}
                         value={form.description_md_en || ""}
@@ -1890,11 +1996,35 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                   Հաջորդը →
                 </button>
               ) : (
-                <div onClick={handleSaveApp}>
-                  <hd-button data-height="38px" data-thickness="3px">
-                    <span className="hd-icon icon-Check" style={{ marginRight: 6 }} />
-                    {saving ? "Պահպանվում է..." : "Ավարտել և Հրապարակել"}
-                  </hd-button>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <button
+                    type="button"
+                    onClick={() => setNotifySubscribers(!notifySubscribers)}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "8px 16px",
+                      borderRadius: "8px",
+                      fontSize: "0.82rem",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      background: notifySubscribers ? "#eff6ff" : "#fef2f2",
+                      color: notifySubscribers ? "#1d4ed8" : "#b91c1c",
+                      border: `1px solid ${notifySubscribers ? "#bfdbfe" : "#fecaca"}`,
+                      transition: "all 0.15s ease"
+                    }}
+                    title={notifySubscribers ? "Ծանուցումները միացված են: Օգտվողները կստանան էլ. նամակ:" : "Ծանուցումներն անջատված են: Օգտվողներին ոչինչ չի ուղարկվի:"}
+                  >
+                    <span>{notifySubscribers ? "🔔" : "🔕"}</span>
+                    <span>{notifySubscribers ? "Ծանուցումներ՝ Միացված" : "Ծանուցումներ՝ Անջատված"}</span>
+                  </button>
+                  <div onClick={handleSaveApp}>
+                    <hd-button data-height="38px" data-thickness="3px">
+                      <span className="hd-icon icon-Check" style={{ marginRight: 6 }} />
+                      {saving ? "Պահպանվում է..." : "Ավարտել և Հրապարակել"}
+                    </hd-button>
+                  </div>
                 </div>
               )}
             </div>
@@ -2016,6 +2146,29 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
               >
                 <span className="hd-icon icon-Trash" />
                 <span>Ջնջել</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setNotifySubscribers(!notifySubscribers)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "8px 14px",
+                  borderRadius: "8px",
+                  fontSize: "0.82rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  background: notifySubscribers ? "#eff6ff" : "#fef2f2",
+                  color: notifySubscribers ? "#1d4ed8" : "#b91c1c",
+                  border: `1px solid ${notifySubscribers ? "#bfdbfe" : "#fecaca"}`,
+                  transition: "all 0.15s ease"
+                }}
+                title={notifySubscribers ? "Ծանուցումները միացված են: Օգտվողները կստանան էլ. նամակ:" : "Ծանուցումներն անջատված են: Օգտվողներին ոչինչ չի ուղարկվի:"}
+              >
+                <span>{notifySubscribers ? "🔔" : "🔕"}</span>
+                <span>{notifySubscribers ? "Ծանուցումներ՝ Միացված" : "Ծանուցումներ՝ Անջատված"}</span>
               </button>
 
               <div onClick={handleSaveApp}>
@@ -2154,6 +2307,72 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                       onChange={e => setForm(prev => ({ ...prev, title_en: e.target.value }))}
                       style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.88rem" }}
                     />
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
+                      Հավելվածի ID (URL հասցե / Slug) *
+                    </label>
+                    <div style={{ display: "flex", alignItems: "center", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "0 12px" }}>
+                      <span style={{ fontSize: "0.85rem", color: "#64748b", fontWeight: 600 }}>/apps/</span>
+                      <input
+                        type="text"
+                        value={form.id}
+                        onChange={e => {
+                          const val = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "-").replace(/-+/g, "-");
+                          setForm(prev => ({ ...prev, id: val }));
+                        }}
+                        placeholder="my-app"
+                        style={{ flex: 1, padding: "10px 6px", background: "transparent", border: "none", outline: "none", color: "#0f172a", fontSize: "0.88rem", fontWeight: 600 }}
+                      />
+                    </div>
+                    <span style={{ fontSize: "0.74rem", color: "#64748b", marginTop: "4px", display: "block" }}>
+                      Էջի հասցեն՝ <strong>/apps/{form.id}</strong>
+                    </span>
+                  </div>
+
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
+                      Աջակցվող Լեզուներ
+                    </label>
+                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", paddingTop: "4px" }}>
+                      {[
+                        { id: "am", label: "Հայերեն" },
+                        { id: "en", label: "English" },
+                        { id: "ru", label: "Русский" },
+                        { id: "fr", label: "Français" },
+                        { id: "de", label: "Deutsch" },
+                      ].map(l => {
+                        const isSelected = (form.languages || []).includes(l.id) || (form.languages || []).includes(l.label);
+                        return (
+                          <button
+                            key={l.id}
+                            type="button"
+                            onClick={() => {
+                              const current = form.languages || [];
+                              const exists = current.includes(l.id) || current.includes(l.label);
+                              const next = exists ? current.filter(x => x !== l.id && x !== l.label) : [...current, l.id];
+                              setForm(prev => ({ ...prev, languages: next }));
+                            }}
+                            style={{
+                              padding: "6px 14px",
+                              background: isSelected ? "#0f172a" : "#ffffff",
+                              color: isSelected ? "#ffffff" : "#334155",
+                              border: `1px solid ${isSelected ? "#0f172a" : "#cbd5e1"}`,
+                              borderRadius: "20px",
+                              fontSize: "0.8rem",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              transition: "all 0.15s ease"
+                            }}
+                          >
+                            {isSelected ? `✓ ${l.label}` : `+ ${l.label}`}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
@@ -2304,8 +2523,9 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
 
                         return (
                           <div key={osKey} style={{ background: "#f8fafc", padding: "16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-                            <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#0f172a", marginBottom: "12px", borderBottom: "1px solid #cbd5e1", paddingBottom: "4px" }}>
-                              {osTitle} Գործավար Համակարգ
+                            <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#0f172a", marginBottom: "12px", borderBottom: "1px solid #cbd5e1", paddingBottom: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
+                              <SoftwareIcon name={osKey} size={18} />
+                              <span>{form.app_type === 'standalone' ? osTitle : `${osTitle} Գործավար Համակարգ`}</span>
                             </div>
 
                             {form.app_type === 'plugin' ? (
@@ -2347,8 +2567,9 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                               </div>
                             ) : (
                               <div style={{ display: "flex", flexDirection: "column", gap: "6px", background: "#ffffff", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
-                                <div style={{ fontWeight: 700, fontSize: "0.82rem", color: "#334155" }}>
-                                  Հավելվածի տեղադրման ֆայլ {osTitle}-ի համար
+                                <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "#0f172a", display: "flex", alignItems: "center", gap: "8px" }}>
+                                  <SoftwareIcon name={osKey} size={18} />
+                                  <span>{osTitle}</span>
                                 </div>
                                 <div style={{ display: "flex", gap: "10px" }}>
                                   <input
@@ -2638,11 +2859,105 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
 
             {/* Sub-tab 4: Markdown */}
             {editorSubTab === "markdown" && (
-              <div className="admin-tab-transition" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div className="admin-tab-transition" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                {/* Language switcher & Upload Button toolbar */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", borderBottom: "1px solid #e2e8f0", paddingBottom: "12px" }}>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#64748b", marginRight: "4px" }}>
+                      Լեզու՝
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setMdLangTab("am")}
+                      style={{
+                        padding: "6px 16px",
+                        background: mdLangTab === "am" ? "#0f172a" : "#f1f5f9",
+                        color: mdLangTab === "am" ? "#ffffff" : "#334155",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontWeight: 700,
+                        fontSize: "0.82rem",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease"
+                      }}
+                    >
+                      🇦🇲 Հայերեն
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMdLangTab("en")}
+                      style={{
+                        padding: "6px 16px",
+                        background: mdLangTab === "en" ? "#0f172a" : "#f1f5f9",
+                        color: mdLangTab === "en" ? "#ffffff" : "#334155",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontWeight: 700,
+                        fontSize: "0.82rem",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease"
+                      }}
+                    >
+                      🇬🇧 English
+                    </button>
+                  </div>
+
+                  <label
+                    style={{
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      padding: "8px 16px",
+                      background: "#f0f9ff",
+                      border: "1px dashed #0284c7",
+                      borderRadius: "8px",
+                      fontSize: "0.82rem",
+                      fontWeight: 700,
+                      color: "#0284c7",
+                      transition: "all 0.15s ease"
+                    }}
+                    title={`Վերբեռնել Markdown նիշք (${mdLangTab === 'am' ? 'Հայերեն' : 'English'})`}
+                  >
+                    <span>📄 Վերբեռնել Markdown նիշք (.md)</span>
+                    <input
+                      type="file"
+                      accept=".md,.markdown,text/markdown,text/plain"
+                      style={{ display: "none" }}
+                      onChange={e => handleUploadMarkdownFile(e, mdLangTab)}
+                    />
+                  </label>
+                </div>
+
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-                  <textarea rows={14} value={form.description_md_am || ""} onChange={e => setForm(prev => ({ ...prev, description_md_am: e.target.value }))} placeholder="## Հայերեն Markdown..." style={{ width: "100%", padding: "14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontFamily: "monospace", fontSize: "0.88rem" }} />
-                  <div style={{ background: "#f8fafc", padding: "18px", borderRadius: "8px", border: "1px solid #e2e8f0", overflowY: "auto", maxHeight: "380px" }}>
-                    <MarkdownRenderer content={form.description_md_am || "*Դատարկ է*"} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155" }}>
+                        {mdLangTab === "am" ? "Խմբագրել (Հայերեն Markdown)" : "Editor (English Markdown)"}
+                      </span>
+                      <span style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                        {mdLangTab === "am" ? "Աջակցում է KaTeX, աղյուսակներ, կոդ" : "Supports KaTeX, tables, code"}
+                      </span>
+                    </div>
+                    <textarea
+                      rows={15}
+                      value={mdLangTab === "am" ? (form.description_md_am || "") : (form.description_md_en || "")}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (mdLangTab === "am") setForm(prev => ({ ...prev, description_md_am: val }));
+                        else setForm(prev => ({ ...prev, description_md_en: val }));
+                      }}
+                      placeholder={mdLangTab === "am" ? "## Հայերեն Markdown նկարագրություն..." : "## English Markdown description..."}
+                      style={{ width: "100%", padding: "14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontFamily: "monospace", fontSize: "0.88rem", resize: "vertical", minHeight: "360px" }}
+                    />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155" }}>
+                      {mdLangTab === "am" ? "Նախադիտում (Հայերեն)" : "Preview (English)"}
+                    </span>
+                    <div style={{ background: "#f8fafc", padding: "18px", borderRadius: "8px", border: "1px solid #e2e8f0", overflowY: "auto", maxHeight: "420px", flex: 1 }}>
+                      <MarkdownRenderer content={(mdLangTab === "am" ? form.description_md_am : form.description_md_en) || (mdLangTab === "am" ? "*Դատարկ է*" : "*Empty*")} />
+                    </div>
                   </div>
                 </div>
               </div>

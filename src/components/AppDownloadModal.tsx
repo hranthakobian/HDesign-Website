@@ -22,6 +22,7 @@ interface AppDownloadModalProps {
   appTitle: string;
   appVersion?: string;
   appId?: string;
+  appType?: 'plugin' | 'standalone';
   downloads: AppDownloadOption[];
   locale: string;
   onDownloaded?: (newCount?: number) => void;
@@ -33,6 +34,7 @@ export default function AppDownloadModal({
   appTitle,
   appVersion,
   appId,
+  appType = 'plugin',
   downloads,
   locale,
   onDownloaded
@@ -287,70 +289,77 @@ export default function AppDownloadModal({
           }}
         >
           {groupedDownloads.length > 0 ? (
-            groupedDownloads.map((group) => (
-              <div key={group.osKey} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                {/* OS Section Title Header */}
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", borderBottom: "1px solid var(--panel-border)", paddingBottom: "6px" }}>
-                  <SoftwareIcon name={group.title} iconUrl={group.icon} size={18} />
-                  <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "var(--text)", letterSpacing: "0.02em" }}>
-                    {group.title}
-                  </span>
-                  <span style={{ fontSize: "0.74rem", color: "var(--muted)", marginLeft: "auto", background: "var(--bg)", padding: "2px 8px", borderRadius: "10px", border: "1px solid var(--panel-border)" }}>
-                    {group.items.length} {locale === "hy" ? "տարբերակ" : "options"}
-                  </span>
-                </div>
+            groupedDownloads.map((group) => {
+              const isStandalone = appType === 'standalone';
 
-                {/* Items under OS */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {group.items.map((item, idx) => {
-                    // Extract host program / software name cleanly
-                    const softwareName = item.host_app || item.name || group.title;
-                    const cleanSoftware = softwareName.replace(/\s*\([^)]*\)/g, '').trim() || softwareName;
+              return (
+                <div key={group.osKey} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {/* OS Section Title Header (only shown for plugins when multiple items exist per software) */}
+                  {!isStandalone && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", borderBottom: "1px solid var(--panel-border)", paddingBottom: "6px" }}>
+                      <SoftwareIcon name={group.title} iconUrl={group.icon} size={18} />
+                      <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "var(--text)", letterSpacing: "0.02em" }}>
+                        {group.title}
+                      </span>
+                      <span style={{ fontSize: "0.74rem", color: "var(--muted)", marginLeft: "auto", background: "var(--bg)", padding: "2px 8px", borderRadius: "10px", border: "1px solid var(--panel-border)" }}>
+                        {group.items.length} {locale === "hy" ? "տարբերակ" : "options"}
+                      </span>
+                    </div>
+                  )}
 
-                    return (
-                      <div
-                        key={item.id || idx}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: "14px",
-                          padding: "12px 16px",
-                          borderRadius: "14px",
-                          background: "var(--bg)",
-                          border: "1px solid var(--panel-border)",
-                          transition: "all 0.2s ease"
-                        }}
-                      >
-                        {/* Target info: ONLY which software/program it is for + file size */}
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: 0 }}>
-                          <div
-                            style={{
-                              width: "36px",
-                              height: "36px",
-                              borderRadius: "10px",
-                              background: "rgba(255, 255, 255, 0.05)",
-                              border: "1px solid var(--panel-border)",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              flexShrink: 0
-                            }}
-                          >
-                            <SoftwareIcon name={cleanSoftware} iconUrl={item.icon || group.icon} size={20} />
-                          </div>
+                  {/* Items under OS */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {group.items.map((item, idx) => {
+                      // Extract host program / software name cleanly for plugins; for standalone apps, strictly use OS logo and name
+                      const softwareName = item.host_app || item.name || group.title;
+                      const cleanSoftware = softwareName.replace(/\s*\([^)]*\)/g, '').trim() || softwareName;
+                      const displayName = isStandalone ? group.title : cleanSoftware;
+                      const displayIcon = isStandalone ? group.icon : (item.icon || group.icon);
 
-                          <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-                            <span style={{ fontWeight: 800, fontSize: "0.92rem", color: "var(--text)", lineHeight: 1.3 }}>
-                              {cleanSoftware}
-                            </span>
-                            {item.file_size ? (
-                              <span style={{ fontSize: "0.75rem", color: "var(--muted)", fontWeight: 600, marginTop: "2px" }}>
-                                {item.file_size}
+                      return (
+                        <div
+                          key={item.id || idx}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: "14px",
+                            padding: "12px 16px",
+                            borderRadius: "14px",
+                            background: "var(--bg)",
+                            border: "1px solid var(--panel-border)",
+                            transition: "all 0.2s ease"
+                          }}
+                        >
+                          {/* Target info: For standalone apps, ONLY OS logo and OS name + optional file size */}
+                          <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: 0 }}>
+                            <div
+                              style={{
+                                width: "36px",
+                                height: "36px",
+                                borderRadius: "10px",
+                                background: "rgba(255, 255, 255, 0.05)",
+                                border: "1px solid var(--panel-border)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flexShrink: 0
+                              }}
+                            >
+                              <SoftwareIcon name={displayName} iconUrl={displayIcon} size={20} />
+                            </div>
+
+                            <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                              <span style={{ fontWeight: 800, fontSize: "0.92rem", color: "var(--text)", lineHeight: 1.3 }}>
+                                {displayName}
                               </span>
-                            ) : null}
+                              {item.file_size ? (
+                                <span style={{ fontSize: "0.75rem", color: "var(--muted)", fontWeight: 600, marginTop: "2px" }}>
+                                  {item.file_size}
+                                </span>
+                              ) : null}
+                            </div>
                           </div>
-                        </div>
 
                         {/* Download CTA button */}
                         <a
@@ -378,7 +387,8 @@ export default function AppDownloadModal({
                   })}
                 </div>
               </div>
-            ))
+            );
+          })
           ) : (
             <div style={{ textAlign: "center", padding: "30px 10px", color: "var(--muted)", fontSize: "0.9rem" }}>
               {locale === "hy" ? "Ներբեռնման նիշքեր հասանելի չեն:" : "No download files available."}

@@ -6,6 +6,7 @@ import Link from "next/link";
 import LoadingAnimation from "@/components/LoadingAnimation";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import MediaPickerModal from "@/components/MediaPickerModal";
+import SoftwareIcon from "@/components/SoftwareIcon";
 import { MediaFileType } from "@/lib/mediaTypes";
 import { prefetchMediaLibrary } from "@/lib/mediaCache";
 
@@ -89,6 +90,23 @@ export default function AppDedicatedEditorPage() {
   const [wizardStep, setWizardStep] = useState<number>(1);
 
   const [customSoftwareInput, setCustomSoftwareInput] = useState("");
+  const [notifySubscribers, setNotifySubscribers] = useState<boolean>(true);
+  const [mdLangTab, setMdLangTab] = useState<"am" | "en">("am");
+
+  const handleUploadMarkdownFile = (e: React.ChangeEvent<HTMLInputElement>, lang: "am" | "en") => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result;
+      if (typeof text === "string") {
+        if (lang === "am") setForm(prev => ({ ...prev, description_md_am: text }));
+        else setForm(prev => ({ ...prev, description_md_en: text }));
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
 
   const [form, setForm] = useState<AppItem>({
     id: isNew ? `app-${Date.now()}` : rawId,
@@ -243,6 +261,8 @@ export default function AppDedicatedEditorPage() {
     try {
       const payload = {
         ...form,
+        original_id: isNew ? undefined : rawId,
+        notify_subscribers: notifySubscribers,
         host_app: (form.host_apps && form.host_apps.length > 0) ? form.host_apps.join(', ') : form.host_app,
       };
 
@@ -294,11 +314,35 @@ export default function AppDedicatedEditorPage() {
               {isNew ? "Նոր Հավելվածի Ստեղծման Գործիք" : `Խմբագրել՝ ${form.title_am || form.title_en}`}
             </h2>
           </div>
-          <div onClick={handleSaveApp}>
-            <hd-button data-height="38px" data-thickness="3px">
-              <span className="hd-icon icon-Check" style={{ marginRight: 6 }} />
-              {saving ? "Պահպանվում է..." : "Պահպանել"}
-            </hd-button>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <button
+              type="button"
+              onClick={() => setNotifySubscribers(!notifySubscribers)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "8px 14px",
+                borderRadius: "8px",
+                fontSize: "0.82rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                background: notifySubscribers ? "#eff6ff" : "#fef2f2",
+                color: notifySubscribers ? "#1d4ed8" : "#b91c1c",
+                border: `1px solid ${notifySubscribers ? "#bfdbfe" : "#fecaca"}`,
+                transition: "all 0.15s ease"
+              }}
+              title={notifySubscribers ? "Ծանուցումները միացված են" : "Ծանուցումներն անջատված են"}
+            >
+              <span>{notifySubscribers ? "🔔" : "🔕"}</span>
+              <span>{notifySubscribers ? "Ծանուցումներ՝ Միացված" : "Ծանուցումներ՝ Անջատված"}</span>
+            </button>
+            <div onClick={handleSaveApp}>
+              <hd-button data-height="38px" data-thickness="3px">
+                <span className="hd-icon icon-Check" style={{ marginRight: 6 }} />
+                {saving ? "Պահպանվում է..." : "Պահպանել"}
+              </hd-button>
+            </div>
           </div>
         </div>
 
@@ -311,6 +355,72 @@ export default function AppDedicatedEditorPage() {
           <div>
             <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>Անվանում (English) *</label>
             <input type="text" value={form.title_en} onChange={e => setForm(prev => ({ ...prev, title_en: e.target.value }))} style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a" }} />
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+          <div>
+            <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
+              Հավելվածի ID (URL հասցե / Slug) *
+            </label>
+            <div style={{ display: "flex", alignItems: "center", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "0 12px" }}>
+              <span style={{ fontSize: "0.85rem", color: "#64748b", fontWeight: 600 }}>/apps/</span>
+              <input
+                type="text"
+                value={form.id}
+                onChange={e => {
+                  const val = e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "-").replace(/-+/g, "-");
+                  setForm(prev => ({ ...prev, id: val }));
+                }}
+                placeholder="my-app"
+                style={{ flex: 1, padding: "10px 6px", background: "transparent", border: "none", outline: "none", color: "#0f172a", fontSize: "0.88rem", fontWeight: 600 }}
+              />
+            </div>
+            <span style={{ fontSize: "0.74rem", color: "#64748b", marginTop: "4px", display: "block" }}>
+              Էջի հասցեն՝ <strong>/apps/{form.id}</strong>
+            </span>
+          </div>
+
+          <div>
+            <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
+              Աջակցվող Լեզուներ
+            </label>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", paddingTop: "4px" }}>
+              {[
+                { id: "am", label: "Հայերեն" },
+                { id: "en", label: "English" },
+                { id: "ru", label: "Русский" },
+                { id: "fr", label: "Français" },
+                { id: "de", label: "Deutsch" },
+              ].map(l => {
+                const isSelected = (form.languages || []).includes(l.id) || (form.languages || []).includes(l.label);
+                return (
+                  <button
+                    key={l.id}
+                    type="button"
+                    onClick={() => {
+                      const current = form.languages || [];
+                      const exists = current.includes(l.id) || current.includes(l.label);
+                      const next = exists ? current.filter(x => x !== l.id && x !== l.label) : [...current, l.id];
+                      setForm(prev => ({ ...prev, languages: next }));
+                    }}
+                    style={{
+                      padding: "6px 14px",
+                      background: isSelected ? "#0f172a" : "#ffffff",
+                      color: isSelected ? "#ffffff" : "#334155",
+                      border: `1px solid ${isSelected ? "#0f172a" : "#cbd5e1"}`,
+                      borderRadius: "20px",
+                      fontSize: "0.8rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      transition: "all 0.15s ease"
+                    }}
+                  >
+                    {isSelected ? `✓ ${l.label}` : `+ ${l.label}`}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -374,7 +484,10 @@ export default function AppDedicatedEditorPage() {
             const osTitle = osKey === 'windows' ? 'Windows' : osKey === 'macos' ? 'macOS' : 'Linux';
             return (
               <div key={osKey} style={{ background: "#f8fafc", padding: "18px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-                <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#0f172a", marginBottom: "12px" }}>{osTitle} Գործավար Համակարգ</div>
+                <div style={{ fontWeight: 800, fontSize: "0.92rem", color: "#0f172a", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <SoftwareIcon name={osKey} size={18} />
+                  <span>{form.app_type === 'standalone' ? osTitle : `${osTitle} Գործավար Համակարգ`}</span>
+                </div>
                 {form.app_type === 'plugin' ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                     {(form.host_apps || ['FontLab']).map(sw => {
@@ -392,7 +505,10 @@ export default function AppDedicatedEditorPage() {
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px", background: "#ffffff", padding: "12px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
-                    <div style={{ fontWeight: 700, fontSize: "0.82rem", color: "#334155" }}>Տեղադրման ֆայլ {osTitle}-ի համար</div>
+                    <div style={{ fontWeight: 700, fontSize: "0.85rem", color: "#0f172a", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <SoftwareIcon name={osKey} size={18} />
+                      <span>{osTitle}</span>
+                    </div>
                     <div style={{ display: "flex", gap: "10px" }}>
                       <input type="text" value={getDownloadUrlFor(osKey as any)} onChange={e => setDownloadUrlFor(osKey as any, e.target.value)} placeholder={`https://... (${osTitle} package)`} style={{ flex: 1, padding: "8px 12px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.85rem" }} />
                       <button type="button" onClick={() => setMediaPickerConfig({ isOpen: true, target: "download_file", targetOS: osKey as any, multiple: false, title: `Ընտրել ${osTitle} Ֆայլը`, currentValue: getDownloadUrlFor(osKey as any) })} style={{ padding: "8px 14px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}>Ընտրել Ֆայլ</button>
@@ -402,6 +518,99 @@ export default function AppDedicatedEditorPage() {
               </div>
             );
           })}
+        </div>
+
+        {/* Markdown Section */}
+        <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#334155" }}>Լեզու՝</span>
+              <button
+                type="button"
+                onClick={() => setMdLangTab("am")}
+                style={{
+                  padding: "6px 16px",
+                  background: mdLangTab === "am" ? "#0f172a" : "#f1f5f9",
+                  color: mdLangTab === "am" ? "#ffffff" : "#334155",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontWeight: 700,
+                  fontSize: "0.82rem",
+                  cursor: "pointer"
+                }}
+              >
+                🇦🇲 Հայերեն
+              </button>
+              <button
+                type="button"
+                onClick={() => setMdLangTab("en")}
+                style={{
+                  padding: "6px 16px",
+                  background: mdLangTab === "en" ? "#0f172a" : "#f1f5f9",
+                  color: mdLangTab === "en" ? "#ffffff" : "#334155",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontWeight: 700,
+                  fontSize: "0.82rem",
+                  cursor: "pointer"
+                }}
+              >
+                🇬🇧 English
+              </button>
+            </div>
+
+            <label
+              style={{
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "8px 16px",
+                background: "#f0f9ff",
+                border: "1px dashed #0284c7",
+                borderRadius: "8px",
+                fontSize: "0.82rem",
+                fontWeight: 700,
+                color: "#0284c7"
+              }}
+              title="Վերբեռնել Markdown նիշք"
+            >
+              <span>📄 Վերբեռնել Markdown նիշք (.md)</span>
+              <input
+                type="file"
+                accept=".md,.markdown,text/markdown,text/plain"
+                style={{ display: "none" }}
+                onChange={e => handleUploadMarkdownFile(e, mdLangTab)}
+              />
+            </label>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155" }}>
+                {mdLangTab === "am" ? "Խմբագրել (Հայերեն Markdown)" : "Editor (English Markdown)"}
+              </span>
+              <textarea
+                rows={12}
+                value={mdLangTab === "am" ? (form.description_md_am || "") : (form.description_md_en || "")}
+                onChange={e => {
+                  const val = e.target.value;
+                  if (mdLangTab === "am") setForm(prev => ({ ...prev, description_md_am: val }));
+                  else setForm(prev => ({ ...prev, description_md_en: val }));
+                }}
+                placeholder={mdLangTab === "am" ? "## Հայերեն Markdown..." : "## English Markdown..."}
+                style={{ width: "100%", padding: "14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontFamily: "monospace", fontSize: "0.88rem", resize: "vertical" }}
+              />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155" }}>
+                {mdLangTab === "am" ? "Նախադիտում (Հայերեն)" : "Preview (English)"}
+              </span>
+              <div style={{ background: "#f8fafc", padding: "18px", borderRadius: "8px", border: "1px solid #e2e8f0", overflowY: "auto", maxHeight: "350px", flex: 1 }}>
+                <MarkdownRenderer content={(mdLangTab === "am" ? form.description_md_am : form.description_md_en) || (mdLangTab === "am" ? "*Դատարկ է*" : "*Empty*")} />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

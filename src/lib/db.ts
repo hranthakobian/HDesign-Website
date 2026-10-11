@@ -1967,6 +1967,92 @@ export async function deleteApp(id: string): Promise<boolean> {
   throw new Error(errorParts.join(' | ') || 'Failed to delete app.');
 }
 
+export async function renameAppId(oldId: string, newId: string): Promise<boolean> {
+  if (!oldId || !newId || oldId === newId) return true;
+  await ensureLocalDbFiles();
+
+  // 1. Supabase migration
+  const adminClient = supabaseAdmin || supabase;
+  if (adminClient) {
+    try {
+      await adminClient.from('app_reviews').update({ app_id: newId }).eq('app_id', oldId);
+      await adminClient.from('app_bug_reports').update({ app_id: newId }).eq('app_id', oldId);
+      await adminClient.from('app_downloads').update({ app_id: newId }).eq('app_id', oldId);
+      await adminClient.from('apps').delete().eq('id', oldId);
+    } catch (err) {
+      console.warn('Supabase renameAppId update error:', err);
+    }
+  }
+
+  // 2. Local JSON files migration
+  if (isServer) {
+    const fs = getFs();
+    try {
+      const content = await fs.readFile(APPS_FILE, 'utf-8');
+      const apps = JSON.parse(content) as AppItem[];
+      const filtered = apps.filter(x => x.id !== oldId);
+      await fs.writeFile(APPS_FILE, JSON.stringify(filtered, null, 2), 'utf-8');
+    } catch (e) {}
+
+    try {
+      const revContent = await fs.readFile(APP_REVIEWS_FILE, 'utf-8');
+      const revs = JSON.parse(revContent) as any[];
+      let changed = false;
+      revs.forEach(r => {
+        if (r.app_id === oldId) {
+          r.app_id = newId;
+          changed = true;
+        }
+      });
+      if (changed) {
+        await fs.writeFile(APP_REVIEWS_FILE, JSON.stringify(revs, null, 2), 'utf-8');
+      }
+    } catch (e) {}
+
+    try {
+      const bugContent = await fs.readFile(APP_BUG_REPORTS_FILE, 'utf-8');
+      const bugs = JSON.parse(bugContent) as any[];
+      let changed = false;
+      bugs.forEach(b => {
+        if (b.app_id === oldId) {
+          b.app_id = newId;
+          changed = true;
+        }
+      });
+      if (changed) {
+        await fs.writeFile(APP_BUG_REPORTS_FILE, JSON.stringify(bugs, null, 2), 'utf-8');
+      }
+    } catch (e) {}
+
+    try {
+      const dlContent = await fs.readFile(APP_DOWNLOADS_FILE, 'utf-8');
+      const dls = JSON.parse(dlContent) as any[];
+      let changed = false;
+      dls.forEach(d => {
+        if (d.app_id === oldId) {
+          d.app_id = newId;
+          changed = true;
+        }
+      });
+      if (changed) {
+        await fs.writeFile(APP_DOWNLOADS_FILE, JSON.stringify(dls, null, 2), 'utf-8');
+      }
+    } catch (e) {}
+  }
+
+  // 3. Extended metadata migration
+  try {
+    const extMeta = await getSiteSetting('apps_extended_metadata', {});
+    if (extMeta && extMeta[oldId]) {
+      extMeta[newId] = extMeta[oldId];
+      delete extMeta[oldId];
+      await saveSiteSetting('apps_extended_metadata', extMeta);
+    }
+  } catch (e) {}
+
+  return true;
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // APP REVIEWS
 // ══════════════════════════════════════════════════════════════════════════════

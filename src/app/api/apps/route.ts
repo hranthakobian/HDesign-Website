@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getApps, getAppById, saveApp, deleteApp, getAppReviews, getAppDownloads, AppItem } from '@/lib/db';
+import { getApps, getAppById, saveApp, deleteApp, renameAppId, getAppReviews, getAppDownloads, AppItem } from '@/lib/db';
 import { verifyAuth } from '@/lib/auth';
 import { notifySubscribers } from '@/lib/notifications';
 
@@ -229,7 +229,8 @@ export async function POST(request: Request) {
       updated_at: updated_at || now
     };
 
-    const existingApp = await getAppById(finalId);
+    const originalId = body.original_id && typeof body.original_id === 'string' ? body.original_id.trim() : null;
+    const existingApp = await getAppById(finalId) || (originalId ? await getAppById(originalId) : null);
     const wasDraft = !existingApp || existingApp.is_draft || existingApp.status === 'draft';
     const notifySubs = body.notify_subscribers !== false;
 
@@ -239,6 +240,11 @@ export async function POST(request: Request) {
         { error: 'Failed to save app in database.' },
         { status: 500 }
       );
+    }
+
+    // If ID was changed, migrate related data and delete old ID
+    if (originalId && originalId !== finalId) {
+      await renameAppId(originalId, finalId);
     }
 
     // Trigger subscriber notifications automatically (like cases)
