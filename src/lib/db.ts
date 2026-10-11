@@ -1793,6 +1793,7 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
           cover_image: newApp.cover_image || '',
           gallery_images: newApp.gallery_images,
           languages: newApp.languages,
+          design_system: newApp.design_system || 'HDesign',
           version: newApp.version || 'v1.0.0',
           release_date: newApp.release_date || now.split('T')[0],
           downloads_count: Number(newApp.downloads_count) || 0,

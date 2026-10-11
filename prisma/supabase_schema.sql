@@ -111,6 +111,7 @@ CREATE TABLE IF NOT EXISTS apps (
   cover_image TEXT,
   gallery_images JSONB DEFAULT '[]'::jsonb,
   languages JSONB DEFAULT '["Հայերեն", "English"]'::jsonb,
+  design_system TEXT DEFAULT 'HDesign',
   version TEXT DEFAULT 'v1.0.0',
   release_date TEXT,
   downloads_count INTEGER DEFAULT 0,
@@ -124,6 +125,7 @@ ALTER TABLE apps DISABLE ROW LEVEL SECURITY;
 
 -- Migration helpers if table already exists (add new columns first)
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS languages JSONB DEFAULT '["Հայերեն", "English"]'::jsonb;
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS design_system TEXT DEFAULT 'HDesign';
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS is_draft BOOLEAN DEFAULT false;
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'published';
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS downloads JSONB DEFAULT '[]'::jsonb;
@@ -135,6 +137,9 @@ ALTER TABLE apps ADD COLUMN IF NOT EXISTS repositories JSONB DEFAULT '[]'::jsonb
 ALTER TABLE apps ALTER COLUMN title_am DROP NOT NULL;
 ALTER TABLE apps ALTER COLUMN title_en DROP NOT NULL;
 ALTER TABLE apps ALTER COLUMN host_app DROP NOT NULL;
+
+-- Update existing rows that have NULL or empty design_system
+UPDATE apps SET design_system = 'HDesign' WHERE design_system IS NULL OR design_system = '';
 
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_apps_type ON apps(app_type);
