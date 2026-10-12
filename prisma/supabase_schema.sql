@@ -114,6 +114,7 @@ CREATE TABLE IF NOT EXISTS apps (
   design_system TEXT DEFAULT 'HDesign',
   version TEXT DEFAULT 'v1.0.0',
   release_date TEXT,
+  file_size TEXT DEFAULT '',
   downloads_count INTEGER DEFAULT 0,
   is_draft BOOLEAN DEFAULT false,
   status TEXT DEFAULT 'published',
@@ -134,6 +135,7 @@ ALTER TABLE apps ADD COLUMN IF NOT EXISTS repository_url TEXT DEFAULT '';
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS repository_type TEXT DEFAULT 'github';
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS host_apps JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS repositories JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS file_size TEXT DEFAULT '';
 ALTER TABLE apps ALTER COLUMN title_am DROP NOT NULL;
 ALTER TABLE apps ALTER COLUMN title_en DROP NOT NULL;
 ALTER TABLE apps ALTER COLUMN host_app DROP NOT NULL;

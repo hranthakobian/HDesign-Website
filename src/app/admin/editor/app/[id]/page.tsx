@@ -9,6 +9,7 @@ import MediaPickerModal from "@/components/MediaPickerModal";
 import SoftwareIcon from "@/components/SoftwareIcon";
 import AppLanguagesPicker from "@/components/AppLanguagesPicker";
 import AppDesignSystemPicker from "@/components/AppDesignSystemPicker";
+import FileSizePicker from "@/components/FileSizePicker";
 import { MediaFileType } from "@/lib/mediaTypes";
 import { prefetchMediaLibrary } from "@/lib/mediaCache";
 
@@ -432,8 +433,10 @@ export default function AppDedicatedEditorPage() {
             <input type="date" value={form.release_date || ""} onChange={e => setForm(prev => ({ ...prev, release_date: e.target.value }))} style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.88rem" }} />
           </div>
           <div>
-            <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>Նիշքի Քաշ (File Size)</label>
-            <input type="text" value={form.file_size || ""} onChange={e => setForm(prev => ({ ...prev, file_size: e.target.value }))} placeholder="օր. 149 KB կամ 25 MB" style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.88rem" }} />
+            <FileSizePicker
+              value={form.file_size || ""}
+              onChange={val => setForm(prev => ({ ...prev, file_size: val }))}
+            />
           </div>
         </div>
 

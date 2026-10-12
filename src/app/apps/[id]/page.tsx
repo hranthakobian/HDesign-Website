@@ -16,6 +16,7 @@ import SoftwareTooltip from "@/components/SoftwareTooltip";
 import { formatLanguageName } from "@/lib/languages";
 import { formatReleaseDate } from "@/lib/dateUtils";
 import { formatBytes } from "@/lib/mediaTypes";
+import { formatDisplayFileSize } from "@/lib/fileSizeUtils";
 
 type Review = {
   id: string;
@@ -1430,7 +1431,7 @@ export default function AppDetailPage() {
               {/* Նիշքի քաշ (File Size) */}
               <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px dashed var(--panel-border)", paddingBottom: "10px" }}>
                 <span style={{ color: "var(--muted)" }}>{locale === "hy" ? "Նիշքի քաշ" : "File Size"}</span>
-                <span style={{ fontWeight: 700, color: "var(--text)" }}>{displayFileSize || "—"}</span>
+                <span style={{ fontWeight: 700, color: "var(--text)" }}>{displayFileSize ? formatDisplayFileSize(displayFileSize, locale) : "—"}</span>
               </div>
 
               {/* Օպերացիոն Համակարգեր (ԳՀ / OS) */}

@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
 
 import SoftwareIcon from "./SoftwareIcon";
+import { formatDisplayFileSize } from "@/lib/fileSizeUtils";
 
 export type AppDownloadOption = {
   id?: string;
@@ -355,7 +356,7 @@ export default function AppDownloadModal({
                               </span>
                               {item.file_size ? (
                                 <span style={{ fontSize: "0.75rem", color: "var(--muted)", fontWeight: 600, marginTop: "2px" }}>
-                                  {item.file_size}
+                                  {formatDisplayFileSize(item.file_size, locale)}
                                 </span>
                               ) : null}
                             </div>
