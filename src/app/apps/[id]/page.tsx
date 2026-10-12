@@ -199,6 +199,59 @@ export default function AppDetailPage() {
 
   const hasMultipleDownloads = validDownloads.length > 1;
 
+  const handleDownloadAction = (e?: React.MouseEvent) => {
+    if (validDownloads.length > 1) {
+      setIsDownloadModalOpen(true);
+      return;
+    }
+
+    if (validDownloads.length === 1 && app) {
+      const item = validDownloads[0];
+
+      // 1. Optimistic UI update immediately
+      setApp(prev => prev ? {
+        ...prev,
+        downloads_count: (prev.downloads_count || 0) + 1
+      } : prev);
+
+      // 2. Trigger browser download safely without page navigation
+      const link = document.createElement('a');
+      link.href = item.url;
+      link.download = '';
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      // 3. Persist download event & update database in background
+      fetch('/api/apps/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify({
+          app_id: app.id,
+          download_url: item.url,
+          download_id: item.id || ''
+        })
+      })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data && typeof data.downloads_count === 'number') {
+            setApp(prev => prev ? {
+              ...prev,
+              downloads_count: Math.max(data.downloads_count, prev.downloads_count || 0)
+            } : prev);
+          }
+        })
+        .catch(err => {
+          console.warn('Failed to record download event:', err);
+        });
+    } else {
+      setIsDownloadModalOpen(true);
+    }
+  };
+
   const appRepositories = useMemo(() => {
     if (!app) return [];
     if (Array.isArray(app.repositories) && app.repositories.length > 0) {
@@ -777,7 +830,7 @@ export default function AppDetailPage() {
                       </hd-button>
                     </a>
                   ) : (
-                    <div style={{ width: "100%" }} onClick={() => setIsDownloadModalOpen(true)}>
+                    <div style={{ width: "100%" }} onClick={handleDownloadAction}>
                       <hd-button
                         suppressHydrationWarning
                         data-width="100%"
@@ -1347,7 +1400,7 @@ export default function AppDetailPage() {
                           </hd-button>
                         </a>
                       ) : (
-                        <div style={{ width: "100%" }} onClick={() => setIsDownloadModalOpen(true)}>
+                        <div style={{ width: "100%" }} onClick={handleDownloadAction}>
                           <hd-button
                             suppressHydrationWarning
                             data-width="100%"
@@ -1609,7 +1662,7 @@ export default function AppDetailPage() {
           onDownloaded={(newCount) => {
             setApp(prev => prev ? {
               ...prev,
-              downloads_count: newCount !== undefined ? newCount : ((prev.downloads_count || 0) + 1)
+              downloads_count: newCount !== undefined ? Math.max(newCount, prev.downloads_count || 0) : ((prev.downloads_count || 0) + 1)
             } : prev);
           }}
         />

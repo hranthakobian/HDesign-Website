@@ -2607,22 +2607,26 @@ export async function getRealDownloadsCount(appId: string): Promise<number> {
 }
 
 export async function incrementAppDownloadsCount(appId: string): Promise<number> {
-  const realCount = await getRealDownloadsCount(appId);
-  
+  let finalCount = 1;
+
   // Persist updated downloads_count in app record
   try {
     const app = await getAppById(appId);
+    const realCount = await getRealDownloadsCount(appId);
+    const currentCount = Number(app?.downloads_count) || 0;
+    finalCount = Math.max(currentCount + 1, realCount);
+
     if (app) {
       await saveApp({
         ...app,
-        downloads_count: realCount
+        downloads_count: finalCount
       });
     }
   } catch (err) {
     console.warn('Failed to update app downloads_count:', err);
   }
 
-  return realCount;
+  return finalCount;
 }
 
 

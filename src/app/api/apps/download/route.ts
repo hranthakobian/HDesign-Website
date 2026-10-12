@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAppDownloads, saveAppDownload, getRealDownloadsCount, incrementAppDownloadsCount } from '@/lib/db';
+import { getAppDownloads, saveAppDownload, getRealDownloadsCount, incrementAppDownloadsCount, getAppById } from '@/lib/db';
 import { checkIndividualSpam } from '@/lib/spamDetector';
 
 export async function POST(request: Request) {
@@ -36,31 +36,31 @@ export async function POST(request: Request) {
       try {
         const recentDownloads = await getAppDownloads();
         const now = Date.now();
-        const fifteenMinutesAgo = now - 15 * 60 * 1000;
+        const fiveSecondsAgo = now - 5 * 1000;
         const oneMinuteAgo = now - 60 * 1000;
 
-        // A: Duplicate download of the SAME app by the same IP within 15 minutes
+        // A: Duplicate download debounce of the SAME app by the same IP within 5 seconds
         const duplicateRecent = recentDownloads.find(d =>
           d.app_id === app_id &&
           d.ip_address === ip &&
           d.created_at &&
-          new Date(d.created_at).getTime() > fifteenMinutesAgo
+          new Date(d.created_at).getTime() > fiveSecondsAgo
         );
 
         if (duplicateRecent) {
           isSpam = true;
-          spamReason = 'Duplicate download within 15-minute cooldown period';
+          spamReason = 'Duplicate download within 5-second debounce period';
         } else {
-          // B: Rapid burst rate limit across apps (>5 downloads in 1 minute)
+          // B: Rapid burst rate limit across apps (>10 downloads in 1 minute)
           const burstCount = recentDownloads.filter(d =>
             d.ip_address === ip &&
             d.created_at &&
             new Date(d.created_at).getTime() > oneMinuteAgo
           ).length;
 
-          if (burstCount >= 5) {
+          if (burstCount >= 10) {
             isSpam = true;
-            spamReason = 'Rate limit exceeded: >5 download attempts in 1 minute';
+            spamReason = 'Rate limit exceeded: >10 download attempts in 1 minute';
           }
         }
       } catch (e) {
@@ -83,7 +83,9 @@ export async function POST(request: Request) {
     if (!isSpam) {
       downloadsCount = await incrementAppDownloadsCount(app_id);
     } else {
-      downloadsCount = await getRealDownloadsCount(app_id);
+      const app = await getAppById(app_id);
+      const realCount = await getRealDownloadsCount(app_id);
+      downloadsCount = Math.max(Number(app?.downloads_count) || 0, realCount);
     }
 
     return NextResponse.json({

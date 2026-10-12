@@ -44,11 +44,17 @@ export default function AppDownloadModal({
   const [isClosing, setIsClosing] = React.useState(false);
 
   const handleDownload = async (item: AppDownloadOption) => {
+    // 1. Optimistically trigger download counter in UI immediately
+    if (onDownloaded) {
+      onDownloaded();
+    }
+
     if (appId) {
       try {
         const res = await fetch('/api/apps/download', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          keepalive: true,
           body: JSON.stringify({
             app_id: appId,
             download_url: item.url,
@@ -366,6 +372,8 @@ export default function AppDownloadModal({
                         <a
                           href={item.url}
                           download
+                          target="_blank"
+                          rel="noopener noreferrer"
                           style={{ textDecoration: "none", flexShrink: 0 }}
                           onClick={() => handleDownload(item)}
                         >
