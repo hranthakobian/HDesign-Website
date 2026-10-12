@@ -1250,6 +1250,7 @@ export type AppItem = {
   design_system?: string;
   version: string;
   release_date: string;
+  file_size?: string;
   downloads_count?: number;
   avg_rating?: number;
   reviews_count?: number;
@@ -1340,6 +1341,7 @@ export const defaultSeededApps: AppItem[] = [
     languages: ['Հայերեն', 'English'],
     version: 'v1.2.0',
     release_date: '2026-03-10',
+    file_size: '4.8 MB',
     downloads_count: 0,
     is_draft: false,
     status: 'published',

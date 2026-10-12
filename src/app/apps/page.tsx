@@ -8,6 +8,7 @@ import { SingleHDesignStar } from "@/components/RatingSystem";
 import SoftwareIcon from "@/components/SoftwareIcon";
 import SoftwareTooltip from "@/components/SoftwareTooltip";
 import { formatLanguageName } from "@/lib/languages";
+import { formatReleaseDate } from "@/lib/dateUtils";
 
 export type AppData = {
   id: string;
@@ -30,6 +31,7 @@ export type AppData = {
     version?: string;
     icon?: string;
   }[];
+  file_size?: string;
   store_url?: string;
   repository_url?: string;
   repository_type?: string;
@@ -725,7 +727,7 @@ export default function AppsListingPage() {
                       </span>
                       {(app.updated_at || app.release_date) && (
                         <span style={{ fontSize: "0.68rem", color: "var(--muted)" }}>
-                          {locale === "hy" ? "Թարմ․" : "Upd."} {new Date(app.updated_at || app.release_date).toLocaleDateString(locale === "hy" ? "hy-AM" : "en-US", { year: "numeric", month: "short", day: "numeric" })}
+                          {locale === "hy" ? "Թարմ․" : "Upd."} {formatReleaseDate(app.updated_at || app.release_date, locale)}
                         </span>
                       )}
                     </div>

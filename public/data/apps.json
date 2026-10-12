@@ -25,6 +25,7 @@
         "icon": "/icons/illustrator.svg",
         "name": "Adobe Illustrator (Windows)",
         "version": "v2.3.0",
+        "file_size": "149 KB",
         "host_app": "Adobe Illustrator"
       }
     ],
@@ -57,7 +58,8 @@
     ],
     "design_system": "HDesign",
     "version": "v2.3.0",
-    "release_date": "2026-10-03",
+    "release_date": "2026-10-12",
+    "file_size": "149 KB",
     "downloads_count": 5,
     "is_draft": false,
     "status": "published",

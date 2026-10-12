@@ -62,6 +62,7 @@ type AppItem = {
   design_system?: string;
   version: string;
   release_date: string;
+  file_size?: string;
   downloads_count?: number;
   avg_rating?: number;
   reviews_count?: number;
@@ -1569,7 +1570,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                     )}
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px" }}>
                   <div>
                     <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
                       Տարբերակ (Version)
@@ -1590,6 +1591,18 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                       type="date"
                       value={form.release_date || ""}
                       onChange={e => setForm(prev => ({ ...prev, release_date: e.target.value }))}
+                      style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.88rem" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
+                      Նիշքի Քաշ (File Size)
+                    </label>
+                    <input
+                      type="text"
+                      value={form.file_size || ""}
+                      onChange={e => setForm(prev => ({ ...prev, file_size: e.target.value }))}
+                      placeholder="օր. 149 KB կամ 25 MB"
                       style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.88rem" }}
                     />
                   </div>
@@ -2556,7 +2569,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                   )}
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px" }}>
                   <div>
                     <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>Տարբերակ (Version)</label>
                     <input type="text" value={form.version} onChange={e => setForm(prev => ({ ...prev, version: e.target.value }))} style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.88rem" }} />
@@ -2564,6 +2577,10 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                   <div>
                     <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>Թողարկման Ամսաթիվ</label>
                     <input type="date" value={form.release_date || ""} onChange={e => setForm(prev => ({ ...prev, release_date: e.target.value }))} style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.88rem" }} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>Նիշքի Քաշ (File Size)</label>
+                    <input type="text" value={form.file_size || ""} onChange={e => setForm(prev => ({ ...prev, file_size: e.target.value }))} placeholder="օր. 149 KB կամ 25 MB" style={{ width: "100%", padding: "10px 14px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.88rem" }} />
                   </div>
                 </div>
 

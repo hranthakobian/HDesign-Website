@@ -14,6 +14,8 @@ import KofiModal from "@/components/KofiModal";
 import SoftwareIcon from "@/components/SoftwareIcon";
 import SoftwareTooltip from "@/components/SoftwareTooltip";
 import { formatLanguageName } from "@/lib/languages";
+import { formatReleaseDate } from "@/lib/dateUtils";
+import { formatBytes } from "@/lib/mediaTypes";
 
 type Review = {
   id: string;
@@ -44,6 +46,7 @@ type AppDetail = {
   currency?: string;
   download_url?: string;
   downloads?: AppDownloadOption[];
+  file_size?: string;
   store_url?: string;
   repository_url?: string;
   repository_type?: string;
@@ -99,20 +102,84 @@ export default function AppDetailPage() {
     return Array.from(detected);
   }, [app]);
 
+  // Dynamically probed file size if missing in database
+  const [probedFileSize, setProbedFileSize] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!app) return;
+    if (app.file_size?.trim()) return;
+    if (app.downloads && app.downloads.some(d => !!d.file_size?.trim())) return;
+
+    const targetUrl = (app.downloads && app.downloads[0]?.url) || app.download_url;
+    if (!targetUrl || targetUrl.includes('example.com') || targetUrl.startsWith('#')) return;
+
+    let isMounted = true;
+    const controller = new AbortController();
+
+    const probe = async () => {
+      try {
+        const res = await fetch(targetUrl, {
+          method: 'HEAD',
+          signal: controller.signal
+        });
+        if (!res.ok) return;
+        const cl = res.headers.get('content-length');
+        if (cl && isMounted) {
+          const bytes = parseInt(cl, 10);
+          if (!isNaN(bytes) && bytes > 0) {
+            setProbedFileSize(formatBytes(bytes));
+          }
+        }
+      } catch {
+        // Silently catch CORS or network error
+      }
+    };
+
+    probe();
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [app]);
+
   const validDownloads: import('@/lib/db').AppDownloadOption[] = React.useMemo(() => {
     if (!app) return [];
     const list = (app.downloads || []).filter(d => !!d.url?.trim() && !d.url.includes('example.com'));
-    if (list.length > 0) return list;
+    if (list.length > 0) {
+      return list.map(d => ({
+        ...d,
+        file_size: d.file_size || app.file_size || probedFileSize || undefined
+      }));
+    }
     if (app.download_url?.trim() && !app.download_url.includes('example.com')) {
       return [{
         name: app.host_app || (locale === 'hy' ? 'Հիմնական նիշք' : 'Primary File'),
         url: app.download_url,
         icon: app.host_app_icon,
-        os: 'windows' as const
+        os: 'windows' as const,
+        file_size: app.file_size || probedFileSize || undefined
       }];
     }
     return [];
-  }, [app, locale]);
+  }, [app, locale, probedFileSize]);
+
+  const displayFileSize = useMemo(() => {
+    if (app?.file_size && app.file_size.trim()) {
+      return app.file_size.trim();
+    }
+    const sizes = validDownloads.map(d => d.file_size?.trim()).filter(Boolean) as string[];
+    if (sizes.length === 1) {
+      return sizes[0];
+    }
+    if (sizes.length > 1) {
+      const unique = Array.from(new Set(sizes));
+      return unique.join(', ');
+    }
+    if (probedFileSize) {
+      return probedFileSize;
+    }
+    return null;
+  }, [app?.file_size, validDownloads, probedFileSize]);
 
   const galleryImages = useMemo(() => {
     const list: string[] = [];
@@ -587,7 +654,7 @@ export default function AppDetailPage() {
                     <polyline points="12 6 12 12 16 14" />
                   </svg>
                   {locale === "hy" ? "Թարմացվել է՝ " : "Updated: "}
-                  {new Date(app.updated_at || app.release_date).toLocaleDateString(locale === "hy" ? "hy-AM" : "en-US", { year: "numeric", month: "short", day: "numeric" })}
+                  {formatReleaseDate(app.updated_at || app.release_date, locale)}
                 </span>
               )}
             </div>
@@ -1350,16 +1417,20 @@ export default function AppDetailPage() {
 
               <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px dashed var(--panel-border)", paddingBottom: "10px" }}>
                 <span style={{ color: "var(--muted)" }}>{locale === "hy" ? "Թողարկման ամսաթիվ" : "Release Date"}</span>
-                <span style={{ fontWeight: 700, color: "var(--text)" }}>{app.release_date || "—"}</span>
+                <span style={{ fontWeight: 700, color: "var(--text)" }}>{formatReleaseDate(app.release_date, locale)}</span>
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px dashed var(--panel-border)", paddingBottom: "10px" }}>
                 <span style={{ color: "var(--muted)" }}>{locale === "hy" ? "Թարմացման ամսաթիվ" : "Last Updated"}</span>
                 <span style={{ fontWeight: 700, color: "var(--text)" }}>
-                  {app.updated_at 
-                    ? new Date(app.updated_at).toLocaleDateString(locale === "hy" ? "hy-AM" : "en-US", { year: "numeric", month: "short", day: "numeric" })
-                    : (app.release_date || "—")}
+                  {formatReleaseDate(app.updated_at || app.release_date, locale)}
                 </span>
+              </div>
+
+              {/* Նիշքի քաշ (File Size) */}
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px dashed var(--panel-border)", paddingBottom: "10px" }}>
+                <span style={{ color: "var(--muted)" }}>{locale === "hy" ? "Նիշքի քաշ" : "File Size"}</span>
+                <span style={{ fontWeight: 700, color: "var(--text)" }}>{displayFileSize || "—"}</span>
               </div>
 
               {/* Օպերացիոն Համակարգեր (ԳՀ / OS) */}
