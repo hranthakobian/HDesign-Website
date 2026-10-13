@@ -2536,9 +2536,10 @@ export async function getAppDownloads(appId?: string): Promise<AppDownload[]> {
       const fs = getFs();
       const content = await fs.readFile(APP_DOWNLOADS_FILE, 'utf-8');
       const localDownloads = JSON.parse(content) as AppDownload[];
-      if (downloads.length === 0) {
-        downloads = appId ? localDownloads.filter(d => d.app_id === appId) : localDownloads;
-      }
+      const existingIds = new Set(downloads.map(d => d.id));
+      const missingLocal = localDownloads.filter(d => !existingIds.has(d.id));
+      const applicableLocal = appId ? missingLocal.filter(d => d.app_id === appId) : missingLocal;
+      downloads = [...downloads, ...applicableLocal];
     } catch (e) { /* ignore */ }
   }
 
@@ -2563,11 +2564,31 @@ export async function saveAppDownload(download: Omit<AppDownload, 'id' | 'create
   const adminClient = supabaseAdmin || supabase;
   if (adminClient) {
     try {
-      const { data, error } = await adminClient
+      let { data, error } = await adminClient
         .from('app_downloads')
         .insert([newDownload])
         .select()
         .single();
+
+      // If foreign key constraint failed because the app is not in 'apps' table yet,
+      // save the app to Supabase first and retry insertion
+      if (error && (error.code === '23503' || error.message?.includes('foreign key'))) {
+        try {
+          const app = await getAppById(download.app_id);
+          if (app) {
+            await saveApp(app);
+            const retry = await adminClient
+              .from('app_downloads')
+              .insert([newDownload])
+              .select()
+              .single();
+            data = retry.data;
+            error = retry.error;
+          }
+        } catch (e) {
+          console.warn('Failed to auto-seed app for download FK:', e);
+        }
+      }
 
       if (!error && data) {
         // Also keep local file in sync
@@ -2581,6 +2602,8 @@ export async function saveAppDownload(download: Omit<AppDownload, 'id' | 'create
           } catch (e) { /* ignore */ }
         }
         return data as AppDownload;
+      } else if (error) {
+        console.warn('Supabase saveAppDownload error:', error.message);
       }
     } catch (err) {
       console.warn('Supabase saveAppDownload failed, fallback to local:', err);

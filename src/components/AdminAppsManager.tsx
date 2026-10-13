@@ -453,47 +453,50 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
     setViewMode("hub");
 
     // Load REAL Data for this App
-    if (token) {
-      // 1. Real Bug Reports
+    const currentToken = token || (typeof window !== 'undefined' ? localStorage.getItem('hdesign_admin_token') : null);
+    const authHeaders: Record<string, string> = currentToken ? { Authorization: currentToken } : {};
+
+    // 1. Real Bug Reports
+    if (currentToken) {
       try {
-        const bRes = await fetch(`/api/apps/bug-reports`, { headers: { Authorization: token } });
+        const bRes = await fetch(`/api/apps/bug-reports`, { headers: { Authorization: currentToken } });
         if (bRes.ok) {
           const bData = await bRes.json();
           const list = Array.isArray(bData) ? bData : (bData?.reports || []);
           setBugReports(list.filter((r: AppBugReport) => r.app_id === app.id));
         }
       } catch (e) {}
-
-      // 2. Real Reviews
-      try {
-        const rRes = await fetch(`/api/apps/reviews?app_id=${app.id}`, { headers: { Authorization: token } });
-        if (rRes.ok) {
-          const rData = await rRes.json();
-          const rList = Array.isArray(rData) ? rData : (rData?.reviews || []);
-          setReviews(rList.filter((r: AppReview) => r.app_id === app.id));
-        }
-      } catch (e) {}
-
-      // 3. Real Downloads Log
-      try {
-        const dRes = await fetch(`/api/apps/download?appId=${app.id}`, { headers: { Authorization: token } });
-        if (dRes.ok) {
-          const dData = await dRes.json();
-          const dList = Array.isArray(dData?.downloads) ? dData.downloads : [];
-          setDownloadLogs(dList);
-        }
-      } catch (e) {}
-
-      // 4. Real Analytics / Visits
-      try {
-        const vRes = await fetch(`/api/analytics`, { headers: { Authorization: token } });
-        if (vRes.ok) {
-          const vData = await vRes.json();
-          const vList = Array.isArray(vData) ? vData : [];
-          setVisitLogs(vList);
-        }
-      } catch (e) {}
     }
+
+    // 2. Real Reviews
+    try {
+      const rRes = await fetch(`/api/apps/reviews?app_id=${app.id}`, { headers: authHeaders });
+      if (rRes.ok) {
+        const rData = await rRes.json();
+        const rList = Array.isArray(rData) ? rData : (rData?.reviews || []);
+        setReviews(rList.filter((r: AppReview) => r.app_id === app.id));
+      }
+    } catch (e) {}
+
+    // 3. Real Downloads Log
+    try {
+      const dRes = await fetch(`/api/apps/download?appId=${app.id}`, { headers: authHeaders });
+      if (dRes.ok) {
+        const dData = await dRes.json();
+        const dList = Array.isArray(dData?.downloads) ? dData.downloads : [];
+        setDownloadLogs(dList);
+      }
+    } catch (e) {}
+
+    // 4. Real Analytics / Visits
+    try {
+      const vRes = await fetch(`/api/analytics`, { headers: authHeaders });
+      if (vRes.ok) {
+        const vData = await vRes.json();
+        const vList = Array.isArray(vData) ? vData : [];
+        setVisitLogs(vList);
+      }
+    } catch (e) {}
   };
 
   // Save handler
@@ -2193,7 +2196,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
               { id: "analytics", label: "Վիճակագրություն", badge: `${realAnalytics.totalDownloads} ներբեռնում` },
               { id: "reports", label: "Զեկույցներ", badge: bugReports.length > 0 ? `${bugReports.length}` : null },
               { id: "reviews", label: "Մեկնաբանություններ", badge: reviews.length > 0 ? `${reviews.length}` : null },
-              { id: "logs", label: "Ներբեռնումների Լոգ", badge: null },
+              { id: "logs", label: "Ներբեռնումների Լոգ", badge: downloadLogs.length > 0 ? `${downloadLogs.length}` : null },
             ].map(tab => {
               const isActive = hubTab === tab.id;
               return (

@@ -17,12 +17,12 @@ export type SpamCheckResult = {
 // Known keywords in User-Agent that identify scrapers, headless tools, search engines, or command line clients
 const SPAM_UA_KEYWORDS = [
   'bot', 'crawler', 'spider', 'scrape', 'headless', 'lighthouse', 'semrush', 'ahrefs',
-  'moz', 'dotbot', 'screaming', 'siteaudit', 'cybermapper', 'curl', 'wget', 'python',
-  'axios', 'go-http', 'java', 'libwww', 'perl', 'php', 'client', 'scrapy', 'postman',
-  'insomnia', 'playwright', 'puppeteer', 'selenium', 'phantomjs', 'node-fetch', 'got',
-  'superagent', 'urllib', 'okhttp', 'apache', 'github-camo', 'vercel-screenshot',
+  'rogerbot', 'mozbar', 'moz.com', 'dotbot', 'screaming', 'siteaudit', 'cybermapper', 'curl', 'wget', 'python',
+  'axios', 'go-http', 'java/', 'libwww', 'perl', 'php/', 'httpclient', 'http-client', 'rest-client', 'scrapy', 'postman',
+  'insomnia', 'playwright', 'puppeteer', 'selenium', 'phantomjs', 'node-fetch', 'got/',
+  'superagent', 'urllib', 'okhttp', 'apache-httpclient', 'github-camo', 'vercel-screenshot',
   'headlesschrome', 'zgrab', 'censys', 'nmap', 'sqlmap', 'masscan', 'netcrawler',
-  'exabot', 'sogou', 'baiduspider', 'yandex', 'facebookexternalhit', 'twitterbot',
+  'exabot', 'sogou', 'baiduspider', 'yandexbot', 'yandeximages', 'yandexsearch', 'facebookexternalhit', 'twitterbot',
   'linkedinbot', 'pinterestbot', 'slackbot', 'telegrambot', 'discordbot', 'applebot'
 ];
 
