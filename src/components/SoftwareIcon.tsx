@@ -240,14 +240,18 @@ export default function SoftwareIcon({
   // Windows (Windows 11)
   if (n.includes("windows") || n.includes("win")) {
     return (
-      <svg
+      <img
+        src="/icons/windows.webp"
+        alt={name || "Windows"}
         className={className}
-        style={{ width: dimension, height: dimension, flexShrink: 0, ...style }}
-        viewBox="0 0 24 24"
-        fill="#0078D4"
-      >
-        <path d="M1 1h10v10H1zM13 1h10v10H1zM1 13h10v10H1zM13 13h10v10H1z" />
-      </svg>
+        style={{
+          width: dimension,
+          height: dimension,
+          objectFit: "contain",
+          flexShrink: 0,
+          ...style
+        }}
+      />
     );
   }
 

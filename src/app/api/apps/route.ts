@@ -183,9 +183,10 @@ export async function POST(request: Request) {
           ? languages.split(',').map((s: string) => s.trim()).filter(Boolean)
           : ['Հայերեն']);
 
-    const downloadsList = (Array.isArray(downloads) ? downloads : [])
-      .filter(d => d && d.url && !d.url.includes('example.com'));
     const supportedOsList = Array.isArray(supported_os) ? supported_os : [];
+    const downloadsList = (Array.isArray(downloads) ? downloads : [])
+      .filter(d => d && d.url && !d.url.includes('example.com'))
+      .filter(d => !d.os || supportedOsList.length === 0 || supportedOsList.includes(d.os as any));
     const repositoriesList = (Array.isArray(repositories) ? repositories : [])
       .filter(r => r && r.url && r.url.trim());
 

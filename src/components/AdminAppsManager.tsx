@@ -512,8 +512,19 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
       const validRepos = (form.repositories || []).filter(r => r.url.trim() !== "");
       const primaryRepo = validRepos[0];
 
+      const cleanSupportedOs = form.supported_os || [];
+      const cleanDownloads = (form.downloads || []).filter(d => {
+        if (!d.url?.trim() || d.url.includes('example.com')) return false;
+        if (cleanSupportedOs.length > 0 && d.os) {
+          return cleanSupportedOs.includes(d.os as any);
+        }
+        return true;
+      });
+
       const payload = {
         ...form,
+        downloads: cleanDownloads,
+        download_url: cleanDownloads.length > 0 ? cleanDownloads[0].url : (form.download_url || ""),
         original_id: selectedAppId,
         notify_subscribers: notifySubscribers,
         host_app: (form.host_apps && form.host_apps.length > 0) ? form.host_apps.join(', ') : form.host_app,
@@ -2458,9 +2469,13 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                               checked={isChecked}
                               onChange={e => {
                                 const curr = form.supported_os || [];
+                                const nextOS = e.target.checked ? [...curr, osItem.id as any] : curr.filter(x => x !== osItem.id);
                                 setForm(prev => ({
                                   ...prev,
-                                  supported_os: e.target.checked ? [...curr, osItem.id as any] : curr.filter(x => x !== osItem.id)
+                                  supported_os: nextOS,
+                                  downloads: e.target.checked
+                                    ? (prev.downloads || [])
+                                    : (prev.downloads || []).filter(d => d.os !== osItem.id)
                                 }));
                               }}
                               style={{ accentColor: "#0f172a" }}

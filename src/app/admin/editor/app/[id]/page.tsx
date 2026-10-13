@@ -266,8 +266,19 @@ export default function AppDedicatedEditorPage() {
 
     setSaving(true);
     try {
+      const cleanSupportedOs = form.supported_os || [];
+      const cleanDownloads = (form.downloads || []).filter(d => {
+        if (!d.url?.trim() || d.url.includes('example.com')) return false;
+        if (cleanSupportedOs.length > 0 && d.os) {
+          return cleanSupportedOs.includes(d.os as any);
+        }
+        return true;
+      });
+
       const payload = {
         ...form,
+        downloads: cleanDownloads,
+        download_url: cleanDownloads.length > 0 ? cleanDownloads[0].url : (form.download_url || ""),
         original_id: isNew ? undefined : rawId,
         notify_subscribers: notifySubscribers,
         host_app: (form.host_apps && form.host_apps.length > 0) ? form.host_apps.join(', ') : form.host_app,
@@ -471,7 +482,14 @@ export default function AppDedicatedEditorPage() {
                 <label key={osKey} style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 18px", background: isChecked ? "#f1f5f9" : "#ffffff", border: `1px solid ${isChecked ? "#0f172a" : "#cbd5e1"}`, borderRadius: "8px", cursor: "pointer", color: "#0f172a", fontWeight: 600, fontSize: "0.88rem" }}>
                   <input type="checkbox" checked={isChecked} onChange={e => {
                     const curr = form.supported_os || [];
-                    setForm(prev => ({ ...prev, supported_os: e.target.checked ? [...curr, osKey as any] : curr.filter(x => x !== osKey) }));
+                    const nextOS = e.target.checked ? [...curr, osKey as any] : curr.filter(x => x !== osKey);
+                    setForm(prev => ({
+                      ...prev,
+                      supported_os: nextOS,
+                      downloads: e.target.checked
+                        ? (prev.downloads || [])
+                        : (prev.downloads || []).filter(d => d.os !== osKey)
+                    }));
                   }} style={{ accentColor: "#0f172a" }} />
                   {osKey === 'windows' ? 'Windows' : osKey === 'macos' ? 'macOS' : 'Linux'}
                 </label>

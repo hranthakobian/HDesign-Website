@@ -1716,9 +1716,10 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
         ? (app.languages as string).split(',').map(s => s.trim()).filter(Boolean)
         : ['Հայերեն']);
 
-  const downloadsList = (Array.isArray(app.downloads) ? app.downloads : [])
-    .filter(d => d && d.url && !d.url.includes('example.com'));
   const supportedOsList = Array.isArray(app.supported_os) ? app.supported_os : [];
+  const downloadsList = (Array.isArray(app.downloads) ? app.downloads : [])
+    .filter(d => d && d.url && !d.url.includes('example.com'))
+    .filter(d => !d.os || supportedOsList.length === 0 || supportedOsList.includes(d.os as any));
   const repositoriesList = (Array.isArray(app.repositories) ? app.repositories : [])
     .filter(r => r && r.url && r.url.trim());
 

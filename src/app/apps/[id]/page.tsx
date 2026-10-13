@@ -83,8 +83,22 @@ export default function AppDetailPage() {
 
   const supportedOSList = useMemo(() => {
     if (!app) return [];
-    if (Array.isArray(app.supported_os) && app.supported_os.length > 0) {
-      return app.supported_os;
+    let explicitOS: ('windows' | 'macos' | 'linux')[] = [];
+    if (Array.isArray(app.supported_os)) {
+      explicitOS = app.supported_os.filter((x): x is 'windows' | 'macos' | 'linux' => ['windows', 'macos', 'linux'].includes(x as any));
+    } else if (typeof app.supported_os === 'string' && (app.supported_os as string).trim()) {
+      try {
+        const parsed = JSON.parse(app.supported_os);
+        if (Array.isArray(parsed)) {
+          explicitOS = parsed.filter((x: any) => ['windows', 'macos', 'linux'].includes(x));
+        }
+      } catch {
+        const parts = (app.supported_os as string).split(',').map(s => s.trim().toLowerCase());
+        explicitOS = parts.filter((x: any) => ['windows', 'macos', 'linux'].includes(x)) as any;
+      }
+    }
+    if (explicitOS.length > 0) {
+      return explicitOS;
     }
     const detected = new Set<'windows' | 'macos' | 'linux'>();
     (app.downloads || []).filter(d => !!d.url?.trim() && !d.url.includes('example.com')).forEach(d => {
@@ -145,7 +159,13 @@ export default function AppDetailPage() {
 
   const validDownloads: import('@/lib/db').AppDownloadOption[] = React.useMemo(() => {
     if (!app) return [];
-    const list = (app.downloads || []).filter(d => !!d.url?.trim() && !d.url.includes('example.com'));
+    const list = (app.downloads || []).filter(d => {
+      if (!d.url?.trim() || d.url.includes('example.com')) return false;
+      if (supportedOSList.length > 0) {
+        if (d.os && !supportedOSList.includes(d.os as any)) return false;
+      }
+      return true;
+    });
     if (list.length > 0) {
       return list.map(d => ({
         ...d,
@@ -153,16 +173,17 @@ export default function AppDetailPage() {
       }));
     }
     if (app.download_url?.trim() && !app.download_url.includes('example.com')) {
+      const primaryOs = (supportedOSList[0] || 'windows') as 'windows' | 'macos' | 'linux';
       return [{
         name: app.host_app || (locale === 'hy' ? 'Հիմնական նիշք' : 'Primary File'),
         url: app.download_url,
         icon: app.host_app_icon,
-        os: 'windows' as const,
+        os: primaryOs,
         file_size: app.file_size || probedFileSize || undefined
       }];
     }
     return [];
-  }, [app, locale, probedFileSize]);
+  }, [app, locale, probedFileSize, supportedOSList]);
 
   const displayFileSize = useMemo(() => {
     if (app?.file_size && app.file_size.trim()) {
