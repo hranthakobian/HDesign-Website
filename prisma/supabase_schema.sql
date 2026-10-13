@@ -188,6 +188,8 @@ CREATE INDEX IF NOT EXISTS idx_bug_reports_app ON app_bug_reports(app_id);
 CREATE INDEX IF NOT EXISTS idx_bug_reports_status ON app_bug_reports(status);
 
 -- 10. App Downloads & Spam Tracking
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS downloads_count INTEGER DEFAULT 0;
+
 CREATE TABLE IF NOT EXISTS app_downloads (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   app_id TEXT NOT NULL REFERENCES apps(id) ON DELETE CASCADE,
@@ -205,5 +207,21 @@ ALTER TABLE app_downloads DISABLE ROW LEVEL SECURITY;
 ALTER TABLE app_downloads ADD COLUMN IF NOT EXISTS os TEXT;
 CREATE INDEX IF NOT EXISTS idx_downloads_app ON app_downloads(app_id);
 CREATE INDEX IF NOT EXISTS idx_downloads_spam ON app_downloads(is_spam);
+
+-- 11. Atomic Increment Function for App Downloads
+CREATE OR REPLACE FUNCTION increment_app_downloads(p_app_id TEXT)
+RETURNS INTEGER AS $$
+DECLARE
+  new_count INTEGER;
+BEGIN
+  UPDATE apps
+  SET downloads_count = COALESCE(downloads_count, 0) + 1
+  WHERE id = p_app_id
+  RETURNING downloads_count INTO new_count;
+  
+  RETURN COALESCE(new_count, 1);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 
 

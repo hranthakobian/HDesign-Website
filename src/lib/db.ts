@@ -1682,6 +1682,7 @@ export async function getApps(): Promise<AppItem[]> {
 
       return {
         ...item,
+        downloads_count: Math.max(Number(item.downloads_count) || 0, Number(local?.downloads_count) || 0),
         supported_os: (Array.isArray(item.supported_os) && item.supported_os.length > 0)
           ? item.supported_os
           : (Array.isArray(meta.supported_os) && meta.supported_os.length > 0
@@ -1827,6 +1828,7 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
         return {
           ...newApp,
           ...data,
+          downloads_count: Math.max(Number(newApp.downloads_count) || 0, Number(data.downloads_count) || 0),
           supported_os: newApp.supported_os,
           downloads: newApp.downloads,
           repository_url: newApp.repository_url,
@@ -2615,6 +2617,22 @@ export async function incrementAppDownloadsCount(appId: string): Promise<number>
     const realCount = await getRealDownloadsCount(appId);
     const currentCount = Number(app?.downloads_count) || 0;
     finalCount = Math.max(currentCount + 1, realCount);
+
+    const adminClient = supabaseAdmin || supabase;
+    if (adminClient) {
+      try {
+        // Try atomic RPC function first
+        const { data: rpcCount, error: rpcError } = await adminClient.rpc('increment_app_downloads', { p_app_id: appId });
+        if (!rpcError && typeof rpcCount === 'number' && rpcCount > 0) {
+          finalCount = Math.max(rpcCount, finalCount);
+        } else {
+          // If RPC not available yet, direct update on apps table
+          await adminClient.from('apps').update({ downloads_count: finalCount }).eq('id', appId);
+        }
+      } catch (sqlErr) {
+        console.warn('Supabase RPC / direct update failed:', sqlErr);
+      }
+    }
 
     if (app) {
       await saveApp({

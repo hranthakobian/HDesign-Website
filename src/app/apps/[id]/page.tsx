@@ -715,7 +715,7 @@ export default function AppDetailPage() {
 
             {/* Title */}
             <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
-              <h1 style={{ fontSize: "22pt", fontWeight: 900, color: "var(--text)", margin: 0, lineHeight: 1.2 }}>
+              <h1 style={{ fontSize: "28pt", fontWeight: 900, color: "var(--text)", margin: 0, lineHeight: 1.2 }}>
                 {title}
               </h1>
               {(app.is_draft || app.status === 'draft') && (
@@ -754,7 +754,7 @@ export default function AppDetailPage() {
 
             {/* Short Description */}
             {shortDesc && (
-              <p style={{ fontSize: "1.05rem", color: "var(--text)", opacity: 0.85, lineHeight: "1.6", margin: 0 }}>
+              <p style={{ fontSize: "18pt", color: "var(--text)", opacity: 0.85, lineHeight: "1.3", margin: 0 }}>
                 {shortDesc}
               </p>
             )}
