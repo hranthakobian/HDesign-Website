@@ -128,7 +128,13 @@ export default function MediaLightbox({
   }
 
   const activeItem = items[currentIndex] || items[0];
-  const isVideo = activeItem.type === "video" || (activeItem.url && /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(activeItem.url));
+  const isVideo = activeItem.type === "video" || (activeItem.url && (
+    activeItem.url.includes("youtube.com") ||
+    activeItem.url.includes("youtu.be") ||
+    activeItem.url.includes("vimeo.com") ||
+    activeItem.url.includes("loom.com") ||
+    /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(activeItem.url)
+  ));
   const activeTitle = activeItem.title ? parseLangText(activeItem.title, locale) : "";
   const activeDesc = activeItem.description ? parseLangText(activeItem.description, locale) : "";
   const labelText = categoryLabel || (locale === "en" ? "Gallery Preview" : "Պատկերասրահ");
@@ -403,38 +409,62 @@ export default function MediaLightbox({
               scrollbarWidth: "none"
             }}
           >
-            {items.map((item, idx) => (
-              <div
-                key={item.id || idx}
-                onClick={() => setCurrentIndex(idx)}
-                style={{
-                  width: "60px",
-                  height: "45px",
-                  borderRadius: "8px",
-                  overflow: "hidden",
-                  cursor: "pointer",
-                  border: idx === currentIndex ? "2px solid var(--accent, #14b8a6)" : "2px solid transparent",
-                  opacity: idx === currentIndex ? 1 : 0.4,
-                  transform: idx === currentIndex ? "scale(1.05)" : "scale(1)",
-                  transition: "all 0.2s ease",
-                  background: item.bg || "#111",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0
-                }}
-              >
-                {item.url ? (
-                  <img src={item.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                ) : item.svgContent ? (
-                  <div style={{ width: "100%", height: "100%", position: "relative", overflow: "hidden" }}>
-                    {item.svgContent}
-                  </div>
-                ) : (
-                  <div style={{ width: "100%", height: "100%", background: "#222" }} />
-                )}
-              </div>
-            ))}
+            {items.map((item, idx) => {
+              const isItemVideo = item.type === "video" || (item.url && (
+                item.url.includes("youtube.com") ||
+                item.url.includes("youtu.be") ||
+                item.url.includes("vimeo.com") ||
+                item.url.includes("loom.com") ||
+                /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(item.url)
+              ));
+              const ytMatch = item.url ? (
+                item.url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/)
+              ) : null;
+              const ytThumb = ytMatch ? `https://img.youtube.com/vi/${ytMatch[1]}/hqdefault.jpg` : null;
+              const thumbSrc = isItemVideo ? ytThumb : item.url;
+
+              return (
+                <div
+                  key={item.id || idx}
+                  onClick={() => setCurrentIndex(idx)}
+                  style={{
+                    width: "60px",
+                    height: "45px",
+                    borderRadius: "8px",
+                    overflow: "hidden",
+                    cursor: "pointer",
+                    border: idx === currentIndex ? "2px solid var(--accent, #14b8a6)" : "2px solid transparent",
+                    opacity: idx === currentIndex ? 1 : 0.4,
+                    transform: idx === currentIndex ? "scale(1.05)" : "scale(1)",
+                    transition: "all 0.2s ease",
+                    background: item.bg || "#111",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    position: "relative"
+                  }}
+                >
+                  {thumbSrc ? (
+                    <img src={thumbSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : item.svgContent ? (
+                    <div style={{ width: "100%", height: "100%", position: "relative", overflow: "hidden" }}>
+                      {item.svgContent}
+                    </div>
+                  ) : (
+                    <div style={{ width: "100%", height: "100%", background: "#1a2524", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {isItemVideo && <span className="hd-icon icon-Play" style={{ fontSize: "14px", color: "var(--accent, #14b8a6)" }} />}
+                    </div>
+                  )}
+
+                  {isItemVideo && thumbSrc && (
+                    <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+                      <span className="hd-icon icon-Play" style={{ fontSize: "12px", color: "#fff" }} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

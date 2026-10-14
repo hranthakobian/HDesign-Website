@@ -109,6 +109,7 @@ CREATE TABLE IF NOT EXISTS apps (
   download_url TEXT,
   store_url TEXT,
   cover_image TEXT,
+  video_url TEXT DEFAULT '',
   gallery_images JSONB DEFAULT '[]'::jsonb,
   languages JSONB DEFAULT '["Հայերեն", "English"]'::jsonb,
   design_system TEXT DEFAULT 'HDesign',
@@ -136,6 +137,7 @@ ALTER TABLE apps ADD COLUMN IF NOT EXISTS repository_type TEXT DEFAULT 'github';
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS host_apps JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS repositories JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS file_size TEXT DEFAULT '';
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS video_url TEXT DEFAULT '';
 ALTER TABLE apps ALTER COLUMN title_am DROP NOT NULL;
 ALTER TABLE apps ALTER COLUMN title_en DROP NOT NULL;
 ALTER TABLE apps ALTER COLUMN host_app DROP NOT NULL;

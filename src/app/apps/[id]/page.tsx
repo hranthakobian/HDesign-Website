@@ -53,6 +53,7 @@ type AppDetail = {
   repository_type?: string;
   repositories?: { id?: string; type: string; url: string; label?: string }[];
   cover_image?: string;
+  video_url?: string;
   gallery_images: string[];
   languages?: string[];
   design_system?: string;
@@ -563,7 +564,12 @@ export default function AppDetailPage() {
       >
         {/* Left Side: Media Gallery Slider */}
         <div style={{ width: "100%", display: "flex", flexDirection: "column" }}>
-          <AppGallerySlider images={galleryImages} title={title} />
+          <AppGallerySlider
+            images={galleryImages}
+            videoUrl={app.video_url}
+            coverImage={app.cover_image}
+            title={title}
+          />
         </div>
 
         {/* Right Side: Main Information & CTA */}

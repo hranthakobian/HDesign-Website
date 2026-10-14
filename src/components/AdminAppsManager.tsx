@@ -11,7 +11,8 @@ import SoftwareIcon from "./SoftwareIcon";
 import AppLanguagesPicker from "./AppLanguagesPicker";
 import AppDesignSystemPicker from "./AppDesignSystemPicker";
 import FileSizePicker from "./FileSizePicker";
-import { prefetchMediaLibrary } from "@/lib/mediaCache";
+import HdVideoPlayer from "./HdVideoPlayer";
+import { isVideoUrl, getYoutubeThumbnail } from "./AppGallerySlider";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell
@@ -58,6 +59,7 @@ type AppItem = {
   repository_type?: string;
   repositories?: AppRepository[];
   cover_image?: string;
+  video_url?: string;
   gallery_images: string[];
   languages?: string[];
   design_system?: string;
@@ -196,6 +198,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
     repository_type: "github",
     repositories: [{ type: "github", url: "", label: "GitHub" }],
     cover_image: "",
+    video_url: "",
     gallery_images: [],
     languages: ["am", "en"],
     design_system: "",
@@ -221,7 +224,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
   // Media Picker state
   const [mediaPickerConfig, setMediaPickerConfig] = useState<{
     isOpen: boolean;
-    target: "cover" | "gallery" | "download_file";
+    target: "cover" | "gallery" | "download_file" | "video";
     targetOS?: 'windows' | 'macos' | 'linux';
     targetHostApp?: string;
     multiple?: boolean;
@@ -399,6 +402,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
       repository_type: "github",
       repositories: [{ type: "github", url: "", label: "GitHub" }],
       cover_image: "",
+      video_url: "",
       gallery_images: [],
       languages: ["am", "en"],
       design_system: "",
@@ -448,6 +452,7 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
       gallery_images: Array.isArray(app.gallery_images) ? app.gallery_images : [],
       supported_os: Array.isArray(app.supported_os) ? app.supported_os : ['windows', 'macos'],
       downloads: Array.isArray(app.downloads) ? app.downloads : [],
+      video_url: app.video_url || "",
     });
     setHubTab("edit");
     setViewMode("hub");
@@ -622,6 +627,9 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
     if (target === "cover") {
       const url = Array.isArray(selected) ? selected[0] : selected;
       setForm(prev => ({ ...prev, cover_image: url }));
+    } else if (target === "video") {
+      const url = Array.isArray(selected) ? selected[0] : selected;
+      setForm(prev => ({ ...prev, video_url: url }));
     } else if (target === "gallery") {
       const urls = Array.isArray(selected) ? selected : [selected];
       setForm(prev => ({
@@ -1649,9 +1657,11 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
               <div className="admin-tab-transition" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                 <div style={{ borderBottom: "1px solid #e2e8f0", paddingBottom: "12px" }}>
                   <h3 style={{ fontSize: "1.15rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>
-                    Քայլ 2: Պատկերներ
+                    Քայլ 2: Մեդիա (Պատկերներ և Տեսանյութ)
                   </h3>
                 </div>
+
+                {/* Cover Image */}
                 <div>
                   <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
                     Գլխավոր Պատկեր (Cover Image)
@@ -1686,6 +1696,88 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                   </div>
                 </div>
 
+                {/* Video URL & Player Section */}
+                <div style={{ background: "#f8fafc", padding: "18px", borderRadius: "12px", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#0f172a" }}>
+                        🎬 Տեսանյութ (Video / Promo Trailer)
+                      </label>
+                      <span style={{ fontSize: "0.75rem", color: "#64748b" }}>
+                        Կարող եք տեղադրել YouTube, Vimeo, Loom կամ ուղիղ MP4/WebM տեսանյութի հղում, կամ ընտրել մեդիա գրադարանից:
+                      </span>
+                    </div>
+                    {form.video_url && (
+                      <button
+                        type="button"
+                        onClick={() => setForm(prev => ({ ...prev, video_url: "" }))}
+                        style={{ padding: "4px 10px", background: "#fee2e2", border: "1px solid #fecaca", borderRadius: "6px", color: "#b91c1c", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer" }}
+                      >
+                        Հեռացնել տեսանյութը
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                    <input
+                      type="text"
+                      value={form.video_url || ""}
+                      onChange={(e) => setForm(prev => ({ ...prev, video_url: e.target.value.trim() }))}
+                      placeholder="https://www.youtube.com/watch?v=... կամ https://.../video.mp4"
+                      style={{
+                        flex: 1,
+                        padding: "10px 14px",
+                        background: "#ffffff",
+                        border: "1px solid #cbd5e1",
+                        borderRadius: "8px",
+                        color: "#0f172a",
+                        fontSize: "0.88rem"
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setMediaPickerConfig({
+                        isOpen: true,
+                        target: "video",
+                        multiple: false,
+                        allowedTypes: ["video"],
+                        title: "Ընտրել Տեսանյութ",
+                        currentValue: form.video_url
+                      })}
+                      style={{
+                        padding: "10px 18px",
+                        background: "#0f172a",
+                        color: "#ffffff",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontSize: "0.82rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      📁 Մեդիա Գրադարան
+                    </button>
+                  </div>
+
+                  {form.video_url && form.video_url.trim() && (
+                    <div style={{ marginTop: "8px", borderRadius: "12px", overflow: "hidden", border: "1px solid #cbd5e1", maxWidth: "480px" }}>
+                      <div style={{ padding: "6px 12px", background: "#0f172a", color: "#94a3b8", fontSize: "0.72rem", fontWeight: 700 }}>
+                        Նախադիտում (HdVideoPlayer)
+                      </div>
+                      <HdVideoPlayer
+                        src={form.video_url.trim()}
+                        poster={form.cover_image}
+                        autoplay={false}
+                        width="100%"
+                        height="auto"
+                        radius="0px"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Gallery Screenshots */}
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
                     <div>
@@ -1699,8 +1791,8 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                         isOpen: true,
                         target: "gallery",
                         multiple: true,
-                        allowedTypes: ["image"],
-                        title: "Ավելացնել Պատկերներ",
+                        allowedTypes: ["image", "video"],
+                        title: "Ավելացնել Պատկերներ կամ Տեսանյութեր",
                         currentValue: form.gallery_images
                       })}
                       style={{ padding: "6px 14px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.8rem", fontWeight: 600, cursor: "pointer" }}
@@ -1719,6 +1811,9 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                     {(form.gallery_images || []).map((imgUrl, i) => {
                       const isDragging = draggedGalleryIndex === i;
                       const isOver = dragOverGalleryIndex === i && draggedGalleryIndex !== i;
+                      const isVid = isVideoUrl(imgUrl);
+                      const thumb = isVid ? (getYoutubeThumbnail(imgUrl) || null) : imgUrl;
+
                       return (
                         <div
                           key={i}
@@ -1763,11 +1858,25 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                             opacity: isDragging ? 0.4 : 1,
                             transition: "all 0.15s ease",
                             cursor: "grab",
-                            background: "#f1f5f9"
+                            background: "#0d1716",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center"
                           }}
                           title="Քաշեք տեղափոխելու համար"
                         >
-                          <img src={imgUrl} alt={`Screenshot ${i+1}`} style={{ width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }} />
+                          {thumb ? (
+                            <img src={thumb} alt={`Screenshot ${i+1}`} style={{ width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }} />
+                          ) : (
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <span className="hd-icon icon-Play" style={{ fontSize: "20px", color: "var(--accent, #4a897c)" }} />
+                            </div>
+                          )}
+                          {isVid && thumb && (
+                            <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+                              <span className="hd-icon icon-Play" style={{ fontSize: "16px", color: "#fff" }} />
+                            </div>
+                          )}
                           <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(15,23,42,0.75)", color: "#ffffff", borderRadius: "4px", padding: "1px 6px", fontSize: "0.68rem", fontWeight: 700, pointerEvents: "none" }}>
                             #{i + 1}
                           </div>
@@ -2649,6 +2758,87 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                   </div>
                 </div>
 
+                {/* Video URL & Player Section */}
+                <div style={{ background: "#f8fafc", padding: "18px", borderRadius: "12px", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#0f172a" }}>
+                        🎬 Տեսանյութ (Video / Promo Trailer)
+                      </label>
+                      <span style={{ fontSize: "0.75rem", color: "#64748b" }}>
+                        Կարող եք տեղադրել YouTube, Vimeo, Loom կամ ուղիղ MP4/WebM տեսանյութի հղում, կամ ընտրել մեդիա գրադարանից:
+                      </span>
+                    </div>
+                    {form.video_url && (
+                      <button
+                        type="button"
+                        onClick={() => setForm(prev => ({ ...prev, video_url: "" }))}
+                        style={{ padding: "4px 10px", background: "#fee2e2", border: "1px solid #fecaca", borderRadius: "6px", color: "#b91c1c", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer" }}
+                      >
+                        Հեռացնել տեսանյութը
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                    <input
+                      type="text"
+                      value={form.video_url || ""}
+                      onChange={(e) => setForm(prev => ({ ...prev, video_url: e.target.value.trim() }))}
+                      placeholder="https://www.youtube.com/watch?v=... կամ https://.../video.mp4"
+                      style={{
+                        flex: 1,
+                        padding: "10px 14px",
+                        background: "#ffffff",
+                        border: "1px solid #cbd5e1",
+                        borderRadius: "8px",
+                        color: "#0f172a",
+                        fontSize: "0.88rem"
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setMediaPickerConfig({
+                        isOpen: true,
+                        target: "video",
+                        multiple: false,
+                        allowedTypes: ["video"],
+                        title: "Ընտրել Տեսանյութ",
+                        currentValue: form.video_url
+                      })}
+                      style={{
+                        padding: "10px 18px",
+                        background: "#0f172a",
+                        color: "#ffffff",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontSize: "0.82rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        whiteSpace: "nowrap"
+                      }}
+                    >
+                      📁 Մեդիա Գրադարան
+                    </button>
+                  </div>
+
+                  {form.video_url && form.video_url.trim() && (
+                    <div style={{ marginTop: "8px", borderRadius: "12px", overflow: "hidden", border: "1px solid #cbd5e1", maxWidth: "480px" }}>
+                      <div style={{ padding: "6px 12px", background: "#0f172a", color: "#94a3b8", fontSize: "0.72rem", fontWeight: 700 }}>
+                        Նախադիտում (HdVideoPlayer)
+                      </div>
+                      <HdVideoPlayer
+                        src={form.video_url.trim()}
+                        poster={form.cover_image}
+                        autoplay={false}
+                        width="100%"
+                        height="auto"
+                        radius="0px"
+                      />
+                    </div>
+                  )}
+                </div>
+
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
                     <div>
@@ -2665,8 +2855,8 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                         isOpen: true,
                         target: "gallery",
                         multiple: true,
-                        allowedTypes: ["image"],
-                        title: "Ավելացնել Պատկերներ",
+                        allowedTypes: ["image", "video"],
+                        title: "Ավելացնել Պատկերներ կամ Տեսանյութեր",
                         currentValue: form.gallery_images
                       })}
                       style={{ padding: "6px 14px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.8rem", fontWeight: 600, cursor: "pointer" }}
@@ -2679,6 +2869,9 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                     {(form.gallery_images || []).map((imgUrl, i) => {
                       const isDragging = draggedGalleryIndex === i;
                       const isOver = dragOverGalleryIndex === i && draggedGalleryIndex !== i;
+                      const isVid = isVideoUrl(imgUrl);
+                      const thumb = isVid ? (getYoutubeThumbnail(imgUrl) || null) : imgUrl;
+
                       return (
                         <div
                           key={i}
@@ -2723,11 +2916,25 @@ export default function AdminAppsManager({ initialApps = [], token: propToken }:
                             opacity: isDragging ? 0.4 : 1,
                             transition: "all 0.15s ease",
                             cursor: "grab",
-                            background: "#f1f5f9"
+                            background: "#0d1716",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center"
                           }}
                           title="Քաշեք տեղափոխելու համար"
                         >
-                          <img src={imgUrl} alt={`Screenshot ${i+1}`} style={{ width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }} />
+                          {thumb ? (
+                            <img src={thumb} alt={`Screenshot ${i+1}`} style={{ width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }} />
+                          ) : (
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <span className="hd-icon icon-Play" style={{ fontSize: "22px", color: "var(--accent, #4a897c)" }} />
+                            </div>
+                          )}
+                          {isVid && thumb && (
+                            <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+                              <span className="hd-icon icon-Play" style={{ fontSize: "16px", color: "#fff" }} />
+                            </div>
+                          )}
                           <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(15,23,42,0.75)", color: "#ffffff", borderRadius: "4px", padding: "1px 6px", fontSize: "0.68rem", fontWeight: 700, pointerEvents: "none" }}>
                             #{i + 1}
                           </div>

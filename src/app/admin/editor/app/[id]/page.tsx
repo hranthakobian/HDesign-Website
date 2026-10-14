@@ -9,9 +9,10 @@ import MediaPickerModal from "@/components/MediaPickerModal";
 import SoftwareIcon from "@/components/SoftwareIcon";
 import AppLanguagesPicker from "@/components/AppLanguagesPicker";
 import AppDesignSystemPicker from "@/components/AppDesignSystemPicker";
-import FileSizePicker from "@/components/FileSizePicker";
 import { MediaFileType } from "@/lib/mediaTypes";
 import { prefetchMediaLibrary } from "@/lib/mediaCache";
+import HdVideoPlayer from "@/components/HdVideoPlayer";
+import { isVideoUrl, getYoutubeThumbnail } from "@/components/AppGallerySlider";
 
 export type AppDownloadOption = {
   id?: string;
@@ -54,6 +55,7 @@ type AppItem = {
   repository_type?: string;
   repositories?: AppRepository[];
   cover_image?: string;
+  video_url?: string;
   gallery_images: string[];
   languages?: string[];
   design_system?: string;
@@ -135,6 +137,7 @@ export default function AppDedicatedEditorPage() {
     repository_type: "github",
     repositories: [{ type: "github", url: "", label: "GitHub" }],
     cover_image: "",
+    video_url: "",
     gallery_images: [],
     languages: ["am", "en"],
     design_system: "",
@@ -150,7 +153,7 @@ export default function AppDedicatedEditorPage() {
 
   const [mediaPickerConfig, setMediaPickerConfig] = useState<{
     isOpen: boolean;
-    target: "cover" | "gallery" | "download_file";
+    target: "cover" | "gallery" | "download_file" | "video";
     targetOS?: 'windows' | 'macos' | 'linux';
     targetHostApp?: string;
     multiple?: boolean;
@@ -200,6 +203,7 @@ export default function AppDedicatedEditorPage() {
           gallery_images: Array.isArray(found.gallery_images) ? found.gallery_images : [],
           supported_os: Array.isArray(found.supported_os) ? found.supported_os : ['windows', 'macos'],
           downloads: Array.isArray(found.downloads) ? found.downloads : [],
+          video_url: found.video_url || "",
         });
       } else {
         router.push("/admin?tab=apps");
@@ -308,6 +312,9 @@ export default function AppDedicatedEditorPage() {
     if (target === "cover") {
       const url = Array.isArray(selected) ? selected[0] : selected;
       setForm(prev => ({ ...prev, cover_image: url }));
+    } else if (target === "video") {
+      const url = Array.isArray(selected) ? selected[0] : selected;
+      setForm(prev => ({ ...prev, video_url: url }));
     } else if (target === "gallery") {
       const urls = Array.isArray(selected) ? selected : [selected];
       setForm(prev => ({ ...prev, gallery_images: Array.from(new Set([...prev.gallery_images, ...urls])) }));
@@ -535,6 +542,194 @@ export default function AppDedicatedEditorPage() {
               </div>
             );
           })}
+        </div>
+
+        {/* Media Section: Cover, Video URL, Gallery */}
+        <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
+          <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>
+            Մեդիա (Պատկերներ և Տեսանյութ)
+          </h3>
+
+          {/* Cover Image */}
+          <div>
+            <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "#334155", marginBottom: "6px" }}>
+              Գլխավոր Պատկեր (Cover Image)
+            </label>
+            <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+              {form.cover_image && (
+                <div style={{ position: "relative", width: "140px", height: "90px", borderRadius: "8px", overflow: "hidden", border: "1px solid #cbd5e1" }}>
+                  <img src={form.cover_image} alt="Cover Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <button
+                    type="button"
+                    onClick={() => setForm(prev => ({ ...prev, cover_image: "" }))}
+                    style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.6)", border: "none", color: "#fff", borderRadius: "4px", padding: "2px 6px", cursor: "pointer", fontSize: "0.75rem" }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setMediaPickerConfig({
+                  isOpen: true,
+                  target: "cover",
+                  multiple: false,
+                  allowedTypes: ["image"],
+                  title: "Ընտրել Կազմը",
+                  currentValue: form.cover_image
+                })}
+                style={{ padding: "10px 18px", background: "#f8fafc", border: "1px dashed #cbd5e1", borderRadius: "8px", color: "#0f172a", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer" }}
+              >
+                {form.cover_image ? "Փոխել Կազմը" : "Ընտրել Մեդիա Գրադարանից"}
+              </button>
+            </div>
+          </div>
+
+          {/* Video URL & Player Section */}
+          <div style={{ background: "#f8fafc", padding: "18px", borderRadius: "12px", border: "1px solid #e2e8f0", display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "#0f172a" }}>
+                  🎬 Տեսանյութ (Video / Promo Trailer)
+                </label>
+                <span style={{ fontSize: "0.75rem", color: "#64748b" }}>
+                  Կարող եք տեղադրել YouTube, Vimeo, Loom կամ ուղիղ MP4/WebM տեսանյութի հղում, կամ ընտրել մեդիա գրադարանից:
+                </span>
+              </div>
+              {form.video_url && (
+                <button
+                  type="button"
+                  onClick={() => setForm(prev => ({ ...prev, video_url: "" }))}
+                  style={{ padding: "4px 10px", background: "#fee2e2", border: "1px solid #fecaca", borderRadius: "6px", color: "#b91c1c", fontSize: "0.75rem", fontWeight: 700, cursor: "pointer" }}
+                >
+                  Հեռացնել տեսանյութը
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+              <input
+                type="text"
+                value={form.video_url || ""}
+                onChange={(e) => setForm(prev => ({ ...prev, video_url: e.target.value.trim() }))}
+                placeholder="https://www.youtube.com/watch?v=... կամ https://.../video.mp4"
+                style={{
+                  flex: 1,
+                  padding: "10px 14px",
+                  background: "#ffffff",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "8px",
+                  color: "#0f172a",
+                  fontSize: "0.88rem"
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setMediaPickerConfig({
+                  isOpen: true,
+                  target: "video",
+                  multiple: false,
+                  allowedTypes: ["video"],
+                  title: "Ընտրել Տեսանյութ",
+                  currentValue: form.video_url
+                })}
+                style={{
+                  padding: "10px 18px",
+                  background: "#0f172a",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontSize: "0.82rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap"
+                }}
+              >
+                📁 Մեդիա Գրադարան
+              </button>
+            </div>
+
+            {form.video_url && form.video_url.trim() && (
+              <div style={{ marginTop: "8px", borderRadius: "12px", overflow: "hidden", border: "1px solid #cbd5e1", maxWidth: "480px" }}>
+                <div style={{ padding: "6px 12px", background: "#0f172a", color: "#94a3b8", fontSize: "0.72rem", fontWeight: 700 }}>
+                  Նախադիտում (HdVideoPlayer)
+                </div>
+                <HdVideoPlayer
+                  src={form.video_url.trim()}
+                  poster={form.cover_image}
+                  autoplay={false}
+                  width="100%"
+                  height="auto"
+                  radius="0px"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Gallery Screenshots */}
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+              <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#334155" }}>
+                Պատկերասրահի Սքրինշոթեր ({form.gallery_images?.length || 0})
+              </label>
+              <button
+                type="button"
+                onClick={() => setMediaPickerConfig({
+                  isOpen: true,
+                  target: "gallery",
+                  multiple: true,
+                  allowedTypes: ["image", "video"],
+                  title: "Ավելացնել Պատկերներ կամ Տեսանյութեր",
+                  currentValue: form.gallery_images
+                })}
+                style={{ padding: "6px 14px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.8rem", fontWeight: 600, cursor: "pointer" }}
+              >
+                + Ավելացնել Պատկերներ
+              </button>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "12px" }}>
+              {(form.gallery_images || []).map((imgUrl, i) => {
+                const isVid = isVideoUrl(imgUrl);
+                const thumb = isVid ? (getYoutubeThumbnail(imgUrl) || null) : imgUrl;
+                return (
+                  <div
+                    key={i}
+                    style={{
+                      position: "relative",
+                      height: "95px",
+                      borderRadius: "8px",
+                      overflow: "hidden",
+                      border: "1px solid #cbd5e1",
+                      background: "#0d1716",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center"
+                    }}
+                  >
+                    {thumb ? (
+                      <img src={thumb} alt={`Screenshot ${i+1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <span className="hd-icon icon-Play" style={{ fontSize: "20px", color: "var(--accent, #4a897c)" }} />
+                    )}
+                    {isVid && thumb && (
+                      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+                        <span className="hd-icon icon-Play" style={{ fontSize: "16px", color: "#fff" }} />
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setForm(prev => ({ ...prev, gallery_images: prev.gallery_images.filter((_, idx) => idx !== i) }))}
+                      style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.65)", border: "none", color: "#fff", borderRadius: "4px", padding: "2px 6px", cursor: "pointer", fontSize: "0.7rem", zIndex: 10 }}
+                      title="Հեռացնել"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* Markdown Section */}

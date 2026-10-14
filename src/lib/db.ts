@@ -1245,6 +1245,7 @@ export type AppItem = {
   repository_type?: string;
   repositories?: AppRepository[];
   cover_image?: string;
+  video_url?: string;
   gallery_images: string[];
   languages?: string[];
   design_system?: string;
@@ -1589,6 +1590,7 @@ export async function getApps(): Promise<AppItem[]> {
             repository_type: x.repository_type || (parsedRepositories[0]?.type || 'github'),
             repositories: parsedRepositories,
             downloads: parsedDownloads,
+            video_url: x.video_url || '',
             gallery_images: Array.isArray(x.gallery_images)
               ? x.gallery_images
               : (typeof x.gallery_images === 'string' ? JSON.parse(x.gallery_images || '[]') : []),
@@ -1653,6 +1655,7 @@ export async function getApps(): Promise<AppItem[]> {
       repository_type: x.repository_type || (parsedRepositories[0]?.type || 'github'),
       repositories: parsedRepositories,
       downloads: parsedDownloads,
+      video_url: x.video_url || '',
       supported_os: Array.isArray(x.supported_os) ? x.supported_os : [],
       languages: Array.isArray(x.languages) ? x.languages : ['Հայերեն', 'English'],
       design_system: x.design_system || 'HDesign',
@@ -1691,7 +1694,8 @@ export async function getApps(): Promise<AppItem[]> {
         repository_url: item.repository_url || meta.repository_url || local?.repository_url || cleanRepositories[0]?.url || '',
         repository_type: item.repository_type || meta.repository_type || local?.repository_type || cleanRepositories[0]?.type || 'github',
         repositories: cleanRepositories,
-        downloads: cleanDownloads
+        downloads: cleanDownloads,
+        video_url: item.video_url || meta.video_url || local?.video_url || ''
       };
     });
     const localFiltered = normalizedLocalApps.filter(x => !new Set(dbApps.map(d => d.id)).has(x.id));
@@ -1759,7 +1763,8 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
       supported_os: newApp.supported_os,
       repository_url: newApp.repository_url,
       repository_type: newApp.repository_type,
-      repositories: newApp.repositories
+      repositories: newApp.repositories,
+      video_url: newApp.video_url || ''
     };
     await saveSiteSetting('apps_extended_metadata', currentMeta);
   } catch (err) {
@@ -1795,6 +1800,7 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
           download_url: newApp.download_url || '',
           store_url: newApp.store_url || '',
           cover_image: newApp.cover_image || '',
+          video_url: newApp.video_url || '',
           gallery_images: newApp.gallery_images,
           languages: newApp.languages,
           design_system: newApp.design_system || 'HDesign',
