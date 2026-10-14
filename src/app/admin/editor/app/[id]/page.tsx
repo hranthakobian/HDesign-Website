@@ -9,6 +9,7 @@ import MediaPickerModal from "@/components/MediaPickerModal";
 import SoftwareIcon from "@/components/SoftwareIcon";
 import AppLanguagesPicker from "@/components/AppLanguagesPicker";
 import AppDesignSystemPicker from "@/components/AppDesignSystemPicker";
+import FileSizePicker from "@/components/FileSizePicker";
 import { MediaFileType } from "@/lib/mediaTypes";
 import { prefetchMediaLibrary } from "@/lib/mediaCache";
 import HdVideoPlayer from "@/components/HdVideoPlayer";
