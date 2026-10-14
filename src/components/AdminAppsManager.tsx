@@ -13,6 +13,7 @@ import AppDesignSystemPicker from "./AppDesignSystemPicker";
 import FileSizePicker from "./FileSizePicker";
 import HdVideoPlayer from "./HdVideoPlayer";
 import { isVideoUrl, getYoutubeThumbnail } from "./AppGallerySlider";
+import { prefetchMediaLibrary } from "@/lib/mediaCache";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   PieChart, Pie, Cell
