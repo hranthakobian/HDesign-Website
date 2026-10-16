@@ -243,6 +243,7 @@ export async function POST(request: Request) {
 
     const saved = await saveApp(appToSave);
     if (!saved) {
+      console.error('[POST /api/apps] saveApp returned null for ID:', finalId);
       return NextResponse.json(
         { error: 'Failed to save app in database.' },
         { status: 500 }
@@ -257,15 +258,20 @@ export async function POST(request: Request) {
     // Trigger subscriber notifications automatically (like cases)
     if (!draftFlag && notifySubs) {
       const appName = finalTitleAm || finalTitleEn;
-      if (wasDraft) {
-        await notifySubscribers('app_publish', appName, { appId: finalId, version: appToSave.version });
-      } else {
-        await notifySubscribers('app_update', appName, { appId: finalId, version: appToSave.version });
+      try {
+        if (wasDraft) {
+          await notifySubscribers('app_publish', appName, { appId: finalId, version: appToSave.version });
+        } else {
+          await notifySubscribers('app_update', appName, { appId: finalId, version: appToSave.version });
+        }
+      } catch (subErr) {
+        console.warn('Failed to dispatch subscriber notification:', subErr);
       }
     }
 
     return NextResponse.json({ success: true, app: saved });
   } catch (error: any) {
+    console.error('[POST /api/apps error]:', error);
     return NextResponse.json(
       { error: error.message || 'Unknown server error.' },
       { status: 500 }

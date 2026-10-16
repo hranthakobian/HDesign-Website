@@ -1616,6 +1616,7 @@ export async function getApps(): Promise<AppItem[]> {
   const deletedSeeds = await getSiteSetting('deleted_seed_apps', []);
   const deletedSeedsSet = new Set(deletedSeeds || []);
   const extMeta = await getSiteSetting('apps_extended_metadata', {});
+  const appsBackupStore = await getSiteSetting('apps_backup_store', {});
 
   // Normalize localApps as well
   const normalizedLocalApps: AppItem[] = localApps.map(x => {
@@ -1698,11 +1699,15 @@ export async function getApps(): Promise<AppItem[]> {
         video_url: item.video_url || meta.video_url || local?.video_url || ''
       };
     });
+    const knownIds = new Set([...dbApps.map(d => d.id), ...normalizedLocalApps.map(x => x.id)]);
+    const backupList = Object.values(appsBackupStore || {}).filter((b: any) => b && b.id && !knownIds.has(b.id) && !deletedSeedsSet.has(b.id)) as AppItem[];
     const localFiltered = normalizedLocalApps.filter(x => !new Set(dbApps.map(d => d.id)).has(x.id));
-    return [...mergedDbApps, ...localFiltered, ...filteredSeeds];
+    return [...mergedDbApps, ...backupList, ...localFiltered, ...filteredSeeds];
   }
 
-  return [...normalizedLocalApps, ...filteredSeeds];
+  const knownIds = new Set(normalizedLocalApps.map(x => x.id));
+  const backupList = Object.values(appsBackupStore || {}).filter((b: any) => b && b.id && !knownIds.has(b.id) && !deletedSeedsSet.has(b.id)) as AppItem[];
+  return [...normalizedLocalApps, ...backupList, ...filteredSeeds];
 }
 
 export async function getAppById(id: string): Promise<AppItem | null> {
@@ -1755,7 +1760,7 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
     }
   } catch (e) { /* ignore */ }
 
-  // Save extended metadata to site_settings (persists on Supabase across sessions)
+  // Save extended metadata and backup to site_settings (persists on Supabase across sessions)
   try {
     const currentMeta = await getSiteSetting('apps_extended_metadata', {});
     currentMeta[newApp.id] = {
@@ -1767,59 +1772,106 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
       video_url: newApp.video_url || ''
     };
     await saveSiteSetting('apps_extended_metadata', currentMeta);
+
+    const appsBackup = await getSiteSetting('apps_backup_store', {});
+    appsBackup[newApp.id] = newApp;
+    await saveSiteSetting('apps_backup_store', appsBackup);
   } catch (err) {
-    console.warn('Failed to save apps_extended_metadata:', err);
+    console.warn('Failed to save apps_extended_metadata or apps_backup_store:', err);
   }
 
   const adminClient = supabaseAdmin || supabase;
   if (adminClient) {
     try {
-      // 1. Try upserting full newApp in case all columns exist on Supabase
+      // 1. Build sanitized payload containing valid database columns
+      const supabasePayload: Record<string, any> = {
+        id: newApp.id,
+        title_am: newApp.title_am,
+        title_en: newApp.title_en,
+        short_desc_am: newApp.short_desc_am || '',
+        short_desc_en: newApp.short_desc_en || '',
+        description_md_am: newApp.description_md_am || '',
+        description_md_en: newApp.description_md_en || '',
+        host_app: newApp.host_app || '',
+        host_app_icon: newApp.host_app_icon || '',
+        app_type: newApp.app_type,
+        is_paid: !!newApp.is_paid,
+        price: Number(newApp.price) || 0,
+        currency: newApp.currency || 'AMD',
+        download_url: newApp.download_url || '',
+        store_url: newApp.store_url || '',
+        cover_image: newApp.cover_image || '',
+        gallery_images: newApp.gallery_images,
+        languages: newApp.languages,
+        design_system: newApp.design_system || 'HDesign',
+        version: newApp.version || 'v1.0.0',
+        release_date: newApp.release_date || now.split('T')[0],
+        downloads_count: Number(newApp.downloads_count) || 0,
+        is_draft: isDraft,
+        status: isDraft ? 'draft' : 'published',
+        downloads: newApp.downloads,
+        supported_os: newApp.supported_os,
+        repository_url: newApp.repository_url,
+        repository_type: newApp.repository_type,
+        host_apps: Array.isArray((app as any).host_apps) ? (app as any).host_apps : (newApp.host_app ? [newApp.host_app] : []),
+        repositories: newApp.repositories,
+        file_size: newApp.file_size || '',
+        created_at: newApp.created_at || now,
+        updated_at: now
+      };
+
+      if (newApp.video_url) {
+        supabasePayload.video_url = newApp.video_url;
+      }
+
       let { data, error } = await adminClient
         .from('apps')
-        .upsert(newApp)
+        .upsert(supabasePayload)
         .select()
         .single();
 
-      // 2. If Supabase table lacks extended columns, upsert guaranteed standard columns
-      if (error && error.message) {
-        const standardPayload: Record<string, any> = {
-          id: newApp.id,
-          title_am: newApp.title_am,
-          title_en: newApp.title_en,
-          short_desc_am: newApp.short_desc_am || '',
-          short_desc_en: newApp.short_desc_en || '',
-          description_md_am: newApp.description_md_am || '',
-          description_md_en: newApp.description_md_en || '',
-          host_app: newApp.host_app || '',
-          host_app_icon: newApp.host_app_icon || '',
-          app_type: newApp.app_type,
-          is_paid: !!newApp.is_paid,
-          price: Number(newApp.price) || 0,
-          currency: newApp.currency || 'AMD',
-          download_url: newApp.download_url || '',
-          store_url: newApp.store_url || '',
-          cover_image: newApp.cover_image || '',
-          video_url: newApp.video_url || '',
-          gallery_images: newApp.gallery_images,
-          languages: newApp.languages,
-          design_system: newApp.design_system || 'HDesign',
-          version: newApp.version || 'v1.0.0',
-          release_date: newApp.release_date || now.split('T')[0],
-          downloads_count: Number(newApp.downloads_count) || 0,
-          is_draft: isDraft,
-          status: isDraft ? 'draft' : 'published',
-          created_at: newApp.created_at || now,
-          updated_at: now
-        };
+      // If missing column error (PGRST204), remove unknown columns and retry
+      if (error && (error.code === 'PGRST204' || (error.message && error.message.includes('column')))) {
+        console.warn('Supabase schema cache warning on saveApp, retrying with sanitized columns:', error.message);
+        if (supabasePayload.video_url !== undefined) {
+          delete supabasePayload.video_url;
+        }
 
-        const retry = await adminClient.from('apps').upsert(standardPayload).select().single();
+        const colMatch = error.message.match(/'([^']+)' column/) || error.message.match(/column '([^']+)'/);
+        if (colMatch && colMatch[1] && supabasePayload[colMatch[1]] !== undefined) {
+          delete supabasePayload[colMatch[1]];
+        }
+
+        const retry = await adminClient.from('apps').upsert(supabasePayload).select().single();
         data = retry.data;
         error = retry.error;
+
+        // If another column fails, retry once more with absolute core columns
+        if (error && error.code === 'PGRST204') {
+          const minimalCore: Record<string, any> = {
+            id: newApp.id,
+            title_am: newApp.title_am,
+            title_en: newApp.title_en,
+            host_app: newApp.host_app || 'FontLab',
+            app_type: newApp.app_type || 'plugin',
+            is_paid: !!newApp.is_paid,
+            price: Number(newApp.price) || 0,
+            currency: newApp.currency || 'AMD',
+            cover_image: newApp.cover_image || '',
+            is_draft: isDraft,
+            status: isDraft ? 'draft' : 'published',
+            updated_at: now
+          };
+          const retryCore = await adminClient.from('apps').upsert(minimalCore).select().single();
+          if (!retryCore.error) {
+            data = retryCore.data;
+            error = null;
+          }
+        }
       }
 
       if (!error && data) {
-        // Also keep local file in sync
+        // Also keep local file in sync if file system is writable
         if (isServer) {
           try {
             const fs = getFs();
@@ -1829,7 +1881,7 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
             if (index !== -1) apps[index] = newApp;
             else apps.unshift(newApp);
             await fs.writeFile(APPS_FILE, JSON.stringify(apps, null, 2), 'utf-8');
-          } catch (e) { /* ignore */ }
+          } catch (e) { /* ignore write failure on read-only environments like Vercel */ }
         }
 
         return {
@@ -1850,11 +1902,12 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
       }
       console.warn('Supabase saveApp error:', error?.message);
     } catch (err) {
-      console.warn('Supabase saveApp failed, using local storage:', err);
+      console.warn('Supabase saveApp failed, falling back to storage:', err);
     }
   }
 
-  // Fallback to local JSON database
+  // Fallback to local JSON database if writable
+  let localSaved = false;
   if (isServer) {
     const fs = getFs();
     try {
@@ -1869,10 +1922,22 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
       }
 
       await fs.writeFile(APPS_FILE, JSON.stringify(apps, null, 2), 'utf-8');
-      return newApp;
+      localSaved = true;
     } catch (err) {
-      console.error('Error writing app locally:', err);
+      // Expected on read-only environments like Vercel
     }
+  }
+
+  // If saved locally or saved in site_settings apps_backup_store, return newApp
+  try {
+    const checkBackup = await getSiteSetting('apps_backup_store', {});
+    if (checkBackup && checkBackup[newApp.id]) {
+      return newApp;
+    }
+  } catch (e) {}
+
+  if (localSaved) {
+    return newApp;
   }
 
   return null;
@@ -1897,12 +1962,17 @@ export async function deleteApp(id: string): Promise<boolean> {
     }
   }
 
-  // Remove from extended metadata
+  // Remove from extended metadata and backup store
   try {
     const extMeta = await getSiteSetting('apps_extended_metadata', {});
     if (extMeta && extMeta[id]) {
       delete extMeta[id];
       await saveSiteSetting('apps_extended_metadata', extMeta);
+    }
+    const appsBackup = await getSiteSetting('apps_backup_store', {});
+    if (appsBackup && appsBackup[id]) {
+      delete appsBackup[id];
+      await saveSiteSetting('apps_backup_store', appsBackup);
     }
   } catch (e) { /* ignore */ }
 

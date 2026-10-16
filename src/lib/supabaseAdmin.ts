@@ -26,6 +26,9 @@ export function getSupabaseAdminClient(): SupabaseClient | null {
         const settings = JSON.parse(content);
         if (settings.api_settings) {
           if (!url && settings.api_settings.supabase_url) url = settings.api_settings.supabase_url;
+          if (!serviceRoleKey && settings.api_settings.supabase_service_role_key) {
+            serviceRoleKey = settings.api_settings.supabase_service_role_key;
+          }
           if (!serviceRoleKey && !anonKey && settings.api_settings.supabase_key) {
             anonKey = settings.api_settings.supabase_key;
           }
@@ -36,8 +39,8 @@ export function getSupabaseAdminClient(): SupabaseClient | null {
     }
   }
 
-  url = url || 'https://oivflzgmhauajxqisuuh.supabase.co';
-  const key = serviceRoleKey || anonKey || 'sb_publishable_40yQReXot3MjbPTwviNdnA_kbdJ1IOU';
+  url = url || 'https://jveaaytpcviwuvpgdvxl.supabase.co';
+  const key = serviceRoleKey || 'sb_secret_jN8fbqIY6KbutEBaQ56ioQ_BgWnJc-w' || anonKey;
 
   if (!url || !key) return null;
 

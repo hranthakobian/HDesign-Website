@@ -28,8 +28,8 @@ export function getSupabaseClient(): SupabaseClient {
     }
   }
 
-  url = url || 'https://oivflzgmhauajxqisuuh.supabase.co';
-  key = key || 'sb_publishable_40yQReXot3MjbPTwviNdnA_kbdJ1IOU';
+  url = url || 'https://jveaaytpcviwuvpgdvxl.supabase.co';
+  key = key || 'sb_publishable_1A2YK7GaX_aXdwLNnXNAdw_NEhHU4mf';
 
   if (!cachedClient || cachedUrl !== url || cachedKey !== key) {
     cachedUrl = url;
