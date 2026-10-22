@@ -108,6 +108,10 @@ CREATE TABLE IF NOT EXISTS apps (
   currency TEXT DEFAULT 'AMD',
   download_url TEXT,
   store_url TEXT,
+  microsoft_store_enabled BOOLEAN DEFAULT false,
+  microsoft_store_url TEXT DEFAULT '',
+  app_store_enabled BOOLEAN DEFAULT false,
+  app_store_url TEXT DEFAULT '',
   cover_image TEXT,
   video_url TEXT DEFAULT '',
   gallery_images JSONB DEFAULT '[]'::jsonb,
@@ -138,6 +142,10 @@ ALTER TABLE apps ADD COLUMN IF NOT EXISTS host_apps JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS repositories JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS file_size TEXT DEFAULT '';
 ALTER TABLE apps ADD COLUMN IF NOT EXISTS video_url TEXT DEFAULT '';
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS microsoft_store_enabled BOOLEAN DEFAULT false;
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS microsoft_store_url TEXT DEFAULT '';
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS app_store_enabled BOOLEAN DEFAULT false;
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS app_store_url TEXT DEFAULT '';
 ALTER TABLE apps ALTER COLUMN title_am DROP NOT NULL;
 ALTER TABLE apps ALTER COLUMN title_en DROP NOT NULL;
 ALTER TABLE apps ALTER COLUMN host_app DROP NOT NULL;
