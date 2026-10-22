@@ -26,6 +26,11 @@ interface AppDownloadModalProps {
   appType?: 'plugin' | 'standalone';
   downloads: AppDownloadOption[];
   locale: string;
+  microsoftStoreEnabled?: boolean;
+  microsoftStoreUrl?: string;
+  appStoreEnabled?: boolean;
+  appStoreUrl?: string;
+  supportedOs?: ('windows' | 'macos' | 'linux')[];
   onDownloaded?: (newCount?: number) => void;
 }
 
@@ -38,10 +43,49 @@ export default function AppDownloadModal({
   appType = 'plugin',
   downloads,
   locale,
+  microsoftStoreEnabled,
+  microsoftStoreUrl,
+  appStoreEnabled,
+  appStoreUrl,
+  supportedOs,
   onDownloaded
 }: AppDownloadModalProps) {
   const [isRendered, setIsRendered] = React.useState(isOpen);
   const [isClosing, setIsClosing] = React.useState(false);
+
+  const handleStoreClick = async (storeType: 'microsoft' | 'apple') => {
+    if (onDownloaded) {
+      onDownloaded();
+    }
+    if (appId) {
+      try {
+        const targetUrl = storeType === 'microsoft'
+          ? (microsoftStoreUrl?.trim() || 'https://apps.microsoft.com/')
+          : (appStoreUrl?.trim() || 'https://apps.apple.com/');
+        const res = await fetch('/api/apps/download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          keepalive: true,
+          body: JSON.stringify({
+            app_id: appId,
+            download_url: targetUrl,
+            download_id: `store-${storeType}`
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.downloads_count !== undefined && onDownloaded) {
+            onDownloaded(data.downloads_count);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to record store download event:', err);
+      }
+    }
+    setTimeout(() => {
+      onClose();
+    }, 400);
+  };
 
   const handleDownload = async (item: AppDownloadOption) => {
     // 1. Optimistically trigger download counter in UI immediately
@@ -116,7 +160,7 @@ export default function AppDownloadModal({
   // Group downloads by OS
   const groupedDownloads = React.useMemo(() => {
     if (!isRendered) return [];
-    const groups: { osKey: string; title: string; icon: string; items: AppDownloadOption[] }[] = [];
+    const groups: { osKey: string; title: string; icon: string; items: AppDownloadOption[]; hasStore?: boolean }[] = [];
 
     const getOsKey = (item: AppDownloadOption): 'windows' | 'macos' | 'linux' | 'other' => {
       if (item.os === 'windows') return 'windows';
@@ -134,21 +178,23 @@ export default function AppDownloadModal({
     const linuxItems = validDownloads.filter(d => getOsKey(d) === 'linux');
     const otherItems = validDownloads.filter(d => getOsKey(d) === 'other');
 
-    if (winItems.length > 0) {
+    if (winItems.length > 0 || microsoftStoreEnabled) {
       groups.push({
         osKey: 'windows',
         title: 'Windows',
         icon: '/icons/windows.svg',
-        items: winItems
+        items: winItems,
+        hasStore: !!microsoftStoreEnabled
       });
     }
 
-    if (macItems.length > 0) {
+    if (macItems.length > 0 || appStoreEnabled) {
       groups.push({
         osKey: 'macos',
         title: 'macOS',
         icon: '/icons/apple.svg',
-        items: macItems
+        items: macItems,
+        hasStore: !!appStoreEnabled
       });
     }
 
@@ -171,7 +217,7 @@ export default function AppDownloadModal({
     }
 
     return groups;
-  }, [isRendered, validDownloads, locale]);
+  }, [isRendered, validDownloads, locale, microsoftStoreEnabled, appStoreEnabled]);
 
   if (!isRendered) return null;
 
@@ -301,15 +347,15 @@ export default function AppDownloadModal({
 
               return (
                 <div key={group.osKey} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  {/* OS Section Title Header (only shown for plugins when multiple items exist per software) */}
-                  {!isStandalone && (
+                  {/* OS Section Title Header */}
+                  {(!isStandalone || groupedDownloads.length > 1 || group.hasStore) && (
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", borderBottom: "1px solid var(--panel-border)", paddingBottom: "6px" }}>
                       <SoftwareIcon name={group.title} iconUrl={group.icon} size={18} />
                       <span style={{ fontSize: "0.88rem", fontWeight: 800, color: "var(--text)", letterSpacing: "0.02em" }}>
                         {group.title}
                       </span>
                       <span style={{ fontSize: "0.74rem", color: "var(--muted)", marginLeft: "auto", background: "var(--bg)", padding: "2px 8px", borderRadius: "10px", border: "1px solid var(--panel-border)" }}>
-                        {group.items.length} {locale === "hy" ? "տարբերակ" : "options"}
+                        {group.items.length + (group.hasStore ? 1 : 0)} {locale === "hy" ? "տարբերակ" : "options"}
                       </span>
                     </div>
                   )}
@@ -394,6 +440,154 @@ export default function AppDownloadModal({
                       </div>
                     );
                   })}
+
+                  {/* Microsoft Store Option (under Windows) */}
+                  {group.osKey === 'windows' && microsoftStoreEnabled && (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "14px",
+                        padding: "12px 16px",
+                        borderRadius: "14px",
+                        background: "var(--bg)",
+                        border: "1px solid var(--panel-border)",
+                        transition: "all 0.2s ease"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            width: "36px",
+                            height: "36px",
+                            borderRadius: "10px",
+                            background: "rgba(0, 164, 239, 0.08)",
+                            border: "1px solid var(--panel-border)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0
+                          }}
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <rect x="2" y="2" width="9.5" height="9.5" rx="1.5" fill="#F25022" />
+                            <rect x="12.5" y="2" width="9.5" height="9.5" rx="1.5" fill="#7FBA00" />
+                            <rect x="2" y="12.5" width="9.5" height="9.5" rx="1.5" fill="#00A4EF" />
+                            <rect x="12.5" y="12.5" width="9.5" height="9.5" rx="1.5" fill="#FFB900" />
+                          </svg>
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                          <span style={{ fontWeight: 800, fontSize: "0.92rem", color: "var(--text)", lineHeight: 1.3 }}>
+                            Microsoft Store
+                          </span>
+                          <span style={{ fontSize: "0.75rem", color: "var(--muted)", fontWeight: 600, marginTop: "2px" }}>
+                            {locale === "hy" ? "Պաշտոնական խանութ" : "Official Store"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <a
+                        href={microsoftStoreUrl?.trim() || "https://apps.microsoft.com/"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ textDecoration: "none", flexShrink: 0 }}
+                        onClick={() => handleStoreClick('microsoft')}
+                      >
+                        <hd-button
+                          suppressHydrationWarning
+                          data-height="36px"
+                          data-thickness="2px"
+                          data-font-size="0.8rem"
+                          data-color="var(--accent)"
+                          data-text-color="#ffffff"
+                        >
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "0 18px", fontWeight: 700 }}>
+                            <span>{locale === "hy" ? "Ստանալ" : "Get"}</span>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                              <polyline points="15 3 21 3 21 9" />
+                            </svg>
+                          </span>
+                        </hd-button>
+                      </a>
+                    </div>
+                  )}
+
+                  {/* App Store Option (under macOS) */}
+                  {group.osKey === 'macos' && appStoreEnabled && (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "14px",
+                        padding: "12px 16px",
+                        borderRadius: "14px",
+                        background: "var(--bg)",
+                        border: "1px solid var(--panel-border)",
+                        transition: "all 0.2s ease"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            width: "36px",
+                            height: "36px",
+                            borderRadius: "10px",
+                            background: "rgba(13, 150, 246, 0.08)",
+                            border: "1px solid var(--panel-border)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0
+                          }}
+                        >
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                            <rect width="24" height="24" rx="6" fill="#0D96F6" />
+                            <path d="M12 4.5L13.8 7.8M10.2 8L6.8 14.2M17.2 14.2L14.5 9.5" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M5.5 17.5L10 16.5M14 16.5L18.5 17.5" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M10 16.2L12 12.5L14 16.2H10Z" fill="#ffffff" />
+                          </svg>
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                          <span style={{ fontWeight: 800, fontSize: "0.92rem", color: "var(--text)", lineHeight: 1.3 }}>
+                            Mac App Store
+                          </span>
+                          <span style={{ fontSize: "0.75rem", color: "var(--muted)", fontWeight: 600, marginTop: "2px" }}>
+                            {locale === "hy" ? "Պաշտոնական խանութ" : "Official Store"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <a
+                        href={appStoreUrl?.trim() || "https://apps.apple.com/"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ textDecoration: "none", flexShrink: 0 }}
+                        onClick={() => handleStoreClick('apple')}
+                      >
+                        <hd-button
+                          suppressHydrationWarning
+                          data-height="36px"
+                          data-thickness="2px"
+                          data-font-size="0.8rem"
+                          data-color="var(--accent)"
+                          data-text-color="#ffffff"
+                        >
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "0 18px", fontWeight: 700 }}>
+                            <span>{locale === "hy" ? "Ստանալ" : "Get"}</span>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                              <polyline points="15 3 21 3 21 9" />
+                            </svg>
+                          </span>
+                        </hd-button>
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
             );

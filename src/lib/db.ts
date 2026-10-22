@@ -1241,6 +1241,10 @@ export type AppItem = {
   download_url?: string;
   downloads?: AppDownloadOption[];
   store_url?: string;
+  microsoft_store_enabled?: boolean;
+  microsoft_store_url?: string;
+  app_store_enabled?: boolean;
+  app_store_url?: string;
   repository_url?: string;
   repository_type?: string;
   repositories?: AppRepository[];
@@ -1591,6 +1595,10 @@ export async function getApps(): Promise<AppItem[]> {
             repositories: parsedRepositories,
             downloads: parsedDownloads,
             video_url: x.video_url || '',
+            microsoft_store_enabled: !!x.microsoft_store_enabled,
+            microsoft_store_url: x.microsoft_store_url || '',
+            app_store_enabled: !!x.app_store_enabled,
+            app_store_url: x.app_store_url || '',
             gallery_images: Array.isArray(x.gallery_images)
               ? x.gallery_images
               : (typeof x.gallery_images === 'string' ? JSON.parse(x.gallery_images || '[]') : []),
@@ -1657,6 +1665,10 @@ export async function getApps(): Promise<AppItem[]> {
       repositories: parsedRepositories,
       downloads: parsedDownloads,
       video_url: x.video_url || '',
+      microsoft_store_enabled: !!x.microsoft_store_enabled,
+      microsoft_store_url: x.microsoft_store_url || '',
+      app_store_enabled: !!x.app_store_enabled,
+      app_store_url: x.app_store_url || '',
       supported_os: Array.isArray(x.supported_os) ? x.supported_os : [],
       languages: Array.isArray(x.languages) ? x.languages : ['Հայերեն', 'English'],
       design_system: x.design_system || 'HDesign',
@@ -1692,6 +1704,10 @@ export async function getApps(): Promise<AppItem[]> {
           : (Array.isArray(meta.supported_os) && meta.supported_os.length > 0
               ? meta.supported_os
               : (local?.supported_os || [])),
+        microsoft_store_enabled: item.microsoft_store_enabled !== undefined ? !!item.microsoft_store_enabled : (meta.microsoft_store_enabled !== undefined ? !!meta.microsoft_store_enabled : !!local?.microsoft_store_enabled),
+        microsoft_store_url: item.microsoft_store_url || meta.microsoft_store_url || local?.microsoft_store_url || '',
+        app_store_enabled: item.app_store_enabled !== undefined ? !!item.app_store_enabled : (meta.app_store_enabled !== undefined ? !!meta.app_store_enabled : !!local?.app_store_enabled),
+        app_store_url: item.app_store_url || meta.app_store_url || local?.app_store_url || '',
         repository_url: item.repository_url || meta.repository_url || local?.repository_url || cleanRepositories[0]?.url || '',
         repository_type: item.repository_type || meta.repository_type || local?.repository_type || cleanRepositories[0]?.type || 'github',
         repositories: cleanRepositories,
@@ -1745,6 +1761,10 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
     design_system: (app.design_system && typeof app.design_system === 'string' && app.design_system.trim()) ? app.design_system.trim() : 'HDesign',
     downloads: downloadsList,
     supported_os: supportedOsList,
+    microsoft_store_enabled: !!app.microsoft_store_enabled,
+    microsoft_store_url: (app.microsoft_store_url && typeof app.microsoft_store_url === 'string') ? app.microsoft_store_url.trim() : '',
+    app_store_enabled: !!app.app_store_enabled,
+    app_store_url: (app.app_store_url && typeof app.app_store_url === 'string') ? app.app_store_url.trim() : '',
     is_draft: isDraft,
     status: isDraft ? 'draft' : 'published',
     gallery_images: Array.isArray(app.gallery_images) ? app.gallery_images : [],
@@ -1769,7 +1789,11 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
       repository_url: newApp.repository_url,
       repository_type: newApp.repository_type,
       repositories: newApp.repositories,
-      video_url: newApp.video_url || ''
+      video_url: newApp.video_url || '',
+      microsoft_store_enabled: newApp.microsoft_store_enabled,
+      microsoft_store_url: newApp.microsoft_store_url,
+      app_store_enabled: newApp.app_store_enabled,
+      app_store_url: newApp.app_store_url
     };
     await saveSiteSetting('apps_extended_metadata', currentMeta);
 
@@ -1800,6 +1824,10 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
         currency: newApp.currency || 'AMD',
         download_url: newApp.download_url || '',
         store_url: newApp.store_url || '',
+        microsoft_store_enabled: newApp.microsoft_store_enabled,
+        microsoft_store_url: newApp.microsoft_store_url,
+        app_store_enabled: newApp.app_store_enabled,
+        app_store_url: newApp.app_store_url,
         cover_image: newApp.cover_image || '',
         gallery_images: newApp.gallery_images,
         languages: newApp.languages,
@@ -1890,6 +1918,10 @@ export async function saveApp(app: AppItem): Promise<AppItem | null> {
           downloads_count: Math.max(Number(newApp.downloads_count) || 0, Number(data.downloads_count) || 0),
           supported_os: newApp.supported_os,
           downloads: newApp.downloads,
+          microsoft_store_enabled: newApp.microsoft_store_enabled,
+          microsoft_store_url: newApp.microsoft_store_url,
+          app_store_enabled: newApp.app_store_enabled,
+          app_store_url: newApp.app_store_url,
           repository_url: newApp.repository_url,
           repository_type: newApp.repository_type,
           languages: newApp.languages,

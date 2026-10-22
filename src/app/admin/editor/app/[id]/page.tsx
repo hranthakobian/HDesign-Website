@@ -52,6 +52,10 @@ type AppItem = {
   download_url?: string;
   downloads?: AppDownloadOption[];
   store_url?: string;
+  microsoft_store_enabled?: boolean;
+  microsoft_store_url?: string;
+  app_store_enabled?: boolean;
+  app_store_url?: string;
   repository_url?: string;
   repository_type?: string;
   repositories?: AppRepository[];
@@ -134,6 +138,10 @@ export default function AppDedicatedEditorPage() {
     currency: "USD",
     download_url: "",
     downloads: [],
+    microsoft_store_enabled: false,
+    microsoft_store_url: "",
+    app_store_enabled: false,
+    app_store_url: "",
     repository_url: "",
     repository_type: "github",
     repositories: [{ type: "github", url: "", label: "GitHub" }],
@@ -205,6 +213,10 @@ export default function AppDedicatedEditorPage() {
           supported_os: Array.isArray(found.supported_os) ? found.supported_os : ['windows', 'macos'],
           downloads: Array.isArray(found.downloads) ? found.downloads : [],
           video_url: found.video_url || "",
+          microsoft_store_enabled: !!found.microsoft_store_enabled,
+          microsoft_store_url: found.microsoft_store_url || "",
+          app_store_enabled: !!found.app_store_enabled,
+          app_store_url: found.app_store_url || "",
         });
       } else {
         router.push("/admin?tab=apps");
@@ -538,6 +550,63 @@ export default function AppDedicatedEditorPage() {
                       <input type="text" value={getDownloadUrlFor(osKey as any)} onChange={e => setDownloadUrlFor(osKey as any, e.target.value)} placeholder={`https://... (${osTitle} package)`} style={{ flex: 1, padding: "8px 12px", background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.85rem" }} />
                       <button type="button" onClick={() => setMediaPickerConfig({ isOpen: true, target: "download_file", targetOS: osKey as any, multiple: false, title: `Ընտրել ${osTitle} Ֆայլը`, currentValue: getDownloadUrlFor(osKey as any) })} style={{ padding: "8px 14px", background: "#f1f5f9", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}>Ընտրել Ֆայլ</button>
                     </div>
+                  </div>
+                )}
+
+                {/* Store Integration Buttons for Windows & macOS */}
+                {osKey === 'windows' && (
+                  <div style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1px dashed #cbd5e1", display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: 700, fontSize: "0.84rem", color: "#0f172a" }}>
+                      <input
+                        type="checkbox"
+                        checked={!!form.microsoft_store_enabled}
+                        onChange={e => setForm(prev => ({ ...prev, microsoft_store_enabled: e.target.checked }))}
+                        style={{ accentColor: "#0f172a", width: "16px", height: "16px", cursor: "pointer" }}
+                      />
+                      <span>Միացնել Microsoft Store-ի կոճակը (Windows)</span>
+                    </label>
+                    {form.microsoft_store_enabled && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingLeft: "24px" }}>
+                        <label style={{ fontSize: "0.78rem", fontWeight: 600, color: "#64748b" }}>
+                          Microsoft Store Հղում (URL)
+                        </label>
+                        <input
+                          type="text"
+                          value={form.microsoft_store_url || ""}
+                          onChange={e => setForm(prev => ({ ...prev, microsoft_store_url: e.target.value }))}
+                          placeholder="https://apps.microsoft.com/detail/... կամ ms-windows-store://..."
+                          style={{ width: "100%", padding: "8px 12px", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.85rem" }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {osKey === 'macos' && (
+                  <div style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1px dashed #cbd5e1", display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: 700, fontSize: "0.84rem", color: "#0f172a" }}>
+                      <input
+                        type="checkbox"
+                        checked={!!form.app_store_enabled}
+                        onChange={e => setForm(prev => ({ ...prev, app_store_enabled: e.target.checked }))}
+                        style={{ accentColor: "#0f172a", width: "16px", height: "16px", cursor: "pointer" }}
+                      />
+                      <span>Միացնել Mac App Store-ի կոճակը (macOS)</span>
+                    </label>
+                    {form.app_store_enabled && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px", paddingLeft: "24px" }}>
+                        <label style={{ fontSize: "0.78rem", fontWeight: 600, color: "#64748b" }}>
+                          App Store Հղում (URL)
+                        </label>
+                        <input
+                          type="text"
+                          value={form.app_store_url || ""}
+                          onChange={e => setForm(prev => ({ ...prev, app_store_url: e.target.value }))}
+                          placeholder="https://apps.apple.com/app/... կամ macappstore://..."
+                          style={{ width: "100%", padding: "8px 12px", background: "#ffffff", border: "1px solid #cbd5e1", borderRadius: "6px", color: "#0f172a", fontSize: "0.85rem" }}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

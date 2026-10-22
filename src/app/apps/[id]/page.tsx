@@ -49,6 +49,10 @@ type AppDetail = {
   downloads?: AppDownloadOption[];
   file_size?: string;
   store_url?: string;
+  microsoft_store_enabled?: boolean;
+  microsoft_store_url?: string;
+  app_store_enabled?: boolean;
+  app_store_url?: string;
   repository_url?: string;
   repository_type?: string;
   repositories?: { id?: string; type: string; url: string; label?: string }[];
@@ -112,6 +116,8 @@ export default function AppDetailPage() {
         if (n.includes('linux') || n.includes('deb') || n.includes('appimage')) detected.add('linux');
       }
     });
+    if (app.microsoft_store_enabled) detected.add('windows');
+    if (app.app_store_enabled) detected.add('macos');
     if (detected.size === 0 && app.download_url?.trim() && !app.download_url.includes('example.com')) {
       detected.add('windows');
     }
@@ -219,59 +225,74 @@ export default function AppDetailPage() {
     return list;
   }, [app]);
 
-  const hasMultipleDownloads = validDownloads.length > 1;
+  const totalOptionsCount = validDownloads.length
+    + (app?.microsoft_store_enabled ? 1 : 0)
+    + (app?.app_store_enabled ? 1 : 0);
+
+  const hasMultipleDownloads = totalOptionsCount > 1;
 
   const handleDownloadAction = (e?: React.MouseEvent) => {
-    if (validDownloads.length > 1) {
+    if (totalOptionsCount > 1) {
       setIsDownloadModalOpen(true);
       return;
     }
 
-    if (validDownloads.length === 1 && app) {
-      const item = validDownloads[0];
+    if (totalOptionsCount === 1) {
+      if (app?.microsoft_store_enabled) {
+        window.open(app.microsoft_store_url?.trim() || "https://apps.microsoft.com/", '_blank');
+        return;
+      }
+      if (app?.app_store_enabled) {
+        window.open(app.app_store_url?.trim() || "https://apps.apple.com/", '_blank');
+        return;
+      }
+      if (validDownloads.length === 1 && app) {
+        const item = validDownloads[0];
 
-      // 1. Optimistic UI update immediately
-      setApp(prev => prev ? {
-        ...prev,
-        downloads_count: (prev.downloads_count || 0) + 1
-      } : prev);
+        // 1. Optimistic UI update immediately
+        setApp(prev => prev ? {
+          ...prev,
+          downloads_count: (prev.downloads_count || 0) + 1
+        } : prev);
 
-      // 2. Trigger browser download safely without page navigation
-      const link = document.createElement('a');
-      link.href = item.url;
-      link.download = '';
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+        // 2. Trigger browser download safely without page navigation
+        const link = document.createElement('a');
+        link.href = item.url;
+        link.download = '';
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
 
-      // 3. Persist download event & update database in background
-      fetch('/api/apps/download', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        keepalive: true,
-        body: JSON.stringify({
-          app_id: app.id,
-          download_url: item.url,
-          download_id: item.id || ''
+        // 3. Persist download event & update database in background
+        fetch('/api/apps/download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          keepalive: true,
+          body: JSON.stringify({
+            app_id: app.id,
+            download_url: item.url,
+            download_id: item.id || ''
+          })
         })
-      })
-        .then(res => res.ok ? res.json() : null)
-        .then(data => {
-          if (data && typeof data.downloads_count === 'number') {
-            setApp(prev => prev ? {
-              ...prev,
-              downloads_count: Math.max(data.downloads_count, prev.downloads_count || 0)
-            } : prev);
-          }
-        })
-        .catch(err => {
-          console.warn('Failed to record download event:', err);
-        });
-    } else {
-      setIsDownloadModalOpen(true);
+          .then(res => res.ok ? res.json() : null)
+          .then(data => {
+            if (data && typeof data.downloads_count === 'number') {
+              setApp(prev => prev ? {
+                ...prev,
+                downloads_count: Math.max(data.downloads_count, prev.downloads_count || 0)
+              } : prev);
+            }
+          })
+          .catch(err => {
+            console.warn('Failed to record download event:', err);
+          });
+        return;
+      }
     }
+
+    setIsDownloadModalOpen(true);
   };
 
   const appRepositories = useMemo(() => {
@@ -871,10 +892,10 @@ export default function AppDetailPage() {
                           <i className="hd-icon hd-icon-download" style={{ fontSize: "1.25rem", lineHeight: 1 }} />
                           <span>
                             {locale === "hy"
-                              ? (validDownloads.length > 1 ? `Ներբեռնել (${validDownloads.length} տարբերակ)` : "Ներբեռնել")
-                              : (validDownloads.length > 1 ? `Download (${validDownloads.length} options)` : "Download")}
+                              ? (totalOptionsCount > 1 ? `Ներբեռնել (${totalOptionsCount} տարբերակ)` : "Ներբեռնել")
+                              : (totalOptionsCount > 1 ? `Download (${totalOptionsCount} options)` : "Download")}
                           </span>
-                          {validDownloads.length > 1 && (
+                          {totalOptionsCount > 1 && (
                             <span className="hd-icon icon-Chevrolt-Arrow-Bottom" style={{ fontSize: "0.75rem", lineHeight: 1, marginLeft: "2px" }} />
                           )}
                         </span>
@@ -1441,8 +1462,8 @@ export default function AppDetailPage() {
                               <i className="hd-icon hd-icon-download" style={{ fontSize: "1.1rem", lineHeight: 1 }} />
                               <span>
                                 {locale === "hy"
-                                  ? (validDownloads.length > 1 ? `ՆԵՐԲԵՌՆԵԼ (${validDownloads.length})` : "ՆԵՐԲԵՌՆԵԼ")
-                                  : (validDownloads.length > 1 ? `DOWNLOAD (${validDownloads.length})` : "DOWNLOAD")}
+                                  ? (totalOptionsCount > 1 ? `ՆԵՐԲԵՌՆԵԼ (${totalOptionsCount})` : "ՆԵՐԲԵՌՆԵԼ")
+                                  : (totalOptionsCount > 1 ? `DOWNLOAD (${totalOptionsCount})` : "DOWNLOAD")}
                               </span>
                             </span>
                           </hd-button>
@@ -1686,6 +1707,11 @@ export default function AppDetailPage() {
           appType={app.app_type}
           downloads={validDownloads}
           locale={locale}
+          microsoftStoreEnabled={app.microsoft_store_enabled}
+          microsoftStoreUrl={app.microsoft_store_url}
+          appStoreEnabled={app.app_store_enabled}
+          appStoreUrl={app.app_store_url}
+          supportedOs={app.supported_os}
           onDownloaded={(newCount) => {
             setApp(prev => prev ? {
               ...prev,
