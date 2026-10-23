@@ -297,8 +297,8 @@ export default function UpcomingCheck({ initialUpcomingMode, initialUpcomingHdes
               data-height="36px"
               data-thickness="3px"
             >
-              <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
-              <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
+              <span value="hy" selected={locale === 'hy' ? 'selected' : undefined}>Հայ</span>
+              <span value="en" selected={locale === 'en' ? 'selected' : undefined}>Eng</span>
             </hd-segment>
           </div>
         </div>

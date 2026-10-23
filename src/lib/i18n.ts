@@ -877,6 +877,42 @@ export function updateUrlLocale(targetLocale: Locale) {
   }
 }
 
+export function syncHdSegmentLocale(targetLocale: Locale) {
+  if (typeof window === 'undefined') return;
+  const isEn = targetLocale === 'en';
+  const segments = document.querySelectorAll('hd-segment#langSelectorDesktop, hd-segment#langSelectorMobile, hd-segment#langSelector');
+  segments.forEach((seg: any) => {
+    if (seg) {
+      if (seg.value !== targetLocale) {
+        seg.value = targetLocale;
+      }
+      if (seg.getAttribute('value') !== targetLocale) {
+        seg.setAttribute('value', targetLocale);
+      }
+      seg.style.setProperty('--selected-index', isEn ? '1' : '0');
+      const options = seg.querySelectorAll('.segment-option');
+      if (options && options.length >= 2) {
+        options.forEach((opt: HTMLElement, idx: number) => {
+          if ((isEn && idx === 1) || (!isEn && idx === 0)) {
+            opt.classList.add('active');
+          } else {
+            opt.classList.remove('active');
+          }
+        });
+      }
+    }
+  });
+}
+
+if (typeof window !== 'undefined' && window.customElements) {
+  customElements.whenDefined('hd-segment').then(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlLang = params.get('lang')?.toLowerCase();
+    const currentLocale: Locale = urlLang === 'en' ? 'en' : 'hy';
+    syncHdSegmentLocale(currentLocale);
+  }).catch(() => {});
+}
+
 export function I18nProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [locale, setLocaleState] = useState<Locale>('hy'); // Default to Armenian
@@ -887,13 +923,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
       const urlLang = params.get('lang')?.toLowerCase();
-      if (urlLang === 'en') {
-        setLocaleState('en');
-        localStorage.setItem('hdesign_locale', 'en');
-      } else {
-        setLocaleState('hy');
-        localStorage.setItem('hdesign_locale', 'hy');
-      }
+      const newLoc: Locale = urlLang === 'en' ? 'en' : 'hy';
+      setLocaleState(newLoc);
+      localStorage.setItem('hdesign_locale', newLoc);
+      syncHdSegmentLocale(newLoc);
+      document.documentElement.setAttribute('lang', newLoc);
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -901,27 +935,18 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    let initialLang: Locale = 'hy';
+    // Determine language on load:
+    // If URL address bar has 'lang=en', use English.
+    // Otherwise, default to Armenian ('hy') as requested.
     const params = new URLSearchParams(window.location.search);
     const urlLang = params.get('lang')?.toLowerCase();
+    const initialLang: Locale = urlLang === 'en' ? 'en' : 'hy';
 
-    if (urlLang === 'en') {
-      initialLang = 'en';
-      setLocaleState('en');
-      localStorage.setItem('hdesign_locale', 'en');
-    } else if (urlLang === 'hy' || urlLang === 'am') {
-      initialLang = 'hy';
-      setLocaleState('hy');
-      localStorage.setItem('hdesign_locale', 'hy');
-      updateUrlLocale('hy');
-    } else {
-      const saved = localStorage.getItem('hdesign_locale') as Locale;
-      if (saved === 'en' || saved === 'hy') {
-        initialLang = saved;
-        setLocaleState(saved);
-        updateUrlLocale(saved);
-      }
-    }
+    setLocaleState(initialLang);
+    localStorage.setItem('hdesign_locale', initialLang);
+    document.documentElement.setAttribute('lang', initialLang);
+    updateUrlLocale(initialLang);
+    syncHdSegmentLocale(initialLang);
 
     const syncTranslations = async () => {
       try {
@@ -951,43 +976,28 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
     const syncFromSupabase = async () => {
       let theme = 'light';
-      let language: Locale = initialLang;
       
       try {
         const remoteSettings = await fetchSettingsFromSupabase();
-        if (remoteSettings) {
-          if (remoteSettings.theme) theme = remoteSettings.theme;
-          if (remoteSettings.language === 'en' || remoteSettings.language === 'hy') {
-            language = remoteSettings.language;
-          }
+        if (remoteSettings && remoteSettings.theme) {
+          theme = remoteSettings.theme;
         } else {
           theme = localStorage.getItem('hdesign-theme') || 'light';
-          const localLang = localStorage.getItem('hdesign_locale');
-          if (localLang === 'en' || localLang === 'hy') {
-            language = localLang as Locale;
-          }
         }
       } catch (err) {
         console.warn('Failed to sync settings from Supabase, using fallback:', err);
         theme = localStorage.getItem('hdesign-theme') || 'light';
-        const localLang = localStorage.getItem('hdesign_locale');
-        if (localLang === 'en' || localLang === 'hy') {
-          language = localLang as Locale;
-        }
       }
 
-      // If URL explicitly had lang parameter, preserve the URL's preference
-      if (urlLang === 'en') {
-        language = 'en';
-      } else if (urlLang === 'hy' || urlLang === 'am') {
-        language = 'hy';
-      }
+      // Preserve URL preference: if URL does not specify English, language must remain Armenian ('hy')
+      const currentUrlLang = new URLSearchParams(window.location.search).get('lang')?.toLowerCase();
+      const language: Locale = currentUrlLang === 'en' ? 'en' : 'hy';
 
-      if (language === 'en' || language === 'hy') {
-        setLocaleState(language);
-        localStorage.setItem('hdesign_locale', language);
-        updateUrlLocale(language);
-      }
+      setLocaleState(language);
+      localStorage.setItem('hdesign_locale', language);
+      document.documentElement.setAttribute('lang', language);
+      updateUrlLocale(language);
+      syncHdSegmentLocale(language);
 
       if (theme === 'light' || theme === 'dark' || theme === 'green') {
         const localTheme = localStorage.getItem('hdesign-theme');
@@ -1043,6 +1053,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
                   (target as any).value = newValue;
                 }
               }
+              if (target.tagName.toLowerCase() === 'hd-segment' && (newValue === 'en' || newValue === 'hy')) {
+                syncHdSegmentLocale(newValue as Locale);
+              }
               const innerInput = target.querySelector('input, textarea, select') as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
               if (innerInput) {
                 if (innerInput.value !== newValue) {
@@ -1079,6 +1092,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (mounted) {
       updateUrlLocale(locale);
+      syncHdSegmentLocale(locale);
+      document.documentElement.setAttribute('lang', locale);
     }
   }, [pathname, locale, mounted]);
 
@@ -1087,6 +1102,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     if (typeof window !== 'undefined') {
       localStorage.setItem('hdesign_locale', newLocale);
       updateUrlLocale(newLocale);
+      syncHdSegmentLocale(newLocale);
+      document.documentElement.setAttribute('lang', newLocale);
       const currentTheme = localStorage.getItem('hdesign-theme') || 'light';
       saveSettingsToSupabase(currentTheme, newLocale);
     }

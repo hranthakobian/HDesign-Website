@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
-import LoadingAnimation from "@/components/LoadingAnimation";
+import { AppsGridSkeleton } from "@/components/Skeleton";
 import { SingleHDesignStar } from "@/components/RatingSystem";
 import SoftwareIcon from "@/components/SoftwareIcon";
 import SoftwareTooltip from "@/components/SoftwareTooltip";
@@ -446,13 +446,6 @@ export default function AppsListingPage() {
         )}
       </div>
 
-      {/* Loading state */}
-      {loading && (
-        <div style={{ padding: "60px 0" }}>
-          <LoadingAnimation message={locale === "hy" ? "Հավելվածները բեռնվում են..." : "Loading apps..."} fullPage={false} />
-        </div>
-      )}
-
       {/* Error state */}
       {error && (
         <div style={{ textAlign: "center", padding: "60px 20px", color: "#e53935" }}>
@@ -541,11 +534,9 @@ export default function AppsListingPage() {
         </div>
       )}
 
-      {/* Loading Animation */}
+      {/* Loading Skeleton */}
       {loading && (
-        <div style={{ padding: "80px 20px", display: "flex", justifyContent: "center" }}>
-          <LoadingAnimation message={locale === "hy" ? "Հավելվածները բեռնվում են..." : "Loading applications..."} />
-        </div>
+        <AppsGridSkeleton />
       )}
 
       {/* Responsive Grid of App Cards */}

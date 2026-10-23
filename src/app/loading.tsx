@@ -1,7 +1,7 @@
 "use client";
 
-import LoadingAnimation from "@/components/LoadingAnimation";
+import { HomePageSkeleton } from "@/components/Skeleton";
 
 export default function Loading() {
-  return <LoadingAnimation />;
+  return <HomePageSkeleton />;
 }

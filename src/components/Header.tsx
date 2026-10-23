@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, syncHdSegmentLocale } from "@/lib/i18n";
 import { useEffect, useState } from "react";
 import { saveSettingsToSupabase } from "@/lib/settingsSync";
 import SearchModal from "./SearchModal";
@@ -27,6 +27,13 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    syncHdSegmentLocale(locale);
+    const timer = setTimeout(() => syncHdSegmentLocale(locale), 50);
+    return () => clearTimeout(timer);
+  }, [locale, mounted]);
 
   // Global Ctrl+K / Cmd+K keyboard shortcut listener to toggle search modal
   useEffect(() => {
@@ -337,8 +344,8 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
               data-height="34px"
               data-thickness="3px"
             >
-              <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
-              <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
+              <span value="hy" selected={locale === 'hy' ? 'selected' : undefined}>Հայ</span>
+              <span value="en" selected={locale === 'en' ? 'selected' : undefined}>Eng</span>
             </hd-segment>
           ) : (
             <div style={{ width: '130px', height: '34px' }} />
@@ -494,8 +501,8 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
                       data-height="36px"
                       data-thickness="3px"
                     >
-                      <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
-                      <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
+                      <span value="hy" selected={locale === 'hy' ? 'selected' : undefined}>Հայ</span>
+                      <span value="en" selected={locale === 'en' ? 'selected' : undefined}>Eng</span>
                     </hd-segment>
                   ) : (
                     <div style={{ width: '100%', height: '36px' }} />
@@ -597,8 +604,8 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
             data-height="36px"
             data-thickness="3px"
           >
-            <span value="hy" {...(locale === 'hy' ? { selected: true } : {})}>Հայ</span>
-            <span value="en" {...(locale === 'en' ? { selected: true } : {})}>Eng</span>
+            <span value="hy" selected={locale === 'hy' ? 'selected' : undefined}>Հայ</span>
+            <span value="en" selected={locale === 'en' ? 'selected' : undefined}>Eng</span>
           </hd-segment>
         ) : (
           <div style={{ width: '130px', height: '36px' }} />

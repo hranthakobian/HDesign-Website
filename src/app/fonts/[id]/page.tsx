@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
 import RatingSystem from "@/components/RatingSystem";
-import LoadingAnimation from "@/components/LoadingAnimation";
+import { FontDetailSkeleton } from "@/components/Skeleton";
 import MediaLightbox, { MediaLightboxItem } from "@/components/MediaLightbox";
 
 type Font = {
@@ -283,11 +283,7 @@ export default function FontDetailPage() {
 
   // Loading indicator
   if (loading) {
-    return (
-      <main className="shell" style={{ paddingTop: "200px", minHeight: "75vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <LoadingAnimation fullPage={false} message={t("fonts", "loading_details", "Տվյալները բեռնվում են...")} />
-      </main>
-    );
+    return <FontDetailSkeleton />;
   }
 
   // Error indicator

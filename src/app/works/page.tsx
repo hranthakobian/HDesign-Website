@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { brandingCases as staticCases, getPastelColor, getCasePastelColor } from "@/lib/brandingData";
 import { useI18n, parseLangText } from "@/lib/i18n";
-import LoadingAnimation from "@/components/LoadingAnimation";
+import { GalleryGridSkeleton, BrandingTwoColumnSkeleton } from "@/components/Skeleton";
 
 type Case = {
   id: string;
@@ -361,9 +361,11 @@ function WorksContent() {
       </div>
 
       {loading && (
-        <div style={{ display: "flex", justifyContent: "center", padding: "60px 0" }}>
-          <LoadingAnimation fullPage={false} message={t('works_page', 'loading', 'Բեռնվում է...')} />
-        </div>
+        (activeCategory?.toLowerCase() === 'design' || activeCategory?.toLowerCase() === 'gallery') ? (
+          <GalleryGridSkeleton />
+        ) : (
+          <BrandingTwoColumnSkeleton />
+        )
       )}
 
       {/* Two-Column Grid for Branding Cases vs Gallery Grid */}
@@ -858,8 +860,8 @@ function WorksContent() {
 export default function WorksPage() {
   return (
     <Suspense fallback={
-      <main className="shell" style={{ paddingTop: "200px", minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <LoadingAnimation fullPage={false} />
+      <main className="shell" style={{ paddingTop: "200px", minHeight: "80vh" }}>
+        <BrandingTwoColumnSkeleton />
       </main>
     }>
       <WorksContent />

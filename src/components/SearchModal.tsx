@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
-import LoadingAnimation from "@/components/LoadingAnimation";
+import { SearchSkeleton } from "@/components/Skeleton";
 import { searchVisualMatches, VisualSearchResult } from "@/lib/visualSearch";
 import { calculateSemanticScore } from "@/lib/semanticSearch";
 
@@ -833,23 +833,16 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
           </button>
         </div>
 
-        {/* ══════ RESULTS AREA (WITH USER'S LOADING ANIMATION) ══════ */}
+        {/* ══════ RESULTS AREA (WITH SHIMMER SKELETON) ══════ */}
         <div ref={resultsListRef} className="hd-search-results-list">
-          {isLoadingIndex ? (
-            /* User's Custom Loading Animation during index load */
-            <div className="hd-custom-loader-container">
-              <LoadingAnimation
-                fullPage={false}
-                message={locale === 'hy' ? 'Բեռնվում է որոնման ինդեքսը...' : 'Loading search index...'}
-              />
-            </div>
-          ) : isAnalyzingImage ? (
-            /* User's Custom Loading Animation during image analysis */
-            <div className="hd-custom-loader-container">
-              <LoadingAnimation
-                fullPage={false}
-                message={analysisStatusText || (locale === 'hy' ? 'Վերլուծում ենք պատկերը...' : 'Analyzing image...')}
-              />
+          {isLoadingIndex || isAnalyzingImage ? (
+            <div>
+              {isAnalyzingImage && (
+                <div style={{ padding: "12px 16px 0 16px", fontSize: "0.85rem", color: "var(--muted)" }}>
+                  {analysisStatusText || (locale === 'hy' ? 'Վերլուծում ենք պատկերը...' : 'Analyzing image...')}
+                </div>
+              )}
+              <SearchSkeleton />
             </div>
           ) : scoredResults.length === 0 ? (
             <div className="hd-search-empty-state">

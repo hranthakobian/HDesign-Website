@@ -1388,6 +1388,12 @@ class HdSegment extends HTMLElement {
 
     // Find default value
     let selectedIndex = options.findIndex(o => o.selected);
+    if (selectedIndex === -1) {
+      const initialVal = this.getAttribute('value') || this.value;
+      if (initialVal) {
+        selectedIndex = options.findIndex(o => o.value === initialVal);
+      }
+    }
     if (selectedIndex === -1) selectedIndex = 0;
     const initialValue = options[selectedIndex] ? options[selectedIndex].value : '';
 

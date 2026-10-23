@@ -3,7 +3,7 @@ import * as React from 'react';
 declare module 'react' {
   interface HTMLAttributes<T> {
     value?: any;
-    selected?: boolean;
+    selected?: any;
   }
   namespace JSX {
     interface IntrinsicElements {

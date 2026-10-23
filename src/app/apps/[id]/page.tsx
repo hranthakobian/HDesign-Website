@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
 import AppGallerySlider from "@/components/AppGallerySlider";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
-import LoadingAnimation from "@/components/LoadingAnimation";
+import { AppDetailSkeleton } from "@/components/Skeleton";
 import { HDesignStars } from "@/components/RatingSystem";
 import BugReportModal from "@/components/BugReportModal";
 import AppDownloadModal, { AppDownloadOption } from "@/components/AppDownloadModal";
@@ -484,11 +484,7 @@ export default function AppDetailPage() {
   };
 
   if (loading) {
-    return (
-      <main className="shell" style={{ paddingTop: "150px", minHeight: "80vh" }}>
-        <LoadingAnimation message={locale === "hy" ? "Բեռնվում է..." : "Loading..."} fullPage={false} />
-      </main>
-    );
+    return <AppDetailSkeleton />;
   }
 
   if (error || !app) {

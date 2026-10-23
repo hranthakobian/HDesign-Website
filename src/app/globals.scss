@@ -2085,7 +2085,7 @@ html[data-theme="custom"] .portfolio-header-wrapper.scrolled .portfolio-header-c
   margin-left: -50vw;
   margin-right: -50vw;
   background: transparent; /* Background handled by SVG */
-  padding: 80px 0;
+  padding: 100px 0;
   margin-top: 100px;
   margin-bottom: 100px;
   overflow: visible; /* Let vertical lines overflow */
@@ -2113,6 +2113,22 @@ html[data-theme="custom"] .portfolio-header-wrapper.scrolled .portfolio-header-c
     width: 100%;
     height: 100%;
   }
+}
+
+/* Profile image rendered inside About section SVG clipping mask */
+.about-profile-svg-image {
+  display: block;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.landing-about-mobile-img {
+  display: none !important;
+}
+
+.landing-about-desktop-spacer {
+  display: block;
 }
 
 /* Light green/teal offset vertical lines */
@@ -3519,6 +3535,17 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
     max-width: 100% !important;
     padding-left: max(16px, calc((100% - 400px) / 2)) !important;
     padding-right: max(16px, calc((100% - 400px) / 2)) !important;
+  }
+
+  /* Hide SVG clipped image and show normal mobile profile photo on mobile */
+  .about-profile-svg-image {
+    display: none !important;
+  }
+  .landing-about-desktop-spacer {
+    display: none !important;
+  }
+  .landing-about-mobile-img {
+    display: block !important;
   }
 
   /* About section: profile image on TOP, text BELOW on mobile */
@@ -6007,6 +6034,79 @@ html[data-theme="green"] .header-search-btn {
       display: none;
     }
   }
+}
+
+/* ==========================================================================
+   Skeleton Shimmer System
+   ========================================================================== */
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: hsla(var(--hue, 172), var(--saturation, 77%), var(--text-lightness, 14%), 0.06);
+  border-radius: var(--border-radius, 12px);
+  user-select: none;
+  pointer-events: none;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.55) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    animation: skeleton-shimmer-slide 1.5s infinite ease-in-out;
+    will-change: transform;
+  }
+}
+
+html[data-theme="dark"] .skeleton-shimmer {
+  background-color: rgba(255, 255, 255, 0.06);
+
+  &::after {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.12) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  }
+}
+
+html[data-theme="custom"] .skeleton-shimmer {
+  background-color: rgba(255, 255, 255, 0.08);
+
+  &::after {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.18) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  }
+}
+
+@keyframes skeleton-shimmer-slide {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Skeleton Card Container */
+.skeleton-card {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 
