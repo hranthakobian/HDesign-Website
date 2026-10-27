@@ -542,36 +542,6 @@ export default function BrandingDetailPage() {
               </span>
             </div>
           )}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <span style={{ fontSize: "0.78rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>
-              {t('works_detail', 'share_case', 'Կիսվել')}
-            </span>
-            <div style={{ display: "flex", alignItems: "center", marginTop: 4 }}>
-              <button
-                type="button"
-                onClick={() => setIsShareModalOpen(true)}
-                title={locale === 'hy' ? 'Կիսվել քեյսով' : 'Share case'}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "6px 16px",
-                  borderRadius: "12px",
-                  background: "var(--bg)",
-                  border: "1px solid var(--panel-border)",
-                  color: "var(--text)",
-                  fontSize: "0.85rem",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                  margin: 0
-                }}
-              >
-                <i className="hd-icon hd-icon-share-arrow-right" style={{ fontSize: "1.05rem" }} />
-                <span>{locale === 'hy' ? 'Սոցցանցեր' : 'Social'}</span>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 

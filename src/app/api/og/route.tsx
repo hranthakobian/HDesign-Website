@@ -1,5 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { NextRequest } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 
 export async function GET(req: NextRequest) {
   try {
@@ -7,7 +9,20 @@ export async function GET(req: NextRequest) {
     const title = searchParams.get('title') || 'HDesign';
     const subtitle = searchParams.get('subtitle') || 'Դիզայնի և Բրենդավորման Ստուդիա';
     const category = searchParams.get('category') || 'HDesign Studio';
-    const bg = searchParams.get('bg') || '#083f39';
+    let rawBg = searchParams.get('bg') || '#083f39';
+    if (rawBg.includes(' | ')) {
+      rawBg = rawBg.split(' | ')[0].trim();
+    }
+    const bg = rawBg.startsWith('#') ? rawBg : '#083f39';
+
+    // Load local font to correctly render Armenian glyphs in Satori
+    let fontData: Buffer | null = null;
+    try {
+      const fontPath = path.join(process.cwd(), 'public', 'HDesign.ttf');
+      if (fs.existsSync(fontPath)) {
+        fontData = fs.readFileSync(fontPath);
+      }
+    } catch {}
 
     return new ImageResponse(
       (
@@ -21,7 +36,7 @@ export async function GET(req: NextRequest) {
             justifyContent: 'space-between',
             backgroundColor: '#0a0a0c',
             padding: '60px 80px',
-            fontFamily: 'sans-serif',
+            fontFamily: fontData ? 'HDesign, sans-serif' : 'sans-serif',
           }}
         >
           <div
@@ -32,7 +47,7 @@ export async function GET(req: NextRequest) {
               width: '500px',
               height: '500px',
               borderRadius: '50%',
-              background: bg.startsWith('#') ? bg : '#083f39',
+              background: bg,
               filter: 'blur(120px)',
               opacity: 0.45,
             }}
@@ -146,9 +161,33 @@ export async function GET(req: NextRequest) {
       {
         width: 1200,
         height: 630,
+        ...(fontData
+          ? {
+              fonts: [
+                {
+                  name: 'HDesign',
+                  data: fontData,
+                  style: 'normal',
+                  weight: 700,
+                },
+              ],
+            }
+          : {}),
       }
     );
   } catch (e: any) {
-    return new Response(`Failed to generate OG image: ${e.message}`, { status: 500 });
+    // Graceful fallback to static high-res branded OG image
+    try {
+      const fallbackPath = path.join(process.cwd(), 'public', 'og-image.png');
+      const imgBuffer = fs.readFileSync(fallbackPath);
+      return new Response(imgBuffer, {
+        headers: {
+          'Content-Type': 'image/png',
+          'Cache-Control': 'public, max-age=86400',
+        },
+      });
+    } catch {
+      return new Response(`Failed to generate OG image: ${e.message}`, { status: 500 });
+    }
   }
 }

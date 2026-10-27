@@ -33,16 +33,37 @@ export function getSiteUrl(): string {
  */
 export function toAbsoluteUrl(url?: string | null): string {
   const siteUrl = getSiteUrl();
+  const defaultFallback = `${siteUrl}/og-image.png`;
+
   if (!url || typeof url !== 'string') {
-    return `${siteUrl}/og-image.png`;
+    return defaultFallback;
   }
-  const trimmed = url.trim();
-  if (!trimmed) {
-    return `${siteUrl}/og-image.png`;
+  let trimmed = url.trim();
+
+  // Strip pipe metadata if present (e.g. "https://... | overlay=true | position_y=50")
+  if (trimmed.includes(' | ')) {
+    trimmed = trimmed.split(' | ')[0].trim();
   }
+
+  // Strip css url(...) wrapper
+  const urlMatch = trimmed.match(/^url\(['"]?(.*?)['"]?\)$/i);
+  if (urlMatch && urlMatch[1]) {
+    trimmed = urlMatch[1].trim();
+  }
+
+  // Reject empty or data-URIs (social crawlers cannot parse data: URIs)
+  if (!trimmed || trimmed.startsWith('data:')) {
+    return defaultFallback;
+  }
+
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    // If it's http on the production domain, upgrade to https
+    if (trimmed.startsWith('http://hakobian.am')) {
+      trimmed = trimmed.replace('http://', 'https://');
+    }
     return trimmed;
   }
+
   const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
   return `${siteUrl}${cleanPath}`;
 }
@@ -131,21 +152,113 @@ export async function getDefaultSiteMetadata(): Promise<Metadata> {
 }
 
 /**
+ * Robustly extracts the best preview image for a case study, checking:
+ * 1. image_url
+ * 2. bg (handling pipe-delimited parameters like " | overlay=true" and url(...) wrappers)
+ * 3. blocks in details (JSON array of blocks)
+ * 4. markdown/html images in details
+ * 5. fallback to /og-image.png
+ */
+export function extractCaseOgImage(foundCase: Case, siteUrl: string): string {
+  const defaultFallback = `${siteUrl}/og-image.png`;
+
+  // 1. Direct image_url if provided
+  if (foundCase.image_url && typeof foundCase.image_url === 'string' && foundCase.image_url.trim()) {
+    const direct = toAbsoluteUrl(foundCase.image_url);
+    if (direct && direct !== defaultFallback && !direct.toLowerCase().endsWith('.svg')) {
+      return direct;
+    }
+  }
+
+  // 2. Background image (split pipe params, check if it's an image file or URL)
+  if (foundCase.bg && typeof foundCase.bg === 'string') {
+    const rawBg = foundCase.bg.split(' | ')[0].trim();
+    const urlMatch = rawBg.match(/^url\(['"]?(.*?)['"]?\)$/i);
+    const cleanBg = urlMatch && urlMatch[1] ? urlMatch[1].trim() : rawBg;
+
+    if (
+      cleanBg.startsWith('http://') ||
+      cleanBg.startsWith('https://') ||
+      cleanBg.startsWith('/uploads/') ||
+      cleanBg.startsWith('uploads/') ||
+      cleanBg.startsWith('/images/') ||
+      /\.(png|jpe?g|webp|avif|gif)(\?.*)?$/i.test(cleanBg)
+    ) {
+      const absBg = toAbsoluteUrl(cleanBg);
+      if (absBg && absBg !== defaultFallback && !absBg.toLowerCase().endsWith('.svg')) {
+        return absBg;
+      }
+    }
+  }
+
+  // 3. Blocks in details
+  if (foundCase.details && typeof foundCase.details === 'string') {
+    const detailsTrimmed = foundCase.details.trim();
+    if (detailsTrimmed.startsWith('[')) {
+      try {
+        const blocks = JSON.parse(detailsTrimmed);
+        if (Array.isArray(blocks)) {
+          for (const b of blocks) {
+            const candidate = b?.image_url || b?.poster_url || (b?.type === 'image' && b?.url);
+            if (candidate && typeof candidate === 'string' && candidate.trim()) {
+              const absCandidate = toAbsoluteUrl(candidate);
+              if (absCandidate && absCandidate !== defaultFallback && !absCandidate.toLowerCase().endsWith('.svg')) {
+                return absCandidate;
+              }
+            }
+          }
+        }
+      } catch {}
+    } else {
+      // Regex check for markdown images or html img tags in details
+      const mdImg = detailsTrimmed.match(/!\[.*?\]\((https?:\/\/[^\s\)]+|\/[^\s\)]+)\)/i);
+      if (mdImg && mdImg[1]) {
+        const absMd = toAbsoluteUrl(mdImg[1]);
+        if (absMd && !absMd.toLowerCase().endsWith('.svg')) return absMd;
+      }
+      const htmlImg = detailsTrimmed.match(/<img[^>]+src=["'](https?:\/\/[^"']+|\/[^"']+)["']/i);
+      if (htmlImg && htmlImg[1]) {
+        const absHtml = toAbsoluteUrl(htmlImg[1]);
+        if (absHtml && !absHtml.toLowerCase().endsWith('.svg')) return absHtml;
+      }
+    }
+  }
+
+  return defaultFallback;
+}
+
+/**
  * Generates Open Graph & Twitter metadata specifically for a portfolio case study.
  */
 export async function getCaseMetadata(id: string): Promise<Metadata> {
   const siteUrl = getSiteUrl();
+  const rawId = (id || '').trim();
+  let decodedId = rawId;
+  try {
+    decodedId = decodeURIComponent(rawId).trim();
+  } catch {}
+
   let foundCase: Case | null = null;
 
   try {
     const cases = await getCases();
-    foundCase = cases.find(c => c.id === id) || null;
+    foundCase = cases.find(c => 
+      c.id === rawId || 
+      c.id === decodedId ||
+      String(c.id).toLowerCase() === rawId.toLowerCase() ||
+      String(c.id).toLowerCase() === decodedId.toLowerCase()
+    ) || null;
   } catch (err) {
     console.warn('Failed to fetch cases for metadata:', err);
   }
 
   if (!foundCase) {
-    const staticFound = staticCases.find(c => c.id === id);
+    const staticFound = staticCases.find(c => 
+      c.id === rawId || 
+      c.id === decodedId ||
+      String(c.id).toLowerCase() === rawId.toLowerCase() ||
+      String(c.id).toLowerCase() === decodedId.toLowerCase()
+    );
     if (staticFound) {
       foundCase = {
         id: staticFound.id,
@@ -163,12 +276,22 @@ export async function getCaseMetadata(id: string): Promise<Metadata> {
 
   if (!foundCase) {
     return {
+      metadataBase: new URL(siteUrl),
       title: 'Քեյս չի գտնվել | HDesign',
       description: 'Հարցված նախագիծը չի գտնվել HDesign պորտֆոլիոյում։',
       openGraph: {
         title: 'Քեյս չի գտնվել | HDesign',
         description: 'Հարցված նախագիծը չի գտնվել HDesign պորտֆոլիոյում։',
-        images: [{ url: `${siteUrl}/og-image.png`, width: 1200, height: 630 }]
+        images: [
+          {
+            url: `${siteUrl}/og-image.png`,
+            secureUrl: `${siteUrl}/og-image.png`,
+            width: 1200,
+            height: 630,
+            alt: 'HDesign',
+            type: 'image/png'
+          }
+        ]
       }
     };
   }
@@ -178,34 +301,20 @@ export async function getCaseMetadata(id: string): Promise<Metadata> {
   const rawDetails = parseBilingualText(foundCase.details, 'hy') || foundCase.details || '';
   const description = stripMarkdown(rawSubtitle || rawDetails, 160) || 'Բրենդավորման և դիզայնի քեյս — HDesign';
 
-  // Extract the most representative preview image
-  let ogImage = '';
-  if (foundCase.image_url && foundCase.image_url.trim()) {
-    ogImage = toAbsoluteUrl(foundCase.image_url);
-  } else if (foundCase.bg && (foundCase.bg.startsWith('http') || foundCase.bg.startsWith('/uploads'))) {
-    ogImage = toAbsoluteUrl(foundCase.bg);
-  } else if (foundCase.details && foundCase.details.startsWith('[')) {
-    try {
-      const blocks = JSON.parse(foundCase.details);
-      const imgBlock = blocks.find((b: any) => (b.type === 'image' || b.type === 'banner') && b.image_url);
-      if (imgBlock?.image_url) {
-        ogImage = toAbsoluteUrl(imgBlock.image_url);
-      }
-    } catch {}
-  }
+  // Extract valid absolute image URL
+  const ogImage = extractCaseOgImage(foundCase, siteUrl);
 
-  // If case has no custom image, generate a high-res branded dynamic OG image
-  if (!ogImage) {
-    const bgParam = encodeURIComponent(foundCase.bg || '#083f39');
-    const titleParam = encodeURIComponent(rawTitle);
-    const subParam = encodeURIComponent(rawSubtitle || 'HDesign Portfolio Case');
-    ogImage = `${siteUrl}/api/og?title=${titleParam}&subtitle=${subParam}&bg=${bgParam}&category=${encodeURIComponent('Բրենդավորման Քեյս')}`;
-  }
-
-  const pageUrl = `${siteUrl}/works/${id}`;
+  const pageUrl = `${siteUrl}/works/${encodeURIComponent(foundCase.id)}`;
   const title = `${rawTitle} — Բրենդավորման Քեյս | HDesign`;
 
+  const mimeType = ogImage.toLowerCase().endsWith('.png')
+    ? 'image/png'
+    : ogImage.toLowerCase().endsWith('.webp')
+    ? 'image/webp'
+    : 'image/jpeg';
+
   return {
+    metadataBase: new URL(siteUrl),
     title,
     description,
     alternates: {
@@ -222,10 +331,20 @@ export async function getCaseMetadata(id: string): Promise<Metadata> {
       images: [
         {
           url: ogImage,
+          secureUrl: ogImage,
           width: 1200,
           height: 630,
           alt: rawTitle,
-        }
+          type: mimeType
+        },
+        ...(ogImage !== `${siteUrl}/og-image.png` ? [{
+          url: `${siteUrl}/og-image.png`,
+          secureUrl: `${siteUrl}/og-image.png`,
+          width: 1200,
+          height: 630,
+          alt: 'HDesign Studio',
+          type: 'image/png'
+        }] : [])
       ]
     },
     twitter: {
@@ -234,6 +353,10 @@ export async function getCaseMetadata(id: string): Promise<Metadata> {
       description,
       images: [ogImage],
       creator: '@hranthakobian'
+    },
+    other: {
+      'image_src': ogImage,
+      'thumbnail': ogImage
     }
   };
 }
