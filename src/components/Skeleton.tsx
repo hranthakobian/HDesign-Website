@@ -518,33 +518,8 @@ export function AppsGridSkeleton() {
  */
 export function AppDetailPageSkeleton() {
   return (
-    <main className="shell" style={{ paddingTop: "150px", minHeight: "80vh", paddingBottom: "60px" }}>
+    <main className="shell apps-page-container" style={{ paddingTop: "150px", minHeight: "85vh", paddingBottom: "60px" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
-        {/* App Hero */}
-        <div
-          className="skeleton-card"
-          style={{
-            padding: "36px",
-            display: "flex",
-            gap: "28px",
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <Skeleton width="100px" height="100px" borderRadius="24px" />
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px", flex: 1 }}>
-            <Skeleton width="260px" height="34px" borderRadius="10px" />
-            <Skeleton width="180px" height="18px" borderRadius="8px" />
-            <div style={{ display: "flex", gap: "10px", marginTop: "6px" }}>
-              <Skeleton width="75px" height="24px" borderRadius="6px" />
-              <Skeleton width="90px" height="24px" borderRadius="6px" />
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: "12px" }}>
-            <Skeleton width="150px" height="46px" borderRadius="12px" />
-          </div>
-        </div>
-
         {/* Content Preview & Details */}
         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "28px" }}>
           <div className="skeleton-card" style={{ padding: "30px", gap: "20px" }}>
