@@ -860,7 +860,7 @@ export default function AppDetailPage() {
 
             {/* CTA Action Buttons */}
             <div ref={heroCtaRef} style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              <div style={{ display: "flex", alignItems: "stretch", gap: "10px", width: "100%" }}>
+              <div className="app-hero-actions" style={{ display: "flex", alignItems: "center", gap: "10px", width: "100%" }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   {app.is_paid ? (
                     <a
@@ -927,7 +927,7 @@ export default function AppDetailPage() {
                     rel="noopener noreferrer"
                     className="app-repo-link"
                     title={appRepositories[0].label || 'Repository'}
-                    style={{ textDecoration: "none", flexShrink: 0, margin: 0 }}
+                    style={{ textDecoration: "none", flexShrink: 0, margin: 0, display: "inline-flex" }}
                   >
                     <hd-button
                       suppressHydrationWarning
@@ -939,8 +939,16 @@ export default function AppDetailPage() {
                       data-wrapper-padding="0"
                       data-color="var(--bg)"
                       data-text-color="var(--text)"
+                      style={{
+                        width: "52px",
+                        minWidth: "52px",
+                        maxWidth: "52px",
+                        height: "52px",
+                        margin: 0,
+                        padding: 0
+                      }}
                     >
-                      <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
                         {renderRepoSvgIcon(appRepositories[0].type, appRepositories[0].url, 22)}
                       </span>
                     </hd-button>
@@ -948,37 +956,33 @@ export default function AppDetailPage() {
                 )}
 
                 {appRepositories.length > 1 && (
-                  <div ref={repoMenuRef} style={{ position: "relative", flexShrink: 0, margin: 0 }}>
-                    <button
-                      type="button"
+                  <div ref={repoMenuRef} style={{ position: "relative", flexShrink: 0, margin: 0, display: "inline-flex" }}>
+                    <hd-button
+                      suppressHydrationWarning
+                      className="app-repo-btn"
                       onClick={() => setIsRepoMenuOpen(prev => !prev)}
                       title={locale === 'hy' ? 'Շտեմարաններ (Git)' : 'Repositories (Git)'}
+                      data-width="52px"
+                      data-height="52px"
+                      data-thickness="3px"
+                      data-padding="0"
+                      data-wrapper-padding="0"
+                      data-color={isRepoMenuOpen ? "var(--panel)" : "var(--bg)"}
+                      data-text-color="var(--text)"
                       style={{
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        margin: 0,
                         cursor: "pointer",
-                        textDecoration: "none",
-                        display: "block"
+                        width: "52px",
+                        minWidth: "52px",
+                        maxWidth: "52px",
+                        height: "52px",
+                        margin: 0,
+                        padding: 0
                       }}
                     >
-                      <hd-button
-                        suppressHydrationWarning
-                        className="app-repo-btn"
-                        data-width="52px"
-                        data-height="52px"
-                        data-thickness="3px"
-                        data-padding="0"
-                        data-wrapper-padding="0"
-                        data-color={isRepoMenuOpen ? "var(--panel)" : "var(--bg)"}
-                        data-text-color="var(--text)"
-                      >
-                        <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <i className="hd-icon hd-icon-three-dots-vertical" style={{ fontSize: "1.25rem", lineHeight: 1 }} />
-                        </span>
-                      </hd-button>
-                    </button>
+                      <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
+                        <i className="hd-icon hd-icon-three-dots-vertical" style={{ fontSize: "1.25rem", lineHeight: 1 }} />
+                      </span>
+                    </hd-button>
 
                     {/* Dropdown Menu for Multiple Repositories */}
                     {isRepoMenuOpen && (
@@ -1054,37 +1058,34 @@ export default function AppDetailPage() {
                   </div>
                 )}
 
-                {/* Share Button (no side margins, no side padding) */}
-                <button
-                  type="button"
+                {/* Share Button (no parent button wrapper, exact same 52px width) */}
+                <hd-button
+                  suppressHydrationWarning
+                  className="app-share-btn"
                   onClick={() => setIsShareModalOpen(true)}
                   title={locale === 'hy' ? 'Կիսվել հավելվածով' : 'Share application'}
+                  data-width="52px"
+                  data-height="52px"
+                  data-thickness="3px"
+                  data-padding="0"
+                  data-wrapper-padding="0"
+                  data-color="var(--bg)"
+                  data-text-color="var(--text)"
                   style={{
-                    background: "none",
-                    border: "none",
-                    padding: 0,
-                    margin: 0,
                     cursor: "pointer",
-                    textDecoration: "none",
-                    flexShrink: 0
+                    flexShrink: 0,
+                    width: "52px",
+                    minWidth: "52px",
+                    maxWidth: "52px",
+                    height: "52px",
+                    margin: 0,
+                    padding: 0
                   }}
                 >
-                  <hd-button
-                    suppressHydrationWarning
-                    data-width="52px"
-                    data-height="52px"
-                    data-thickness="3px"
-                    data-padding="0"
-                    data-wrapper-padding="0"
-                    data-color="var(--bg)"
-                    data-text-color="var(--text)"
-                    style={{ margin: 0, padding: 0 }}
-                  >
-                    <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <i className="hd-icon hd-icon-share-arrow-right" style={{ fontSize: "1.25rem", lineHeight: 1 }} />
-                    </span>
-                  </hd-button>
-                </button>
+                  <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
+                    <i className="hd-icon hd-icon-share-arrow-right" style={{ fontSize: "1.25rem", lineHeight: 1 }} />
+                  </span>
+                </hd-button>
               </div>
             </div>
           </div>
@@ -1565,7 +1566,7 @@ export default function AppDetailPage() {
                     gap: "6px"
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "stretch", gap: "8px", width: "100%" }}>
+                  <div className="app-sticky-actions" style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%" }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       {app.is_paid ? (
                         <a
@@ -1625,7 +1626,7 @@ export default function AppDetailPage() {
                         rel="noopener noreferrer"
                         className="app-repo-link"
                         title={appRepositories[0].label || 'Repository'}
-                        style={{ textDecoration: "none", flexShrink: 0, margin: 0 }}
+                        style={{ textDecoration: "none", flexShrink: 0, margin: 0, display: "inline-flex" }}
                       >
                         <hd-button
                           suppressHydrationWarning
@@ -1637,8 +1638,16 @@ export default function AppDetailPage() {
                           data-wrapper-padding="0"
                           data-color="var(--bg)"
                           data-text-color="var(--text)"
+                          style={{
+                            width: "46px",
+                            minWidth: "46px",
+                            maxWidth: "46px",
+                            height: "46px",
+                            margin: 0,
+                            padding: 0
+                          }}
                         >
-                          <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
                             {renderRepoSvgIcon(appRepositories[0].type, appRepositories[0].url, 18)}
                           </span>
                         </hd-button>
@@ -1646,37 +1655,33 @@ export default function AppDetailPage() {
                     )}
 
                     {appRepositories.length > 1 && (
-                      <div ref={stickyRepoMenuRef} style={{ position: "relative", flexShrink: 0, margin: 0 }}>
-                        <button
-                          type="button"
+                      <div ref={stickyRepoMenuRef} style={{ position: "relative", flexShrink: 0, margin: 0, display: "inline-block" }}>
+                        <hd-button
+                          suppressHydrationWarning
+                          className="app-repo-btn"
                           onClick={() => setIsStickyRepoMenuOpen(prev => !prev)}
                           title={locale === 'hy' ? 'Շտեմարաններ (Git)' : 'Repositories (Git)'}
+                          data-width="46px"
+                          data-height="46px"
+                          data-thickness="2.5px"
+                          data-padding="0"
+                          data-wrapper-padding="0"
+                          data-color={isStickyRepoMenuOpen ? "var(--panel)" : "var(--bg)"}
+                          data-text-color="var(--text)"
                           style={{
-                            background: "none",
-                            border: "none",
-                            padding: 0,
-                            margin: 0,
                             cursor: "pointer",
-                            textDecoration: "none",
-                            display: "block"
+                            width: "46px",
+                            minWidth: "46px",
+                            maxWidth: "46px",
+                            height: "46px",
+                            margin: 0,
+                            padding: 0
                           }}
                         >
-                          <hd-button
-                            suppressHydrationWarning
-                            className="app-repo-btn"
-                            data-width="46px"
-                            data-height="46px"
-                            data-thickness="2.5px"
-                            data-padding="0"
-                            data-wrapper-padding="0"
-                            data-color={isStickyRepoMenuOpen ? "var(--panel)" : "var(--bg)"}
-                            data-text-color="var(--text)"
-                          >
-                            <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              <i className="hd-icon hd-icon-three-dots-vertical" style={{ fontSize: "1.1rem", lineHeight: 1 }} />
-                            </span>
-                          </hd-button>
-                        </button>
+                          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
+                            <i className="hd-icon hd-icon-three-dots-vertical" style={{ fontSize: "1.1rem", lineHeight: 1 }} />
+                          </span>
+                        </hd-button>
 
                         {/* Sticky Dropdown Menu for Multiple Repositories */}
                         {isStickyRepoMenuOpen && (
@@ -1752,37 +1757,34 @@ export default function AppDetailPage() {
                       </div>
                     )}
 
-                    {/* Sticky Share Button (no side margins, no side padding) */}
-                    <button
-                      type="button"
+                    {/* Sticky Share Button (no parent button wrapper, exact same 46px width) */}
+                    <hd-button
+                      suppressHydrationWarning
+                      className="app-share-btn"
                       onClick={() => setIsShareModalOpen(true)}
                       title={locale === 'hy' ? 'Կիսվել հավելվածով' : 'Share application'}
+                      data-width="46px"
+                      data-height="46px"
+                      data-thickness="2.5px"
+                      data-padding="0"
+                      data-wrapper-padding="0"
+                      data-color="var(--bg)"
+                      data-text-color="var(--text)"
                       style={{
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        margin: 0,
                         cursor: "pointer",
-                        textDecoration: "none",
-                        flexShrink: 0
+                        flexShrink: 0,
+                        width: "46px",
+                        minWidth: "46px",
+                        maxWidth: "46px",
+                        height: "46px",
+                        margin: 0,
+                        padding: 0
                       }}
                     >
-                      <hd-button
-                        suppressHydrationWarning
-                        data-width="46px"
-                        data-height="46px"
-                        data-thickness="2.5px"
-                        data-padding="0"
-                        data-wrapper-padding="0"
-                        data-color="var(--bg)"
-                        data-text-color="var(--text)"
-                        style={{ margin: 0, padding: 0 }}
-                      >
-                        <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <i className="hd-icon hd-icon-share-arrow-right" style={{ fontSize: "1.1rem", lineHeight: 1 }} />
-                        </span>
-                      </hd-button>
-                    </button>
+                      <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
+                        <i className="hd-icon hd-icon-share-arrow-right" style={{ fontSize: "1.1rem", lineHeight: 1 }} />
+                      </span>
+                    </hd-button>
                   </div>
                 </div>
               )}

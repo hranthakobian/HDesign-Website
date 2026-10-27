@@ -369,19 +369,49 @@ button:not(.no-default-btn-style) {
   padding-right: 40px !important;
 }
 
-/* GitHub / Repository Button Specific Padding (20px) */
+/* Apps Page Action Icon Buttons (Git Repository & Share Buttons) - Strictly equal dimensions */
 .apps-page-container .app-repo-btn,
+.apps-page-container .app-share-btn,
 .apps-page-container hd-button.app-repo-btn,
+.apps-page-container hd-button.app-share-btn,
+.apps-page-container a.app-repo-link,
 .apps-page-container a.app-repo-link hd-button,
 .apps-page-container a[title*="GitHub"] hd-button,
 .apps-page-container a[title*="GitLab"] hd-button,
 .apps-page-container a[title*="Bitbucket"] hd-button,
 .apps-page-container a[title*="Repository"] hd-button,
 .apps-page-container a[title*="Source Code"] hd-button {
-  --wrapper-padding: 0 20px !important;
-  padding-left: 20px !important;
-  padding-right: 20px !important;
-  padding: 0 20px !important;
+  --wrapper-padding: 0 !important;
+  padding: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.apps-page-container .app-hero-actions hd-button.app-repo-btn,
+.apps-page-container .app-hero-actions hd-button.app-share-btn,
+.apps-page-container .app-hero-actions a.app-repo-link,
+.apps-page-container .app-hero-actions a.app-repo-link hd-button {
+  width: 52px !important;
+  min-width: 52px !important;
+  max-width: 52px !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  max-height: 52px !important;
+  flex: 0 0 52px !important;
+}
+
+.apps-page-container .app-sticky-actions hd-button.app-repo-btn,
+.apps-page-container .app-sticky-actions hd-button.app-share-btn,
+.apps-page-container .app-sticky-actions a.app-repo-link,
+.apps-page-container .app-sticky-actions a.app-repo-link hd-button {
+  width: 46px !important;
+  min-width: 46px !important;
+  max-width: 46px !important;
+  height: 46px !important;
+  min-height: 46px !important;
+  max-height: 46px !important;
+  flex: 0 0 46px !important;
 }
 
 /* Admin Panel Specific Button Padding (20px) */
