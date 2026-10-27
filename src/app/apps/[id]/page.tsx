@@ -1594,23 +1594,23 @@ export default function AppDetailPage() {
                           </hd-button>
                         </a>
                       ) : (
-                        <div style={{ width: "100%" }} onClick={handleDownloadAction}>
+                        <div
+                          style={{ width: "100%" }}
+                          onClick={handleDownloadAction}
+                          title={locale === "hy"
+                            ? (totalOptionsCount > 1 ? `Ներբեռնել (${totalOptionsCount} տարբերակ)` : "Ներբեռնել")
+                            : (totalOptionsCount > 1 ? `Download (${totalOptionsCount} options)` : "Download")}
+                        >
                           <hd-button
                             suppressHydrationWarning
                             data-width="100%"
                             data-height="46px"
                             data-thickness="2.5px"
-                            data-font-size="0.9rem"
                             data-color="var(--accent)"
                             data-text-color="#ffffff"
                           >
-                            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px", fontWeight: 800, letterSpacing: "0.5px" }}>
-                              <i className="hd-icon hd-icon-download" style={{ fontSize: "1.1rem", lineHeight: 1 }} />
-                              <span>
-                                {locale === "hy"
-                                  ? (totalOptionsCount > 1 ? `ՆԵՐԲԵՌՆԵԼ (${totalOptionsCount})` : "ՆԵՐԲԵՌՆԵԼ")
-                                  : (totalOptionsCount > 1 ? `DOWNLOAD (${totalOptionsCount})` : "DOWNLOAD")}
-                              </span>
+                            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                              <i className="hd-icon hd-icon-download" style={{ fontSize: "1.25rem", lineHeight: 1 }} />
                             </span>
                           </hd-button>
                         </div>
