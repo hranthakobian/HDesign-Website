@@ -17,13 +17,15 @@ export function parseBilingualText(text?: string | null, lang: 'hy' | 'en' = 'hy
 
 /**
  * Returns the base canonical URL for the site.
+ * Always prefers the public production domain 'https://hakobian.am'
+ * and avoids internal .vercel.app deployment domains which have Vercel SSO/authentication
+ * protection enabled that blocks social media crawlers (Telegram, WhatsApp, etc.).
  */
 export function getSiteUrl(): string {
-  if (process.env.NEXT_PUBLIC_SITE_URL && process.env.NEXT_PUBLIC_SITE_URL.trim()) {
-    return process.env.NEXT_PUBLIC_SITE_URL.trim().replace(/\/+$/, '');
-  }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL.trim().replace(/\/+$/, '')}`;
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (envUrl && !envUrl.includes('.vercel.app')) {
+    const clean = envUrl.replace(/\/+$/, '');
+    return clean.startsWith('http') ? clean : `https://${clean}`;
   }
   return 'https://hakobian.am';
 }
@@ -54,6 +56,11 @@ export function toAbsoluteUrl(url?: string | null): string {
   // Reject empty or data-URIs (social crawlers cannot parse data: URIs)
   if (!trimmed || trimmed.startsWith('data:')) {
     return defaultFallback;
+  }
+
+  // Replace any internal vercel deployment URL with the public domain to bypass Vercel SSO
+  if (trimmed.includes('.vercel.app')) {
+    trimmed = trimmed.replace(/^https?:\/\/[^\/]+/, siteUrl);
   }
 
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
