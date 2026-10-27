@@ -12,6 +12,7 @@ import CustomCursor from "@/components/CustomCursor";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
 import UpcomingCheck from "@/components/UpcomingCheck";
 import { getSiteSetting } from "@/lib/db";
+import { getDefaultSiteMetadata } from "@/lib/seo";
 import SmoothScroll from "@/components/SmoothScroll";
 import Preloader from "@/components/Preloader";
 import HDesignRevealInit from "@/components/HDesignRevealInit";
@@ -23,11 +24,7 @@ export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const personalization = await getSiteSetting('personalization_settings', {});
-  return {
-    title: personalization.site_title_hy || "HDesign",
-    description: personalization.site_desc_hy || "Դիզայնի և Բրենդավորման Ստուդիա"
-  };
+  return await getDefaultSiteMetadata();
 }
 
 function extractTidioWidgetId(input: string): string {
