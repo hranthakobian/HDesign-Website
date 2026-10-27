@@ -11,6 +11,7 @@ import { HDesignStars } from "@/components/RatingSystem";
 import BugReportModal from "@/components/BugReportModal";
 import AppDownloadModal, { AppDownloadOption } from "@/components/AppDownloadModal";
 import KofiModal from "@/components/KofiModal";
+import ShareModal from "@/components/ShareModal";
 import SoftwareIcon from "@/components/SoftwareIcon";
 import SoftwareTooltip from "@/components/SoftwareTooltip";
 import { formatLanguageName } from "@/lib/languages";
@@ -85,6 +86,28 @@ export default function AppDetailPage() {
   const [isBugModalOpen, setIsBugModalOpen] = useState(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isKofiModalOpen, setIsKofiModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isAppCopied, setIsAppCopied] = useState(false);
+
+  const handleCopyAppUrl = async () => {
+    try {
+      const url = typeof window !== 'undefined' ? window.location.href : '';
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const input = document.createElement("input");
+        input.value = url;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand("copy");
+        document.body.removeChild(input);
+      }
+      setIsAppCopied(true);
+      setTimeout(() => setIsAppCopied(false), 2400);
+    } catch (err) {
+      console.warn("Failed to copy app link:", err);
+    }
+  };
 
   const supportedOSList = useMemo(() => {
     if (!app) return [];
@@ -935,6 +958,66 @@ export default function AppDetailPage() {
                     </a>
                   );
                 })}
+
+                {/* Copy Link Button */}
+                <button
+                  type="button"
+                  onClick={handleCopyAppUrl}
+                  title={isAppCopied ? (locale === 'hy' ? 'Հղումը պատճենված է' : 'Link copied') : (locale === 'hy' ? 'Պատճենել հղումը' : 'Copy link')}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    textDecoration: "none",
+                    flexShrink: 0
+                  }}
+                >
+                  <hd-button
+                    suppressHydrationWarning
+                    data-width="52px"
+                    data-height="52px"
+                    data-thickness="3px"
+                    data-padding="0 14px"
+                    data-wrapper-padding="0 14px"
+                    data-color={isAppCopied ? "var(--accent)" : "var(--bg)"}
+                    data-text-color={isAppCopied ? "#ffffff" : "var(--text)"}
+                  >
+                    <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <i className={isAppCopied ? "hd-icon hd-icon-check" : "hd-icon hd-icon-copy"} style={{ fontSize: "1.25rem", lineHeight: 1 }} />
+                    </span>
+                  </hd-button>
+                </button>
+
+                {/* Share Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsShareModalOpen(true)}
+                  title={locale === 'hy' ? 'Կիսվել հավելվածով' : 'Share application'}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    textDecoration: "none",
+                    flexShrink: 0
+                  }}
+                >
+                  <hd-button
+                    suppressHydrationWarning
+                    data-width="52px"
+                    data-height="52px"
+                    data-thickness="3px"
+                    data-padding="0 14px"
+                    data-wrapper-padding="0 14px"
+                    data-color="var(--bg)"
+                    data-text-color="var(--text)"
+                  >
+                    <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <i className="hd-icon hd-icon-share-arrow-right" style={{ fontSize: "1.25rem", lineHeight: 1 }} />
+                    </span>
+                  </hd-button>
+                </button>
               </div>
             </div>
           </div>
@@ -1502,6 +1585,66 @@ export default function AppDetailPage() {
                         </a>
                       );
                     })}
+
+                    {/* Sticky Copy Link Button */}
+                    <button
+                      type="button"
+                      onClick={handleCopyAppUrl}
+                      title={isAppCopied ? (locale === 'hy' ? 'Հղումը պատճենված է' : 'Link copied') : (locale === 'hy' ? 'Պատճենել հղումը' : 'Copy link')}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        padding: 0,
+                        cursor: "pointer",
+                        textDecoration: "none",
+                        flexShrink: 0
+                      }}
+                    >
+                      <hd-button
+                        suppressHydrationWarning
+                        data-width="46px"
+                        data-height="46px"
+                        data-thickness="2.5px"
+                        data-padding="0 12px"
+                        data-wrapper-padding="0 12px"
+                        data-color={isAppCopied ? "var(--accent)" : "var(--bg)"}
+                        data-text-color={isAppCopied ? "#ffffff" : "var(--text)"}
+                      >
+                        <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <i className={isAppCopied ? "hd-icon hd-icon-check" : "hd-icon hd-icon-copy"} style={{ fontSize: "1.1rem", lineHeight: 1 }} />
+                        </span>
+                      </hd-button>
+                    </button>
+
+                    {/* Sticky Share Button */}
+                    <button
+                      type="button"
+                      onClick={() => setIsShareModalOpen(true)}
+                      title={locale === 'hy' ? 'Կիսվել հավելվածով' : 'Share application'}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        padding: 0,
+                        cursor: "pointer",
+                        textDecoration: "none",
+                        flexShrink: 0
+                      }}
+                    >
+                      <hd-button
+                        suppressHydrationWarning
+                        data-width="46px"
+                        data-height="46px"
+                        data-thickness="2.5px"
+                        data-padding="0 12px"
+                        data-wrapper-padding="0 12px"
+                        data-color="var(--bg)"
+                        data-text-color="var(--text)"
+                      >
+                        <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <i className="hd-icon hd-icon-share-arrow-right" style={{ fontSize: "1.1rem", lineHeight: 1 }} />
+                        </span>
+                      </hd-button>
+                    </button>
                   </div>
                 </div>
               )}
@@ -1721,6 +1864,14 @@ export default function AppDetailPage() {
       <KofiModal
         isOpen={isKofiModalOpen}
         onClose={() => setIsKofiModalOpen(false)}
+      />
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        title={title}
+        description={shortDesc}
       />
     </main>
   );
