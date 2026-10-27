@@ -106,7 +106,8 @@ export async function getDefaultSiteMetadata(): Promise<Metadata> {
   const siteTitle = personalization.site_title_hy || 'HDesign';
   const siteDesc = personalization.site_desc_hy || 'Դիզայնի և Բրենդավորման Ստուդիա';
   const siteUrl = getSiteUrl();
-  const defaultImage = `${siteUrl}/og-image.png`;
+  const directOgImage = 'https://jveaaytpcviwuvpgdvxl.supabase.co/storage/v1/object/public/branding/1783446470683_Untitled_1.png';
+  const defaultImage = personalization.site_og_image || directOgImage;
 
   return {
     metadataBase: new URL(siteUrl),
@@ -130,6 +131,15 @@ export async function getDefaultSiteMetadata(): Promise<Metadata> {
       images: [
         {
           url: defaultImage,
+          secureUrl: defaultImage,
+          width: 1200,
+          height: 630,
+          alt: `${siteTitle} — Դիզայնի և Բրենդավորման Ստուդիա`,
+          type: 'image/png'
+        },
+        {
+          url: `${siteUrl}/og-image.png`,
+          secureUrl: `${siteUrl}/og-image.png`,
           width: 1200,
           height: 630,
           alt: `${siteTitle} — Դիզայնի և Բրենդավորման Ստուդիա`,
@@ -143,6 +153,10 @@ export async function getDefaultSiteMetadata(): Promise<Metadata> {
       description: siteDesc,
       images: [defaultImage],
       creator: '@hranthakobian'
+    },
+    other: {
+      'image_src': defaultImage,
+      'thumbnail': defaultImage
     },
     robots: {
       index: true,
