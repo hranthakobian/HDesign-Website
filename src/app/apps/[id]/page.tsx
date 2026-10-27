@@ -87,27 +87,23 @@ export default function AppDetailPage() {
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [isKofiModalOpen, setIsKofiModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [isAppCopied, setIsAppCopied] = useState(false);
+  const [isRepoMenuOpen, setIsRepoMenuOpen] = useState(false);
+  const [isStickyRepoMenuOpen, setIsStickyRepoMenuOpen] = useState(false);
+  const repoMenuRef = useRef<HTMLDivElement>(null);
+  const stickyRepoMenuRef = useRef<HTMLDivElement>(null);
 
-  const handleCopyAppUrl = async () => {
-    try {
-      const url = typeof window !== 'undefined' ? window.location.href : '';
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(url);
-      } else {
-        const input = document.createElement("input");
-        input.value = url;
-        document.body.appendChild(input);
-        input.select();
-        document.execCommand("copy");
-        document.body.removeChild(input);
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (repoMenuRef.current && !repoMenuRef.current.contains(e.target as Node)) {
+        setIsRepoMenuOpen(false);
       }
-      setIsAppCopied(true);
-      setTimeout(() => setIsAppCopied(false), 2400);
-    } catch (err) {
-      console.warn("Failed to copy app link:", err);
-    }
-  };
+      if (stickyRepoMenuRef.current && !stickyRepoMenuRef.current.contains(e.target as Node)) {
+        setIsStickyRepoMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const supportedOSList = useMemo(() => {
     if (!app) return [];
@@ -923,22 +919,49 @@ export default function AppDetailPage() {
                   )}
                 </div>
 
-                {/* Repository Icon Buttons (GitHub, GitLab, Bitbucket, etc.) */}
-                {appRepositories.map((repo, rIdx) => {
-                  const titleLabel = repo.label || (
-                    repo.type === 'gitlab' ? 'GitLab' :
-                    repo.type === 'bitbucket' ? 'Bitbucket' :
-                    repo.type === 'code' ? (locale === 'hy' ? 'Կոդ' : 'Source Code') : 'GitHub'
-                  );
-                  return (
-                    <a
-                      key={repo.id || repo.url || rIdx}
-                      href={repo.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="app-repo-link"
-                      title={titleLabel}
-                      style={{ textDecoration: "none", flexShrink: 0 }}
+                {/* Repository: single button if only 1, or three-dots menu if more than 1 */}
+                {appRepositories.length === 1 && (
+                  <a
+                    href={appRepositories[0].url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="app-repo-link"
+                    title={appRepositories[0].label || 'Repository'}
+                    style={{ textDecoration: "none", flexShrink: 0, margin: 0 }}
+                  >
+                    <hd-button
+                      suppressHydrationWarning
+                      className="app-repo-btn"
+                      data-width="52px"
+                      data-height="52px"
+                      data-thickness="3px"
+                      data-padding="0"
+                      data-wrapper-padding="0"
+                      data-color="var(--bg)"
+                      data-text-color="var(--text)"
+                    >
+                      <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {renderRepoSvgIcon(appRepositories[0].type, appRepositories[0].url, 22)}
+                      </span>
+                    </hd-button>
+                  </a>
+                )}
+
+                {appRepositories.length > 1 && (
+                  <div ref={repoMenuRef} style={{ position: "relative", flexShrink: 0, margin: 0 }}>
+                    <button
+                      type="button"
+                      onClick={() => setIsRepoMenuOpen(prev => !prev)}
+                      title={locale === 'hy' ? 'Շտեմարաններ (Git)' : 'Repositories (Git)'}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        padding: 0,
+                        margin: 0,
+                        cursor: "pointer",
+                        textDecoration: "none",
+                        display: "block"
+                      }}
                     >
                       <hd-button
                         suppressHydrationWarning
@@ -946,50 +969,92 @@ export default function AppDetailPage() {
                         data-width="52px"
                         data-height="52px"
                         data-thickness="3px"
-                        data-padding="0 20px"
-                        data-wrapper-padding="0 20px"
-                        data-color="var(--bg)"
+                        data-padding="0"
+                        data-wrapper-padding="0"
+                        data-color={isRepoMenuOpen ? "var(--panel)" : "var(--bg)"}
                         data-text-color="var(--text)"
                       >
                         <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          {renderRepoSvgIcon(repo.type, repo.url, 22)}
+                          <i className="hd-icon hd-icon-three-dots-vertical" style={{ fontSize: "1.25rem", lineHeight: 1 }} />
                         </span>
                       </hd-button>
-                    </a>
-                  );
-                })}
+                    </button>
 
-                {/* Copy Link Button */}
-                <button
-                  type="button"
-                  onClick={handleCopyAppUrl}
-                  title={isAppCopied ? (locale === 'hy' ? 'Հղումը պատճենված է' : 'Link copied') : (locale === 'hy' ? 'Պատճենել հղումը' : 'Copy link')}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    padding: 0,
-                    cursor: "pointer",
-                    textDecoration: "none",
-                    flexShrink: 0
-                  }}
-                >
-                  <hd-button
-                    suppressHydrationWarning
-                    data-width="52px"
-                    data-height="52px"
-                    data-thickness="3px"
-                    data-padding="0 14px"
-                    data-wrapper-padding="0 14px"
-                    data-color={isAppCopied ? "var(--accent)" : "var(--bg)"}
-                    data-text-color={isAppCopied ? "#ffffff" : "var(--text)"}
-                  >
-                    <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <i className={isAppCopied ? "hd-icon hd-icon-check" : "hd-icon hd-icon-copy"} style={{ fontSize: "1.25rem", lineHeight: 1 }} />
-                    </span>
-                  </hd-button>
-                </button>
+                    {/* Dropdown Menu for Multiple Repositories */}
+                    {isRepoMenuOpen && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          bottom: "calc(100% + 8px)",
+                          right: 0,
+                          background: "var(--panel)",
+                          border: "1px solid var(--panel-border)",
+                          borderRadius: "16px",
+                          boxShadow: "0 14px 36px rgba(0, 0, 0, 0.4)",
+                          padding: "6px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "4px",
+                          minWidth: "190px",
+                          zIndex: 100,
+                          animation: "fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)"
+                        }}
+                      >
+                        <div style={{ padding: "6px 12px 4px", fontSize: "0.75rem", fontWeight: 800, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                          {locale === "hy" ? "Շտեմարաններ (Git)" : "Repositories"}
+                        </div>
+                        {appRepositories.map((repo, rIdx) => {
+                          const titleLabel = repo.label || (
+                            repo.type === 'gitlab' ? 'GitLab' :
+                            repo.type === 'bitbucket' ? 'Bitbucket' :
+                            repo.type === 'code' ? (locale === 'hy' ? 'Կոդ' : 'Source Code') : 'GitHub'
+                          );
+                          return (
+                            <a
+                              key={repo.id || repo.url || rIdx}
+                              href={repo.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => setIsRepoMenuOpen(false)}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "10px",
+                                padding: "10px 14px",
+                                borderRadius: "10px",
+                                textDecoration: "none",
+                                color: "var(--text)",
+                                fontSize: "0.9rem",
+                                fontWeight: 600,
+                                transition: "all 0.15s ease",
+                                background: "transparent"
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = "var(--bg)";
+                                e.currentTarget.style.color = "var(--accent)";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = "transparent";
+                                e.currentTarget.style.color = "var(--text)";
+                              }}
+                            >
+                              <span style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "inherit" }}>
+                                {renderRepoSvgIcon(repo.type, repo.url, 18)}
+                              </span>
+                              <span style={{ flex: 1 }}>{titleLabel}</span>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ opacity: 0.5 }}>
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                                <polyline points="15 3 21 3 21 9" />
+                              </svg>
+                            </a>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                {/* Share Button */}
+                {/* Share Button (no side margins, no side padding) */}
                 <button
                   type="button"
                   onClick={() => setIsShareModalOpen(true)}
@@ -998,6 +1063,7 @@ export default function AppDetailPage() {
                     background: "none",
                     border: "none",
                     padding: 0,
+                    margin: 0,
                     cursor: "pointer",
                     textDecoration: "none",
                     flexShrink: 0
@@ -1008,10 +1074,11 @@ export default function AppDetailPage() {
                     data-width="52px"
                     data-height="52px"
                     data-thickness="3px"
-                    data-padding="0 14px"
-                    data-wrapper-padding="0 14px"
+                    data-padding="0"
+                    data-wrapper-padding="0"
                     data-color="var(--bg)"
                     data-text-color="var(--text)"
+                    style={{ margin: 0, padding: 0 }}
                   >
                     <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <i className="hd-icon hd-icon-share-arrow-right" style={{ fontSize: "1.25rem", lineHeight: 1 }} />
@@ -1550,22 +1617,49 @@ export default function AppDetailPage() {
                       )}
                     </div>
 
-                    {/* Sticky Repository Icon Buttons */}
-                    {appRepositories.map((repo, rIdx) => {
-                      const titleLabel = repo.label || (
-                        repo.type === 'gitlab' ? 'GitLab' :
-                        repo.type === 'bitbucket' ? 'Bitbucket' :
-                        repo.type === 'code' ? (locale === 'hy' ? 'Կոդ' : 'Source Code') : 'GitHub'
-                      );
-                      return (
-                        <a
-                          key={repo.id || repo.url || rIdx}
-                          href={repo.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="app-repo-link"
-                          title={titleLabel}
-                          style={{ textDecoration: "none", flexShrink: 0 }}
+                    {/* Sticky Repositories: single button if only 1, or three-dots menu if more than 1 */}
+                    {appRepositories.length === 1 && (
+                      <a
+                        href={appRepositories[0].url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="app-repo-link"
+                        title={appRepositories[0].label || 'Repository'}
+                        style={{ textDecoration: "none", flexShrink: 0, margin: 0 }}
+                      >
+                        <hd-button
+                          suppressHydrationWarning
+                          className="app-repo-btn"
+                          data-width="46px"
+                          data-height="46px"
+                          data-thickness="2.5px"
+                          data-padding="0"
+                          data-wrapper-padding="0"
+                          data-color="var(--bg)"
+                          data-text-color="var(--text)"
+                        >
+                          <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            {renderRepoSvgIcon(appRepositories[0].type, appRepositories[0].url, 18)}
+                          </span>
+                        </hd-button>
+                      </a>
+                    )}
+
+                    {appRepositories.length > 1 && (
+                      <div ref={stickyRepoMenuRef} style={{ position: "relative", flexShrink: 0, margin: 0 }}>
+                        <button
+                          type="button"
+                          onClick={() => setIsStickyRepoMenuOpen(prev => !prev)}
+                          title={locale === 'hy' ? 'Շտեմարաններ (Git)' : 'Repositories (Git)'}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            padding: 0,
+                            margin: 0,
+                            cursor: "pointer",
+                            textDecoration: "none",
+                            display: "block"
+                          }}
                         >
                           <hd-button
                             suppressHydrationWarning
@@ -1573,50 +1667,92 @@ export default function AppDetailPage() {
                             data-width="46px"
                             data-height="46px"
                             data-thickness="2.5px"
-                            data-padding="0 20px"
-                            data-wrapper-padding="0 20px"
-                            data-color="var(--bg)"
+                            data-padding="0"
+                            data-wrapper-padding="0"
+                            data-color={isStickyRepoMenuOpen ? "var(--panel)" : "var(--bg)"}
                             data-text-color="var(--text)"
                           >
                             <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                              {renderRepoSvgIcon(repo.type, repo.url, 18)}
+                              <i className="hd-icon hd-icon-three-dots-vertical" style={{ fontSize: "1.1rem", lineHeight: 1 }} />
                             </span>
                           </hd-button>
-                        </a>
-                      );
-                    })}
+                        </button>
 
-                    {/* Sticky Copy Link Button */}
-                    <button
-                      type="button"
-                      onClick={handleCopyAppUrl}
-                      title={isAppCopied ? (locale === 'hy' ? 'Հղումը պատճենված է' : 'Link copied') : (locale === 'hy' ? 'Պատճենել հղումը' : 'Copy link')}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        cursor: "pointer",
-                        textDecoration: "none",
-                        flexShrink: 0
-                      }}
-                    >
-                      <hd-button
-                        suppressHydrationWarning
-                        data-width="46px"
-                        data-height="46px"
-                        data-thickness="2.5px"
-                        data-padding="0 12px"
-                        data-wrapper-padding="0 12px"
-                        data-color={isAppCopied ? "var(--accent)" : "var(--bg)"}
-                        data-text-color={isAppCopied ? "#ffffff" : "var(--text)"}
-                      >
-                        <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <i className={isAppCopied ? "hd-icon hd-icon-check" : "hd-icon hd-icon-copy"} style={{ fontSize: "1.1rem", lineHeight: 1 }} />
-                        </span>
-                      </hd-button>
-                    </button>
+                        {/* Sticky Dropdown Menu for Multiple Repositories */}
+                        {isStickyRepoMenuOpen && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              bottom: "calc(100% + 8px)",
+                              right: 0,
+                              background: "var(--panel)",
+                              border: "1px solid var(--panel-border)",
+                              borderRadius: "14px",
+                              boxShadow: "0 14px 36px rgba(0, 0, 0, 0.4)",
+                              padding: "6px",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "4px",
+                              minWidth: "180px",
+                              zIndex: 100,
+                              animation: "fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1)"
+                            }}
+                          >
+                            <div style={{ padding: "4px 10px 2px", fontSize: "0.72rem", fontWeight: 800, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                              {locale === "hy" ? "Շտեմարաններ (Git)" : "Repositories"}
+                            </div>
+                            {appRepositories.map((repo, rIdx) => {
+                              const titleLabel = repo.label || (
+                                repo.type === 'gitlab' ? 'GitLab' :
+                                repo.type === 'bitbucket' ? 'Bitbucket' :
+                                repo.type === 'code' ? (locale === 'hy' ? 'Կոդ' : 'Source Code') : 'GitHub'
+                              );
+                              return (
+                                <a
+                                  key={repo.id || repo.url || rIdx}
+                                  href={repo.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={() => setIsStickyRepoMenuOpen(false)}
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                    padding: "8px 12px",
+                                    borderRadius: "8px",
+                                    textDecoration: "none",
+                                    color: "var(--text)",
+                                    fontSize: "0.85rem",
+                                    fontWeight: 600,
+                                    transition: "all 0.15s ease",
+                                    background: "transparent"
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = "var(--bg)";
+                                    e.currentTarget.style.color = "var(--accent)";
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = "transparent";
+                                    e.currentTarget.style.color = "var(--text)";
+                                  }}
+                                >
+                                  <span style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "inherit" }}>
+                                    {renderRepoSvgIcon(repo.type, repo.url, 16)}
+                                  </span>
+                                  <span style={{ flex: 1 }}>{titleLabel}</span>
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ opacity: 0.5 }}>
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                                    <polyline points="15 3 21 3 21 9" />
+                                  </svg>
+                                </a>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
-                    {/* Sticky Share Button */}
+                    {/* Sticky Share Button (no side margins, no side padding) */}
                     <button
                       type="button"
                       onClick={() => setIsShareModalOpen(true)}
@@ -1625,6 +1761,7 @@ export default function AppDetailPage() {
                         background: "none",
                         border: "none",
                         padding: 0,
+                        margin: 0,
                         cursor: "pointer",
                         textDecoration: "none",
                         flexShrink: 0
@@ -1635,10 +1772,11 @@ export default function AppDetailPage() {
                         data-width="46px"
                         data-height="46px"
                         data-thickness="2.5px"
-                        data-padding="0 12px"
-                        data-wrapper-padding="0 12px"
+                        data-padding="0"
+                        data-wrapper-padding="0"
                         data-color="var(--bg)"
                         data-text-color="var(--text)"
+                        style={{ margin: 0, padding: 0 }}
                       >
                         <span style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                           <i className="hd-icon hd-icon-share-arrow-right" style={{ fontSize: "1.1rem", lineHeight: 1 }} />

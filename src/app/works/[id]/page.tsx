@@ -113,27 +113,6 @@ export default function BrandingDetailPage() {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const heroImageRef = useRef<HTMLImageElement>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [isCaseCopied, setIsCaseCopied] = useState(false);
-
-  const handleCopyCaseUrl = async () => {
-    try {
-      const url = typeof window !== 'undefined' ? window.location.href : '';
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(url);
-      } else {
-        const input = document.createElement("input");
-        input.value = url;
-        document.body.appendChild(input);
-        input.select();
-        document.execCommand("copy");
-        document.body.removeChild(input);
-      }
-      setIsCaseCopied(true);
-      setTimeout(() => setIsCaseCopied(false), 2400);
-    } catch (err) {
-      console.warn("Failed to copy case link:", err);
-    }
-  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -503,57 +482,31 @@ export default function BrandingDetailPage() {
           </div>
           <div style={{ flexShrink: 0, paddingBottom: 8, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "10px" }}>
             <RatingSystem id={work.id} locale={locale} bgColor={avgBgColor} noShadow={true} />
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <button
-                type="button"
-                onClick={handleCopyCaseUrl}
-                title={isCaseCopied ? (locale === 'hy' ? 'Հղումը պատճենված է' : 'Link copied') : (locale === 'hy' ? 'Պատճենել հղումը' : 'Copy link')}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "7px 14px",
-                  borderRadius: "20px",
-                  background: isCaseCopied ? "var(--accent)" : "rgba(255, 255, 255, 0.16)",
-                  backdropFilter: "blur(12px)",
-                  WebkitBackdropFilter: "blur(12px)",
-                  border: "1px solid rgba(255, 255, 255, 0.25)",
-                  color: "#ffffff",
-                  fontSize: "0.82rem",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)"
-                }}
-              >
-                <i className={isCaseCopied ? "hd-icon hd-icon-check" : "hd-icon hd-icon-copy"} style={{ fontSize: "1.05rem" }} />
-                <span>{isCaseCopied ? (locale === 'hy' ? 'Պատճենված է' : 'Copied') : (locale === 'hy' ? 'Պատճենել' : 'Copy')}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setIsShareModalOpen(true)}
-                title={locale === 'hy' ? 'Կիսվել քեյսով' : 'Share case'}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "7px 14px",
-                  borderRadius: "20px",
-                  background: "rgba(255, 255, 255, 0.16)",
-                  backdropFilter: "blur(12px)",
-                  WebkitBackdropFilter: "blur(12px)",
-                  border: "1px solid rgba(255, 255, 255, 0.25)",
-                  color: "#ffffff",
-                  fontSize: "0.82rem",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)"
-                }}
-              >
-                <i className="hd-icon hd-icon-share-arrow-right" style={{ fontSize: "1.05rem" }} />
-                <span>{locale === 'hy' ? 'Կիսվել' : 'Share'}</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsShareModalOpen(true)}
+              title={locale === 'hy' ? 'Կիսվել քեյսով' : 'Share case'}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "7px 16px",
+                borderRadius: "20px",
+                background: "rgba(255, 255, 255, 0.16)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                border: "1px solid rgba(255, 255, 255, 0.25)",
+                color: "#ffffff",
+                fontSize: "0.85rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                transition: "all 0.2s cubic-bezier(0.16, 1, 0.3, 1)",
+                margin: 0
+              }}
+            >
+              <i className="hd-icon hd-icon-share-arrow-right" style={{ fontSize: "1.05rem" }} />
+              <span>{locale === 'hy' ? 'Կիսվել' : 'Share'}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -593,30 +546,7 @@ export default function BrandingDetailPage() {
             <span style={{ fontSize: "0.78rem", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "1px" }}>
               {t('works_detail', 'share_case', 'Կիսվել')}
             </span>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: 4 }}>
-              <button
-                type="button"
-                onClick={handleCopyCaseUrl}
-                title={isCaseCopied ? (locale === 'hy' ? 'Հղումը պատճենված է' : 'Link copied') : (locale === 'hy' ? 'Պատճենել հղումը' : 'Copy link')}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  padding: "5px 12px",
-                  borderRadius: "12px",
-                  background: isCaseCopied ? "var(--accent)" : "var(--bg)",
-                  border: "1px solid var(--panel-border)",
-                  color: isCaseCopied ? "#ffffff" : "var(--text)",
-                  fontSize: "0.82rem",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  transition: "all 0.2s"
-                }}
-              >
-                <i className={isCaseCopied ? "hd-icon hd-icon-check" : "hd-icon hd-icon-copy"} style={{ fontSize: "1rem" }} />
-                <span>{isCaseCopied ? (locale === 'hy' ? 'Պատճենված է' : 'Copied') : (locale === 'hy' ? 'Պատճենել' : 'Copy')}</span>
-              </button>
-
+            <div style={{ display: "flex", alignItems: "center", marginTop: 4 }}>
               <button
                 type="button"
                 onClick={() => setIsShareModalOpen(true)}
@@ -624,19 +554,20 @@ export default function BrandingDetailPage() {
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: "5px",
-                  padding: "5px 12px",
+                  gap: "6px",
+                  padding: "6px 16px",
                   borderRadius: "12px",
                   background: "var(--bg)",
                   border: "1px solid var(--panel-border)",
                   color: "var(--text)",
-                  fontSize: "0.82rem",
+                  fontSize: "0.85rem",
                   fontWeight: 700,
                   cursor: "pointer",
-                  transition: "all 0.2s"
+                  transition: "all 0.2s",
+                  margin: 0
                 }}
               >
-                <i className="hd-icon hd-icon-share-arrow-right" style={{ fontSize: "1rem" }} />
+                <i className="hd-icon hd-icon-share-arrow-right" style={{ fontSize: "1.05rem" }} />
                 <span>{locale === 'hy' ? 'Սոցցանցեր' : 'Social'}</span>
               </button>
             </div>
