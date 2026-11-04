@@ -1170,6 +1170,7 @@ function AdminDashboardContent() {
     custom_footer_script: '',
     supabase_url: '',
     supabase_key: '',
+    supabase_service_role_key: '',
     smtp_host: '',
     smtp_port: '',
     smtp_secure: false,
@@ -7596,6 +7597,21 @@ function AdminDashboardContent() {
                           data-width="100%"
                           data-height="40px"
                         data-font-size="14pt" />
+                      </div>
+                      <div style={{ gridColumn: '1 / -1' }}>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Service Role Key (Գաղտնի բանալի Storage-ի և վերբեռնումների համար)</label>
+                        <hd-input 
+                          key={isApiUnlocked ? "unlocked_srv" : "locked_srv"}
+                          type={isApiUnlocked ? "text" : "password"}
+                          placeholder="sb_secret_... կամ service_role JWT"
+                          value={apiSettings.supabase_service_role_key || ''}
+                          onInput={(e: any) => setApiSettings(prev => ({ ...prev, supabase_service_role_key: e.target.value }))}
+                          data-width="100%"
+                          data-height="40px"
+                        data-font-size="14pt" />
+                        <span style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '4px', display: 'block' }}>
+                          Անհրաժեշտ է Vercel-ում և սերվերում առանց RLS սահմանափակումների Supabase Storage վերբեռնելու համար:
+                        </span>
                       </div>
                     </div>
                   </div>

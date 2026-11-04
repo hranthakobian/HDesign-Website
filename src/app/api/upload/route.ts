@@ -105,15 +105,26 @@ export async function POST(request: Request) {
       }
     }
 
-    // 2. Local fallback - write to public/uploads/[targetBucket]/
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', targetBucket);
-    await fs.mkdir(uploadDir, { recursive: true });
-    
-    const filePath = path.join(uploadDir, filename);
-    await fs.writeFile(filePath, buffer);
+    // 2. Local fallback - write to public/uploads/[targetBucket]/ (only in local writable environments)
+    if (!process.env.VERCEL) {
+      try {
+        const uploadDir = path.join(process.cwd(), 'public', 'uploads', targetBucket);
+        await fs.mkdir(uploadDir, { recursive: true });
+        
+        const filePath = path.join(uploadDir, filename);
+        await fs.writeFile(filePath, buffer);
 
-    const publicUrl = `/uploads/${targetBucket}/${filename}`;
-    return NextResponse.json({ url: publicUrl, bucket: targetBucket });
+        const publicUrl = `/uploads/${targetBucket}/${filename}`;
+        return NextResponse.json({ url: publicUrl, bucket: targetBucket });
+      } catch (fsErr) {
+        console.warn('Local file fallback failed:', fsErr);
+      }
+    }
+
+    return NextResponse.json(
+      { error: 'Վերբեռնումը ձախողվեց: Cloud Storage-ը (Supabase) հասանելի չէ:' },
+      { status: 500 }
+    );
   } catch (error: any) {
     console.error('File upload API error:', error);
     return NextResponse.json(

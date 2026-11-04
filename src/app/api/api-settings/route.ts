@@ -4,7 +4,7 @@ import { verifyAuth } from '@/lib/auth';
 import fs from 'fs/promises';
 import path from 'path';
 
-async function updateEnvFile(supabaseUrl: string, supabaseKey: string) {
+async function updateEnvFile(supabaseUrl: string, supabaseKey: string, supabaseServiceRoleKey?: string) {
   try {
     const envPath = path.join(process.cwd(), '.env');
     let content = '';
@@ -16,11 +16,15 @@ async function updateEnvFile(supabaseUrl: string, supabaseKey: string) {
 
     const lines = content.split(/\r?\n/);
     const updatedLines = [];
-    const keysToUpdate = {
+    const keysToUpdate: Record<string, string> = {
       SUPABASE_URL: supabaseUrl,
       SUPABASE_ANON_KEY: supabaseKey,
       SUPABASE_PUBLISHABLE_KEY: supabaseKey
     };
+
+    if (supabaseServiceRoleKey !== undefined) {
+      keysToUpdate['SUPABASE_SERVICE_ROLE_KEY'] = supabaseServiceRoleKey;
+    }
 
     const processed = new Set<string>();
 
@@ -30,7 +34,7 @@ async function updateEnvFile(supabaseUrl: string, supabaseKey: string) {
         const parts = trimmed.split('=');
         const key = parts[0].trim();
         if (key in keysToUpdate) {
-          updatedLines.push(`${key}="${keysToUpdate[key as keyof typeof keysToUpdate]}"`);
+          updatedLines.push(`${key}="${keysToUpdate[key]}"`);
           processed.add(key);
           continue;
         }
@@ -40,7 +44,7 @@ async function updateEnvFile(supabaseUrl: string, supabaseKey: string) {
 
     for (const key in keysToUpdate) {
       if (!processed.has(key)) {
-        updatedLines.push(`${key}="${keysToUpdate[key as keyof typeof keysToUpdate]}"`);
+        updatedLines.push(`${key}="${keysToUpdate[key]}"`);
       }
     }
 
@@ -52,6 +56,9 @@ async function updateEnvFile(supabaseUrl: string, supabaseKey: string) {
 
 export async function GET() {
   try {
+    const rawServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const cleanEnvServiceKey = (rawServiceKey && rawServiceKey !== 'sb_secret_jN8fbqIY6KbutEBaQ56ioQ_BgWnJc-w') ? rawServiceKey : '';
+
     const defaultSettings = {
       tildo_enabled: false,
       tildo_widget_id: '',
@@ -61,6 +68,7 @@ export async function GET() {
       custom_footer_script: '',
       supabase_url: process.env.SUPABASE_URL || '',
       supabase_key: process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || '',
+      supabase_service_role_key: cleanEnvServiceKey,
       smtp_host: process.env.SMTP_HOST || '',
       smtp_port: process.env.SMTP_PORT || '587',
       smtp_secure: process.env.SMTP_SECURE === 'true',
@@ -71,6 +79,7 @@ export async function GET() {
     const settings = await getSiteSetting('api_settings', defaultSettings);
     if (!settings.supabase_url) settings.supabase_url = process.env.SUPABASE_URL || '';
     if (!settings.supabase_key) settings.supabase_key = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || '';
+    if (!settings.supabase_service_role_key) settings.supabase_service_role_key = cleanEnvServiceKey;
     if (settings.smtp_host === undefined) settings.smtp_host = process.env.SMTP_HOST || '';
     if (settings.smtp_port === undefined) settings.smtp_port = process.env.SMTP_PORT || '587';
     if (settings.smtp_secure === undefined) settings.smtp_secure = process.env.SMTP_SECURE === 'true';
@@ -143,7 +152,7 @@ export async function POST(request: Request) {
 
     // Sync to .env if provided
     if (body.supabase_url !== undefined && body.supabase_key !== undefined) {
-      await updateEnvFile(body.supabase_url, body.supabase_key);
+      await updateEnvFile(body.supabase_url, body.supabase_key, body.supabase_service_role_key);
     }
 
     const result = await saveSiteSetting('api_settings', body);

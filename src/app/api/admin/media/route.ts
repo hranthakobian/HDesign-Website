@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import path from 'path';
+import os from 'os';
 import fs from 'fs/promises';
 import { verifyAuth } from '@/lib/auth';
 import { 
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Անվավեր uploadId:' }, { status: 400 });
       }
 
-      const chunksDir = path.join(process.cwd(), 'public', 'uploads', '.temp_chunks');
+      const chunksDir = path.join(os.tmpdir(), 'hdesign_chunks');
       await fs.mkdir(chunksDir, { recursive: true });
       cleanupOldChunks(chunksDir).catch(() => {});
 
@@ -109,16 +110,15 @@ export async function POST(request: Request) {
 
       const cleanFilename = (originalFileName || file.name).replace(/[^a-zA-Z0-9._-]/g, '_');
       const filename = `${Date.now()}_${cleanFilename}`;
-      const targetDir = path.join(process.cwd(), 'public', 'uploads');
-      await fs.mkdir(targetDir, { recursive: true });
-      const finalFilePath = path.join(targetDir, filename);
 
-      // Move assembled part to final destination
-      await fs.rename(partPath, finalFilePath);
-      const finalBuffer = await fs.readFile(finalFilePath);
+      // Assemble: read complete buffer directly from assembled temporary part file in OS tmpdir
+      const finalBuffer = await fs.readFile(partPath);
+      // Clean up part file now that buffer is in memory
+      await fs.unlink(partPath).catch(() => {});
 
       // 1. Try Supabase storage upload
       let publicUrl = '';
+      let cloudError = '';
       let targetBucket = 'gallery';
       const storageClient = supabaseAdmin || supabase;
       if (storageClient) {
@@ -130,7 +130,10 @@ export async function POST(request: Request) {
               upsert: true
             });
 
-          if (uploadRes.error && uploadRes.error.message?.includes('Bucket not found')) {
+          if (uploadRes.error && (
+            uploadRes.error.message?.includes('Bucket not found') ||
+            uploadRes.error.message?.includes('does not exist')
+          )) {
             try {
               await storageClient.storage.createBucket(targetBucket, { public: true });
               uploadRes = await storageClient.storage
@@ -156,18 +159,36 @@ export async function POST(request: Request) {
               publicUrl = pubData.publicUrl;
             }
           } else if (uploadRes.error) {
+            cloudError = uploadRes.error.message || '';
             console.warn('Cloud storage upload notice:', uploadRes.error);
           }
-        } catch (err) {
+        } catch (err: any) {
+          cloudError = err?.message || 'Cloud storage exception';
           console.warn('Cloud storage upload notice:', err);
         }
       }
 
-      // 2. Local fallback if cloud upload failed or for local access
-      let relPath = publicUrl ? `supabase/${targetBucket}/${filename}` : `uploads/${filename}`;
-      if (!publicUrl) {
-        publicUrl = `/uploads/${filename}`;
+      // 2. Local fallback if cloud upload failed or for local development
+      if (!publicUrl && !process.env.VERCEL) {
+        try {
+          const targetDir = path.join(process.cwd(), 'public', 'uploads');
+          await fs.mkdir(targetDir, { recursive: true });
+          const finalFilePath = path.join(targetDir, filename);
+          await fs.writeFile(finalFilePath, finalBuffer);
+          publicUrl = `/uploads/${filename}`;
+        } catch (fsErr) {
+          console.warn('Local fs write failed:', fsErr);
+        }
       }
+
+      // If both Supabase and local write failed (e.g. on Vercel without valid cloud credentials)
+      if (!publicUrl) {
+        return NextResponse.json({
+          error: `Վերբեռնումը ձախողվեց: Cloud Storage (Supabase) վերբեռնումը չհաջողվեց${cloudError ? ` (${cloudError})` : ''}: Խնդրում ենք ստուգել SUPABASE_SERVICE_ROLE_KEY-ը Vercel-ի Environment Variables-ում:`
+        }, { status: 500 });
+      }
+
+      let relPath = publicUrl.startsWith('http') ? `supabase/${targetBucket}/${filename}` : `uploads/${filename}`;
 
       // Register into library data
       const libraryData = await getMediaLibraryData();
@@ -215,6 +236,7 @@ export async function POST(request: Request) {
 
     // 1. Try Supabase storage upload
     let publicUrl = '';
+    let cloudError = '';
     let targetBucket = 'gallery';
     const storageClient = supabaseAdmin || supabase;
     if (storageClient) {
@@ -226,7 +248,10 @@ export async function POST(request: Request) {
             upsert: true
           });
 
-        if (uploadRes.error && uploadRes.error.message?.includes('Bucket not found')) {
+        if (uploadRes.error && (
+          uploadRes.error.message?.includes('Bucket not found') ||
+          uploadRes.error.message?.includes('does not exist')
+        )) {
           try {
             await storageClient.storage.createBucket(targetBucket, { public: true });
             uploadRes = await storageClient.storage
@@ -252,15 +277,35 @@ export async function POST(request: Request) {
             publicUrl = pubData.publicUrl;
           }
         } else if (uploadRes.error) {
+          cloudError = uploadRes.error.message || '';
           console.warn('Cloud storage upload notice:', uploadRes.error);
         }
-      } catch (err) {
+      } catch (err: any) {
+        cloudError = err?.message || 'Cloud storage exception';
         console.warn('Cloud storage upload notice:', err);
       }
     }
 
     // 2. Local fallback if cloud upload failed or for local access
-    let relPath = publicUrl ? `supabase/${targetBucket}/${filename}` : `uploads/${filename}`;
+    if (!publicUrl && !process.env.VERCEL) {
+      try {
+        const targetDir = path.join(process.cwd(), 'public', 'uploads');
+        await fs.mkdir(targetDir, { recursive: true });
+        const filePath = path.join(targetDir, filename);
+        await fs.writeFile(filePath, buffer);
+        publicUrl = `/uploads/${filename}`;
+      } catch (fsErr) {
+        console.warn('Local fs write failed:', fsErr);
+      }
+    }
+
+    if (!publicUrl) {
+      return NextResponse.json({
+        error: `Վերբեռնումը ձախողվեց: Cloud Storage (Supabase) վերբեռնումը չհաջողվեց${cloudError ? ` (${cloudError})` : ''}: Խնդրում ենք ստուգել SUPABASE_SERVICE_ROLE_KEY-ը Vercel-ի Environment Variables-ում:`
+      }, { status: 500 });
+    }
+
+    let relPath = publicUrl.startsWith('http') ? `supabase/${targetBucket}/${filename}` : `uploads/${filename}`;
     if (!publicUrl) {
       publicUrl = `/uploads/${filename}`;
       try {

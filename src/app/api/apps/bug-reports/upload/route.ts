@@ -77,19 +77,30 @@ export async function POST(request: Request) {
       }
     }
 
-    // 2. Local fallback - write to public/uploads/bug-reports/
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', targetBucket);
-    await fs.mkdir(uploadDir, { recursive: true });
+    // 2. Local fallback - write to public/uploads/bug-reports/ (only in local writable environments)
+    if (!process.env.VERCEL) {
+      try {
+        const uploadDir = path.join(process.cwd(), 'public', 'uploads', targetBucket);
+        await fs.mkdir(uploadDir, { recursive: true });
 
-    const filePath = path.join(uploadDir, filename);
-    await fs.writeFile(filePath, buffer);
+        const filePath = path.join(uploadDir, filename);
+        await fs.writeFile(filePath, buffer);
 
-    const publicUrl = `/uploads/${targetBucket}/${filename}`;
-    return NextResponse.json({
-      url: publicUrl,
-      filename: file.name,
-      size: file.size
-    });
+        const publicUrl = `/uploads/${targetBucket}/${filename}`;
+        return NextResponse.json({
+          url: publicUrl,
+          filename: file.name,
+          size: file.size
+        });
+      } catch (fsErr) {
+        console.warn('Local fs write failed for bug report attachment:', fsErr);
+      }
+    }
+
+    return NextResponse.json(
+      { error: 'Վերբեռնումը ձախողվեց: Cloud Storage-ը (Supabase) հասանելի չէ:' },
+      { status: 500 }
+    );
   } catch (error: any) {
     console.error('Bug report attachment upload error:', error);
     return NextResponse.json(

@@ -40,7 +40,7 @@ export function getSupabaseAdminClient(): SupabaseClient | null {
   }
 
   url = url || 'https://jveaaytpcviwuvpgdvxl.supabase.co';
-  const key = serviceRoleKey || 'sb_secret_jN8fbqIY6KbutEBaQ56ioQ_BgWnJc-w' || anonKey;
+  const key = serviceRoleKey || anonKey;
 
   if (!url || !key) return null;
 
