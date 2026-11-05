@@ -19,7 +19,7 @@ export default function HdVideoInit() {
             const src = this.getAttribute("src") || "https://api.hakobian.am/libs/v1/promo/promo.mp4";
             const poster = this.getAttribute("poster") || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80";
             const thickness = this.getAttribute("data-thickness") || "3px";
-            const color = this.getAttribute("data-color") || "var(--primary-color, #083f39)";
+            const color = this.getAttribute("data-color") || "#EAB308";
             const radius = this.getAttribute("data-radius") || "16px";
             const width = this.getAttribute("data-width") || "100%";
             const height = this.getAttribute("data-height") || "320px";

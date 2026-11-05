@@ -90,7 +90,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const upcomingPages = generalSettings?.upcoming_pages || {};
 
   return (
-    <html lang="hy" data-theme="light" data-color="#083f39" style={{
+    <html lang="hy" data-theme="light" data-color="#000000" style={{
       "--hue": themeHue,
       "--saturation": themeSaturation + "%",
       "--lightness": themeLightness + "%"

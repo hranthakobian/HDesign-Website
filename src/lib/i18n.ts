@@ -1004,7 +1004,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         if (localTheme !== theme || !document.documentElement.getAttribute('data-theme')) {
           localStorage.setItem('hdesign-theme', theme);
           document.documentElement.setAttribute('data-theme', theme);
-          document.documentElement.setAttribute('data-color', theme === 'light' ? '#083f39' : '#ffffff');
+          document.documentElement.setAttribute('data-color', theme === 'light' ? '#000000' : '#ffffff');
           window.dispatchEvent(new Event('hdesign-theme-change'));
         }
         document.documentElement.classList.remove('light', 'dark', 'green');
@@ -1013,7 +1013,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         const fallbackTheme = 'light';
         localStorage.setItem('hdesign-theme', fallbackTheme);
         document.documentElement.setAttribute('data-theme', fallbackTheme);
-        document.documentElement.setAttribute('data-color', '#083f39');
+        document.documentElement.setAttribute('data-color', '#000000');
         document.documentElement.classList.remove('light', 'dark', 'green');
         document.documentElement.classList.add(fallbackTheme);
         window.dispatchEvent(new Event('hdesign-theme-change'));

@@ -7,6 +7,15 @@
   unicode-range: U+0000-001F, U+0021-009F, U+00A1-DFFF, U+EA00-10FFFF; /* Excludes space (U+0020), non-breaking space (U+00A0), and icon range U+E000-E9FF */
 }
 
+@font-face {
+  font-family: 'HDesign Font';
+  src: url('https://api.hakobian.am/libs/v1/fonts/hdesign.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-001F, U+0021-009F, U+00A1-DFFF, U+EA00-10FFFF;
+}
+
 .preview-font-container * {
   font-family: inherit;
 }
@@ -65,16 +74,16 @@ html[data-custom-cursor="true"] {
   --bg: #f8fafc;
   --panel: #ffffff;
   --panel-border: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.08);
-  --text: hsl(var(--hue), var(--saturation), var(--text-lightness));
-  --muted: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.6);
-  --accent: hsl(var(--hue), var(--saturation), var(--text-lightness));
-  --shadow: 0 0 30px hsla(var(--hue), var(--saturation), var(--text-lightness), 0.06);
+  --text: #000000;
+  --muted: rgba(0, 0, 0, 0.6);
+  --accent: #000000;
+  --shadow: 0 0 30px rgba(0, 0, 0, 0.06);
 
   /* Open-Border System Overrides */
-  --primary-color: hsl(var(--hue), var(--saturation), var(--text-lightness));
-  --text-color: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.7);
-  --inactive-color: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.25);
-  --check-color: hsl(var(--hue), var(--saturation), var(--text-lightness));
+  --primary-color: #000000;
+  --text-color: rgba(0, 0, 0, 0.7);
+  --inactive-color: rgba(0, 0, 0, 0.25);
+  --check-color: #000000;
   --border-radius: 12px;
   --border-left-bottom-gap: 12px;
   --border-top-right-gap: 24px;
@@ -172,19 +181,19 @@ html[data-theme="light"] {
   --bg: #f8fafc;
   --panel: #ffffff;
   --panel-border: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.08);
-  --text: hsl(var(--hue), var(--saturation), var(--text-lightness));
-  --muted: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.6);
-  --accent: hsl(var(--hue), var(--saturation), var(--text-lightness));
-  --shadow: 0 0 30px hsla(var(--hue), var(--saturation), var(--text-lightness), 0.06);
+  --text: #000000;
+  --muted: rgba(0, 0, 0, 0.6);
+  --accent: #000000;
+  --shadow: 0 0 30px rgba(0, 0, 0, 0.06);
 
   --hue: 172;
   --saturation: 77%;
   --lightness: 14%;
   --text-lightness: 14%;
-  --primary-color: hsl(var(--hue), var(--saturation), var(--text-lightness));
-  --text-color: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.7);
-  --inactive-color: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.25);
-  --check-color: hsl(var(--hue), var(--saturation), var(--text-lightness));
+  --primary-color: #000000;
+  --text-color: rgba(0, 0, 0, 0.7);
+  --inactive-color: rgba(0, 0, 0, 0.25);
+  --check-color: #000000;
 
   --input-bg: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.03);
   --input-border: hsla(var(--hue), var(--saturation), var(--text-lightness), 0.12);
@@ -316,7 +325,7 @@ hd-segment span:not(.active):not([selected]) {
 [data-theme="light"] .custom-segment-wrapper .segment-option:not(.active),
 [data-theme="light"] hd-segment .segment-option:not(.active),
 [data-theme="light"] hd-segment span:not(.active):not([selected]) {
-  color: #1a202c !important;
+  color: #000000 !important;
   opacity: 0.92 !important;
   font-weight: 600 !important;
 }
@@ -345,6 +354,77 @@ hd-button,
   --wrapper-padding: 0 70px !important;
   padding-left: 70px !important;
   padding-right: 70px !important;
+  --primary-color: #000000 !important;
+  --text-color: #ffffff !important;
+  --primary-contrast-color: #ffffff !important;
+  color: #ffffff !important;
+  background-color: #000000 !important;
+  border-radius: 12px;
+
+  &, & * {
+    color: #ffffff !important;
+  }
+
+  .border-segment {
+    border-color: #000000 !important;
+  }
+
+  .fake-cursor,
+  .fake-vertical-cur {
+    border-color: #000000 !important;
+  }
+
+  &:hover {
+    background-color: #1a1a1a !important;
+    opacity: 0.95;
+  }
+}
+
+/* Compact button padding for side panels, modal dialogs, and grid download buttons */
+.icon-download-btn,
+.icon-download-btn.custom-button-wrapper,
+hd-button[data-width="100%"],
+.custom-button-wrapper[data-width="100%"],
+div[style*="selectedIconDetail"] hd-button {
+  --wrapper-padding: 0 12px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Global black styling for all controls: sliders, checkboxes, radios, switches, inputs, select */
+hd-slider,
+hd-checkbox,
+hd-radio,
+hd-switch,
+hd-input,
+hd-textarea,
+hd-select,
+hd-scrollbar,
+.custom-slider-wrapper,
+.custom-checkbox-wrapper,
+.custom-radio-wrapper,
+.custom-switch-wrapper,
+.custom-input-wrapper,
+.custom-select-wrapper,
+.custom-scrollbar-wrapper {
+  --primary-color: #000000 !important;
+  --check-color: #000000 !important;
+
+  .border-segment {
+    border-color: #000000 !important;
+    &::before,
+    &::after {
+      background-color: #000000 !important;
+    }
+  }
+
+  .fake-cursor,
+  .fake-vertical-cur {
+    background-color: #000000 !important;
+  }
 }
 
 button:not(.no-default-btn-style) {
@@ -1461,7 +1541,7 @@ html[data-theme="custom"] .portfolio-header::before {
 /* Scrolled state of Header - Floating capsules */
 .portfolio-header-wrapper.scrolled {
   padding: 16px 105px;
-  max-width: 1700px;
+  max-width: 1800px;
   margin: 0 auto;
   gap: 16px;
   
@@ -2356,48 +2436,75 @@ html[data-theme="dark"] .gallery-card .gallery-overlay {
   transition: all 0.2s ease;
   position: relative;
   
-  &:hover {
-    background: var(--primary-color);
-    color: #ffffff;
-    transform: scale(1.05);
-    
-    .icon-tooltip {
-      opacity: 1;
-      transform: translateY(-50%) scale(1);
-    }
-  }
-
   .icon-symbol {
     font-size: 1.8rem;
     margin-bottom: 6px;
+    color: #000000 !important;
+    transition: color 0.2s ease;
   }
 
   .icon-name {
-    font-size: 0.6rem;
+    font-family: 'HDesign', 'HDesign Font', sans-serif !important;
+    font-size: 0.68rem;
     text-align: center;
-    opacity: 0.6;
+    opacity: 0.85;
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     padding: 0 4px;
+    transition: color 0.2s ease;
+  }
+
+  &:hover,
+  &.active {
+    background: #000000 !important;
+    border-color: #000000 !important;
+    transform: scale(1.05);
+    
+    .icon-symbol {
+      color: #EAB308 !important;
+    }
+
+    .icon-name {
+      color: #ffffff !important;
+      opacity: 0.95;
+    }
+
+    .icon-tooltip {
+      display: none !important;
+    }
   }
 
   .icon-tooltip {
-    position: absolute;
-    bottom: 110%;
-    left: 50%;
-    transform: translateX(-50%) translateY(5px) scale(0.9);
-    background: #000000;
-    color: #ffffff;
-    font-size: 0.7rem;
-    padding: 4px 8px;
-    border-radius: 4px;
-    white-space: nowrap;
-    pointer-events: none;
-    opacity: 0;
-    transition: all 0.2s ease;
-    z-index: 10;
+    display: none !important;
+  }
+}
+
+.icon-name {
+  font-family: 'HDesign', 'HDesign Font', sans-serif !important;
+}
+
+/* Footer all text strictly white */
+.footer-content-container {
+  color: #ffffff !important;
+
+  & > div:first-child > hd-reveal:first-child {
+    h4, span, p, a, div, label {
+      color: #ffffff !important;
+    }
+  }
+
+  & > div:last-child {
+    color: #ffffff !important;
+    span, div {
+      color: #ffffff !important;
+    }
+  }
+
+  a:hover {
+    color: #ffffff !important;
+    text-decoration: underline !important;
   }
 }
 
@@ -3167,11 +3274,11 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
 .more-item-hdesign,
 .more-divider-hdesign,
 .more-item-contact {
-  display: none;
+  display: none !important;
 }
 
-/* Tier 1: <= 1700px: Collapse HDesign and Contact into "Ավելին" */
-@media (min-width: 768.1px) and (max-width: 1700px) {
+/* Tier 1: <= 1800px: Collapse HDesign and Contact into "Ավելին" */
+@media (min-width: 768.1px) and (max-width: 1800px) {
   .nav-collapse-hdesign,
   .nav-collapse-contact {
     display: none !important;
@@ -3198,8 +3305,8 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
   }
 }
 
-/* Tier 2: <= 1250px: Also collapse Apps (Հավելվածներ) into "Ավելին" */
-@media (min-width: 768.1px) and (max-width: 1250px) {
+/* Tier 2: <= 1500px: Also collapse Apps (Հավելվածներ) into "Ավելին" */
+@media (min-width: 768.1px) and (max-width: 1500px) {
   .nav-collapse-apps {
     display: none !important;
   }
@@ -3237,8 +3344,8 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
   }
 }
 
-/* Tier 3: <= 1080px: Also collapse Fonts (Տառատեսակներ) into "Ավելին" */
-@media (min-width: 768.1px) and (max-width: 1080px) {
+/* Tier 3: <= 1200px: Also collapse Fonts (Տառատեսակներ) into "Ավելին" */
+@media (min-width: 768.1px) and (max-width: 1200px) {
   .nav-collapse-fonts {
     display: none !important;
   }
@@ -3260,8 +3367,8 @@ html[data-theme="green"] .mobile-nav-links .mobile-nav-item {
   }
 }
 
-/* Tier 4: <= 920px (down to 769px): Also collapse Works (Աշխատանքներ) into "Ավելին" */
-@media (min-width: 768.1px) and (max-width: 920px) {
+/* Tier 4: <= 900px (down to 769px): Also collapse Works (Աշխատանքներ) into "Ավելին" */
+@media (min-width: 768.1px) and (max-width: 900px) {
   .nav-collapse-works {
     display: none !important;
   }
@@ -4030,7 +4137,7 @@ hd-switch, hd-checkbox {
 }
 
 .more-dropdown-sub-group {
-  display: flex;
+  display: none;
   flex-direction: column;
   gap: 6px;
   width: 100%;

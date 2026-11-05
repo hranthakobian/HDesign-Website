@@ -74,9 +74,10 @@ export default function SectionBackground({ color, className, type }: SectionBac
       // Flush to top edge (y=72, with concave arc from (0,0)), left (x=0),
       // bottom edge (y=height, with convex arc to (0, height-80)),
       // and right side has a smooth rounded arch connecting top and bottom.
-      const col1Right = 105 + ((width - 258) * 1.5) / 2.7;
-      const bulgeX = Math.round(Math.min(Math.max(col1Right + 35, 680), 830));
-      const s = Math.round(Math.min(bulgeX * 0.33, 255));
+      const col1Width = Math.round(Math.max(300, (width - 335) * (1.1 / 2.6)));
+      const col1Right = 80 + col1Width;
+      const bulgeX = col1Right;
+      const s = Math.round(Math.min(bulgeX * 0.28, 180));
       const topEndX = bulgeX - s;
       const bottomEndX = bulgeX - s;
       const h = (height - 72) / 2;

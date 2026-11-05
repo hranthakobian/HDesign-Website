@@ -120,6 +120,92 @@ const iconCategories = [
   }
 ];
 
+const iconNamesHy: Record<string, string> = {
+  "icon-HD-Logo": "ՀԴ Տարբերանշան",
+  "icon-HD-Logo-Horizontal": "ՀԴ Հորիզոնական Լոգո",
+  "icon-QR-Code": "QR Կոդ",
+  "icon-Pattern": "Նախշ",
+  "icon-Dashboard": "Վահանակ",
+  "icon-Settings": "Կարգավորումներ",
+  "icon-Search": "Որոնում",
+  "icon-Check": "Հաստատում",
+  "icon-Home": "Գլխավոր",
+  "icon-Profile": "Պրոֆիլ",
+  "icon-Monitor": "Էկրան",
+  "icon-Eye": "Աչք",
+  "icon-Locked": "Փակված",
+  "icon-Unlocked": "Բացված",
+  "icon-Close-Eye": "Փակ աչք",
+  "icon-Warning": "Զգուշացում",
+  "icon-Info": "Տեղեկատվություն",
+  "icon-Call": "Զանգ",
+  "icon-Mail": "Նամակ",
+  "icon-Map-Pin": "Տեղադրություն",
+  "icon-Clock": "Ժամացույց",
+  "icon-Calendar": "Օրացույց",
+  "icon-Pin": "Ամրակ",
+  "icon-Trash": "Աղբարկղ",
+  "icon-Close": "Փակել",
+  "icon-Plus": "Ավելացնել",
+  "icon-Pencil": "Մատիտ",
+  "icon-Arrow-Up": "Սլաք վերև",
+  "icon-Chevrolt-Arrow-Left": "Շևրոն ձախ",
+  "icon-Chevrolt-Arrow-Right": "Շևրոն աջ",
+  "icon-Arrow-Left-Up": "Սլաք ձախ-վերև",
+  "icon-Arrow-Right-Up": "Սլաք աջ-վերև",
+  "icon-Arrow-Right": "Սլաք աջ",
+  "icon-Arrow-Right-Bottom": "Սլաք աջ-ներքև",
+  "icon-Arrow-Bottom": "Սլաք ներքև",
+  "icon-Arrow-Left-Bottom": "Սլաք ձախ-ներքև",
+  "icon-Arrow-Left": "Սլաք ձախ",
+  "icon-Chevrolt-Arrow-Top": "Շևրոն վերև",
+  "icon-Chevrolt-Arrow-Bottom": "Շևրոն ներքև",
+  "icon-Image": "Նկար",
+  "icon-Camera": "Տեսախցիկ",
+  "icon-Download": "Ներբեռնել",
+  "icon-Attech": "Կցել",
+  "icon-Bell": "Զանգակ",
+  "icon-Notifications": "Ծանուցումներ",
+  "icon-Chat-Bubble": "Հաղորդագրություն",
+  "icon-Two-Chat-Bubble": "Երկխոսություն",
+  "icon-Earth": "Երկիր",
+  "icon-Cursor": "Սլաքիկ",
+  "icon-Star": "Աստղ",
+  "icon-API": "API",
+  "icon-Decline": "Մերժել",
+  "icon-Play": "Նվագարկել",
+  "icon-Stop": "Կանգնեցնել",
+  "icon-Pause": "Դադար",
+  "icon-Text-Cursor": "Տեքստի կուրսոր",
+  "icon-Pointer-Cursor": "Մատնացույց",
+  "icon-Undo-Arrow": "Հետ շրջել",
+  "icon-Redo-Arrow": "Առաջ շրջել",
+  "icon-Share-Arrow-Left": "Կիսվել ձախ",
+  "icon-Share-Arrow-Right": "Կիսվել աջ",
+  "icon-Copy": "Պատճենել",
+  "icon-Paste": "Տեղադրել",
+  "icon-Cut": "Կտրել",
+  "icon-Send": "Ուղարկել",
+  "icon-Three-Dots-Vertical": "Երեք կետ ուղղահայաց",
+  "icon-Three-Dots-Horizontal": "Երեք կետ հորիզոնական",
+  "icon-Volume-Mute": "Անձայն",
+  "icon-Low-Volume": "Ցածր ձայն",
+  "icon-Medium-Volume": "Միջին ձայն",
+  "icon-High-Volume": "Բարձր ձայն",
+  "icon-Full-Screen": "Ամբողջ էկրան",
+  "icon-Expand": "Ընդարձակել"
+};
+
+function getIconDisplayName(icon: string, loc: string): string {
+  if (loc === "hy" && iconNamesHy[icon]) {
+    return iconNamesHy[icon];
+  }
+  if (icon === "icon-HD-Logo-Horizontal") {
+    return "HD Logo Horizontal / Hamburger Menu";
+  }
+  return icon.replace("icon-", "").replace(/-/g, " ");
+}
+
 // Character sets for HDesign glyph map
 const CHARS_AM = "ԱաԲբԳգԴդԵեԶզԷէԸըԹթԺժԻիԼլԽխԾծԿկՀհՁձՂղՃճՄմՅյՆնՇշՈոՉչՊպՋջՌռՍսՎվՏտՐրՑցՒւՓփՔքՕօՖֆև՛՜՝՞։֊՚՟ՙ֍֎֏ՠֈﬓﬔﬕﬖﬗ".split("");
 const CHARS_EN = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".split("");
@@ -1601,15 +1687,18 @@ export default function Home() {
   const visibleIcons = filteredIcons;
 
   const categoriesWithFilteredIcons = iconCategories.map(cat => {
-    let filtered = cat.icons.filter(icon => 
-      icon.toLowerCase().includes(iconSearch.toLowerCase())
-    );
+    let filtered = cat.icons.filter(icon => {
+      const q = iconSearch.toLowerCase();
+      const hyName = (iconNamesHy[icon] || "").toLowerCase();
+      const rawName = icon.replace("icon-", "").replace(/-/g, " ").toLowerCase();
+      return icon.toLowerCase().includes(q) || hyName.includes(q) || rawName.includes(q);
+    });
 
     if (iconSortOrder === "alphabetical") {
       filtered = [...filtered].sort((a, b) => {
-        const cleanA = a.replace("icon-", "").toLowerCase();
-        const cleanB = b.replace("icon-", "").toLowerCase();
-        return cleanA.localeCompare(cleanB);
+        const nameA = getIconDisplayName(a, locale).toLowerCase();
+        const nameB = getIconDisplayName(b, locale).toLowerCase();
+        return nameA.localeCompare(nameB);
       });
     }
 
@@ -1803,23 +1892,23 @@ export default function Home() {
   const renderAbout = (settings: any = {}) => (
     <section id="about" className="about-section-fullwidth" style={{ background: "transparent", borderRadius: "0", border: "none" }}>
           {/* Dynamic SVG Background */}
-          <SectionBackground color="#3b6e68" className="about-svg-bg" type="about" />
+          <SectionBackground color="#EAB308" className="about-svg-bg" type="about" />
           
           {/* Vertical Lines SVG */}
           <div className="about-vertical-lines top-left">
             <svg width="64" height="260" viewBox="0 0 64 260" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="0" y="0" width="24" height="180" rx="12" fill="#B7DAD4"/>
-              <rect x="40" y="80" width="24" height="180" rx="12" fill="#B7DAD4"/>
+              <rect x="0" y="0" width="24" height="180" rx="12" fill="#FEF08A"/>
+              <rect x="40" y="80" width="24" height="180" rx="12" fill="#FEF08A"/>
             </svg>
           </div>
           <div className="about-vertical-lines bottom-right">
             <svg width="64" height="260" viewBox="0 0 64 260" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="0" y="80" width="24" height="180" rx="12" fill="#B7DAD4"/>
-              <rect x="40" y="0" width="24" height="180" rx="12" fill="#B7DAD4"/>
+              <rect x="0" y="80" width="24" height="180" rx="12" fill="#FEF08A"/>
+              <rect x="40" y="0" width="24" height="180" rx="12" fill="#FEF08A"/>
             </svg>
           </div>
 
-          <div className="landing-about-grid" style={{ width: "100%", margin: "0", padding: "100px 80px 60px", minHeight: "620px", boxSizing: "border-box", display: "grid", gridTemplateColumns: "1.5fr 1.2fr", gap: "48px", alignItems: "center", position: "relative", zIndex: 5 }}>
+          <div className="landing-about-grid" style={{ width: "100%", margin: "0", padding: "100px 80px 60px", minHeight: "620px", boxSizing: "border-box", display: "grid", gridTemplateColumns: "1.1fr 1.5fr", gap: "175px", alignItems: "center", position: "relative", zIndex: 5 }}>
             {/* Profile Image Column: on desktop serves as a spacer for the SVG masked image, on mobile displays the image */}
             <div className="landing-about-col-image">
               <div 
@@ -1845,10 +1934,10 @@ export default function Home() {
             {/* Bio Details */}
             <hd-reveal data-direction="left" data-duration="1000" data-delay="150">
               <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                <h2 style={{ fontSize: "2rem", fontWeight: "800", color: "#ffffff", margin: 0 }}>
+                <h2 style={{ fontSize: "4rem", fontWeight: "800", color: "#000000", margin: 0, lineHeight: 1.1 }}>
                   {settings.title || t('home', 'about_title', 'Մասին')}
                 </h2>
-                <div style={{ display: "flex", flexDirection: "column", gap: "1.7em", color: "#ffffff", opacity: 0.9, fontSize: "1.05rem", lineHeight: "1.7" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "1.7em", color: "#000000", opacity: 0.9, fontSize: "1.575rem", lineHeight: "1.6" }}>
                   <p style={{ margin: 0 }}>
                     {settings.bio || t('about', 'bio_p1', t('home', 'about_p1', 'Ողջույն, ես Հրանտ Հակոբյանն եմ և Ճարտարապետության և շինարարության Հայաստանի Ազգային Համալսարանի ճարտարապետության ֆակուլտետի 4-րդ կուրսի ուսանող եմ։'))}
                   </p>
@@ -1860,8 +1949,9 @@ export default function Home() {
                       data-width="160px"
                       data-height="52px"
                       data-thickness="3px"
-                      data-color="#083F39"
-                      data-text-color="#fff"
+                      data-color="#000000"
+                      data-text-color="#ffffff"
+                      style={{ background: "#000000", color: "#ffffff" }}
                     >{settings.btn_text || t('home', 'more_about_btn', 'Ավելին')}</hd-button>
                   </Link>
                 </div>
@@ -1904,6 +1994,9 @@ export default function Home() {
                   data-width="160px"
                   data-height="52px"
                   data-thickness="3px"
+                  data-color="#000000"
+                  data-text-color="#ffffff"
+                  style={{ background: "#000000", color: "#ffffff" }}
                 >{settings.btn_text || t('home', 'more_btn', 'Ավելի')}</hd-button>
               </Link>
             </div>
@@ -1942,7 +2035,7 @@ export default function Home() {
               width="100%"
               height="auto"
               thickness="0px"
-              color="var(--primary-color)"
+              color="#EAB308"
               radius="24px"
               autoplay={false}
               loop={true}
@@ -1993,7 +2086,7 @@ export default function Home() {
               max-height: 500px;
               height: 500px;
               overflow: hidden;
-              color: #1a1a1a;
+              color: #000000;
             }
             .playground-preview-column {
               display: flex;
@@ -2016,7 +2109,7 @@ export default function Home() {
               max-height: 500px;
               height: 500px;
               overflow: hidden;
-              color: #1a1a1a;
+              color: #000000;
             }
             @media (max-width: 1100px) {
               .homepage-playground-container {
@@ -2196,7 +2289,7 @@ export default function Home() {
                 backgroundSize: "20px 20px",
                 backgroundPosition: "center",
                 backgroundColor: "#f5f5f5",
-                color: "#1a1a1a",
+                color: "#000000",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -2204,7 +2297,7 @@ export default function Home() {
                 flex: 1,
                 boxShadow: "0 12px 30px rgba(0, 0, 0, 0.25)"
               }}>
-                <div style={{ width: "100%", maxWidth: "320px", display: "flex", justifyContent: "center", color: "#1a1a1a" }}>
+                <div style={{ width: "100%", maxWidth: "320px", display: "flex", justifyContent: "center", color: "#000000" }}>
                   {renderPlaygroundActiveComponent()}
                 </div>
               </div>
@@ -2705,11 +2798,9 @@ export default function Home() {
                               transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease"
                             }} 
                           />
-                          <span className="icon-name">{icon.replace("icon-", "").replace(/-/g, " ")}</span>
-                          
-                          <div className="icon-tooltip">
-                            {t('home', 'details_label', 'Մանրամասներ')}
-                          </div>
+                          <span className="icon-name" style={{ fontFamily: "'HDesign', 'HDesign Font', sans-serif", fontSize: "0.7rem", fontWeight: 600 }}>
+                            {getIconDisplayName(icon, locale)}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -2846,10 +2937,8 @@ export default function Home() {
                 }}>
                 {/* Header Info */}
                 <div style={{ textAlign: "left" }}>
-                  <h3 style={{ fontSize: "1.4rem", fontWeight: "700", color: "var(--text)", margin: "0 0 4px 0" }}>
-                    {selectedIconDetail === "icon-HD-Logo-Horizontal"
-                      ? "HD Logo Horizontal / Hamburger Menu"
-                      : selectedIconDetail.replace("icon-", "").replace(/-/g, " ")}
+                  <h3 style={{ fontSize: "1.4rem", fontWeight: "700", color: "var(--text)", margin: "0 0 4px 0", fontFamily: "'HDesign', 'HDesign Font', sans-serif" }}>
+                    {getIconDisplayName(selectedIconDetail, locale)}
                   </h3>
                   <p style={{ fontSize: "0.8rem", color: "var(--muted)", margin: "0", fontFamily: "monospace" }}>
                     Class: {selectedIconDetail === "icon-HD-Logo-Horizontal"
@@ -2882,7 +2971,7 @@ export default function Home() {
                       className={selectedIconDetail} 
                       style={{ 
                         fontSize: "6.5rem", 
-                        color: "var(--primary-color)",
+                        color: "#000000",
                         fontWeight: iconWeight,
                         fontVariationSettings: `'wght' ${iconWeight}`,
                         transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease",
@@ -2907,45 +2996,49 @@ export default function Home() {
                     borderRadius: "14px",
                     border: "1px solid var(--panel-border)"
                   }}>
-                    <span key={`${selectedIconDetail}-16`} className={selectedIconDetail} style={{ fontSize: "16px", color: "var(--primary-color)", fontWeight: iconWeight, fontVariationSettings: `'wght' ${iconWeight}`, transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease", animation: "iconSwap 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" }} title="16px" />
-                    <span key={`${selectedIconDetail}-24`} className={selectedIconDetail} style={{ fontSize: "24px", color: "var(--primary-color)", fontWeight: iconWeight, fontVariationSettings: `'wght' ${iconWeight}`, transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease", animation: "iconSwap 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" }} title="24px" />
-                    <span key={`${selectedIconDetail}-32`} className={selectedIconDetail} style={{ fontSize: "32px", color: "var(--primary-color)", fontWeight: iconWeight, fontVariationSettings: `'wght' ${iconWeight}`, transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease", animation: "iconSwap 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" }} title="32px" />
-                    <span key={`${selectedIconDetail}-48`} className={selectedIconDetail} style={{ fontSize: "48px", color: "var(--primary-color)", fontWeight: iconWeight, fontVariationSettings: `'wght' ${iconWeight}`, transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease", animation: "iconSwap 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" }} title="48px" />
-                    <span key={`${selectedIconDetail}-64`} className={selectedIconDetail} style={{ fontSize: "64px", color: "var(--primary-color)", fontWeight: iconWeight, fontVariationSettings: `'wght' ${iconWeight}`, transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease", animation: "iconSwap 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" }} title="64px" />
+                    <span key={`${selectedIconDetail}-16`} className={selectedIconDetail} style={{ fontSize: "16px", color: "#000000", fontWeight: iconWeight, fontVariationSettings: `'wght' ${iconWeight}`, transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease", animation: "iconSwap 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" }} title="16px" />
+                    <span key={`${selectedIconDetail}-24`} className={selectedIconDetail} style={{ fontSize: "24px", color: "#000000", fontWeight: iconWeight, fontVariationSettings: `'wght' ${iconWeight}`, transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease", animation: "iconSwap 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" }} title="24px" />
+                    <span key={`${selectedIconDetail}-32`} className={selectedIconDetail} style={{ fontSize: "32px", color: "#000000", fontWeight: iconWeight, fontVariationSettings: `'wght' ${iconWeight}`, transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease", animation: "iconSwap 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" }} title="32px" />
+                    <span key={`${selectedIconDetail}-48`} className={selectedIconDetail} style={{ fontSize: "48px", color: "#000000", fontWeight: iconWeight, fontVariationSettings: `'wght' ${iconWeight}`, transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease", animation: "iconSwap 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" }} title="48px" />
+                    <span key={`${selectedIconDetail}-64`} className={selectedIconDetail} style={{ fontSize: "64px", color: "#000000", fontWeight: iconWeight, fontVariationSettings: `'wght' ${iconWeight}`, transition: "font-weight 0.15s ease, font-variation-settings 0.15s ease", animation: "iconSwap 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" }} title="64px" />
                   </div>
                 </div>
 
                 {/* Download Buttons Container */}
                 <div style={{
-                  display: "flex",
-                  gap: "10px",
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "12px",
                   width: "100%",
-                  justifyContent: "center"
+                  boxSizing: "border-box",
+                  padding: "0 6px"
                 }}>
                   <hd-button
+                    className="icon-download-btn"
                     suppressHydrationWarning
                     onClick={() => downloadSvg(selectedIconDetail)}
-                    data-width="50%"
+                    data-width="100%"
                     data-height="40px"
                     data-thickness="3px"
-                    data-color="transparent"
-                    data-text-color="var(--text)"
+                    data-color="#000000"
+                    data-text-color="#ffffff"
                     title={t('home', 'download_svg', 'Ներբեռնել SVG')}
-                    style={{ flex: 1 }}
+                    style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box", background: "#000000", color: "#ffffff" }}
                   >
                     <span className="icon-Download" style={{ fontSize: "0.85rem", marginRight: "6px" }} />
                     SVG
                   </hd-button>
                   <hd-button
+                    className="icon-download-btn"
                     suppressHydrationWarning
                     onClick={() => downloadPng(selectedIconDetail)}
-                    data-width="50%"
+                    data-width="100%"
                     data-height="40px"
                     data-thickness="3px"
-                    data-color="var(--primary-color)"
+                    data-color="#000000"
                     data-text-color="#ffffff"
                     title={t('home', 'download_png', 'Ներբեռնել PNG')}
-                    style={{ flex: 1 }}
+                    style={{ width: "100%", maxWidth: "100%", boxSizing: "border-box", background: "#000000", color: "#ffffff" }}
                   >
                     <span className="icon-Download" style={{ fontSize: "0.85rem", marginRight: "6px" }} />
                     PNG
@@ -3724,7 +3817,7 @@ export default function Home() {
                       >
                         <span style={{ color: "#d97706", fontSize: "0.85rem" }}>◆</span>
                         <div style={{ fontSize: "0.62rem", color: "#475569", fontFamily: "monospace", marginTop: "-2px", fontWeight: "600" }}>wt100,it0</div>
-                        <div style={{ fontSize: "0.8rem", fontFamily: "'HDesign', sans-serif", fontWeight: 100, color: "#0f172a" }}>A</div>
+                        <div style={{ fontSize: "0.8rem", fontFamily: "'HDesign', sans-serif", fontWeight: 100, color: "#000000" }}>A</div>
                       </div>
 
                       {/* Bottom Right: wt900,it0 */}
@@ -3735,7 +3828,7 @@ export default function Home() {
                       >
                         <span style={{ color: "#d97706", fontSize: "0.85rem" }}>◆</span>
                         <div style={{ fontSize: "0.62rem", color: "#475569", fontFamily: "monospace", marginTop: "-2px", fontWeight: "600" }}>wt900,it0</div>
-                        <div style={{ fontSize: "0.8rem", fontFamily: "'HDesign', sans-serif", fontWeight: 900, color: "#0f172a" }}>A</div>
+                        <div style={{ fontSize: "0.8rem", fontFamily: "'HDesign', sans-serif", fontWeight: 900, color: "#000000" }}>A</div>
                       </div>
 
                       {/* Top Left: wt100,it1 */}
@@ -3744,7 +3837,7 @@ export default function Home() {
                         style={{ position: "absolute", left: "12%", top: "15%", transform: "translate(-50%, -50%)", cursor: "pointer", textAlign: "center", zIndex: 10 }}
                         title="Master: ThinItalic (wt100, it1)"
                       >
-                        <div style={{ fontSize: "0.8rem", fontFamily: "'HDesign', sans-serif", fontWeight: 100, fontStyle: "normal", fontVariationSettings: "'wght' 100, 'ital' 1", color: "#0f172a" }}>A</div>
+                        <div style={{ fontSize: "0.8rem", fontFamily: "'HDesign', sans-serif", fontWeight: 100, fontStyle: "normal", fontVariationSettings: "'wght' 100, 'ital' 1", color: "#000000" }}>A</div>
                         <span style={{ color: "#d97706", fontSize: "0.85rem" }}>◆</span>
                         <div style={{ fontSize: "0.62rem", color: "#475569", fontFamily: "monospace", marginTop: "-2px", fontWeight: "600" }}>wt100,it1</div>
                       </div>
@@ -3755,7 +3848,7 @@ export default function Home() {
                         style={{ position: "absolute", left: "88%", top: "15%", transform: "translate(-50%, -50%)", cursor: "pointer", textAlign: "center", zIndex: 10 }}
                         title="Master: BlackItalic (wt900, it1)"
                       >
-                        <div style={{ fontSize: "0.8rem", fontFamily: "'HDesign', sans-serif", fontWeight: 900, fontStyle: "normal", fontVariationSettings: "'wght' 900, 'ital' 1", color: "#0f172a" }}>A</div>
+                        <div style={{ fontSize: "0.8rem", fontFamily: "'HDesign', sans-serif", fontWeight: 900, fontStyle: "normal", fontVariationSettings: "'wght' 900, 'ital' 1", color: "#000000" }}>A</div>
                         <span style={{ color: "#d97706", fontSize: "0.85rem" }}>◆</span>
                         <div style={{ fontSize: "0.62rem", color: "#475569", fontFamily: "monospace", marginTop: "-2px", fontWeight: "600" }}>wt900,it1</div>
                       </div>
@@ -3978,9 +4071,9 @@ export default function Home() {
               left: 50%;
               transform: translateX(-50%) scale(0.7);
               transform-origin: bottom center;
-              background: #083f39;
-              color: #ffffff;
-              border: 1px solid rgba(255, 255, 255, 0.15);
+              background: #EAB308;
+              color: #000000;
+              border: 1px solid rgba(0, 0, 0, 0.15);
               border-radius: 12px;
               padding: 12px;
               display: flex;
@@ -4005,14 +4098,14 @@ export default function Home() {
             .tooltip-large-char {
               font-size: 2.8rem;
               line-height: 1.1;
-              color: #ffffff;
+              color: #000000;
               margin-bottom: 2px;
             }
 
             .tooltip-name {
               font-size: 0.68rem;
-              font-weight: 500;
-              color: #89b59a;
+              font-weight: 600;
+              color: #000000;
               text-align: center;
               word-break: break-word;
               max-width: 130px;
@@ -4023,8 +4116,8 @@ export default function Home() {
             .tooltip-code {
               font-size: 0.65rem;
               font-family: monospace !important;
-              color: rgba(255, 255, 255, 0.6);
-              background: rgba(0, 0, 0, 0.2);
+              color: #000000;
+              background: rgba(0, 0, 0, 0.1);
               padding: 2px 6px;
               border-radius: 4px;
               margin-top: 2px;
@@ -4245,7 +4338,7 @@ return (
 
                   <div style={{ marginTop: "auto", paddingTop: "12px", display: "flex", gap: "12px" }}>
                     <Link href={`/works/${displayedCase.id.includes('local-b-') ? ['pasta', 'eleven', 'posters', 'teal-lines', 'mobile-ui'][parseInt(displayedCase.id.replace('local-b-', '')) - 1] || displayedCase.id : displayedCase.id}`} style={{ textDecoration: "none" }}>
-                      <hd-button suppressHydrationWarning data-height="40px" data-thickness="3px" style={{ background: "var(--accent)", color: "#000", fontWeight: "bold" }}>
+                      <hd-button suppressHydrationWarning data-height="40px" data-thickness="3px" data-color="#000000" style={{ background: "#000000", color: "#ffffff", fontWeight: "bold" }}>
                         {locale === "en" ? "View Full Case Study" : "Տեսնել Ամբողջական Քեյսը"}
                       </hd-button>
                     </Link>

@@ -25,7 +25,7 @@ export default function HdVideoPlayer({
   width = "100%",
   height = "auto",
   thickness = "3px",
-  color = "var(--primary-color, #083f39)",
+  color = "#EAB308",
   textColor = "#ffffff",
   radius = "24px",
   autoplay = false,
@@ -304,12 +304,12 @@ export default function HdVideoPlayer({
           left: isHovered && cursorPos ? `${cursorPos.x}px` : "50%",
           top: isHovered && cursorPos ? `${cursorPos.y}px` : "50%",
           transform: "translate(-50%, -50%)",
-          width: "72px",
-          height: "72px",
+          width: "108px",
+          height: "108px",
           borderRadius: "50%",
-          background: `radial-gradient(circle, ${color} 0%, rgba(10,20,20,0.85) 100%)`,
+          background: color,
           border: "none",
-          color: "#ffffff",
+          color: "#000000",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -324,9 +324,9 @@ export default function HdVideoPlayer({
         }}
       >
         {isPlaying ? (
-          <span className="icon-Pause" style={{ fontSize: "28px", color: "#ffffff" }} />
+          <span className="icon-Pause" style={{ fontSize: "42px", color: "#000000" }} />
         ) : (
-          <span className="icon-Play" style={{ fontSize: "28px", color: "#ffffff" }} />
+          <span className="icon-Play" style={{ fontSize: "42px", color: "#000000", marginLeft: "4px" }} />
         )}
       </div>
 
@@ -395,9 +395,9 @@ export default function HdVideoPlayer({
                 title={isPlaying ? "Դադարեցնել" : "Նվագարկել"}
               >
                 {isPlaying ? (
-                  <span className="icon-Pause" style={{ fontSize: "18px" }} />
+                  <span className="icon-Pause" style={{ fontSize: "24px" }} />
                 ) : (
-                  <span className="icon-Play" style={{ fontSize: "18px" }} />
+                  <span className="icon-Play" style={{ fontSize: "24px" }} />
                 )}
               </button>
 

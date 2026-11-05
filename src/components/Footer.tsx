@@ -93,9 +93,9 @@ export default function Footer({
   return (
     <footer id="contact" className="footer-section-fullwidth" style={{ background: "transparent", borderRadius: "0", border: "none" }}>
       {/* Dynamic SVG Background */}
-      <SectionBackground color="#6A3E73" className="footer-svg-bg" type="footer" />
+      <SectionBackground color="#d10837" className="footer-svg-bg" type="footer" />
 
-      <div className="footer-content-container" style={{ width: "100%", margin: "0", padding: "80px 105px 40px", boxSizing: "border-box", position: "relative", zIndex: 5, display: "flex", flexDirection: "column", gap: "40px" }}>
+      <div className="footer-content-container" style={{ width: "100%", margin: "0", padding: "80px 105px 40px", boxSizing: "border-box", position: "relative", zIndex: 5, display: "flex", flexDirection: "column", gap: "40px", color: "#ffffff" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "60px" }}>
           <hd-reveal data-direction="up" data-duration="900">
             <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
@@ -106,7 +106,7 @@ export default function Footer({
                     {locale === 'en' ? (siteTitle?.en || "HDesign") : (siteTitle?.hy || "HDesign")}
                   </span>
                 </div>
-                <p style={{ color: "#ffffff", opacity: 0.8, fontSize: "0.9rem", lineHeight: "1.6", margin: 0 }}>
+                <p style={{ color: "#ffffff", opacity: 0.9, fontSize: "0.9rem", lineHeight: "1.6", margin: 0 }}>
                   {t('contact', 'desc', 'Ստեղծարար և Գործնական դիզայն լուծումներ: Յուրաքանչյուր ինտերֆեյս ստեղծված է սիրով և մաթեմատիկական ճշգրտությամբ:')}
                 </p>
               </div>
@@ -116,16 +116,16 @@ export default function Footer({
                   {t('contact', 'links_title', 'Հղումներ')}
                 </h4>
                 <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-                  <Link href="/" style={{ color: "#ffffff", opacity: 0.8, textDecoration: "none", fontSize: "0.9rem" }}>
+                  <Link href="/" style={{ color: "#ffffff", opacity: 0.9, textDecoration: "none", fontSize: "0.9rem" }}>
                     {t('contact', 'nav_home', 'Տուն')}
                   </Link>
-                  <Link href="/about" style={{ color: "#ffffff", opacity: 0.8, textDecoration: "none", fontSize: "0.9rem" }}>
+                  <Link href="/about" style={{ color: "#ffffff", opacity: 0.9, textDecoration: "none", fontSize: "0.9rem" }}>
                     {t('contact', 'nav_about', 'Մասին')}
                   </Link>
-                  <Link href="/works" style={{ color: "#ffffff", opacity: 0.8, textDecoration: "none", fontSize: "0.9rem" }}>
+                  <Link href="/works" style={{ color: "#ffffff", opacity: 0.9, textDecoration: "none", fontSize: "0.9rem" }}>
                     {t('contact', 'nav_works', 'Աշխատանքներ')}
                   </Link>
-                  <Link href="/hdesign/docs" style={{ color: "#ffffff", opacity: 0.8, textDecoration: "none", fontSize: "0.9rem" }}>
+                  <Link href="/hdesign/docs" style={{ color: "#ffffff", opacity: 0.9, textDecoration: "none", fontSize: "0.9rem" }}>
                     {t('contact', 'nav_docs', 'Փաստաթղթեր')}
                   </Link>
                 </div>
@@ -135,7 +135,7 @@ export default function Footer({
                 <h4 style={{ fontSize: "0.95rem", fontWeight: "bold", color: "#ffffff", textTransform: "uppercase", letterSpacing: "1px", margin: "0 0 12px" }}>
                   {t('contact', 'contacts_title', 'Կոնտակտներ')}
                 </h4>
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px", color: "#ffffff", opacity: 0.8, fontSize: "0.9rem" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", color: "#ffffff", opacity: 0.9, fontSize: "0.9rem" }}>
                   <div>
                     {t('contact', 'email_label', 'Էլ. հասցե՝')}{" "}
                     <a href={`mailto:${contactEmail}`} style={{ color: "#ffffff", textDecoration: "none" }}>{contactEmail}</a>
@@ -171,10 +171,10 @@ export default function Footer({
               gap: "20px",
               boxShadow: "0 10px 30px rgba(0,0,0,0.08)"
             }}>
-              <h4 style={{ fontSize: "1.1rem", fontWeight: "bold", color: "#1a202c", margin: 0, textTransform: "uppercase", letterSpacing: "1px" }}>
+              <h4 style={{ fontSize: "1.1rem", fontWeight: "bold", color: "#000000", margin: 0, textTransform: "uppercase", letterSpacing: "1px" }}>
                 {t('contact', 'subscribe_title', 'Բաժանորդագրվել')}
               </h4>
-              <p style={{ color: "#4a5568", opacity: 0.9, fontSize: "0.9rem", lineHeight: "1.6", margin: 0 }}>
+              <p style={{ color: "#000000", opacity: 0.85, fontSize: "0.9rem", lineHeight: "1.6", margin: 0 }}>
                 {t('contact', 'subscribe_desc', 'Բաժանորդագրվեք մեր էլ. նամակներին՝ նորությունները և թարմացումները բաց չթողնելու համար։')}
               </p>
               <form onSubmit={handleSubscribeSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -187,7 +187,7 @@ export default function Footer({
                     data-width="100%"
                     data-height="42px"
                     data-thickness="3px"
-                    data-color="#472c4d"
+                    data-color="#000000"
                     style={{ '--text-color': '#1a202c', '--primary-color': '#472c4d' } as any}
                   data-font-size="14pt" />
                 </div>
@@ -211,15 +211,15 @@ export default function Footer({
                   data-width="100%" 
                   data-height="44px"
                   data-thickness="3px"
-                  data-color="#472c4d"
+                  data-color="#000000"
                   disabled={submittingSubscribe}
                   style={{ 
                     opacity: submittingSubscribe ? 0.7 : 1,
-                    background: "#472c4d",
+                    background: "#000000",
                     color: "#fff",
-                    border: "2px solid #472c4d",
-                    borderColor: "#472c4d",
-                    boxShadow: "0 4px 12px rgba(71, 44, 77, 0.35)"
+                    border: "2px solid #000000",
+                    borderColor: "#000000",
+                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.35)"
                   }}
                 >
                   {submittingSubscribe ? t('contact', 'submitting_btn', 'Ուղարկվում է...') : t('contact', 'subscribe_btn', 'Բաժանորդագրվել')}
@@ -229,7 +229,7 @@ export default function Footer({
           </hd-reveal>
         </div>
 
-        <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.15)", paddingTop: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", color: "#ffffff", opacity: 0.7, fontSize: "0.85rem" }}>
+        <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.2)", paddingTop: "20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", color: "#ffffff", opacity: 0.9, fontSize: "0.85rem" }}>
           <div>© {new Date().getFullYear()} {t('contact', 'copyright', 'Հակոբյան Դիզայն. Բոլոր իրավունքները պաշտպանված են։')}</div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span>{t('contact', 'designed_by', 'Ձեւավորումը եւ Գաղափարը՝ Հրանտ Հակոբյանի Պատրաստված է՝ Antigravity-ով')}</span>

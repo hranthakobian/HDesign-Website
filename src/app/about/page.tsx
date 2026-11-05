@@ -49,7 +49,7 @@ export default function AboutPage() {
           </svg>
         </div>
  
-        <div style={{ position: "relative", zIndex: 10, display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: "56px", alignItems: "stretch" }} className="about-grid">
+        <div style={{ position: "relative", zIndex: 10, display: "grid", gridTemplateColumns: "1fr 1.6fr", gap: "28px", alignItems: "stretch" }} className="about-grid">
           {/* Profile Photo */}
           <div 
             onClick={() => setIsPhotoLightboxOpen(true)}
@@ -74,8 +74,8 @@ export default function AboutPage() {
  
           {/* Bio Content */}
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            <h1 style={{ fontSize: "2.5rem", fontWeight: "900", color: "var(--text)", margin: 0, lineHeight: 1.1, marginTop: "-10px" }}>{t('about', 'title', 'Մասին')}</h1>
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.75em", color: "var(--text)", opacity: 0.95, fontSize: "18pt", lineHeight: "1.6" }}>
+            <h1 style={{ fontSize: "5rem", fontWeight: "900", color: "var(--text)", margin: 0, lineHeight: 1.1, marginTop: "-10px" }}>{t('about', 'title', 'Մասին')}</h1>
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.75em", color: "var(--text)", opacity: 0.95, fontSize: "27pt", lineHeight: "1.6" }}>
               <p style={{ margin: 0 }}>
                 {t('about', 'bio_p1', 'Ողջույն, ես Հրանտ Հակոբյանն եմ և Ճարտարապետության և շինարարության Հայաստանի Ազգային Համալսարանի ճարտարապետության ֆակուլտետի 4-րդ կուրսի ուսանող եմ։')}
               </p>
@@ -86,12 +86,12 @@ export default function AboutPage() {
             
             <div style={{ display: "flex", gap: "16px", marginTop: "12px", flexWrap: "wrap" }}>
               <Link href="/contact" style={{ textDecoration: "none" }}>
-                <hd-button data-width="160px" data-height="52px" data-thickness="3px">
+                <hd-button data-width="160px" data-height="52px" data-thickness="3px" data-color="#000000" data-text-color="#ffffff" style={{ background: "#000000", color: "#ffffff" }}>
                   {t('about', 'contact_btn', 'Կապվել')}
                 </hd-button>
               </Link>
               <Link href="/works" style={{ textDecoration: "none" }}>
-                <hd-button data-width="180px" data-height="52px" data-thickness="3px">
+                <hd-button data-width="180px" data-height="52px" data-thickness="3px" data-color="#000000" data-text-color="#ffffff" style={{ background: "#000000", color: "#ffffff" }}>
                   {t('about', 'works_btn', 'Աշխատանքներ')}
                 </hd-button>
               </Link>

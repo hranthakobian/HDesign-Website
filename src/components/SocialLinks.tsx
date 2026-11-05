@@ -372,7 +372,7 @@ export default function SocialLinks({
           defaultBg = "var(--btn-bg)";
           defaultColor = "var(--text)";
         } else if (isFooter) {
-          defaultBg = "rgba(255, 255, 255, 0.1)";
+          defaultBg = "rgba(255, 255, 255, 0.15)";
           defaultColor = "#ffffff";
         }
 

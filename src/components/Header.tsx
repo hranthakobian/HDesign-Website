@@ -80,13 +80,13 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
     if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'green')) {
       setTheme(savedTheme);
       document.documentElement.setAttribute('data-theme', savedTheme);
-      document.documentElement.setAttribute('data-color', savedTheme === 'light' ? '#083f39' : '#ffffff');
+      document.documentElement.setAttribute('data-color', savedTheme === 'light' ? '#000000' : '#ffffff');
       document.documentElement.classList.remove('light', 'dark', 'green', 'custom');
       document.documentElement.classList.add(savedTheme);
     } else {
       setTheme('light');
       document.documentElement.setAttribute('data-theme', 'light');
-      document.documentElement.setAttribute('data-color', '#083f39');
+      document.documentElement.setAttribute('data-color', '#000000');
       document.documentElement.classList.remove('light', 'dark', 'green', 'custom');
       document.documentElement.classList.add('light');
       if (savedTheme === 'custom') {
@@ -127,7 +127,7 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
     localStorage.setItem('hdesign-theme', newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
     
-    document.documentElement.setAttribute('data-color', newTheme === 'light' ? '#083f39' : '#ffffff');
+    document.documentElement.setAttribute('data-color', newTheme === 'light' ? '#000000' : '#ffffff');
     document.documentElement.classList.remove('light', 'dark', 'green', 'custom');
     document.documentElement.classList.add(newTheme);
 
@@ -268,7 +268,7 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
                <div className="header-dropdown-menu more-dropdown-menu">
                  <div className="dropdown-menu-bg" />
                  
-                 {/* Works sub-group (Collapses at <= 920px) */}
+                 {/* Works sub-group (Collapses at <= 900px) */}
                  <div className="more-dropdown-sub-group more-item-works">
                    <span className="more-dropdown-sub-group-title">{t('nav', 'works', 'Աշխատանքներ')}</span>
                    <Link href="/works?category=branding" className={`header-dropdown-item ${pathname === "/works" && currentCategory === "branding" ? "active" : ""}`}>
@@ -280,19 +280,19 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
                  </div>
                  <div className="more-dropdown-divider more-divider-works" />
 
-                 {/* Fonts item (Collapses at <= 1080px) */}
+                 {/* Fonts item (Collapses at <= 1200px) */}
                  <Link href="/fonts" className={`header-dropdown-item more-item-fonts ${pathname.startsWith("/fonts") ? "active" : ""}`}>
                    {renderNavLinkText("fonts-more", t('nav', 'fonts', 'Տառատեսակներ'))}
                  </Link>
                  <div className="more-dropdown-divider more-divider-fonts" />
 
-                 {/* Apps item (Collapses at <= 1250px) */}
+                 {/* Apps item (Collapses at <= 1500px) */}
                  <Link href="/apps" className={`header-dropdown-item more-item-apps ${pathname.startsWith("/apps") ? "active" : ""}`}>
                    {renderNavLinkText("apps-more", t('nav', 'apps', 'Հավելվածներ'))}
                  </Link>
                  <div className="more-dropdown-divider more-divider-apps" />
 
-                 {/* HDesign sub-group (Collapses at <= 1450px) */}
+                 {/* HDesign sub-group (Collapses at <= 1800px) */}
                  <div className="more-dropdown-sub-group more-item-hdesign">
                    <span className="more-dropdown-sub-group-title">HDesign</span>
                    <Link href="/hdesign" className={`header-dropdown-item ${pathname === "/hdesign" ? "active" : ""}`}>
@@ -307,7 +307,7 @@ export default function Header({ siteTitle }: { siteTitle?: { hy: string; en: st
                  </div>
                  <div className="more-dropdown-divider more-divider-hdesign" />
                  
-                 {/* Contact link (Collapses at <= 1450px) */}
+                 {/* Contact link (Collapses at <= 1800px) */}
                  <Link href="/contact" className={`header-dropdown-item more-item-contact ${pathname === "/contact" ? "active" : ""}`}>
                    {renderNavLinkText("contact-more", t('nav', 'contact', 'Կապ'))}
                  </Link>
